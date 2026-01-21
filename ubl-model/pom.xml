@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example</groupId>
+        <artifactId>ubl-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>ubl-model</artifactId>
+    <packaging>jar</packaging>
+
+    <name>UBL Model</name>
+    <description>Java library generated from UBL 2.1 JSON schemas</description>
+
+    <dependencies>
+        <!-- Jackson for JSON processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        
+        <!-- Jakarta Validation API for Bean Validation annotations -->
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+            
+            <!-- jsonschema2pojo plugin for generating Java classes from UBL JSON schemas -->
+            <plugin>
+                <groupId>org.jsonschema2pojo</groupId>
+                <artifactId>jsonschema2pojo-maven-plugin</artifactId>
+                <version>1.2.2</version>
+                <configuration>
+                    <sourceDirectory>${basedir}/../ubl-source/json-schema</sourceDirectory>
+                    <targetPackage>oasis.names.specification.ubl.schema.xsd</targetPackage>
+                    <outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
+                    
+                    <!-- JSON Schema settings -->
+                    <sourceType>jsonschema</sourceType>
+                    <annotationStyle>jackson2</annotationStyle>
+                    
+                    <!-- Generation options -->
+                    <generateBuilders>true</generateBuilders>
+                    <includeConstructors>true</includeConstructors>
+                    <includeJsr303Annotations>true</includeJsr303Annotations>
+                    <useJakartaValidation>true</useJakartaValidation>
+                    <useOptionalForGetters>false</useOptionalForGetters>
+                    <includeAdditionalProperties>false</includeAdditionalProperties>
+                    
+                    <!-- Type mappings -->
+                    <useBigDecimals>true</useBigDecimals>
+                    <dateType>java.time.LocalDate</dateType>
+                    <timeType>java.time.LocalTime</timeType>
+                    <dateTimeType>java.time.OffsetDateTime</dateTimeType>
+                    
+                    <!-- Documentation -->
+                    <includeJsr305Annotations>false</includeJsr305Annotations>
+                    <includeGeneratedAnnotation>true</includeGeneratedAnnotation>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- build-helper plugin to add generated sources to compile path -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

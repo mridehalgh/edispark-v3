@@ -15,10 +15,11 @@
     <modules>
         <module>ubl-model</module>
         <module>domains/documents</module>
+        <module>application</module>
     </modules>
 
     <properties>
-        <java.version>24</java.version>
+        <java.version>25</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -26,13 +27,24 @@
         <!-- Dependency versions -->
         <jackson.version>2.18.2</jackson.version>
         <jakarta.validation.version>3.1.0</jakarta.validation.version>
+        <spring.boot.version>3.4.1</spring.boot.version>
         <junit.version>5.11.4</junit.version>
         <jqwik.version>1.8.2</jqwik.version>
         <assertj.version>3.26.3</assertj.version>
+        <lombok.version>1.18.42</lombok.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Boot BOM for consistent versioning -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
             <!-- Jackson BOM for consistent versioning -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -85,6 +97,14 @@
                         <compilerArgs>
                             <arg>--enable-preview</arg>
                         </compilerArgs>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                        <proc>full</proc>
                     </configuration>
                 </plugin>
                 <plugin>

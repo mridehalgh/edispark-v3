@@ -245,11 +245,11 @@ This plan implements the Documents bounded context as a new Maven module followi
     - Mock repository and service dependencies
     - _Requirements: All command handling_
 
-- [ ] 17. Checkpoint - Ensure all tests pass
+- [X] 17. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 18. Implement domain exceptions
-  - [ ] 18.1 Create domain exception classes
+- [x] 18. Implement domain exceptions
+  - [x] 18.1 Create domain exception classes
     - Implement DocumentSetNotFoundException, DocumentNotFoundException
     - Implement VersionNotFoundException, SchemaNotFoundException
     - Implement SchemaInUseException, DuplicateDerivativeException
@@ -257,14 +257,14 @@ This plan implements the Documents bounded context as a new Maven module followi
     - Implement ValidationException, TransformationException
     - _Requirements: Error handling design_
 
-- [ ] 19. Final integration and wiring
-  - [ ] 19.1 Create module configuration
+- [x] 19. Final integration and wiring
+  - [x] 19.1 Create module configuration
     - Create DocumentsModuleConfig for Spring bean wiring
     - Configure DynamoDB client and S3 client beans
     - Wire repositories, validators, and transformers
     - _Requirements: Module integration_
   
-  - [ ] 19.2 Update parent pom.xml
+  - [x] 19.2 Update parent pom.xml
     - Add domains/documents module to parent
     - _Requirements: Project structure_
 

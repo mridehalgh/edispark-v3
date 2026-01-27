@@ -1,0 +1,75 @@
+# Spring Boot Application Configuration
+# Main configuration file for the Documents API application
+
+# Server configuration
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Spring configuration
+spring:
+  application:
+    name: documents-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  
+  # Jackson JSON configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+# Documents domain module configuration
+documents:
+  # DynamoDB table configuration
+  dynamodb:
+    table-name: ${DOCUMENTS_TABLE_NAME:myapp-documents-dev}
+  
+  # Tenant configuration (for multi-tenancy support)
+  tenant-id: ${DOCUMENTS_TENANT_ID:DEFAULT}
+  
+  # Content storage configuration
+  content:
+    # Local file system storage (for development)
+    local:
+      directory: ${DOCUMENTS_CONTENT_DIR:./content-store}
+    
+    # S3 storage (for production - not yet implemented)
+    s3:
+      enabled: ${DOCUMENTS_S3_ENABLED:false}
+      bucket-name: ${DOCUMENTS_S3_BUCKET:}
+
+# AWS configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+
+# DynamoDB Local configuration (for development)
+dynamodb:
+  local:
+    endpoint: ${DYNAMODB_LOCAL_ENDPOINT:http://localhost:8000}
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.example.documents: DEBUG
+    com.example.application: DEBUG
+    software.amazon.awssdk: WARN
+    com.amazonaws: WARN
+    org.springframework.web: INFO
+
+# Management endpoints (for health checks and monitoring)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

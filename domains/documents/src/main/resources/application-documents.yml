@@ -1,0 +1,42 @@
+# Documents Domain Configuration
+# This file provides example configuration for the Documents domain module
+
+documents:
+  # DynamoDB table configuration
+  dynamodb:
+    table-name: ${DOCUMENTS_TABLE_NAME:myapp-documents-dev}
+  
+  # Tenant configuration (for multi-tenancy support)
+  tenant-id: ${DOCUMENTS_TENANT_ID:DEFAULT}
+  
+  # Content storage configuration
+  content:
+    # Local file system storage (for development)
+    local:
+      directory: ${DOCUMENTS_CONTENT_DIR:./content-store}
+    
+    # S3 storage (for production - not yet implemented)
+    s3:
+      enabled: ${DOCUMENTS_S3_ENABLED:false}
+      bucket-name: ${DOCUMENTS_S3_BUCKET:}
+
+# AWS configuration
+aws:
+  region: ${AWS_REGION:us-east-1}
+
+# DynamoDB Local configuration (for development)
+dynamodb:
+  local:
+    endpoint: ${DYNAMODB_LOCAL_ENDPOINT:http://localhost:8000}
+
+# Spring profiles
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+# Logging configuration for development
+logging:
+  level:
+    com.example.documents: DEBUG
+    software.amazon.awssdk: WARN
+    com.amazonaws: WARN

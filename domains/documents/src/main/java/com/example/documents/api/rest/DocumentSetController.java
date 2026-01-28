@@ -106,7 +106,7 @@ public class DocumentSetController {
         
         PaginatedResult<DocumentSetResponse> mappedResult = result.map(this::mapToResponse);
         String baseUrl = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
-        PaginatedResponse<DocumentSetResponse> response = PaginatedResponse.from(mappedResult, baseUrl, effectiveLimit);
+        PaginatedResponse<DocumentSetResponse> response = PaginatedResponse.from(mappedResult, baseUrl, effectiveLimit, nextToken);
         
         return ResponseEntity.ok(response);
     }

@@ -5,32 +5,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.List;
 
 /**
- * Generic paginated response for REST APIs following best practices.
- * 
- * <p>This provides a consistent pagination structure across all API endpoints with:</p>
- * <ul>
- *   <li>{@code items} - the actual data for this page</li>
- *   <li>{@code pageSize} - number of items in this page</li>
- *   <li>{@code hasNext} - indicates a next page may exist (use nextToken to fetch)</li>
- *   <li>{@code nextToken} - opaque continuation token (null if definitely no more pages)</li>
- *   <li>{@code nextUrl} - full URL for next page (null if definitely no more pages)</li>
- * </ul>
- * 
- * <p>Note: {@code hasNext} being true indicates there may be more results. Due to how
- * some databases (like DynamoDB) handle pagination, the next page could be empty.
- * The definitive signal that pagination is complete is when {@code hasNext} is false.</p>
+ * Generic paginated response for REST APIs.
  * 
  * <p>Fields with null values are omitted from JSON output.</p>
  * 
  * @param <T> the type of items in the response
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"items", "pageSize", "hasNext", "nextToken", "nextUrl"})
+@JsonPropertyOrder({"items", "pageSize", "hasPrevious", "hasNext", "previousToken", "nextToken", "previousUrl", "nextUrl"})
 public record PaginatedResponse<T>(
     List<T> items,
     int pageSize,
+    boolean hasPrevious,
     boolean hasNext,
+    String previousToken,
     String nextToken,
+    String previousUrl,
     String nextUrl
 ) {
     public PaginatedResponse {
@@ -43,53 +33,46 @@ public record PaginatedResponse<T>(
     }
     
     /**
-     * Creates a paginated response from domain PaginatedResult without URL generation.
-     * Use {@link #from(PaginatedResult, String, int)} when you need nextUrl.
+     * Creates a paginated response with URL generation.
+     * 
+     * @param result the domain paginated result
+     * @param baseUrl the base URL for the endpoint
+     * @param limit the page size
+     * @param currentToken the token used for the current request (becomes previousToken for next page)
      */
     public static <T> PaginatedResponse<T> from(
-            com.example.common.pagination.PaginatedResult<T> result) {
-        String token = result.continuationToken().orElse(null);
+            com.example.common.pagination.PaginatedResult<T> result,
+            String baseUrl,
+            int limit,
+            String currentToken) {
+        
+        String nextToken = result.continuationToken().orElse(null);
+        String nextUrl = nextToken != null ? buildUrl(baseUrl, limit, nextToken) : null;
+        String previousUrl = currentToken != null ? buildUrl(baseUrl, limit, currentToken) : null;
+        
         return new PaginatedResponse<>(
             result.items(),
             result.size(),
+            currentToken != null,
             result.hasMore(),
-            token,
-            null
+            currentToken,
+            nextToken,
+            previousUrl,
+            nextUrl
         );
     }
     
     /**
-     * Creates a paginated response with nextUrl generation.
-     * 
-     * @param result the domain paginated result
-     * @param baseUrl the base URL for the endpoint (e.g., "/api/document-sets")
-     * @param limit the page size used in the request
-     * @return paginated response with nextUrl populated if there are more pages
+     * Creates a paginated response without previous token tracking.
      */
     public static <T> PaginatedResponse<T> from(
             com.example.common.pagination.PaginatedResult<T> result,
             String baseUrl,
             int limit) {
-        String token = result.continuationToken().orElse(null);
-        String nextUrl = null;
-        
-        if (token != null && baseUrl != null) {
-            nextUrl = buildNextUrl(baseUrl, limit, token);
-        }
-        
-        return new PaginatedResponse<>(
-            result.items(),
-            result.size(),
-            result.hasMore(),
-            token,
-            nextUrl
-        );
+        return from(result, baseUrl, limit, null);
     }
     
-    private static String buildNextUrl(String baseUrl, int limit, String nextToken) {
-        StringBuilder url = new StringBuilder(baseUrl);
-        url.append("?limit=").append(limit);
-        url.append("&nextToken=").append(nextToken);
-        return url.toString();
+    private static String buildUrl(String baseUrl, int limit, String token) {
+        return baseUrl + "?limit=" + limit + "&nextToken=" + token;
     }
 }

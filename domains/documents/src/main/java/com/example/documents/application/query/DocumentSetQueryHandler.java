@@ -4,12 +4,10 @@ import com.example.common.pagination.PaginatedResult;
 import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
 /**
  * Handles queries for document set listing.
  */
-@Service
 @RequiredArgsConstructor
 public class DocumentSetQueryHandler {
     

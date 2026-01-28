@@ -2,62 +2,134 @@ package com.example.documents.infrastructure.seed;
 
 import com.example.common.pagination.Page;
 import com.example.common.pagination.PaginatedResult;
+import com.example.documents.application.command.AddSchemaVersionCommand;
 import com.example.documents.application.command.CreateDocumentSetCommand;
+import com.example.documents.application.command.CreateSchemaCommand;
 import com.example.documents.application.handler.DocumentSetCommandHandler;
+import com.example.documents.application.handler.SchemaCommandHandler;
 import com.example.documents.domain.model.Content;
 import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.model.DocumentType;
 import com.example.documents.domain.model.Format;
-import com.example.documents.domain.model.SchemaId;
+import com.example.documents.domain.model.Schema;
+import com.example.documents.domain.model.SchemaFormat;
 import com.example.documents.domain.model.SchemaVersionRef;
 import com.example.documents.domain.model.VersionIdentifier;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Random;
 
 /**
- * Seeds sample document sets for testing pagination.
+ * Seeds sample schemas and document sets for local development.
  * 
- * <p>Automatically enabled in local profile. Can be controlled via
- * application property: documents.seed.enabled=true/false</p>
+ * <p>Runs after {@link com.example.documents.infrastructure.config.LocalDynamoDbInitializer}
+ * to ensure the table exists before seeding data.</p>
  */
 @Component
-@ConditionalOnProperty(
-    name = "documents.seed.enabled", 
-    havingValue = "true",
-    matchIfMissing = false
-)
+@Profile("local")
 @RequiredArgsConstructor
 @Slf4j
-public class DocumentSetSeeder implements CommandLineRunner {
+public class DocumentSetSeeder {
     
-    private final DocumentSetCommandHandler commandHandler;
-    private final DocumentSetRepository repository;
+    private static final VersionIdentifier INITIAL_VERSION = VersionIdentifier.of("1.0.0");
+    
+    private final DocumentSetCommandHandler documentSetCommandHandler;
+    private final SchemaCommandHandler schemaCommandHandler;
+    private final DocumentSetRepository documentSetRepository;
     private final Random random = new Random();
     
-    @Override
-    public void run(String... args) {
-        // Check if data already exists (idempotency)
-        Page firstPage = Page.first(1);
-        PaginatedResult<DocumentSet> existing = repository.findAll(firstPage);
-        
-        if (!existing.isEmpty()) {
-            log.info("Document sets already exist (found at least {}), skipping seeding", existing.size());
+    private final Map<DocumentType, SchemaVersionRef> schemaRefs = new EnumMap<>(DocumentType.class);
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Order(10) // Run after LocalDynamoDbInitializer (HIGHEST_PRECEDENCE)
+    public void seed() {
+        if (dataAlreadyExists()) {
+            log.info("Data already exists, skipping seeding");
             return;
         }
         
-        log.info("Starting document set seeding...");
+        log.info("Starting data seeding...");
         
-        int totalSets = 50;
+        createSchemas();
+        createDocumentSets();
+        
+        log.info("Data seeding completed");
+    }
+    
+    private boolean dataAlreadyExists() {
+        PaginatedResult<DocumentSet> existing = documentSetRepository.findAll(Page.first(1));
+        return !existing.isEmpty();
+    }
+    
+    private void createSchemas() {
+        log.info("Creating sample schemas...");
+        
+        for (DocumentType type : DocumentType.values()) {
+            SchemaVersionRef ref = createSchemaForType(type);
+            schemaRefs.put(type, ref);
+        }
+        
+        log.info("Created {} schemas", schemaRefs.size());
+    }
+    
+    private SchemaVersionRef createSchemaForType(DocumentType type) {
+        // Create the schema
+        CreateSchemaCommand createCommand = CreateSchemaCommand.of(
+            type.name() + " Schema",
+            SchemaFormat.JSON_SCHEMA
+        );
+        Schema schema = schemaCommandHandler.handle(createCommand);
+        
+        // Add initial version with content
+        String schemaContent = generateSchemaContent(type);
+        Content content = Content.of(
+            schemaContent.getBytes(StandardCharsets.UTF_8),
+            Format.JSON
+        );
+        
+        AddSchemaVersionCommand versionCommand = new AddSchemaVersionCommand(
+            schema.id(),
+            INITIAL_VERSION,
+            content
+        );
+        schemaCommandHandler.handle(versionCommand);
+        
+        log.debug("Created schema: {} ({})", schema.name(), schema.id().value());
+        
+        return SchemaVersionRef.of(schema.id(), INITIAL_VERSION);
+    }
+    
+    private String generateSchemaContent(DocumentType type) {
+        return String.format("""
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "title": "%s",
+              "type": "object",
+              "properties": {
+                "documentType": { "type": "string", "const": "%s" },
+                "documentNumber": { "type": "string" },
+                "issueDate": { "type": "string", "format": "date-time" }
+              },
+              "required": ["documentType", "documentNumber"]
+            }
+            """, type.name(), type.name());
+    }
+    
+    private void createDocumentSets() {
+        log.info("Creating sample document sets...");
+        
         int invoiceCount = 20;
         int orderCount = 15;
         int quotationCount = 10;
@@ -68,34 +140,30 @@ public class DocumentSetSeeder implements CommandLineRunner {
         seedDocumentSets(DocumentType.QUOTATION, quotationCount, "Quotation Set");
         seedDocumentSets(DocumentType.CREDIT_NOTE, creditNoteCount, "Credit Note Set");
         
-        log.info("Seeded {} document sets successfully", totalSets);
+        int total = invoiceCount + orderCount + quotationCount + creditNoteCount;
+        log.info("Created {} document sets", total);
     }
     
     private void seedDocumentSets(DocumentType type, int count, String namePrefix) {
+        SchemaVersionRef schemaRef = schemaRefs.get(type);
+        
         for (int i = 1; i <= count; i++) {
             try {
-                createSampleDocumentSet(type, namePrefix, i);
+                createSampleDocumentSet(type, schemaRef, namePrefix, i);
             } catch (Exception e) {
-                log.error("Failed to seed document set {} {}: {}", namePrefix, i, e.getMessage());
+                log.error("Failed to seed {} {}: {}", namePrefix, i, e.getMessage());
             }
         }
     }
     
-    private void createSampleDocumentSet(DocumentType type, String namePrefix, int number) {
-        // Create sample content
+    private void createSampleDocumentSet(DocumentType type, SchemaVersionRef schemaRef, 
+                                          String namePrefix, int number) {
         String sampleContent = generateSampleContent(type, number);
         Content content = Content.of(
             sampleContent.getBytes(StandardCharsets.UTF_8),
             Format.JSON
         );
         
-        // Create schema reference (using dummy schema for now)
-        SchemaVersionRef schemaRef = SchemaVersionRef.of(
-            SchemaId.generate(),
-            VersionIdentifier.of("1.0.0")
-        );
-        
-        // Create metadata
         Map<String, String> metadata = Map.of(
             "name", String.format("%s %03d", namePrefix, number),
             "description", generateDescription(type, number),
@@ -103,7 +171,6 @@ public class DocumentSetSeeder implements CommandLineRunner {
             "fiscalYear", "2024"
         );
         
-        // Create command
         CreateDocumentSetCommand command = new CreateDocumentSetCommand(
             type,
             schemaRef,
@@ -112,9 +179,7 @@ public class DocumentSetSeeder implements CommandLineRunner {
             metadata
         );
         
-        // Execute
-        commandHandler.handle(command);
-        
+        documentSetCommandHandler.handle(command);
         log.debug("Created {} {}", namePrefix, number);
     }
     

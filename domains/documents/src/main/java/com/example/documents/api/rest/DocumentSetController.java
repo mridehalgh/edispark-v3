@@ -93,9 +93,9 @@ public class DocumentSetController {
     })
     public ResponseEntity<PaginatedResponse<DocumentSetResponse>> listDocumentSets(
             @Parameter(description = "Page size (1-100, default 20)") 
-            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer limit,
+            @org.springframework.web.bind.annotation.RequestParam(name = "limit", required = false) Integer limit,
             @Parameter(description = "Continuation token from previous page") 
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String nextToken) {
+            @org.springframework.web.bind.annotation.RequestParam(name = "nextToken", required = false) String nextToken) {
         
         // Create query
         ListDocumentSetsQuery query = ListDocumentSetsQuery.of(limit, nextToken);

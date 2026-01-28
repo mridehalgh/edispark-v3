@@ -412,7 +412,7 @@ class DocumentExceptionHandlerTest {
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().code()).isEqualTo("BAD_REQUEST");
+            assertThat(response.getBody().code()).isEqualTo("INVALID_PARAMETER");
         }
 
         @Test

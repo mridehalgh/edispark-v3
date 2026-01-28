@@ -2,6 +2,7 @@ package com.example.documents.infrastructure.config;
 
 import com.example.documents.application.handler.DocumentSetCommandHandler;
 import com.example.documents.application.handler.SchemaCommandHandler;
+import com.example.documents.application.query.DocumentSetQueryHandler;
 import com.example.documents.domain.repository.ContentStore;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import com.example.documents.domain.repository.SchemaRepository;
@@ -19,7 +20,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -231,5 +231,15 @@ public class DocumentsModuleConfig {
             SchemaRepository schemaRepository,
             ContentStore contentStore) {
         return new SchemaCommandHandler(schemaRepository, contentStore);
+    }
+
+    /**
+     * Query handler for DocumentSet listing operations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public DocumentSetQueryHandler documentSetQueryHandler(
+            DocumentSetRepository documentSetRepository) {
+        return new DocumentSetQueryHandler(documentSetRepository);
     }
 }

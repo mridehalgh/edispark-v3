@@ -2,22 +2,20 @@ package com.example.documents.infrastructure.persistence;
 
 import com.example.common.pagination.Page;
 import com.example.common.pagination.PaginatedResult;
-import com.example.documents.domain.model.Content;
 import com.example.documents.domain.model.ContentHash;
 import com.example.documents.domain.model.ContentRef;
 import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.model.DocumentSetId;
 import com.example.documents.domain.model.DocumentType;
-import com.example.documents.domain.model.Format;
 import com.example.documents.domain.model.SchemaId;
 import com.example.documents.domain.model.SchemaVersionRef;
 import com.example.documents.domain.model.VersionIdentifier;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.IntRange;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import net.jqwik.api.lifecycle.AfterContainer;
+import net.jqwik.api.lifecycle.BeforeContainer;
+import net.jqwik.api.lifecycle.BeforeTry;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,23 +40,22 @@ class PaginationCompletenessPropertyTest {
     private static DynamoDbTableConfig tableConfig;
     private DynamoDbDocumentSetRepository repository;
 
-    @BeforeAll
+    @BeforeContainer
     static void startDynamoDbLocal() throws Exception {
         dynamoDbLocal = new DynamoDbLocalTestSupport();
         dynamoDbLocal.start();
         tableConfig = new DynamoDbTableConfig("test-documents-pagination");
     }
 
-    @AfterAll
+    @AfterContainer
     static void stopDynamoDbLocal() throws Exception {
         if (dynamoDbLocal != null) {
             dynamoDbLocal.stop();
         }
     }
 
-    @BeforeEach
+    @BeforeTry
     void setUp() {
-        // Recreate table for each test
         tableConfig.deleteTableIfExists(dynamoDbLocal.client());
         tableConfig.createTableIfNotExists(dynamoDbLocal.client());
         repository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName());
@@ -66,11 +63,9 @@ class PaginationCompletenessPropertyTest {
 
     @Property
     void paginationReturnsAllItemsExactlyOnce(@ForAll @IntRange(min = 1, max = 100) int pageSize) {
-        // Given - seed known number of document sets
         int totalSets = 50;
         List<DocumentSetId> seededIds = seedDocumentSets(totalSets);
         
-        // When - paginate through all results
         Set<DocumentSetId> retrievedIds = new HashSet<>();
         Optional<String> nextToken = Optional.empty();
         int pageCount = 0;
@@ -83,7 +78,6 @@ class PaginationCompletenessPropertyTest {
                 
             PaginatedResult<DocumentSet> result = repository.findAll(page);
             
-            // Collect IDs from this page
             for (DocumentSet ds : result.items()) {
                 retrievedIds.add(ds.id());
             }
@@ -92,12 +86,10 @@ class PaginationCompletenessPropertyTest {
             nextToken = result.continuationToken();
             pageCount++;
             
-            // Safety check to prevent infinite loops
             assertThat(pageCount).isLessThan(200);
             
         } while (nextToken.isPresent());
         
-        // Then - verify all items retrieved exactly once
         assertThat(retrievedIds)
             .as("All seeded document sets should be retrieved")
             .containsExactlyInAnyOrderElementsOf(seededIds);
@@ -115,17 +107,12 @@ class PaginationCompletenessPropertyTest {
     void paginationWithVaryingPageSizesReturnsConsistentResults(
             @ForAll @IntRange(min = 1, max = 20) int pageSize1,
             @ForAll @IntRange(min = 1, max = 20) int pageSize2) {
-        // Given - seed document sets
         int totalSets = 30;
         List<DocumentSetId> seededIds = seedDocumentSets(totalSets);
         
-        // When - paginate with first page size
         Set<DocumentSetId> retrievedIds1 = paginateThroughAll(pageSize1);
-        
-        // And - paginate with second page size
         Set<DocumentSetId> retrievedIds2 = paginateThroughAll(pageSize2);
         
-        // Then - both should retrieve the same items
         assertThat(retrievedIds1)
             .as("Different page sizes should retrieve same items")
             .containsExactlyInAnyOrderElementsOf(retrievedIds2);
@@ -134,8 +121,6 @@ class PaginationCompletenessPropertyTest {
             .as("Should retrieve all seeded items")
             .containsExactlyInAnyOrderElementsOf(seededIds);
     }
-
-    // Helper methods
 
     private List<DocumentSetId> seedDocumentSets(int count) {
         List<DocumentSetId> ids = new ArrayList<>();
@@ -183,7 +168,6 @@ class PaginationCompletenessPropertyTest {
             nextToken = result.continuationToken();
             pageCount++;
             
-            // Safety check
             assertThat(pageCount).isLessThan(200);
             
         } while (nextToken.isPresent());

@@ -32,69 +32,16 @@ Every access pattern MUST be supported by either:
 
 If you cannot Query for an access pattern, the data model needs a GSI.
 
-## Pagination Pattern
+## Pagination
 
-### DynamoDB Pagination Tokens
+### Rules
 
-DynamoDB returns `LastEvaluatedKey` as a continuation token. This token:
-- Is a map containing the key attributes of the last evaluated item
-- Must be passed as `ExclusiveStartKey` to continue pagination
-- Should be encoded before exposing to API clients
+1. **Do not** return `LastEvaluatedKey` (or any part of it) directly to clients
+2. **Do not** ask clients to send `ExclusiveStartKey`, partition/sort keys, timestamps, or other DynamoDB key attributes
 
-### API Abstraction
+### Implementation
 
-**NEVER expose raw DynamoDB tokens to API clients.** Instead:
-
-1. **Encode tokens**: Use Base64 or similar encoding to create opaque strings
-2. **Abstract the format**: Clients should treat tokens as opaque strings
-3. **Handle errors gracefully**: Invalid tokens should return clear error messages
-
-### Implementation Pattern
-
-```java
-// Repository layer - works with DynamoDB tokens
-public interface DocumentSetRepository {
-    PaginatedResult<DocumentSet> findAll(int limit, Map<String, AttributeValue> exclusiveStartKey);
-}
-
-// Application layer - abstracts pagination
-public record PaginatedResult<T>(
-    List<T> items,
-    Optional<String> nextToken  // Encoded, opaque to clients
-) {}
-
-// Encoding/decoding utility
-public class PaginationTokenCodec {
-    public static String encode(Map<String, AttributeValue> lastEvaluatedKey) {
-        // Base64 encode the key map
-    }
-    
-    public static Map<String, AttributeValue> decode(String token) {
-        // Base64 decode and validate
-    }
-}
-```
-
-### API Response Structure
-
-```json
-{
-  "items": [...],
-  "nextToken": "eyJQSyI6eyJTIjoiRE9DU0VUI..."  // Opaque encoded token
-}
-```
-
-Clients pass `nextToken` back as a query parameter for the next page. They never need to understand its internal structure.
-
-## Design Checklist
-
-Before implementing any list/search endpoint:
-
-- [ ] Identified the Query access pattern (base table or GSI)
-- [ ] Confirmed NO SCAN operations are used
-- [ ] Designed pagination token encoding/decoding
-- [ ] Hidden DynamoDB implementation details from API layer
-- [ ] Documented the access pattern in code comments
+Encode DynamoDB's `LastEvaluatedKey` into an opaque token (e.g. Base64) before returning to clients. Decode the token back when receiving it. Clients only ever see and send a single opaque `nextToken` string.
 
 ## Exception: Development and Testing
 

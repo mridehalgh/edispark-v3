@@ -136,23 +136,39 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
         QueryResponse response = client.query(requestBuilder.build());
         
         // Extract document set IDs from GSI results
+        List<DocumentSet> documentSets = extractDocumentSets(response.items());
+        
+        // Encode minimal token (just GSI1SK cursor) if more results may exist
+        String nextToken = determineNextToken(response);
+        
+        return PaginatedResult.of(documentSets, nextToken);
+    }
+    
+    private List<DocumentSet> extractDocumentSets(List<Map<String, AttributeValue>> items) {
         Set<DocumentSetId> documentSetIds = new HashSet<>();
-        for (Map<String, AttributeValue> item : response.items()) {
+        for (Map<String, AttributeValue> item : items) {
             if (item.containsKey("documentSetId")) {
                 documentSetIds.add(DocumentSetId.fromString(item.get("documentSetId").s()));
             }
         }
         
-        // Fetch full document sets (batch operation for efficiency)
         List<DocumentSet> documentSets = new ArrayList<>();
         for (DocumentSetId docSetId : documentSetIds) {
             findById(docSetId).ifPresent(documentSets::add);
         }
-        
-        // Encode next token if more results available
-        String nextToken = PaginationTokenCodec.encode(response.lastEvaluatedKey());
-        
-        return PaginatedResult.of(documentSets, nextToken);
+        return documentSets;
+    }
+    
+    /**
+     * Returns encoded pagination token if more results exist.
+     * Absence of LastEvaluatedKey means no more items to retrieve.
+     */
+    private String determineNextToken(QueryResponse response) {
+        Map<String, AttributeValue> lastKey = response.lastEvaluatedKey();
+        if (lastKey == null || lastKey.isEmpty()) {
+            return null;
+        }
+        return PaginationTokenCodec.encode(lastKey);
     }
 
     @Override

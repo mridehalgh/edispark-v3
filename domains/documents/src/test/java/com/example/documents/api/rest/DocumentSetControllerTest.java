@@ -2339,7 +2339,7 @@ class DocumentSetControllerTest {
         }
 
         @Test
-        @DisplayName("should return response with nextToken when more results available")
+        @DisplayName("should return response with nextToken and nextUrl when more results available")
         void responseContainsNextTokenWhenMoreResults() {
             // Given
             com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
@@ -2353,11 +2353,13 @@ class DocumentSetControllerTest {
 
             // Then
             assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().hasNext()).isTrue();
             assertThat(response.getBody().nextToken()).isEqualTo("nextToken123");
+            assertThat(response.getBody().nextUrl()).isEqualTo("/api/document-sets?limit=10&nextToken=nextToken123");
         }
 
         @Test
-        @DisplayName("should return response without nextToken on last page")
+        @DisplayName("should return response without nextToken or nextUrl on last page")
         void responseOmitsNextTokenOnLastPage() {
             // Given
             com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
@@ -2371,7 +2373,27 @@ class DocumentSetControllerTest {
 
             // Then
             assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().hasNext()).isFalse();
             assertThat(response.getBody().nextToken()).isNull();
+            assertThat(response.getBody().nextUrl()).isNull();
+        }
+
+        @Test
+        @DisplayName("should return correct pageSize in response")
+        void responseContainsCorrectPageSize() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(7, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(10, null);
+
+            // Then
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().pageSize()).isEqualTo(7);
         }
 
         @Test

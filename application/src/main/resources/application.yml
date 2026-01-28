@@ -46,7 +46,7 @@ documents:
   content:
     # Local file system storage (for development)
     local:
-      directory: ${DOCUMENTS_CONTENT_DIR:./content-store}
+      directory: ${DOCUMENTS_CONTENT_DIR:./.content-store}
     
     # S3 storage (for production - not yet implemented)
     s3:

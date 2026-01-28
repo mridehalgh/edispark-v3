@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -77,6 +78,8 @@ public class DocumentSetController {
     private final DocumentSetRepository repository;
     private final DocumentSetQueryHandler queryHandler;
 
+    private static final int DEFAULT_LIMIT = 20;
+
     /**
      * Lists document sets with pagination support.
      * 
@@ -86,7 +89,7 @@ public class DocumentSetController {
      */
     @GetMapping
     @Operation(summary = "List document sets", 
-               description = "Retrieves document sets with pagination. Use nextToken from response to fetch subsequent pages.")
+               description = "Retrieves document sets with pagination. Use nextToken or nextUrl from response to fetch subsequent pages.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Document sets retrieved successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid limit or pagination token")
@@ -97,15 +100,13 @@ public class DocumentSetController {
             @Parameter(description = "Continuation token from previous page") 
             @org.springframework.web.bind.annotation.RequestParam(name = "nextToken", required = false) String nextToken) {
         
-        // Create query
-        ListDocumentSetsQuery query = ListDocumentSetsQuery.of(limit, nextToken);
-        
-        // Execute query
+        int effectiveLimit = limit != null ? limit : DEFAULT_LIMIT;
+        ListDocumentSetsQuery query = ListDocumentSetsQuery.of(effectiveLimit, nextToken);
         PaginatedResult<DocumentSet> result = queryHandler.handle(query);
         
-        // Map domain result to API response
         PaginatedResult<DocumentSetResponse> mappedResult = result.map(this::mapToResponse);
-        PaginatedResponse<DocumentSetResponse> response = PaginatedResponse.from(mappedResult);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        PaginatedResponse<DocumentSetResponse> response = PaginatedResponse.from(mappedResult, baseUrl, effectiveLimit);
         
         return ResponseEntity.ok(response);
     }

@@ -82,3 +82,4 @@ rebel.xml
 dynamodb-local-metadata.json
 shared-local-instance.db
 .history
+.content-store

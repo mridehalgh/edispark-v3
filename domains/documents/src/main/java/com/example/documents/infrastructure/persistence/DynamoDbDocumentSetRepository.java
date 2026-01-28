@@ -1,5 +1,7 @@
 package com.example.documents.infrastructure.persistence;
 
+import com.example.common.pagination.Page;
+import com.example.common.pagination.PaginatedResult;
 import com.example.documents.domain.model.ContentHash;
 import com.example.documents.domain.model.Derivative;
 import com.example.documents.domain.model.DocumentId;
@@ -106,6 +108,51 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
         }
         
         return result;
+    }
+
+    @Override
+    public PaginatedResult<DocumentSet> findAll(Page page) {
+        // Decode continuation token if present
+        Map<String, AttributeValue> exclusiveStartKey = page.continuationToken()
+            .map(PaginationTokenCodec::decode)
+            .orElse(null);
+        
+        // Query GSI1 to get document sets for this tenant
+        String gsi1Pk = gsi1PkForTenantDocumentSets(tenantId);
+        
+        QueryRequest.Builder requestBuilder = QueryRequest.builder()
+                .tableName(tableName)
+                .indexName(GSI1_NAME)
+                .keyConditionExpression("#gsi1pk = :gsi1pk")
+                .expressionAttributeNames(Map.of("#gsi1pk", GSI1_PK))
+                .expressionAttributeValues(Map.of(":gsi1pk", AttributeValue.builder().s(gsi1Pk).build()))
+                .limit(page.limit());
+        
+        // Add exclusive start key if continuing from previous page
+        if (exclusiveStartKey != null) {
+            requestBuilder.exclusiveStartKey(exclusiveStartKey);
+        }
+        
+        QueryResponse response = client.query(requestBuilder.build());
+        
+        // Extract document set IDs from GSI results
+        Set<DocumentSetId> documentSetIds = new HashSet<>();
+        for (Map<String, AttributeValue> item : response.items()) {
+            if (item.containsKey("documentSetId")) {
+                documentSetIds.add(DocumentSetId.fromString(item.get("documentSetId").s()));
+            }
+        }
+        
+        // Fetch full document sets (batch operation for efficiency)
+        List<DocumentSet> documentSets = new ArrayList<>();
+        for (DocumentSetId docSetId : documentSetIds) {
+            findById(docSetId).ifPresent(documentSets::add);
+        }
+        
+        // Encode next token if more results available
+        String nextToken = PaginationTokenCodec.encode(response.lastEvaluatedKey());
+        
+        return PaginatedResult.of(documentSets, nextToken);
     }
 
     @Override

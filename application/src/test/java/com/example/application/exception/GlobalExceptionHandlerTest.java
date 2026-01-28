@@ -1,10 +1,12 @@
 package com.example.application.exception;
 
-import com.example.documents.api.dto.ErrorResponse;
+import com.example.application.exception.GlobalExceptionHandler.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,10 +16,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GlobalExceptionHandlerTest {
 
     private GlobalExceptionHandler handler;
+    private HttpServletRequest request;
 
     @BeforeEach
     void setUp() {
         handler = new GlobalExceptionHandler();
+        request = new MockHttpServletRequest();
     }
 
     @Test
@@ -26,7 +30,7 @@ class GlobalExceptionHandlerTest {
         Exception exception = new RuntimeException("Unexpected error");
 
         // When
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception, request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -38,7 +42,7 @@ class GlobalExceptionHandlerTest {
         Exception exception = new RuntimeException("Unexpected error");
 
         // When
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception, request);
 
         // Then
         assertThat(response.getBody()).isNotNull();
@@ -51,7 +55,7 @@ class GlobalExceptionHandlerTest {
         Exception exception = new RuntimeException("Sensitive internal details");
 
         // When
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception, request);
 
         // Then
         assertThat(response.getBody()).isNotNull();
@@ -66,7 +70,7 @@ class GlobalExceptionHandlerTest {
         Exception exception = new RuntimeException("Unexpected error");
 
         // When
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception, request);
 
         // Then
         assertThat(response.getBody()).isNotNull();
@@ -79,7 +83,7 @@ class GlobalExceptionHandlerTest {
         Exception exception = new NullPointerException("Null value encountered");
 
         // When
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception, request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -93,7 +97,7 @@ class GlobalExceptionHandlerTest {
         Exception exception = new IllegalStateException("Invalid state");
 
         // When
-        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception);
+        ResponseEntity<ErrorResponse> response = handler.handleUnexpectedError(exception, request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);

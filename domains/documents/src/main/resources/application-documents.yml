@@ -19,6 +19,10 @@ documents:
     s3:
       enabled: ${DOCUMENTS_S3_ENABLED:false}
       bucket-name: ${DOCUMENTS_S3_BUCKET:}
+  
+  # Data seeding configuration
+  seed:
+    enabled: false  # Default: disabled for production safety
 
 # AWS configuration
 aws:

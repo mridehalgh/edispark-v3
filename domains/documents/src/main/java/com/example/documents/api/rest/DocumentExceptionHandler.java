@@ -3,6 +3,7 @@ package com.example.documents.api.rest;
 import com.example.documents.api.dto.ErrorResponse;
 import com.example.documents.application.handler.DocumentNotFoundException;
 import com.example.documents.application.handler.DocumentSetNotFoundException;
+import com.example.documents.application.handler.InvalidPaginationTokenException;
 import com.example.documents.application.handler.SchemaNotFoundException;
 import com.example.documents.application.handler.SchemaVersionNotFoundException;
 import com.example.documents.application.handler.UnsupportedFormatException;
@@ -256,6 +257,22 @@ public class DocumentExceptionHandler {
     }
 
     /**
+     * Handles InvalidPaginationTokenException.
+     *
+     * @param ex the exception
+     * @return 400 Bad Request with error details
+     */
+    @ExceptionHandler(InvalidPaginationTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPaginationToken(InvalidPaginationTokenException ex) {
+        log.debug("Invalid pagination token: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ErrorResponse.of(
+                "INVALID_PAGINATION_TOKEN",
+                "The provided pagination token is invalid or expired"
+            ));
+    }
+
+    /**
      * Handles IllegalArgumentException.
      *
      * @param ex the exception
@@ -266,7 +283,7 @@ public class DocumentExceptionHandler {
         log.debug("Bad request: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
             .body(ErrorResponse.of(
-                "BAD_REQUEST",
+                "INVALID_PARAMETER",
                 ex.getMessage()
             ));
     }

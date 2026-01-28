@@ -250,7 +250,7 @@ This plan implements REST API controllers for the Documents domain module and cr
 - [x] 11. Checkpoint - Verify SchemaController works end-to-end
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Implement Application Module
+- [x] 12. Implement Application Module
   - [x] 12.1 Create Application.java with @SpringBootApplication
     - Configure component scanning for domain modules
     - _Requirements: 10.1, 10.2_
@@ -270,20 +270,20 @@ This plan implements REST API controllers for the Documents domain module and cr
     - Configure documents module properties
     - _Requirements: 10.5_
 
-- [ ] 13. Write property-based tests for API correctness
-  - [~] 13.1 Write property test for response structure completeness
+- [x] 13. Write property-based tests for API correctness
+  - [x] 13.1 Write property test for response structure completeness
     - Generate random valid requests
     - Verify all required fields present in responses
     - **Property 3: Response Structure Completeness**
     - **Validates: Requirements 1.5, 2.6, 3.5, 4.5, 5.5, 6.5, 7.5**
   
-  - [~] 13.2 Write property test for missing required fields
+  - [x] 13.2 Write property test for missing required fields
     - Generate requests with various fields nulled
     - Verify 400 Bad Request returned
     - **Property 4: Missing Required Fields Return 400**
     - **Validates: Requirements 1.2, 6.2, 9.1-9.7**
 
-- [~] 14. Final checkpoint - Full integration verification
+- [ ] 14. Final checkpoint - Full integration verification
   - Ensure all tests pass, ask the user if questions arise.
   - Verify application starts successfully
   - Verify all endpoints accessible

@@ -11,6 +11,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.example.documents.api.dto.AddSchemaVersionRequest;
 import com.example.documents.api.dto.CreateSchemaRequest;
 import com.example.documents.api.dto.SchemaResponse;
@@ -43,6 +49,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/schemas")
 @RequiredArgsConstructor
+@Tag(name = "Schemas", description = "Manage schemas and schema versions for document validation")
 public class SchemaController {
 
     private final SchemaCommandHandler commandHandler;
@@ -55,6 +62,13 @@ public class SchemaController {
      * @return 201 Created with the schema details
      */
     @PostMapping
+    @Operation(summary = "Create a new schema", 
+               description = "Creates a new schema for document validation. Schemas define structure and validation rules.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Schema created successfully",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
     public ResponseEntity<SchemaResponse> createSchema(
             @Valid @RequestBody CreateSchemaRequest request) {
         
@@ -81,7 +95,14 @@ public class SchemaController {
      * @throws SchemaNotFoundException if the schema does not exist
      */
     @GetMapping("/{id}")
-    public ResponseEntity<SchemaResponse> getSchema(@PathVariable UUID id) {
+    @Operation(summary = "Get a schema", description = "Retrieves a schema by its unique identifier")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Schema found",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Schema not found")
+    })
+    public ResponseEntity<SchemaResponse> getSchema(
+            @Parameter(description = "Schema UUID") @PathVariable UUID id) {
         SchemaId schemaId = new SchemaId(id);
         
         Schema schema = repository.findById(schemaId)
@@ -101,8 +122,16 @@ public class SchemaController {
      * @throws SchemaNotFoundException if the schema does not exist
      */
     @PostMapping("/{schemaId}/versions")
+    @Operation(summary = "Add a schema version", 
+               description = "Adds a new version to an existing schema. Schema definition must be Base64 encoded.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Schema version added successfully",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaVersionResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "404", description = "Schema not found")
+    })
     public ResponseEntity<SchemaVersionResponse> addVersion(
-            @PathVariable UUID schemaId,
+            @Parameter(description = "Schema UUID") @PathVariable UUID schemaId,
             @Valid @RequestBody AddSchemaVersionRequest request) {
         
         // Decode Base64 content
@@ -137,9 +166,15 @@ public class SchemaController {
      * @throws SchemaVersionNotFoundException if the version does not exist
      */
     @GetMapping("/{schemaId}/versions/{versionId}")
+    @Operation(summary = "Get a schema version", description = "Retrieves a specific version of a schema")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Schema version found",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaVersionResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Schema or schema version not found")
+    })
     public ResponseEntity<SchemaVersionResponse> getVersion(
-            @PathVariable UUID schemaId,
-            @PathVariable String versionId) {
+            @Parameter(description = "Schema UUID") @PathVariable UUID schemaId,
+            @Parameter(description = "Version identifier (e.g., '1.0', '2.1')") @PathVariable String versionId) {
         
         SchemaId schemaIdObj = new SchemaId(schemaId);
         

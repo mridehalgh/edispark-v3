@@ -1,5 +1,7 @@
 package com.example.documents.domain.repository;
 
+import com.example.common.pagination.Page;
+import com.example.common.pagination.PaginatedResult;
 import com.example.documents.domain.model.ContentHash;
 import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.model.DocumentSetId;
@@ -35,6 +37,17 @@ public interface DocumentSetRepository {
      * @return a list of all DocumentSets
      */
     List<DocumentSet> findAll();
+
+    /**
+     * Finds document sets with pagination support.
+     * 
+     * <p>Uses DynamoDB Query operation (not Scan) for efficient pagination.
+     * Returns a paginated result with continuation token for fetching subsequent pages.</p>
+     * 
+     * @param page pagination parameters (limit and continuation token)
+     * @return paginated result with items and next token
+     */
+    PaginatedResult<DocumentSet> findAll(Page page);
 
     /**
      * Persists a DocumentSet (create or update).

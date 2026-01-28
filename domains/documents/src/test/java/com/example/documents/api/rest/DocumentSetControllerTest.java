@@ -1,5 +1,6 @@
 package com.example.documents.api.rest;
 
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -77,11 +78,14 @@ class DocumentSetControllerTest {
     @Mock
     private DocumentSetRepository repository;
 
+    @Mock
+    private com.example.documents.application.query.DocumentSetQueryHandler queryHandler;
+
     private DocumentSetController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new DocumentSetController(commandHandler, repository);
+        controller = new DocumentSetController(commandHandler, repository, queryHandler);
     }
 
     @Nested
@@ -2292,6 +2296,212 @@ class DocumentSetControllerTest {
                 com.example.documents.domain.model.ValidationWarning.of("/Invoice/Note", "Note field is deprecated")
             );
             return ValidationResult.successWithWarnings(warnings);
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/document-sets (listDocumentSets)")
+    class ListDocumentSetsTests {
+
+        @Test
+        @DisplayName("should return 200 OK with paginated response")
+        void validRequestReturns200Ok() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(10, "nextToken123");
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(10, null);
+
+            // Then
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        }
+
+        @Test
+        @DisplayName("should return response with correct number of items")
+        void responseContainsCorrectNumberOfItems() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(5, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(5, null);
+
+            // Then
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().items()).hasSize(5);
+        }
+
+        @Test
+        @DisplayName("should return response with nextToken when more results available")
+        void responseContainsNextTokenWhenMoreResults() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(10, "nextToken123");
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(10, null);
+
+            // Then
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().nextToken()).isEqualTo("nextToken123");
+        }
+
+        @Test
+        @DisplayName("should return response without nextToken on last page")
+        void responseOmitsNextTokenOnLastPage() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(10, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(10, null);
+
+            // Then
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().nextToken()).isNull();
+        }
+
+        @Test
+        @DisplayName("should use default limit when not provided")
+        void usesDefaultLimitWhenNotProvided() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(20, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            controller.listDocumentSets(null, null);
+
+            // Then
+            ArgumentCaptor<com.example.documents.application.query.ListDocumentSetsQuery> queryCaptor = 
+                ArgumentCaptor.forClass(com.example.documents.application.query.ListDocumentSetsQuery.class);
+            verify(queryHandler).handle(queryCaptor.capture());
+            
+            com.example.documents.application.query.ListDocumentSetsQuery capturedQuery = queryCaptor.getValue();
+            assertThat(capturedQuery.page().limit()).isEqualTo(20);
+        }
+
+        @Test
+        @DisplayName("should pass custom limit to query")
+        void passesCustomLimitToQuery() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(50, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            controller.listDocumentSets(50, null);
+
+            // Then
+            ArgumentCaptor<com.example.documents.application.query.ListDocumentSetsQuery> queryCaptor = 
+                ArgumentCaptor.forClass(com.example.documents.application.query.ListDocumentSetsQuery.class);
+            verify(queryHandler).handle(queryCaptor.capture());
+            
+            com.example.documents.application.query.ListDocumentSetsQuery capturedQuery = queryCaptor.getValue();
+            assertThat(capturedQuery.page().limit()).isEqualTo(50);
+        }
+
+        @Test
+        @DisplayName("should pass nextToken to query")
+        void passesNextTokenToQuery() {
+            // Given
+            String nextToken = "token123";
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(10, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            controller.listDocumentSets(10, nextToken);
+
+            // Then
+            ArgumentCaptor<com.example.documents.application.query.ListDocumentSetsQuery> queryCaptor = 
+                ArgumentCaptor.forClass(com.example.documents.application.query.ListDocumentSetsQuery.class);
+            verify(queryHandler).handle(queryCaptor.capture());
+            
+            com.example.documents.application.query.ListDocumentSetsQuery capturedQuery = queryCaptor.getValue();
+            assertThat(capturedQuery.page().continuationToken()).hasValue(nextToken);
+        }
+
+        @Test
+        @DisplayName("should throw IllegalArgumentException for invalid limit")
+        void throwsExceptionForInvalidLimit() {
+            // When/Then
+            assertThatThrownBy(() -> controller.listDocumentSets(0, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("between 1 and 100");
+            
+            assertThatThrownBy(() -> controller.listDocumentSets(101, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("between 1 and 100");
+        }
+
+        @Test
+        @DisplayName("should return empty list when no document sets exist")
+        void returnsEmptyListWhenNoDocumentSets() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> emptyResult = 
+                com.example.common.pagination.PaginatedResult.empty();
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(emptyResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(20, null);
+
+            // Then
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().items()).isEmpty();
+            assertThat(response.getBody().nextToken()).isNull();
+        }
+
+        @Test
+        @DisplayName("should map document sets to response DTOs correctly")
+        void mapsDocumentSetsToResponseDTOs() {
+            // Given
+            com.example.common.pagination.PaginatedResult<DocumentSet> paginatedResult = 
+                createPaginatedResult(2, null);
+            when(queryHandler.handle(any(com.example.documents.application.query.ListDocumentSetsQuery.class)))
+                .thenReturn(paginatedResult);
+
+            // When
+            ResponseEntity<com.example.common.api.PaginatedResponse<DocumentSetResponse>> response = 
+                controller.listDocumentSets(2, null);
+
+            // Then
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().items()).hasSize(2);
+            
+            DocumentSetResponse firstResponse = response.getBody().items().get(0);
+            assertThat(firstResponse.id()).isNotNull();
+            assertThat(firstResponse.createdAt()).isNotNull();
+            assertThat(firstResponse.createdBy()).isNotNull();
+            assertThat(firstResponse.documents()).isNotEmpty();
+        }
+
+        // Helper method for ListDocumentSetsTests
+        private com.example.common.pagination.PaginatedResult<DocumentSet> createPaginatedResult(
+                int itemCount, String nextToken) {
+            List<DocumentSet> documentSets = new ArrayList<>();
+            for (int i = 0; i < itemCount; i++) {
+                documentSets.add(createTestDocumentSetWithDefaults());
+            }
+            return com.example.common.pagination.PaginatedResult.of(documentSets, nextToken);
         }
     }
 

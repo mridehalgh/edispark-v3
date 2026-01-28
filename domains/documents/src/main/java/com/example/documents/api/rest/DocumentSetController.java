@@ -13,6 +13,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+import com.example.common.api.PaginatedResponse;
+import com.example.common.pagination.PaginatedResult;
 import com.example.documents.api.dto.AddDocumentRequest;
 import com.example.documents.api.dto.AddVersionRequest;
 import com.example.documents.api.dto.CreateDerivativeRequest;
@@ -32,6 +40,8 @@ import com.example.documents.application.handler.DocumentSetCommandHandler;
 import com.example.documents.application.handler.DocumentNotFoundException;
 import com.example.documents.application.handler.DocumentSetNotFoundException;
 import com.example.documents.application.handler.VersionNotFoundException;
+import com.example.documents.application.query.DocumentSetQueryHandler;
+import com.example.documents.application.query.ListDocumentSetsQuery;
 import com.example.documents.domain.model.Content;
 import com.example.documents.domain.model.Derivative;
 import com.example.documents.domain.model.Document;
@@ -60,10 +70,45 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/document-sets")
 @RequiredArgsConstructor
+@Tag(name = "Document Sets", description = "Manage document sets, documents, versions, and derivatives")
 public class DocumentSetController {
 
     private final DocumentSetCommandHandler commandHandler;
     private final DocumentSetRepository repository;
+    private final DocumentSetQueryHandler queryHandler;
+
+    /**
+     * Lists document sets with pagination support.
+     * 
+     * @param limit optional page size (1-100, default 20)
+     * @param nextToken optional continuation token from previous page
+     * @return paginated list of document sets
+     */
+    @GetMapping
+    @Operation(summary = "List document sets", 
+               description = "Retrieves document sets with pagination. Use nextToken from response to fetch subsequent pages.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Document sets retrieved successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid limit or pagination token")
+    })
+    public ResponseEntity<PaginatedResponse<DocumentSetResponse>> listDocumentSets(
+            @Parameter(description = "Page size (1-100, default 20)") 
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer limit,
+            @Parameter(description = "Continuation token from previous page") 
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String nextToken) {
+        
+        // Create query
+        ListDocumentSetsQuery query = ListDocumentSetsQuery.of(limit, nextToken);
+        
+        // Execute query
+        PaginatedResult<DocumentSet> result = queryHandler.handle(query);
+        
+        // Map domain result to API response
+        PaginatedResult<DocumentSetResponse> mappedResult = result.map(this::mapToResponse);
+        PaginatedResponse<DocumentSetResponse> response = PaginatedResponse.from(mappedResult);
+        
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * Creates a new document set with an initial document.
@@ -72,6 +117,14 @@ public class DocumentSetController {
      * @return 201 Created with the document set details
      */
     @PostMapping
+    @Operation(summary = "Create a new document set", 
+               description = "Creates a new document set with an initial document. The document content must be Base64 encoded.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Document set created successfully",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentSetResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "404", description = "Schema not found")
+    })
     public ResponseEntity<DocumentSetResponse> createDocumentSet(
             @Valid @RequestBody CreateDocumentSetRequest request) {
         
@@ -114,7 +167,14 @@ public class DocumentSetController {
      * @throws DocumentSetNotFoundException if the document set does not exist
      */
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentSetResponse> getDocumentSet(@PathVariable UUID id) {
+    @Operation(summary = "Get a document set", description = "Retrieves a document set by its unique identifier")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Document set found",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentSetResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Document set not found")
+    })
+    public ResponseEntity<DocumentSetResponse> getDocumentSet(
+            @Parameter(description = "Document set UUID") @PathVariable UUID id) {
         DocumentSetId documentSetId = new DocumentSetId(id);
         
         DocumentSet documentSet = repository.findById(documentSetId)
@@ -136,8 +196,16 @@ public class DocumentSetController {
      * <p>Requirements: 2.1, 2.2, 2.3</p>
      */
     @PostMapping("/{setId}/documents")
+    @Operation(summary = "Add a document to a set", 
+               description = "Adds a new document to an existing document set. Content must be Base64 encoded.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Document added successfully",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "404", description = "Document set or schema not found")
+    })
     public ResponseEntity<DocumentResponse> addDocument(
-            @PathVariable UUID setId,
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
             @Valid @RequestBody AddDocumentRequest request) {
         
         // Decode Base64 content
@@ -188,9 +256,15 @@ public class DocumentSetController {
      * <p>Requirements: 2.4, 2.5</p>
      */
     @GetMapping("/{setId}/documents/{docId}")
+    @Operation(summary = "Get a document", description = "Retrieves a document by its unique identifier within a document set")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Document found",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Document set or document not found")
+    })
     public ResponseEntity<DocumentResponse> getDocument(
-            @PathVariable UUID setId,
-            @PathVariable UUID docId) {
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId) {
         
         DocumentSetId documentSetId = new DocumentSetId(setId);
         DocumentId documentId = new DocumentId(docId);
@@ -222,9 +296,17 @@ public class DocumentSetController {
      * <p>Requirements: 3.1, 3.2</p>
      */
     @PostMapping("/{setId}/documents/{docId}/versions")
+    @Operation(summary = "Add a document version", 
+               description = "Adds a new version to an existing document. Content must be Base64 encoded.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Version added successfully",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentVersionResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+        @ApiResponse(responseCode = "404", description = "Document set or document not found")
+    })
     public ResponseEntity<DocumentVersionResponse> addVersion(
-            @PathVariable UUID setId,
-            @PathVariable UUID docId,
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId,
             @Valid @RequestBody AddVersionRequest request) {
         
         // Decode Base64 content
@@ -264,10 +346,16 @@ public class DocumentSetController {
      * <p>Requirements: 3.3, 3.4</p>
      */
     @GetMapping("/{setId}/documents/{docId}/versions/{versionNumber}")
+    @Operation(summary = "Get a document version", description = "Retrieves a specific version of a document by version number")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Version found",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentVersionResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Document set, document, or version not found")
+    })
     public ResponseEntity<DocumentVersionResponse> getVersion(
-            @PathVariable UUID setId,
-            @PathVariable UUID docId,
-            @PathVariable int versionNumber) {
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId,
+            @Parameter(description = "Version number (1-based)") @PathVariable int versionNumber) {
         
         DocumentSetId documentSetId = new DocumentSetId(setId);
         DocumentId documentId = new DocumentId(docId);
@@ -304,9 +392,17 @@ public class DocumentSetController {
      * <p>Requirements: 4.1, 4.2, 4.3</p>
      */
     @PostMapping("/{setId}/documents/{docId}/derivatives")
+    @Operation(summary = "Create a derivative", 
+               description = "Creates a derivative (transformed version) from a document version in a different format")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Derivative created successfully",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DerivativeResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request data or duplicate derivative"),
+        @ApiResponse(responseCode = "404", description = "Document set, document, or version not found")
+    })
     public ResponseEntity<DerivativeResponse> createDerivative(
-            @PathVariable UUID setId,
-            @PathVariable UUID docId,
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId,
             @Valid @RequestBody CreateDerivativeRequest request) {
         
         // Build command
@@ -338,9 +434,14 @@ public class DocumentSetController {
      * <p>Requirements: 4.4</p>
      */
     @GetMapping("/{setId}/documents/{docId}/derivatives")
+    @Operation(summary = "Get all derivatives", description = "Retrieves all derivatives for a document")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Derivatives retrieved successfully"),
+        @ApiResponse(responseCode = "404", description = "Document set or document not found")
+    })
     public ResponseEntity<List<DerivativeResponse>> getDerivatives(
-            @PathVariable UUID setId,
-            @PathVariable UUID docId) {
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId) {
         
         DocumentSetId documentSetId = new DocumentSetId(setId);
         DocumentId documentId = new DocumentId(docId);
@@ -375,10 +476,19 @@ public class DocumentSetController {
      * <p>Requirements: 5.1, 5.2, 5.3, 5.4</p>
      */
     @PostMapping("/{setId}/documents/{docId}/versions/{versionNumber}/validate")
+    @Operation(summary = "Validate a document version", 
+               description = "Validates a document version against its schema. Returns 200 if valid, 422 if invalid.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Document is valid",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ValidationResultResponse.class))),
+        @ApiResponse(responseCode = "422", description = "Document is invalid",
+                     content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = ValidationResultResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Document set, document, or version not found")
+    })
     public ResponseEntity<ValidationResultResponse> validateDocument(
-            @PathVariable UUID setId,
-            @PathVariable UUID docId,
-            @PathVariable int versionNumber) {
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId,
+            @Parameter(description = "Version number (1-based)") @PathVariable int versionNumber) {
         
         // Build command
         ValidateDocumentCommand command = ValidateDocumentCommand.of(

@@ -80,7 +80,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -109,7 +109,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -140,7 +140,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -169,7 +169,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -201,7 +201,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -236,7 +236,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -273,7 +273,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -311,7 +311,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -349,7 +349,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -387,7 +387,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -441,7 +441,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         DocumentSet documentSet = createDocumentSetFromRequest(request);
         when(commandHandler.handle(any(CreateDocumentSetCommand.class))).thenReturn(documentSet);
@@ -481,7 +481,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -513,7 +513,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -547,7 +547,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -579,7 +579,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -617,7 +617,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -659,7 +659,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         // Create a document set first
         UUID setId = UUID.randomUUID();
@@ -700,7 +700,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -741,7 +741,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -788,7 +788,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -829,7 +829,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -879,7 +879,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         Document document = createDocumentFromRequest(request);
@@ -922,7 +922,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -955,7 +955,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -990,7 +990,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1023,7 +1023,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1057,7 +1057,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1090,7 +1090,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1127,7 +1127,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         // Create a document set with a document that has the version
         UUID setId = UUID.randomUUID();
@@ -1171,7 +1171,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1213,7 +1213,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1256,7 +1256,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1299,7 +1299,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1342,7 +1342,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();
@@ -1387,7 +1387,7 @@ class DocumentSetControllerPropertyTest {
         // Given
         DocumentSetCommandHandler commandHandler = mock(DocumentSetCommandHandler.class);
         DocumentSetRepository repository = mock(DocumentSetRepository.class);
-        DocumentSetController controller = new DocumentSetController(commandHandler, repository);
+        DocumentSetController controller = new DocumentSetController(commandHandler, repository, mock(com.example.documents.application.query.DocumentSetQueryHandler.class));
         
         UUID setId = UUID.randomUUID();
         UUID docId = UUID.randomUUID();

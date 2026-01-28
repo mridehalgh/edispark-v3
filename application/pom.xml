@@ -44,6 +44,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- SpringDoc OpenAPI for API documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -71,9 +78,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>--enable-preview</argLine>
-                </configuration>
             </plugin>
             <!-- Spring Boot Maven Plugin for executable JAR packaging -->
             <plugin>

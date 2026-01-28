@@ -1,5 +1,7 @@
 package com.example.documents.application.handler;
 
+import com.example.common.pagination.Page;
+import com.example.common.pagination.PaginatedResult;
 import com.example.documents.domain.model.ContentHash;
 import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.model.DocumentSetId;
@@ -26,6 +28,30 @@ class InMemoryDocumentSetRepository implements DocumentSetRepository {
     @Override
     public List<DocumentSet> findAll() {
         return new ArrayList<>(store.values());
+    }
+
+    @Override
+    public PaginatedResult<DocumentSet> findAll(Page page) {
+        List<DocumentSet> allSets = new ArrayList<>(store.values());
+        
+        // Simple in-memory pagination for testing
+        int startIndex = 0;
+        if (page.continuationToken().isPresent()) {
+            // For simplicity, use the token as the start index
+            try {
+                startIndex = Integer.parseInt(page.continuationToken().get());
+            } catch (NumberFormatException e) {
+                startIndex = 0;
+            }
+        }
+        
+        int endIndex = Math.min(startIndex + page.limit(), allSets.size());
+        List<DocumentSet> pageItems = allSets.subList(startIndex, endIndex);
+        
+        // Create continuation token if there are more items
+        String nextToken = (endIndex < allSets.size()) ? String.valueOf(endIndex) : null;
+        
+        return PaginatedResult.of(pageItems, nextToken);
     }
 
     @Override

@@ -1,5 +1,8 @@
 package com.example.documents.infrastructure.persistence;
 
+import com.example.common.pagination.Page;
+import com.example.common.pagination.PaginatedResult;
+import com.example.documents.application.handler.InvalidPaginationTokenException;
 import com.example.documents.domain.model.ContentHash;
 import com.example.documents.domain.model.ContentRef;
 import com.example.documents.domain.model.DocumentSet;
@@ -15,11 +18,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for DynamoDbDocumentSetRepository using DynamoDB Local.
@@ -244,5 +251,119 @@ class DynamoDbDocumentSetRepositoryIntegrationTest {
         Optional<DocumentSet> found = repository.findById(documentSet.id());
         assertThat(found).isPresent();
         assertThat(found.get().documentCount()).isEqualTo(2);
+    }
+
+    // Pagination Tests
+
+    @Test
+    void shouldPaginateThroughMultiplePages() {
+        // Given - seed 30 document sets
+        SchemaVersionRef schemaRef = SchemaVersionRef.of(SchemaId.generate(), VersionIdentifier.of("1.0.0"));
+        List<DocumentSetId> seededIds = new ArrayList<>();
+        
+        for (int i = 0; i < 30; i++) {
+            ContentHash hash = ContentHash.sha256("hash-" + i);
+            DocumentSet docSet = DocumentSet.createWithDocument(
+                    DocumentType.INVOICE, schemaRef, ContentRef.of(hash), hash, "user", Map.of());
+            repository.save(docSet);
+            seededIds.add(docSet.id());
+        }
+        
+        // When - paginate with page size of 10
+        Page page1 = Page.first(10);
+        PaginatedResult<DocumentSet> result1 = repository.findAll(page1);
+        
+        assertThat(result1.items()).hasSize(10);
+        assertThat(result1.hasMore()).isTrue();
+        
+        Page page2 = Page.next(10, result1.continuationToken().get());
+        PaginatedResult<DocumentSet> result2 = repository.findAll(page2);
+        
+        assertThat(result2.items()).hasSize(10);
+        assertThat(result2.hasMore()).isTrue();
+        
+        Page page3 = Page.next(10, result2.continuationToken().get());
+        PaginatedResult<DocumentSet> result3 = repository.findAll(page3);
+        
+        assertThat(result3.items()).hasSize(10);
+        assertThat(result3.hasMore()).isFalse();
+        assertThat(result3.continuationToken()).isEmpty();
+        
+        // Verify all items retrieved
+        Set<DocumentSetId> retrievedIds = new HashSet<>();
+        retrievedIds.addAll(result1.items().stream().map(DocumentSet::id).toList());
+        retrievedIds.addAll(result2.items().stream().map(DocumentSet::id).toList());
+        retrievedIds.addAll(result3.items().stream().map(DocumentSet::id).toList());
+        
+        assertThat(retrievedIds).containsExactlyInAnyOrderElementsOf(seededIds);
+    }
+
+    @Test
+    void shouldReturnEmptyResultWhenNoDocumentSets() {
+        // When
+        Page page = Page.first(20);
+        PaginatedResult<DocumentSet> result = repository.findAll(page);
+        
+        // Then
+        assertThat(result.isEmpty()).isTrue();
+        assertThat(result.hasMore()).isFalse();
+    }
+
+    @Test
+    void shouldReturnLastPageWithoutToken() {
+        // Given - seed 15 document sets
+        SchemaVersionRef schemaRef = SchemaVersionRef.of(SchemaId.generate(), VersionIdentifier.of("1.0.0"));
+        
+        for (int i = 0; i < 15; i++) {
+            ContentHash hash = ContentHash.sha256("hash-" + i);
+            DocumentSet docSet = DocumentSet.createWithDocument(
+                    DocumentType.INVOICE, schemaRef, ContentRef.of(hash), hash, "user", Map.of());
+            repository.save(docSet);
+        }
+        
+        // When - request page size of 20 (more than available)
+        Page page = Page.first(20);
+        PaginatedResult<DocumentSet> result = repository.findAll(page);
+        
+        // Then
+        assertThat(result.items()).hasSize(15);
+        assertThat(result.hasMore()).isFalse();
+        assertThat(result.continuationToken()).isEmpty();
+    }
+
+    @Test
+    void shouldHandleInvalidPaginationToken() {
+        // When/Then
+        assertThatThrownBy(() -> {
+            Page page = Page.next(10, "invalid-token-xyz");
+            repository.findAll(page);
+        }).isInstanceOf(InvalidPaginationTokenException.class);
+    }
+
+    @Test
+    void shouldPaginateWithDifferentPageSizes() {
+        // Given - seed 25 document sets
+        SchemaVersionRef schemaRef = SchemaVersionRef.of(SchemaId.generate(), VersionIdentifier.of("1.0.0"));
+        
+        for (int i = 0; i < 25; i++) {
+            ContentHash hash = ContentHash.sha256("hash-" + i);
+            DocumentSet docSet = DocumentSet.createWithDocument(
+                    DocumentType.INVOICE, schemaRef, ContentRef.of(hash), hash, "user", Map.of());
+            repository.save(docSet);
+        }
+        
+        // When - first page with size 5
+        Page page1 = Page.first(5);
+        PaginatedResult<DocumentSet> result1 = repository.findAll(page1);
+        
+        assertThat(result1.items()).hasSize(5);
+        assertThat(result1.hasMore()).isTrue();
+        
+        // Then - second page with size 20
+        Page page2 = Page.next(20, result1.continuationToken().get());
+        PaginatedResult<DocumentSet> result2 = repository.findAll(page2);
+        
+        assertThat(result2.items()).hasSize(20);
+        assertThat(result2.hasMore()).isFalse();
     }
 }

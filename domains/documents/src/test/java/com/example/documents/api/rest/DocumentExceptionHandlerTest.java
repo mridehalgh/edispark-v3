@@ -270,6 +270,48 @@ class DocumentExceptionHandlerTest {
     class BadRequestExceptions {
 
         @Test
+        @DisplayName("InvalidPaginationTokenException returns 400 with correct error code")
+        void invalidPaginationTokenReturns400() {
+            com.example.documents.application.handler.InvalidPaginationTokenException exception = 
+                new com.example.documents.application.handler.InvalidPaginationTokenException(
+                    "Invalid or corrupted pagination token", 
+                    new IllegalArgumentException("Bad token"));
+
+            ResponseEntity<ErrorResponse> response = handler.handleInvalidPaginationToken(exception);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().code()).isEqualTo("INVALID_PAGINATION_TOKEN");
+        }
+
+        @Test
+        @DisplayName("InvalidPaginationTokenException has correct message")
+        void invalidPaginationTokenHasCorrectMessage() {
+            com.example.documents.application.handler.InvalidPaginationTokenException exception = 
+                new com.example.documents.application.handler.InvalidPaginationTokenException(
+                    "Token decode failed", 
+                    new RuntimeException());
+
+            ResponseEntity<ErrorResponse> response = handler.handleInvalidPaginationToken(exception);
+
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().message())
+                .isEqualTo("The provided pagination token is invalid or expired");
+        }
+
+        @Test
+        @DisplayName("IllegalArgumentException for pagination returns 400 with INVALID_PARAMETER code")
+        void illegalArgumentForPaginationReturns400() {
+            IllegalArgumentException exception = new IllegalArgumentException("Limit must be between 1 and 100");
+
+            ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(exception);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().code()).isEqualTo("INVALID_PARAMETER");
+        }
+
+        @Test
         @DisplayName("UnsupportedFormatException returns 400 with correct error code")
         void unsupportedFormatReturns400() {
             Format sourceFormat = Format.XML;

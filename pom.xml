@@ -13,6 +13,7 @@
     <description>Parent POM for UBL Java projects</description>
 
     <modules>
+        <module>support/common</module>
         <module>ubl-model</module>
         <module>domains/documents</module>
         <module>application</module>
@@ -20,14 +21,13 @@
 
     <properties>
         <java.version>25</java.version>
-        <maven.compiler.source>${java.version}</maven.compiler.source>
-        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
         <!-- Dependency versions -->
         <jackson.version>2.18.2</jackson.version>
         <jakarta.validation.version>3.1.0</jakarta.validation.version>
-        <spring.boot.version>3.4.1</spring.boot.version>
+        <spring.boot.version>3.5.0</spring.boot.version>
         <junit.version>5.11.4</junit.version>
         <jqwik.version>1.8.2</jqwik.version>
         <assertj.version>3.26.3</assertj.version>
@@ -91,12 +91,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.13.0</version>
                     <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
                         <release>${java.version}</release>
-                        <compilerArgs>
-                            <arg>--enable-preview</arg>
-                        </compilerArgs>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -111,9 +106,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.2</version>
-                    <configuration>
-                        <argLine>--enable-preview</argLine>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -14,37 +14,25 @@
     <artifactId>tradacoms</artifactId>
     <name>tradacoms</name>
     <description>Tradacoms</description>
-
-
-    <properties>
-        <jackson.version>2.16.1</jackson.version>
-        <jqwik.version>1.8.2</jqwik.version>
-        <junit.version>5.10.1</junit.version>
-    </properties>
-
     <dependencies>
         <!-- Jackson for JSON schema loading -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <!-- JUnit 5 for unit testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 

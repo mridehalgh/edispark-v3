@@ -1,24 +1,39 @@
 ## Project Context 🏢
 
-### EDI Order & Invoice Processing (Inbound & Outbound)
+### EdiSpark — Modern EDI SaaS for SMB to Enterprise
+
+**What We Are**
+
+EdiSpark is a modern, multi-tenant EDI SaaS product serving customers from SMB to Enterprise. It is built as part of a composable architecture, meaning each capability is exposed as an independent, API-first service that customers and partners can integrate into their own technology stacks. There is no monolithic integration platform — instead, bounded domains (parsing, validation, routing, document management, partner management) are independently deployable and composable.
+
+The product targets businesses that exchange EDI documents with their trading partners and need a reliable, observable, and low-friction way to do so — without the complexity and cost of traditional EDI middleware.
+
+**Product Positioning**
+
+- **Target market**: SMB to Enterprise customers who send and receive EDI with retailers, suppliers, logistics providers, and other trading partners
+- **Delivery model**: Multi-tenant SaaS with tenant-level data isolation, encryption, and configuration
+- **Architecture style**: Composable, API-first, event-driven — customers integrate EdiSpark capabilities into their own workflows rather than adopting a closed platform
+- **Deployment**: Cloud-native on AWS, serverless-first, with a control plane for tenant management and an application plane for business processing
 
 **Problem Statement**
 
-Trading partners exchange EDI messages (TRADACOMS and EDIFACT) that arrive as single or batched files. We need to:
+Trading partners exchange EDI messages (TRADACOMS and EDIFACT) that arrive as single or batched files. EdiSpark provides:
 
 - **Inbound**: receive, validate, parse, split by transaction, enrich, route to downstream apps, and persist acknowledgments/errors
 - **Outbound**: assemble transactions from internal data, build valid EDI (incl. envelopes/batches), validate, and deliver
 - **Batches**: detect, split and/or (re)group transactions; support extraction of individual documents; maintain correlation to the original batch
 - **Standards**: support TRADACOMS (e.g., ORDERS, INVOIC) and EDIFACT (e.g., ORDERS, INVOIC/INVOIC D96A+)
 - **Observability & Control**: track everything with idempotency, retry, and audit trails
+- **Composability**: all capabilities exposed via APIs so customers can embed EDI processing into their own systems
 
 **Personas**
 
-- **Integration Analyst (IA)**: configures trading partner profiles, maps, and routing
-- **Operations Engineer (OE)**: monitors flows, reprocesses failures, manages retries
-- **ERP/AP/AR User (ERP)**: needs clean orders/invoices in the ERP
-- **Trading Partner (TP)**: sends/receives compliant EDI and expects timely ACKs
-- **Security/Compliance (SC)**: needs audit trails, PII controls, and retention
+- **Integration Analyst (IA)**: configures trading partner profiles, maps, and routing rules within EdiSpark
+- **Operations Engineer (OE)**: monitors flows, reprocesses failures, manages retries and SLA compliance
+- **ERP/AP/AR User (ERP)**: consumes clean, structured orders and invoices delivered by EdiSpark into their ERP
+- **Trading Partner (TP)**: sends and receives compliant EDI and expects timely acknowledgements
+- **Security/Compliance (SC)**: needs audit trails, PII controls, data residency, and retention policies
+- **Platform Developer (PD)**: integrates EdiSpark APIs and webhooks into customer-built applications and workflows
 
 **Key Entities (Conceptual)**
 
@@ -26,6 +41,8 @@ Trading partners exchange EDI messages (TRADACOMS and EDIFACT) that arrive as si
 - **Functional Group** (UNG/UNE; TRADACOMS GNH/GNT)
 - **Message/Transaction**: ORDERS, INVOIC etc. (UNH/UNT; TRADACOMS message blocks)
 - **Batch**: a file containing many messages
+- **Tenant**: an EdiSpark customer with isolated data, configuration, and encryption keys
+- **Trading Partner Profile**: configuration for a specific sender or receiver, including EDI standard, version, and routing rules
 
 ## Response Guidelines 🎯
 

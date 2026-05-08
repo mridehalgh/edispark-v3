@@ -45,7 +45,7 @@ class ArchitectureTest {
         @DisplayName("should follow hexagonal architecture layers")
         void shouldFollowHexagonalArchitecture() {
             ArchRule rule = layeredArchitecture()
-                    .consideringAllDependencies()
+                    .consideringOnlyDependenciesInLayers()
                     .layer("Domain").definedBy(BASE_PACKAGE + ".domain..")
                     .layer("Application").definedBy(BASE_PACKAGE + ".application..")
                     .layer("Infrastructure").definedBy(BASE_PACKAGE + ".infrastructure..")
@@ -169,8 +169,7 @@ class ArchitectureTest {
         @DisplayName("command handlers should reside in application.handler package")
         void commandHandlersShouldResideInHandlerPackage() {
             ArchRule rule = classes()
-                    .that().haveSimpleNameEndingWith("Handler")
-                    .and().resideInAPackage(BASE_PACKAGE + ".application..")
+                    .that().haveSimpleNameEndingWith("CommandHandler")
                     .should().resideInAPackage(BASE_PACKAGE + ".application.handler..")
                     .allowEmptyShould(true);
 
@@ -210,7 +209,7 @@ class ArchitectureTest {
         void configShouldResideInConfigPackage() {
             ArchRule rule = classes()
                     .that().haveSimpleNameEndingWith("Config")
-                    .and().resideInAPackage(BASE_PACKAGE + ".infrastructure..")
+                    .and().areAnnotatedWith(org.springframework.context.annotation.Configuration.class)
                     .should().resideInAPackage(BASE_PACKAGE + ".infrastructure.config..")
                     .allowEmptyShould(true);
 

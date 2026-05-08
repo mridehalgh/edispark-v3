@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -105,10 +106,18 @@ public class DocumentSetController {
         PaginatedResult<DocumentSet> result = queryHandler.handle(query);
         
         PaginatedResult<DocumentSetResponse> mappedResult = result.map(this::mapToResponse);
-        String baseUrl = ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
+        String baseUrl = currentRequestUri();
         PaginatedResponse<DocumentSetResponse> response = PaginatedResponse.from(mappedResult, baseUrl, effectiveLimit, nextToken);
         
         return ResponseEntity.ok(response);
+    }
+
+    private String currentRequestUri() {
+        if (RequestContextHolder.getRequestAttributes() == null) {
+            return "/api/document-sets";
+        }
+
+        return ServletUriComponentsBuilder.fromCurrentRequestUri().toUriString();
     }
 
     /**

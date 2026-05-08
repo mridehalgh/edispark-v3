@@ -1,0 +1,1028 @@
+name: advanced-spec-driven
+version: 1
+description: Default OpenSpec workflow - proposal → specs → design → tasks
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Initial proposal document outlining the change
+    template: proposal.md
+    instruction: >
+      Create the proposal document that establishes WHY this change is needed.
+
+
+      Sections:
+
+      - **Why**: 1-2 sentences on the problem or opportunity. What problem does
+      this solve? Why now?
+
+      - **What Changes**: Bullet list of changes. Be specific about new
+      capabilities, modifications, or removals. Mark breaking changes with
+      **BREAKING**.
+
+      - **Capabilities**: Identify which specs will be created or modified:
+        - **New Capabilities**: List capabilities being introduced. Each becomes a new `specs/<name>/spec.md`. Use kebab-case names (e.g., `user-auth`, `data-export`).
+        - **Modified Capabilities**: List existing capabilities whose REQUIREMENTS are changing. Only include if spec-level behavior changes (not just implementation details). Each needs a delta spec file. Check `openspec/specs/` for existing spec names. Leave empty if no requirement changes.
+      - **Impact**: Affected code, APIs, dependencies, or systems.
+
+
+      IMPORTANT: The Capabilities section is critical. It creates the contract
+      between proposal and specs phases. Research existing specs before filling
+      this in. Each capability listed here will need a corresponding spec file.
+
+
+      Keep it concise (1-2 pages). Focus on the "why" not the "how" -
+      implementation details belong in design.md.
+
+
+      This is the foundation - specs, design, and tasks all build on this.
+    requires: []
+  - id: specs
+    generates: specs/**/*.md
+    description: Detailed specifications with EARS requirements
+    template: spec.md
+    instruction: >
+      Create specification files that define WHAT the system should do, using
+      rigorous requirements engineering.
+
+
+      Create one spec file per capability listed in the proposal's Capabilities
+      section.
+
+      - New capabilities: use the exact kebab-case name from the proposal
+      (specs/<capability>/spec.md).
+
+      - Modified capabilities: use the existing spec folder name from
+      openspec/specs/<capability>/ when creating the delta spec at
+      specs/<capability>/spec.md.
+
+
+      Delta operations (use ## headers):
+
+      - **ADDED Requirements**: New capabilities
+
+      - **MODIFIED Requirements**: Changed behavior - MUST include full updated
+      content
+
+      - **REMOVED Requirements**: Deprecated features - MUST include **Reason**
+      and **Migration**
+
+      - **RENAMED Requirements**: Name changes only - use FROM:/TO: format
+
+
+      ---
+
+
+      ## Requirement Format
+
+
+      Each requirement uses `### Requirement N: <name>` followed by a user story
+      and acceptance criteria.
+
+
+      User story format: **User Story:** As a [role], I want [feature], so that
+      [benefit]
+
+
+      Acceptance criteria are numbered items under `#### Acceptance Criteria`.
+
+
+      ---
+
+
+      ## EARS Patterns for Acceptance Criteria
+
+
+      Every acceptance criterion MUST follow exactly one of these six EARS
+      patterns:
+
+
+      1. **Ubiquitous**: `THE <System_Name> SHALL <response>` — for requirements
+      that always apply.
+
+
+      2. **Event-driven**: `WHEN <trigger>, THE <System_Name> SHALL <response>` —
+      for requirements triggered by specific events.
+
+
+      3. **State-driven**: `WHILE <condition>, THE <System_Name> SHALL <response>`
+      — for requirements that apply during specific states.
+
+
+      4. **Unwanted event**: `IF <condition>, THEN THE <System_Name> SHALL
+      <response>` — for error handling and unwanted situations.
+
+
+      5. **Optional feature**: `WHERE <option>, THE <System_Name> SHALL
+      <response>` — for optional or configurable features.
+
+
+      6. **Complex**: Combine clauses in strict order: `[WHERE] [WHILE] [WHEN/IF]
+      THE <System_Name> SHALL <response>` — when multiple conditions apply.
+
+
+      Rules:
+
+      - System names MUST be defined in the Glossary section.
+
+      - Complex patterns MUST maintain the clause order: WHERE → WHILE → WHEN/IF
+      → THE → SHALL.
+
+      - All technical terms MUST be defined before use.
+
+
+      ---
+
+
+      ## INCOSE Quality Rules
+
+
+      Every requirement MUST comply with these quality rules:
+
+
+      **Clarity and Precision:**
+
+      - Use active voice — clearly state who does what.
+
+      - No vague terms: avoid "quickly", "adequate", "reasonable",
+      "user-friendly".
+
+      - No pronouns: don't use "it", "them", "they" — use specific system names.
+
+      - Consistent terminology: use defined terms from the Glossary.
+
+
+      **Testability:**
+
+      - All conditions must be measurable or verifiable.
+
+      - Use specific, quantifiable criteria where applicable.
+
+      - Specify realistic timing and performance bounds.
+
+      - One thought per requirement — each should test one thing.
+
+
+      **Completeness:**
+
+      - No escape clauses: avoid "where possible", "if feasible", "as
+      appropriate".
+
+      - No unnecessary absolutes: avoid "never", "always", "100%" unless truly
+      absolute.
+
+      - Solution-free: focus on WHAT, not HOW (implementation belongs in design).
+
+
+      **Positive Statements:**
+
+      - Use SHALL, not SHALL NOT when possible.
+
+      - State what the system does, not what it doesn't.
+
+      - Exception: error handling requirements may use negative statements when
+      necessary.
+
+
+      Common violation examples:
+
+      - BAD: "The system shall quickly process requests" (vague term)
+
+      - GOOD: "WHEN a request is received, THE System SHALL process it within
+      200ms"
+
+      - BAD: "It shall validate the input" (pronoun)
+
+      - GOOD: "THE Validator SHALL validate the input"
+
+      - BAD: "The system shall not crash" (negative statement)
+
+      - GOOD: "WHEN an error occurs, THE System SHALL log the error and continue
+      operation"
+
+      - BAD: "The system shall handle errors where possible" (escape clause)
+
+      - GOOD: "WHEN an error occurs, THE System SHALL return an error code"
+
+
+      ---
+
+
+      ## Common Acceptance Criteria Patterns
+
+
+      When writing acceptance criteria, be aware of these common correctness
+      patterns that lead to highly testable requirements:
+
+
+      1. **Invariants** — properties preserved after transformation. Properties
+      that remain constant despite changes to structure or order. Examples:
+      collection size after map, contents after sort, tree balance, constraints
+      like `obj.start <= obj.end`, `tree.is_balanced()`.
+
+
+      2. **Round-trip** — combining an operation with its inverse returns to the
+      original value. Also includes non-strict inverses like insert/contains,
+      create/exists. You should ALWAYS write one of these for serializers or
+      parsers. Examples: `decode(encode(x)) == x`, `parse(format(x)) == x`.
+
+
+      3. **Idempotence** — doing it twice equals doing it once.
+      Mathematically: `f(x) = f(f(x))`. Examples: distinct filter on a set,
+      database updates, message deduplication.
+
+
+      4. **Metamorphic** — a known relationship must hold between two
+      computations, without knowing the specific values. Examples:
+      `len(filter(x)) < len(x)`.
+
+
+      5. **Model-based testing** — optimized implementation vs. a standard, easy
+      implementation.
+
+
+      6. **Confluence** — order of applications doesn't matter.
+
+
+      7. **Error conditions** — generate bad inputs and ensure they properly
+      signal errors.
+
+
+      Testing advice: parsers are tricky to get right. You should always include
+      a round-trip property for parsing/printing values to/from data formats
+      like JSON or XML.
+
+
+      ---
+
+
+      ## Parser and Serializer Guidance
+
+
+      When requirements involve parsing or serialization, you MUST:
+
+      - Call out ALL parsers and serializers as explicit requirements.
+
+      - Reference the grammar being parsed.
+
+      - ALWAYS include a pretty-printer/formatter requirement alongside the
+      parser.
+
+      - ALWAYS include a round-trip requirement: parse → print → parse SHALL
+      produce an equivalent value.
+
+      - This is ESSENTIAL — parsers are tricky and round-trip testing catches
+      bugs that are extremely hard to find otherwise.
+
+
+      Example parser requirements:
+
+      ```
+
+      ### Requirement N: Parse Configuration Files
+
+
+      **User Story:** As a developer, I want to parse configuration files, so
+      that I can load application settings.
+
+
+      #### Acceptance Criteria
+
+
+      1. WHEN a valid configuration file is provided, THE Parser SHALL parse it
+      into a Configuration object
+
+      2. WHEN an invalid configuration file is provided, THE Parser SHALL return
+      a descriptive error
+
+      3. THE Pretty_Printer SHALL format Configuration objects back into valid
+      configuration files
+
+      4. FOR ALL valid Configuration objects, parsing then printing then parsing
+      SHALL produce an equivalent object (round-trip property)
+
+      ```
+
+
+      ---
+
+
+      MODIFIED requirements workflow:
+
+      1. Locate the existing requirement in openspec/specs/<capability>/spec.md
+
+      2. Copy the ENTIRE requirement block
+
+      3. Paste under `## MODIFIED Requirements` and edit to reflect new behavior
+
+      4. Ensure header text matches exactly (whitespace-insensitive)
+
+
+      Common pitfall: Using MODIFIED with partial content loses detail at archive
+      time. If adding new concerns without changing existing behavior, use ADDED
+      instead.
+    requires:
+      - proposal
+  - id: design
+    generates: design.md
+    description: Technical design with correctness properties and testing strategy
+    template: design.md
+    instruction: >
+      Create the design document that explains HOW to implement the change and
+      derives formal correctness properties from the spec's acceptance criteria.
+
+
+      ## Required Sections
+
+
+      The design document MUST include these sections in order:
+
+
+      1. **Overview** — high-level summary of the approach
+
+      2. **Architecture** — system structure, diagrams (use Mermaid), data flow
+
+      3. **Components and Interfaces** — modules, APIs, contracts between parts
+
+      4. **Data Models** — schemas, types, data structures
+
+      5. **Correctness Properties** — formal properties derived from acceptance
+      criteria (see below)
+
+      6. **Error Handling** — failure modes, recovery strategies, error codes
+
+      7. **Testing Strategy** — how correctness will be validated (see below)
+
+
+      Include diagrams or visual representations using Mermaid syntax.
+
+      Highlight design decisions and their rationales.
+
+
+      ---
+
+
+      ## Writing Order (CRITICAL)
+
+
+      1. Write sections from Overview through Data Models.
+
+      2. STOP before writing Correctness Properties.
+
+      3. Perform the Correctness Properties Prework analysis.
+
+      4. Perform the Property Reflection to eliminate redundancy.
+
+      5. Write the Correctness Properties section based on the analysis.
+
+      6. Complete remaining sections (Error Handling, Testing Strategy).
+
+
+      ---
+
+
+      ## Correctness Properties Prework
+
+
+      Before writing the Correctness Properties section, analyze EVERY
+      acceptance criterion from ALL requirements in the specs. For each
+      criterion, determine if it is amenable to automated testing by thinking
+      step-by-step.
+
+
+      For each criterion, produce:
+
+      ```
+
+      X.Y Criterion description
+        Thoughts: <step-by-step reasoning about whether this can be tested,
+        what kind of test would work, and what inputs would be generated>
+        Testable: yes - property | yes - example | edge-case | no
+
+      ```
+
+
+      Testability classifications:
+
+      - **yes - property**: a rule that applies across a range of inputs. Prefer
+      this — it generates the most test value. Use when the criterion describes
+      behavior that should hold "for any" input of a certain type.
+
+      - **yes - example**: a specific case to test. Use when the criterion
+      describes a particular scenario (e.g., "when visiting the registry page").
+
+      - **edge-case**: an important boundary condition. Don't create separate
+      properties for these — they will be covered by generators in the main
+      property. Mark them so the generator knows to include these cases.
+
+      - **no**: not computationally testable. Use for UI aesthetics ("calm
+      aesthetic"), architectural separation ("components SHALL remain
+      unaffected"), vague goals ("maintain data integrity"), or anything
+      describing how code should be organized rather than how it should behave.
+
+
+      ### Detailed Prework Examples
+
+
+      Example 1 — Chat room moderation (all properties):
+
+      ```
+
+      6.1 WHEN a moderator kicks a user THEN the system SHALL remove the user
+      from the room and prevent immediate rejoin
+        Thoughts: This isn't about specific users/rooms, it's about how all
+        rooms/users should behave. We can generate a random room filled with
+        random users, issue a kick command, then check if the user is still
+        there.
+        Testable: yes - property
+
+      6.2 WHEN a moderator mutes a room THEN the system SHALL prevent
+      non-moderator users from sending messages
+        Thoughts: This isn't specific, it's general. We can create a random
+        room, then create random users of both moderator and non-moderator
+        status. Then we can mute the room, and pick a random user to send a
+        message. Finally, whether that message sent should be equal to their
+        being a moderator.
+        Testable: yes - property
+
+      6.3 WHEN a moderator unmutes a room THEN the system SHALL restore normal
+        messaging capabilities
+        Thoughts: This refers to a rule that should apply to all rooms. We can
+        create a random room, then mute it, then un-mute it. This is a round
+        trip property.
+        Testable: yes - property
+
+      ```
+
+
+      Example 2 — Todo list (mixed testability):
+
+      ```
+
+      1.1 WHEN a user types a task description and presses Enter or clicks an
+      add button THEN the system SHALL create a new task and add it to the list
+        Thoughts: This is testing a UI interaction. It requires starting with a
+        valid task description (non-empty), triggering the add, then confirming
+        the list is now longer.
+        Testable: yes - property
+
+      1.2 WHEN a user attempts to add an empty task THEN the system SHALL
+      prevent the addition and maintain the current state
+        Thoughts: This seems at first like an example, but "empty" might mean
+        more than just the empty string. We should think about empty as meaning
+        all whitespace strings. This tests that input validation correctly
+        rejects invalid inputs.
+        Testable: yes - property
+
+      1.5 WHEN the input field receives focus THEN the system SHALL provide
+      subtle visual feedback without disrupting the calm aesthetic
+        Thoughts: This is testing a UI interaction. It's a requirement for how
+        the UI feels for a user, which isn't a computable property.
+        Testable: no
+
+      ```
+
+
+      Example 3 — Architectural separation (all untestable):
+
+      ```
+
+      8.1 WHEN transport mechanisms are changed THEN the message handling and UI
+      components SHALL remain unaffected
+        Thoughts: This is talking about how the program should be organized for
+        separation of responsibility, not a functional requirement.
+        Testable: no
+
+      ```
+
+
+      Example 4 — Search (mix of properties and examples):
+
+      ```
+
+      8.1 WHEN a user visits the registry page THEN the system SHALL display a
+      search interface with prominent search functionality
+        Thoughts: This is discussing what should happen when a user visits a
+        specific page. We can test this by ensuring the page contains certain
+        functionality.
+        Testable: yes - example
+
+      8.2 WHEN a user searches for a use case THEN the system SHALL return
+      relevant bundles organized by category
+        Thoughts: This is talking about what should happen across a range of
+        inputs. If we have a function for what "relevant" means, we can
+        generate random backing data and search queries and test that all
+        outputs from search are A) passing the relevant criteria and B)
+        ordered by category.
+        Testable: yes - property
+
+      8.5 WHEN no search results are found THEN the system SHALL suggest
+      alternative search terms or popular bundles
+        Thoughts: This is testing exactly what should happen in the "no search
+        results" case.
+        Testable: yes - example
+
+      ```
+
+
+      Example 5 — Parsing (round-trip):
+
+      ```
+
+      3.1 WHEN parsing user input THEN the system SHALL validate it against the
+      specified grammar
+        Thoughts: The best way to validate parsing is by a round trip.
+        Testable: yes - property
+
+      ```
+
+
+      Example 6 — Serialization (round-trip):
+
+      ```
+
+      3.1 WHEN storing objects to disk THEN the system SHALL encode them using
+      JSON
+        Thoughts: This requirement is talking about serialization, which is
+        best validated by round tripping.
+        Testable: yes - property
+
+      ```
+
+
+      Example 7 — Edge cases and HTML processing:
+
+      ```
+
+      7.1 WHEN the response content is empty THEN the system SHALL handle it
+      gracefully and return zero count
+        Thoughts: This is about how the system should operate normally with
+        empty content. This is an edge case.
+        Testable: edge-case
+
+      7.2 WHEN the response contains non-HTML content THEN the system SHALL
+      attempt parsing and handle any resulting errors
+        Thoughts: This is ensuring the system handles non-HTML content. This
+        is an edge case. We will ensure the generators handle this.
+        Testable: edge-case
+
+      7.3 WHEN very large responses are received THEN the system SHALL process
+      them without memory issues
+        Thoughts: This is a performance test. We likely don't want to unit
+        test this.
+        Testable: no
+
+      7.5 WHEN the specified tag contains attributes THEN the system SHALL
+      count all instances regardless of attribute values
+        Thoughts: This specifies that when a tag contains an attribute, it
+        should not affect the count. We can test this by generating tags with
+        and without attributes, and ensuring we get the same count.
+        Testable: yes - property
+
+      ```
+
+
+      ### Common High-Value Property Patterns
+
+
+      When analyzing criteria, look for these patterns:
+
+
+      1. **Invariants** — properties preserved after transformation. Examples:
+      collection size after map, contents after sort, tree balance, constraints
+      like `obj.start <= obj.end`.
+
+
+      2. **Round-trip** — combining an operation with its inverse returns to the
+      original value. Also includes non-strict inverses like insert/contains,
+      create/exists. ALWAYS test one of these for serializers or parsers.
+      Examples: `decode(encode(x)) == x`, `parse(format(x)) == x`.
+
+
+      3. **Idempotence** — doing it twice equals doing it once. Mathematically:
+      `f(x) == f(f(x))`. Examples: distinct filter, database upserts, message
+      deduplication.
+
+
+      4. **Metamorphic** — a known relationship must hold between two
+      computations, without knowing specific values. Examples:
+      `len(filter(xs)) <= len(xs)`, sorting preserves length.
+
+
+      5. **Model-based testing** — optimized implementation vs. a standard, easy
+      implementation that is known to be correct.
+
+
+      6. **Confluence** — order of operations doesn't matter. Examples:
+      commutative operations, concurrent updates that should converge.
+
+
+      7. **Error conditions** — generate bad inputs and ensure they properly
+      signal errors rather than silently succeeding.
+
+
+      ---
+
+
+      ## Property Reflection
+
+
+      After completing the prework, perform a property reflection to eliminate
+      redundancy before writing the Correctness Properties section:
+
+
+      1. Review ALL properties identified as testable in the prework.
+
+      2. Identify logically redundant properties where one property implies
+      another.
+
+      3. Identify properties that can be combined into a single, more
+      comprehensive property.
+
+      4. Mark redundant properties for removal or consolidation.
+
+      5. Ensure each remaining property provides unique validation value.
+
+
+      Examples of redundancy to collapse:
+
+      - If Property 1 tests "adding a task increases list length by 1" and
+      Property 2 tests "task list contains the added task", Property 1 may be
+      redundant — containment already validates the addition.
+
+      - If Property 3 tests "muting prevents messages" and Property 4 tests
+      "muted rooms reject non-moderator messages", these can likely be combined
+      into one comprehensive property.
+
+      - If Property 5 tests "parsing then printing preserves structure" and
+      Property 6 tests "round-trip parsing is identity", Property 6 subsumes
+      Property 5.
+
+      - If Property 7 checks that new nodes have a "doc" field and Property 8
+      checks that new nodes have an "owner" field, combine into one property
+      checking all required fields.
+
+      - If Property 9 states that action A on trees with no children preserves
+      an invariant, and Property 11 states the same for trees with 1 child,
+      combine into "for all trees, action A preserves the invariant".
+
+
+      You MUST complete this reflection before writing the Correctness
+      Properties section.
+
+
+      ---
+
+
+      ## Correctness Properties Section
+
+
+      Begin this section with the following explanatory paragraph:
+
+
+      *A property is a characteristic or behavior that should hold true across
+      all valid executions of a system — essentially, a formal statement about
+      what the system should do. Properties serve as the bridge between
+      human-readable specifications and machine-verifiable correctness
+      guarantees.*
+
+
+      Then list the final properties after reflection. Each property uses this
+      format:
+
+
+      ```
+
+      ### Property N: <title>
+
+
+      *For any* <inputs>, <what should hold>.
+
+
+      **Validates: Requirements X.Y, X.Z**
+
+      ```
+
+
+      Properties are universally quantified — each MUST contain an explicit
+      "for all" or "for any" statement. Each property MUST reference the
+      requirements clause it originates from using the format
+      `**Validates: Requirements X.Y**`.
+
+
+      ### Detailed Property Examples
+
+
+      Example 1 — Chat room moderation:
+
+      ```
+
+      ### Property 1: Kick then removes
+
+      *For any* chat room and any user, when a moderator kicks that user, the
+      user should no longer appear in the room's participant list.
+
+      **Validates: Requirements 6.1**
+
+
+      ### Property 2: Mute prevents messages
+
+      *For any* muted chat room and any non-moderator user, that user should
+      be unable to send messages while the room remains muted.
+
+      **Validates: Requirements 6.2**
+
+
+      ### Property 3: Mute then un-mute restores state
+
+      *For any* chat room, muting and then immediately un-muting should
+      restore the room to its original state with all messaging capabilities
+      working.
+
+      **Validates: Requirements 6.3**
+
+      ```
+
+
+      Example 2 — Todo list:
+
+      ```
+
+      ### Property 1: Adding a task grows the task list
+
+      *For any* task list, and valid (non-empty) task description, adding it
+      to the task list should result in the length of the task list growing
+      by one.
+
+      **Validates: Requirements 1.1**
+
+
+      ### Property 2: Whitespace tasks are invalid
+
+      *For any* string composed entirely of whitespace, adding it to the task
+      list should be rejected, and the task list should be unchanged.
+
+      **Validates: Requirements 1.2**
+
+
+      ### Property 3: UI is cleared
+
+      *For any* UI state where the input bar is non-empty, submitting the
+      input should result in the input bar being emptied.
+
+      **Validates: Requirements 1.3**
+
+
+      ### Property 4: Task addition round trip
+
+      *For any* task, if it is added to the task list, then querying local
+      storage should get the same task description back.
+
+      **Validates: Requirements 1.4**
+
+      ```
+
+
+      Example 3 — Parsing round-trip:
+
+      ```
+
+      ### Property 1: Parsing round trip
+
+      *For any* valid abstract syntax tree, printing then parsing should
+      produce an equivalent value.
+
+      **Validates: Requirements 3.1**
+
+      ```
+
+
+      Example 4 — Search:
+
+      ```
+
+      ### Property 1: Use case search returns relevant bundles
+
+      *For any* use case search query and backing data, all returned bundles
+      should be relevant to that use case and ordered by category.
+
+      **Validates: Requirements 8.2**
+
+
+      ### Property 2: Technology search returns provider-specific bundles
+
+      *For any* technology search query and backing data, all returned
+      bundles should be from the provider associated with that technology.
+
+      **Validates: Requirements 8.3**
+
+
+      ### Property 3: Search results contain required information
+
+      *For any* search result bundle, the rendered output should include
+      bundle name, provider, description, and all included components.
+
+      **Validates: Requirements 8.4**
+
+      ```
+
+
+      Example 5 — HTML processing:
+
+      ```
+
+      ### Property 1: Attributes in tags do not affect count
+
+      *For any* HTML document, if attributes are added to any tags, then the
+      tag count should not change.
+
+      **Validates: Requirements 7.5**
+
+      ```
+
+
+      When all criteria are non-testable (e.g., purely architectural), write
+      "No testable properties" instead.
+
+
+      ---
+
+
+      ## Testing Strategy Section
+
+
+      The Testing Strategy MUST specify a dual testing approach:
+
+
+      **Unit tests**: Verify specific examples, edge cases, and error
+      conditions. Avoid writing too many — property-based tests handle covering
+      lots of inputs. Focus unit tests on:
+
+      - Specific examples that demonstrate correct behavior
+
+      - Integration points between components
+
+      - Edge cases and error conditions
+
+
+      **Property-based tests**: Verify universal properties across all inputs.
+      Focus property tests on:
+
+      - Universal properties that hold for all inputs
+
+      - Comprehensive input coverage through randomization
+
+
+      Both are complementary and necessary for comprehensive coverage.
+
+
+      **Property-Based Testing Configuration** (MUST specify):
+
+      - Pick a property-based testing library for the target language (e.g.,
+      fast-check for TypeScript, hypothesis for Python, QuickCheck for Haskell).
+      MUST NOT implement property-based testing from scratch.
+
+      - Each property test SHOULD run a minimum of 100 iterations.
+
+      - Each property test MUST be tagged with a comment referencing the design
+      property. Tag format: **Feature: {feature_name}, Property {number}:
+      {property_text}**
+
+      - Each correctness property MUST be implemented by a SINGLE property-based
+      test.
+
+      - Specify where test files will live (co-located, separate directory,
+      etc.).
+
+      - For each property, describe the generator strategy — how to produce
+      representative random inputs that cover the input space intelligently,
+      including edge cases marked in the prework. Write smart generators that
+      constrain to the valid input space rather than generating arbitrary data
+      and filtering.
+
+      - Tests SHOULD be written without mocking where possible, testing core
+      logic directly.
+    requires:
+      - proposal
+      - specs
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist with trackable tasks including PBT
+    template: tasks.md
+    instruction: >
+      Create the task list that breaks down the implementation work.
+
+
+      **IMPORTANT: Follow the template format exactly.** The apply phase parses
+      checkbox format to track progress. Tasks not using `- [ ]` won't be
+      tracked.
+
+
+      Guidelines:
+
+      - Group related tasks under `##` numbered headings.
+
+      - Each task MUST be a checkbox: `- [ ] X.Y Task description`.
+
+      - Tasks should be small enough to complete in one session.
+
+      - Order tasks by dependency (what must be done first?).
+
+
+      ## Property-Based Testing Tasks
+
+
+      For each correctness property defined in the design, create a dedicated
+      task. Use this structure for PBT tasks:
+
+
+      ```
+
+      - [ ] N.M Implement property: <property title>
+        - Write generator(s) for the input types described in the design's
+          Testing Strategy section
+        - Encode the property as an executable test
+        - Annotate with **Validates: Requirements X.Y** to link back to specs
+        - Run the test and verify it passes
+
+      ```
+
+
+      PBT tasks should follow the implementation tasks they depend on — you
+      can't test code that doesn't exist yet. Group them in a dedicated
+      section (e.g., `## N. Property-Based Tests`).
+
+
+      If the design specifies a particular testing framework (fast-check,
+      hypothesis, etc.), reference it in the task description.
+
+
+      ## Task Ordering
+
+
+      Typical ordering:
+
+      1. Setup (project structure, dependencies)
+
+      2. Core implementation (data models, business logic)
+
+      3. Integration (APIs, UI, persistence)
+
+      4. Property-based tests (one task per correctness property)
+
+      5. Run Code Review Agent (using @code-reviewer agent)
+
+      6. Cleanup (documentation, linting, etc.)
+
+
+      Example:
+
+      ```
+
+      ## 1. Setup
+
+      - [ ] 1.1 Create new module structure
+
+      - [ ] 1.2 Add dependencies (including test framework)
+
+
+      ## 2. Core Implementation
+
+      - [ ] 2.1 Implement data export function
+
+      - [ ] 2.2 Add CSV formatting utilities
+
+
+      ## 3. Property-Based Tests
+
+      - [ ] 3.1 Implement property: Export round-trip
+        - Generator: random valid data objects
+        - Test: export then import produces equivalent object
+        - **Validates: Requirements 2.1**
+
+      - [ ] 3.2 Implement property: Empty input handled gracefully
+        - Generator: empty and whitespace-only strings
+        - Test: export rejects or handles gracefully
+        - **Validates: Requirements 2.3**
+
+      ## 4. Conduct Code Review
+
+      - [ ] 4.1 Conduct code review using @code-reviewer
+
+      - [ ] 4.2 Fix findings from the code review
+
+      ```
+
+
+      Reference specs for what needs to be built, design for how to build it.
+
+      Each task should be verifiable — you know when it's done.
+    requires:
+      - specs
+      - design
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md
+  instruction: |
+    Read context files, work through pending tasks, mark complete as you go.
+    Pause if you hit blockers or need clarification.

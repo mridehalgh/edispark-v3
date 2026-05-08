@@ -12,6 +12,7 @@ import com.example.documents.domain.model.VersionIdentifier;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 
  * <p>Requirements: 3.6</p>
  */
+@Tag("dynamodb-local")
 class DynamoDbSchemaRepositoryIntegrationTest {
 
     private static DynamoDbLocalTestSupport dynamoDbLocal;
@@ -33,16 +35,13 @@ class DynamoDbSchemaRepositoryIntegrationTest {
 
     @BeforeAll
     static void startDynamoDbLocal() throws Exception {
-        dynamoDbLocal = new DynamoDbLocalTestSupport();
-        dynamoDbLocal.start();
+        dynamoDbLocal = DynamoDbLocalTestSupport.acquireShared();
         tableConfig = new DynamoDbTableConfig("test-documents");
     }
 
     @AfterAll
     static void stopDynamoDbLocal() throws Exception {
-        if (dynamoDbLocal != null) {
-            dynamoDbLocal.stop();
-        }
+        DynamoDbLocalTestSupport.releaseShared();
     }
 
     @BeforeEach

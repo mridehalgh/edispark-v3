@@ -18,9 +18,58 @@ import java.net.URI;
  */
 public final class DynamoDbLocalTestSupport {
 
+    private static final Object SHARED_LOCK = new Object();
+
+    private static DynamoDbLocalTestSupport sharedInstance;
+    private static int sharedReferenceCount;
+    private static boolean shutdownHookRegistered;
+
     private DynamoDBProxyServer server;
     private DynamoDbClient client;
     private int port;
+
+    public static DynamoDbLocalTestSupport acquireShared() throws Exception {
+        synchronized (SHARED_LOCK) {
+            if (sharedInstance == null) {
+                sharedInstance = new DynamoDbLocalTestSupport();
+                sharedInstance.start();
+                registerShutdownHook();
+            }
+            sharedReferenceCount++;
+            return sharedInstance;
+        }
+    }
+
+    public static void releaseShared() throws Exception {
+        synchronized (SHARED_LOCK) {
+            if (sharedReferenceCount == 0) {
+                return;
+            }
+            sharedReferenceCount--;
+        }
+    }
+
+    private static void registerShutdownHook() {
+        if (shutdownHookRegistered) {
+            return;
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            synchronized (SHARED_LOCK) {
+                if (sharedInstance == null) {
+                    return;
+                }
+                try {
+                    sharedInstance.stop();
+                } catch (Exception exception) {
+                    throw new RuntimeException("Failed to stop shared DynamoDB Local", exception);
+                } finally {
+                    sharedInstance = null;
+                    sharedReferenceCount = 0;
+                }
+            }
+        }, "dynamodb-local-test-shutdown"));
+        shutdownHookRegistered = true;
+    }
 
     /**
      * Starts the DynamoDB Local server on a random available port.
@@ -46,10 +95,13 @@ public final class DynamoDbLocalTestSupport {
     public void stop() throws Exception {
         if (client != null) {
             client.close();
+            client = null;
         }
         if (server != null) {
             server.stop();
+            server = null;
         }
+        port = 0;
     }
 
     /**

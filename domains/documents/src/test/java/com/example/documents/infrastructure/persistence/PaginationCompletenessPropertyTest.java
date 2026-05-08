@@ -16,6 +16,7 @@ import net.jqwik.api.constraints.IntRange;
 import net.jqwik.api.lifecycle.AfterContainer;
 import net.jqwik.api.lifecycle.BeforeContainer;
 import net.jqwik.api.lifecycle.BeforeTry;
+import org.junit.jupiter.api.Tag;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Property: Paginating through all results returns every item exactly once,
  * regardless of page size.</p>
  */
+@Tag("dynamodb-local")
 class PaginationCompletenessPropertyTest {
 
     private static DynamoDbLocalTestSupport dynamoDbLocal;
@@ -42,16 +44,13 @@ class PaginationCompletenessPropertyTest {
 
     @BeforeContainer
     static void startDynamoDbLocal() throws Exception {
-        dynamoDbLocal = new DynamoDbLocalTestSupport();
-        dynamoDbLocal.start();
+        dynamoDbLocal = DynamoDbLocalTestSupport.acquireShared();
         tableConfig = new DynamoDbTableConfig("test-documents-pagination");
     }
 
     @AfterContainer
     static void stopDynamoDbLocal() throws Exception {
-        if (dynamoDbLocal != null) {
-            dynamoDbLocal.stop();
-        }
+        DynamoDbLocalTestSupport.releaseShared();
     }
 
     @BeforeTry

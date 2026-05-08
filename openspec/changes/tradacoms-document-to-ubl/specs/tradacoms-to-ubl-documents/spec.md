@@ -1,15 +1,14 @@
 ## Introduction
 
-This capability defines the first inbound processing slice for TRADACOMS business documents. The slice stores the original TRADACOMS payload as the source business document, generates a UBL representation as a derivative, and makes both artefacts available through the existing Documents API structure.
+This capability defines the first inbound processing slice for TRADACOMS business documents. The slice stores the original TRADACOMS payload as the source business document, parses the payload to determine whether it is supported and structurally valid, and makes the stored source artefact available through the existing Documents API structure. UBL conversion is out of scope for this slice.
 
 ## Glossary
 
-- **Documents_API**: The existing EdiSpark API for managing document sets, documents, versions, derivatives, and associated content.
+- **Documents_API**: The existing EdiSpark API for managing document sets, documents, versions, and associated content.
 - **Inbound_TRADACOMS_Slice**: The EdiSpark processing flow that receives a TRADACOMS file and registers it in the documents domain.
-- **Source_TRADACOMS_Document**: The persisted original TRADACOMS payload captured exactly as received for a supported inbound business message.
-- **Canonical_Document_Model**: The internal business representation used to map supported TRADACOMS content into UBL.
-- **UBL_Derivative**: The UBL serialisation generated from a stored Source_TRADACOMS_Document and linked to the originating document version.
-- **Supported_TRADACOMS_Message**: A TRADACOMS message type and structure that this first slice explicitly maps into the Canonical_Document_Model.
+- **Source_TRADACOMS_Document**: The persisted original TRADACOMS payload captured exactly as received for an inbound business message.
+- **Supported_TRADACOMS_Message**: A TRADACOMS message type and structure that this first slice explicitly recognises and parses.
+- **Tradacoms_Parse_Result**: The structured outcome of validating and parsing a Source_TRADACOMS_Document, including parse status, identified message type, and parse errors.
 
 ## ADDED Requirements
 
@@ -23,44 +22,40 @@ This capability defines the first inbound processing slice for TRADACOMS busines
 2. WHEN the Inbound_TRADACOMS_Slice stores a Source_TRADACOMS_Document, THE Inbound_TRADACOMS_Slice SHALL preserve the raw payload bytes exactly as received.
 3. WHEN the Documents_API returns metadata for a Source_TRADACOMS_Document, THE Documents_API SHALL identify the source version as EDI content.
 
-### Requirement 2: Translate supported TRADACOMS content into UBL
+### Requirement 2: Parse supported TRADACOMS content
 
-**User Story:** As a platform developer, I want a UBL representation generated from supported TRADACOMS content, so that downstream integrations can consume a canonical XML business document.
-
-#### Acceptance Criteria
-
-1. WHEN a Source_TRADACOMS_Document is created from a Supported_TRADACOMS_Message, THE Inbound_TRADACOMS_Slice SHALL generate one UBL_Derivative for the stored source version.
-2. WHEN the Inbound_TRADACOMS_Slice generates a UBL_Derivative, THE Inbound_TRADACOMS_Slice SHALL link the UBL_Derivative to the source document version from which it was produced.
-3. THE Inbound_TRADACOMS_Slice SHALL serialise each UBL_Derivative as XML content.
-4. THE Inbound_TRADACOMS_Slice SHALL ensure that parsing a Supported_TRADACOMS_Message into the Canonical_Document_Model, serialising the Canonical_Document_Model to UBL, and reparsing the UBL output yields an equivalent Canonical_Document_Model for the mapped business fields.
-
-### Requirement 3: Expose source and derivative metadata through the Documents API
-
-**User Story:** As an operations engineer, I want the existing Documents API to show both the original TRADACOMS document and its UBL derivative, so that I can inspect what was received and what was produced.
+**User Story:** As a platform developer, I want supported TRADACOMS content parsed into a structured result, so that EdiSpark can recognise what was received before later transformation slices are added.
 
 #### Acceptance Criteria
 
-1. WHEN a client retrieves a document created by the Inbound_TRADACOMS_Slice, THE Documents_API SHALL include metadata for the current source version and all derivatives associated with that document.
-2. WHEN a client lists derivatives for a document created by the Inbound_TRADACOMS_Slice, THE Documents_API SHALL include the UBL_Derivative in the derivative collection.
-3. WHEN a client retrieves UBL_Derivative metadata through the Documents_API, THE Documents_API SHALL identify the derivative transformation as TRADACOMS-to-UBL.
+1. WHEN the Inbound_TRADACOMS_Slice receives a Supported_TRADACOMS_Message, THE Inbound_TRADACOMS_Slice SHALL produce a Tradacoms_Parse_Result for the source payload.
+2. WHEN parsing succeeds, THE Inbound_TRADACOMS_Slice SHALL record the identified TRADACOMS message type against the stored source document metadata.
+3. IF the received payload is invalid or unsupported for the first slice, THEN THE Inbound_TRADACOMS_Slice SHALL record a non-success parse status and associated parse errors.
 
-### Requirement 4: Expose raw and UBL content through the Documents API
+### Requirement 3: Expose source document metadata through the Documents API
 
-**User Story:** As a downstream consumer, I want to download both the raw TRADACOMS payload and the generated UBL document from the Documents API, so that I can choose the representation that fits my integration.
+**User Story:** As an operations engineer, I want the existing Documents API to show the stored TRADACOMS document and its parse outcome, so that I can inspect what was received and whether parsing succeeded.
+
+#### Acceptance Criteria
+
+1. WHEN a client retrieves a document created by the Inbound_TRADACOMS_Slice, THE Documents_API SHALL include metadata for the current source version.
+2. WHEN the Documents_API returns metadata for a document created by the Inbound_TRADACOMS_Slice, THE Documents_API SHALL include the stored parse status.
+3. WHEN the Documents_API returns metadata for a successfully parsed document, THE Documents_API SHALL include the identified TRADACOMS message type.
+
+### Requirement 4: Expose raw source content through the Documents API
+
+**User Story:** As a downstream consumer, I want to download the raw TRADACOMS payload from the Documents API, so that I can access the preserved trading-partner source document.
 
 #### Acceptance Criteria
 
 1. WHEN a client requests the content of a source version created by the Inbound_TRADACOMS_Slice, THE Documents_API SHALL return the stored Source_TRADACOMS_Document payload.
-2. WHEN a client requests the content of a UBL_Derivative, THE Documents_API SHALL return the stored UBL_Derivative payload.
-3. WHEN the Documents_API returns Source_TRADACOMS_Document content, THE Documents_API SHALL identify the returned content format as EDI.
-4. WHEN the Documents_API returns UBL_Derivative content, THE Documents_API SHALL identify the returned content format as XML.
+2. WHEN the Documents_API returns Source_TRADACOMS_Document content, THE Documents_API SHALL identify the returned content format as EDI.
 
-### Requirement 5: Preserve source evidence when translation fails
+### Requirement 5: Preserve source evidence when parsing fails
 
-**User Story:** As an operations engineer, I want unsupported or unmappable TRADACOMS inputs to retain the raw source document, so that document evidence is not lost when UBL generation cannot complete.
+**User Story:** As an operations engineer, I want invalid or unsupported TRADACOMS inputs to retain the raw source document, so that document evidence is not lost when parsing cannot complete successfully.
 
 #### Acceptance Criteria
 
-1. IF the Inbound_TRADACOMS_Slice cannot map a received TRADACOMS payload into the Canonical_Document_Model, THEN THE Inbound_TRADACOMS_Slice SHALL preserve the Source_TRADACOMS_Document.
-2. IF the Inbound_TRADACOMS_Slice cannot generate a UBL_Derivative for a stored Source_TRADACOMS_Document, THEN THE Inbound_TRADACOMS_Slice SHALL record the translation failure against the document processing result.
-3. IF no UBL_Derivative exists for a stored Source_TRADACOMS_Document, THEN THE Documents_API SHALL return source document metadata without reporting a successful UBL derivative.
+1. IF the Inbound_TRADACOMS_Slice cannot successfully parse a received TRADACOMS payload, THEN THE Inbound_TRADACOMS_Slice SHALL preserve the Source_TRADACOMS_Document.
+2. IF the Inbound_TRADACOMS_Slice cannot successfully parse a received TRADACOMS payload, THEN THE Inbound_TRADACOMS_Slice SHALL record the parse failure against the document processing result.

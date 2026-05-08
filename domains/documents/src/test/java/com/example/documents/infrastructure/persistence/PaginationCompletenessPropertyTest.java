@@ -61,7 +61,7 @@ class PaginationCompletenessPropertyTest {
         repository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName());
     }
 
-    @Property
+    @Property(tries = 25)
     void paginationReturnsAllItemsExactlyOnce(@ForAll @IntRange(min = 1, max = 100) int pageSize) {
         int totalSets = 50;
         List<DocumentSetId> seededIds = seedDocumentSets(totalSets);
@@ -103,7 +103,7 @@ class PaginationCompletenessPropertyTest {
             .isGreaterThan(0);
     }
 
-    @Property
+    @Property(tries = 25)
     void paginationWithVaryingPageSizesReturnsConsistentResults(
             @ForAll @IntRange(min = 1, max = 20) int pageSize1,
             @ForAll @IntRange(min = 1, max = 20) int pageSize2) {

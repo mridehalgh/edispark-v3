@@ -1,0 +1,5001 @@
+{
+  "messages" : [ {
+    "id" : "CREDIT",
+    "messageClass" : "2",
+    "name" : "CREDIT:9",
+    "segments" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CLO" : {
+        "name" : "CUSTOMER'S LOCATION",
+        "slug" : "customers_location_clo",
+        "position" : "02",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CLO",
+        "values" : {
+          "CLOC" : {
+            "id" : "CLOC",
+            "slug" : "customers_location_cloc_000",
+            "name" : "Customer's Location",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Customer's EAN Location Number",
+              "slug" : "customers_ean_location_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Own Location Code",
+              "slug" : "customers_own_location_code_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Identification of Customer's",
+              "slug" : "suppliers_identification_of_customers_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "CNAM" : {
+            "id" : "CNAM",
+            "slug" : "customers_name_cnam_001",
+            "name" : "Customer's name",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "CADD" : {
+            "id" : "CADD",
+            "slug" : "customers_address_cadd_002",
+            "name" : "Customer's address",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's address line 1",
+              "slug" : "customers_address_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's address line 2",
+              "slug" : "customers_address_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's address line 3",
+              "slug" : "customers_address_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's address line 4",
+              "slug" : "customers_address_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Post Code",
+              "slug" : "customers_post_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 8,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CRF" : {
+        "name" : "CREDIT NOTE REFERENCES",
+        "slug" : "credit_note_references_crf",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CRF",
+        "values" : {
+          "CRNR" : {
+            "id" : "CRNR",
+            "slug" : "credit_note_number_crnr_000",
+            "name" : "Credit Note Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "CRDT" : {
+            "id" : "CRDT",
+            "slug" : "credit_note_date_crdt_001",
+            "name" : "Credit Note Date",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "TXDT" : {
+            "id" : "TXDT",
+            "slug" : "tax-point_date_txdt_002",
+            "name" : "Tax-point Date",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "DNNR" : {
+            "id" : "DNNR",
+            "slug" : "debit_note_number_dnnr_003",
+            "name" : "Debit Note Number",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "DNDT" : {
+            "id" : "DNDT",
+            "slug" : "debit_note_date_dndt_004",
+            "name" : "Debit Note Date",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "CNNR" : {
+            "id" : "CNNR",
+            "slug" : "collection_note_number_cnnr_005",
+            "name" : "Collection Note Number",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "CNDT" : {
+            "id" : "CNDT",
+            "slug" : "collection_note_date_cndt_006",
+            "name" : "Collection Note Date",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "PYT" : {
+        "name" : "SETTLEMENT TERMS",
+        "slug" : "settlement_terms_pyt",
+        "position" : "04",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "PYT",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "PAYT" : {
+            "id" : "PAYT",
+            "slug" : "terms_of_payment_payt_001",
+            "name" : "Terms of Payment",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "PAYD" : {
+            "id" : "PAYD",
+            "slug" : "payment_date_and_terms_payd_002",
+            "name" : "Payment Date and Terms",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Payment Date",
+              "slug" : "payment_date_000",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Settlement Discount Percentage",
+              "slug" : "settlement_discount_percentage_001",
+              "usage" : "M",
+              "type" : "num.3",
+              "length" : null,
+              "minLength" : 4,
+              "maxLength" : 6,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "PAYY" : {
+            "id" : "PAYY",
+            "slug" : "settlemet_terms_payy_003",
+            "name" : "Settlemet Terms",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Number of days",
+              "slug" : "number_of_days_000",
+              "usage" : "M",
+              "type" : null,
+              "length" : null,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ {
+                "name" : "Settlement Discount Percentage",
+                "slug" : "settlement_discount_percentage_000",
+                "usage" : "O",
+                "type" : "num.3",
+                "minLength" : 4,
+                "maxLength" : 6
+              }, {
+                "name" : "Settlement Code",
+                "slug" : "settlement_code_001",
+                "usage" : "O",
+                "type" : "char",
+                "minLength" : 1,
+                "maxLength" : 3
+              } ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "OIR" : {
+        "name" : "ORIGINAL INVOICE REFERENCES",
+        "slug" : "original_invoice_references_oir",
+        "position" : "05",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "OIR",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "INVN" : {
+            "id" : "INVN",
+            "slug" : "invoice_number_invn_001",
+            "name" : "Invoice Number",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "IVDT" : {
+            "id" : "IVDT",
+            "slug" : "date_of_invoice_ivdt_002",
+            "name" : "Date of Invoice",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "TXDT" : {
+            "id" : "TXDT",
+            "slug" : "tax-point_date_txdt_003",
+            "name" : "Tax-point Date",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "ORNO" : {
+            "id" : "ORNO",
+            "slug" : "order_number_and_date_orno_004",
+            "name" : "Order Number and Date",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's Order Number",
+              "slug" : "customers_order_number_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Order Number",
+              "slug" : "suppliers_order_number_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Date Order Placed by Customer",
+              "slug" : "date_order_placed_by_customer_002",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Date Order Received by Supplier",
+              "slug" : "date_order_received_by_supplier_003",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "SCRF" : {
+            "id" : "SCRF",
+            "slug" : "specification_contract_references_scrf_005",
+            "name" : "Specification/Contract References",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Specification Number",
+              "slug" : "specification_number_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Contract Number",
+              "slug" : "contract_number_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "DNA" : {
+        "name" : "DATA NARRATIVE",
+        "slug" : "data_narrative_dna",
+        "position" : "06",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "DNA",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "DNAC" : {
+            "id" : "DNAC",
+            "slug" : "data_narrative_code_dnac_001",
+            "name" : "Data Narrative Code",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Code Table Number",
+              "slug" : "code_table_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 4,
+              "values" : [ ]
+            }, {
+              "name" : "Code SegmentValue",
+              "slug" : "code_segmentvalue_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "RTEX" : {
+            "id" : "RTEX",
+            "slug" : "registered_text_rtex_002",
+            "name" : "Registered Text",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "First Registered Application Code",
+              "slug" : "first_registered_application_code_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Second Registered Application Code",
+              "slug" : "second_registered_application_code_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Third Registered Application Code",
+              "slug" : "third_registered_application_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_005",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Fourth Registered Application Code",
+              "slug" : "fourth_registered_application_code_006",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_007",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "GNAR" : {
+            "id" : "GNAR",
+            "slug" : "general_narrative_gnar_003",
+            "name" : "General Narrative",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "General Narrative Line 1",
+              "slug" : "general_narrative_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 2",
+              "slug" : "general_narrative_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 3",
+              "slug" : "general_narrative_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 4",
+              "slug" : "general_narrative_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CLD" : {
+        "name" : "CREDIT NOTE LINE DETAILS",
+        "slug" : "credit_note_line_details_cld_group",
+        "position" : null,
+        "usage" : "M",
+        "count" : ">1",
+        "groupId" : "CLD",
+        "segments" : {
+          "CLD" : {
+            "name" : "CREDIT NOTE LINE DETAILS",
+            "slug" : "credit_note_line_details_cld",
+            "position" : "07",
+            "usage" : "M",
+            "count" : null,
+            "id" : "CLD",
+            "values" : {
+              "SEQA" : {
+                "id" : "SEQA",
+                "slug" : "first_level_sequence_number_seqa_000",
+                "name" : "First Level Sequence Number",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : 1,
+                "maxLength" : 10,
+                "length" : null
+              },
+              "SPRO" : {
+                "id" : "SPRO",
+                "slug" : "suppliers_product_number_spro_001",
+                "name" : "Supplier's Product Number",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "EAN-13 Article Number for Traded",
+                  "slug" : "ean-13_article_number_for_traded_000",
+                  "usage" : "O",
+                  "type" : "int",
+                  "length" : 13,
+                  "minLength" : null,
+                  "maxLength" : null,
+                  "values" : [ ]
+                }, {
+                  "name" : "Supplier's Code for Traded Unit",
+                  "slug" : "suppliers_code_for_traded_unit_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 30,
+                  "values" : [ ]
+                }, {
+                  "name" : "DUN-14 Code for Traded Unit",
+                  "slug" : "dun-14_code_for_traded_unit_002",
+                  "usage" : "O",
+                  "type" : "int",
+                  "length" : 14,
+                  "minLength" : null,
+                  "maxLength" : null,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "SACU" : {
+                "id" : "SACU",
+                "slug" : "suppliers_ean_number_for_the_sacu_002",
+                "name" : "Supplier's EAN Number for the",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : 13
+              },
+              "CPRO" : {
+                "id" : "CPRO",
+                "slug" : "customers_product_number_cpro_003",
+                "name" : "Customer's Product Number",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "Customer's Own Brand EAN Number",
+                  "slug" : "customers_own_brand_ean_number_000",
+                  "usage" : "O",
+                  "type" : "int",
+                  "length" : 15,
+                  "minLength" : null,
+                  "maxLength" : null,
+                  "values" : [ ]
+                }, {
+                  "name" : "Customer's Item Code.",
+                  "slug" : "customers_item_code_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 30,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "UNOR" : {
+                "id" : "UNOR",
+                "slug" : "unit_of_ordering_unor_004",
+                "name" : "Unit of Ordering",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "Consumer Units in Traded Unit",
+                  "slug" : "consumer_units_in_traded_unit_000",
+                  "usage" : "O",
+                  "type" : "int",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 15,
+                  "values" : [ ]
+                }, {
+                  "name" : "Ordering Measure",
+                  "slug" : "ordering_measure_001",
+                  "usage" : "O",
+                  "type" : "num.3",
+                  "length" : null,
+                  "minLength" : 4,
+                  "maxLength" : 13,
+                  "values" : [ ]
+                }, {
+                  "name" : "Measure Indicator",
+                  "slug" : "measure_indicator_002",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 6,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "QTYC" : {
+                "id" : "QTYC",
+                "slug" : "quantity_credited_qtyc_005",
+                "name" : "Quantity Credited",
+                "usage" : "M",
+                "values" : [ {
+                  "name" : "Number of Traded Units Credited",
+                  "slug" : "number_of_traded_units_credited_000",
+                  "usage" : "O",
+                  "type" : "int",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 15,
+                  "values" : [ ]
+                }, {
+                  "name" : "Total Measure Credited",
+                  "slug" : "total_measure_credited_001",
+                  "usage" : "O",
+                  "type" : "num.3",
+                  "length" : null,
+                  "minLength" : 4,
+                  "maxLength" : 13,
+                  "values" : [ ]
+                }, {
+                  "name" : "Measure Indicator",
+                  "slug" : "measure_indicator_002",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 6,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "UCRV" : {
+                "id" : "UCRV",
+                "slug" : "unit_credit_segmentvalue_before_vat_ucrv_006",
+                "name" : "Unit Credit SegmentValue (before VAT)",
+                "usage" : "M",
+                "values" : [ {
+                  "name" : "Credit SegmentValue (before VAT)",
+                  "slug" : "credit_segmentvalue_before_vat_000",
+                  "usage" : "M",
+                  "type" : "num.4",
+                  "length" : null,
+                  "minLength" : 5,
+                  "maxLength" : 14,
+                  "values" : [ ]
+                }, {
+                  "name" : "Measure Indicator",
+                  "slug" : "measure_indicator_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 6,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "EXLV" : {
+                "id" : "EXLV",
+                "slug" : "nett_credit_segmentvalue_before_vat_exlv_007",
+                "name" : "Nett Credit SegmentValue (before VAT)",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.4",
+                "minLength" : 5,
+                "maxLength" : 14,
+                "length" : null
+              },
+              "VATC" : {
+                "id" : "VATC",
+                "slug" : "vat_rate_category_code_vatc_008",
+                "name" : "VAT Rate Category Code",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "char",
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : 1
+              },
+              "VATP" : {
+                "id" : "VATP",
+                "slug" : "vat_rate_percentage_vatp_009",
+                "name" : "VAT Rate Percentage",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.3",
+                "minLength" : 4,
+                "maxLength" : 6,
+                "length" : null
+              },
+              "CRRE" : {
+                "id" : "CRRE",
+                "slug" : "reason_for_credit_crre_010",
+                "name" : "Reason for Credit",
+                "usage" : "M",
+                "values" : [ {
+                  "name" : "ANA Credit Reason Code",
+                  "slug" : "ana_credit_reason_code_000",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : 2,
+                  "minLength" : null,
+                  "maxLength" : null,
+                  "values" : [ ]
+                }, {
+                  "name" : "Trading Partner's Own Code",
+                  "slug" : "trading_partners_own_code_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 2,
+                  "values" : [ ]
+                }, {
+                  "name" : "Credit Reason Description",
+                  "slug" : "credit_reason_description_002",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "MIXI" : {
+                "id" : "MIXI",
+                "slug" : "mixed_vat_rate_product_indicator_mixi_011",
+                "name" : "Mixed VAT Rate Product Indicator",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : 1
+              },
+              "DRLI" : {
+                "id" : "DRLI",
+                "slug" : "debit_line_indicator_drli_012",
+                "name" : "Debit Line Indicator",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "char",
+                "minLength" : 1,
+                "maxLength" : 4,
+                "length" : null
+              },
+              "TDES" : {
+                "id" : "TDES",
+                "slug" : "traded_unit_description_tdes_013",
+                "name" : "Traded Unit Description",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "Traded Unit Description Line 1",
+                  "slug" : "traded_unit_description_line_1_000",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "Traded Unit Description Line 2",
+                  "slug" : "traded_unit_description_line_2_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "UCRB" : {
+                "id" : "UCRB",
+                "slug" : "unit_credit_segmentvalue_before_discount_and_ucrb_014",
+                "name" : "Unit Credit SegmentValue Before Discount and",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "num.4",
+                "minLength" : 5,
+                "maxLength" : 14,
+                "length" : null
+              },
+              "CDSV" : {
+                "id" : "CDSV",
+                "slug" : "credit_discount_segmentvalue_cdsv_015",
+                "name" : "Credit Discount SegmentValue",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "num.4",
+                "minLength" : 5,
+                "maxLength" : 14,
+                "length" : null
+              },
+              "IGPI" : {
+                "id" : "IGPI",
+                "slug" : "item_group_identifier_igpi_016",
+                "name" : "Item Group Identifier",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "char",
+                "minLength" : 1,
+                "maxLength" : 4,
+                "length" : null
+              },
+              "SCRF" : {
+                "id" : "SCRF",
+                "slug" : "specification_contract_references_scrf_017",
+                "name" : "Specification/Contract References",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "Specification Number",
+                  "slug" : "specification_number_000",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 17,
+                  "values" : [ ]
+                }, {
+                  "name" : "Contract Number",
+                  "slug" : "contract_number_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 17,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              }
+            },
+            "type" : "SEGMENT"
+          },
+          "DNB" : {
+            "name" : "DATA NARRATIVE",
+            "slug" : "data_narrative_dnb",
+            "position" : "08",
+            "usage" : "O",
+            "count" : ">1",
+            "id" : "DNB",
+            "values" : {
+              "SEQA" : {
+                "id" : "SEQA",
+                "slug" : "first_level_sequence_number_seqa_000",
+                "name" : "First Level Sequence Number",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : 1,
+                "maxLength" : 10,
+                "length" : null
+              },
+              "SEQB" : {
+                "id" : "SEQB",
+                "slug" : "second_level_sequence_number_seqb_001",
+                "name" : "Second Level Sequence Number",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : 1,
+                "maxLength" : 10,
+                "length" : null
+              },
+              "DNAC" : {
+                "id" : "DNAC",
+                "slug" : "data_narrative_code_dnac_002",
+                "name" : "Data Narrative Code",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "Code Table Number",
+                  "slug" : "code_table_number_000",
+                  "usage" : "O",
+                  "type" : "int",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 4,
+                  "values" : [ ]
+                }, {
+                  "name" : "Code SegmentValue",
+                  "slug" : "code_segmentvalue_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 3,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "RTEX" : {
+                "id" : "RTEX",
+                "slug" : "registered_text_rtex_003",
+                "name" : "Registered Text",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "First Registered Application Code",
+                  "slug" : "first_registered_application_code_000",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 3,
+                  "values" : [ ]
+                }, {
+                  "name" : "Application Text",
+                  "slug" : "application_text_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "Second Registered Application Code",
+                  "slug" : "second_registered_application_code_002",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 3,
+                  "values" : [ ]
+                }, {
+                  "name" : "Application Text",
+                  "slug" : "application_text_003",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "Third Registered Application Code",
+                  "slug" : "third_registered_application_code_004",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 3,
+                  "values" : [ ]
+                }, {
+                  "name" : "Application Text",
+                  "slug" : "application_text_005",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "Fourth Registered Application Code",
+                  "slug" : "fourth_registered_application_code_006",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 3,
+                  "values" : [ ]
+                }, {
+                  "name" : "Application Text",
+                  "slug" : "application_text_007",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              },
+              "GNAR" : {
+                "id" : "GNAR",
+                "slug" : "general_narrative_gnar_004",
+                "name" : "General Narrative",
+                "usage" : "O",
+                "values" : [ {
+                  "name" : "General Narrative Line 1",
+                  "slug" : "general_narrative_line_1_000",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "General Narrative Line 2",
+                  "slug" : "general_narrative_line_2_001",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "General Narrative Line 3",
+                  "slug" : "general_narrative_line_3_002",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                }, {
+                  "name" : "General Narrative Line 4",
+                  "slug" : "general_narrative_line_4_003",
+                  "usage" : "O",
+                  "type" : "char",
+                  "length" : null,
+                  "minLength" : 1,
+                  "maxLength" : 40,
+                  "values" : [ ]
+                } ],
+                "type" : null,
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : null
+              }
+            },
+            "type" : "SEGMENT"
+          },
+          "CST" : {
+            "name" : "VAT RATE CREDIT SUB-TRAILER",
+            "slug" : "vat_rate_credit_sub-trailer_cst",
+            "position" : "09",
+            "usage" : "M",
+            "count" : null,
+            "id" : "CST",
+            "values" : {
+              "SEQA" : {
+                "id" : "SEQA",
+                "slug" : "first_level_sequence_number_seqa_000",
+                "name" : "First Level Sequence Number",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : 1,
+                "maxLength" : 10,
+                "length" : null
+              },
+              "VATC" : {
+                "id" : "VATC",
+                "slug" : "vat_rate_category_code_vatc_001",
+                "name" : "VAT Rate Category Code",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "char",
+                "minLength" : null,
+                "maxLength" : null,
+                "length" : 1
+              },
+              "VATP" : {
+                "id" : "VATP",
+                "slug" : "vat_rate_percentage_vatp_002",
+                "name" : "VAT Rate Percentage",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.3",
+                "minLength" : 4,
+                "maxLength" : 6,
+                "length" : null
+              },
+              "NRIL" : {
+                "id" : "NRIL",
+                "slug" : "number_of_item_lines_nril_003",
+                "name" : "Number of Item Lines",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "int",
+                "minLength" : 1,
+                "maxLength" : 10,
+                "length" : null
+              },
+              "LVLA" : {
+                "id" : "LVLA",
+                "slug" : "line_sub-total_amount_before_settlement_lvla_004",
+                "name" : "Line Sub-Total Amount (before settlement",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "QYCA" : {
+                "id" : "QYCA",
+                "slug" : "discount_reclaimed_for_credit_quantity_qyca_005",
+                "name" : "Discount Reclaimed for Credit Quantity",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "VLCA" : {
+                "id" : "VLCA",
+                "slug" : "discount_reclaimed_for_credit_segmentvalue_vlca_006",
+                "name" : "Discount Reclaimed for Credit SegmentValue",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "EVLA" : {
+                "id" : "EVLA",
+                "slug" : "extended_sub-total_amount_before_evla_007",
+                "name" : "Extended Sub-Total Amount (before",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "SEDA" : {
+                "id" : "SEDA",
+                "slug" : "sub-total_settlement_discount_amount_seda_008",
+                "name" : "Sub-Total Settlement Discount Amount",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "ASDA" : {
+                "id" : "ASDA",
+                "slug" : "extended_sub-total_amount_after_asda_009",
+                "name" : "Extended Sub-Total Amount (after",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "VATA" : {
+                "id" : "VATA",
+                "slug" : "vat_amount_payable_vata_010",
+                "name" : "VAT Amount Payable",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "APSE" : {
+                "id" : "APSE",
+                "slug" : "payable_sub-total_amount_before_apse_011",
+                "name" : "Payable Sub-Total Amount (before",
+                "usage" : "O",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              },
+              "APSI" : {
+                "id" : "APSI",
+                "slug" : "payable_sub-total_amount_after_apsi_012",
+                "name" : "Payable Sub-Total Amount (after",
+                "usage" : "M",
+                "values" : [ ],
+                "type" : "num.2",
+                "minLength" : 3,
+                "maxLength" : 12,
+                "length" : null
+              }
+            },
+            "type" : "SEGMENT"
+          }
+        },
+        "id" : "CLD",
+        "type" : "SEGMENT_GROUP"
+      },
+      "CTR" : {
+        "name" : "CREDIT NOTE TRAILER",
+        "slug" : "credit_note_trailer_ctr",
+        "position" : "10",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CTR",
+        "values" : {
+          "NCST" : {
+            "id" : "NCST",
+            "slug" : "number_of_total_segments_ncst_000",
+            "name" : "Number of Total Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "LVLT" : {
+            "id" : "LVLT",
+            "slug" : "lines_total_amount_before_settlement_lvlt_001",
+            "name" : "Lines Total Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "QYCT" : {
+            "id" : "QYCT",
+            "slug" : "total_discount_reclaimed_for_credit_qyct_002",
+            "name" : "Total Discount Reclaimed for Credit",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VLCT" : {
+            "id" : "VLCT",
+            "slug" : "total_discount_reclaimed_for_credit_vlct_003",
+            "name" : "Total Discount Reclaimed for Credit",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "EVLT" : {
+            "id" : "EVLT",
+            "slug" : "total_extended_amount_before_settlement_evlt_004",
+            "name" : "Total Extended Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "SEDT" : {
+            "id" : "SEDT",
+            "slug" : "total_settlement_amount_sedt_005",
+            "name" : "Total Settlement Amount",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "ASDT" : {
+            "id" : "ASDT",
+            "slug" : "total_amount_after_settlement_discount_asdt_006",
+            "name" : "Total Amount (after settlement discount",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TVAT" : {
+            "id" : "TVAT",
+            "slug" : "total_vat_amount_payable_tvat_007",
+            "name" : "Total VAT Amount Payable",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TPSE" : {
+            "id" : "TPSE",
+            "slug" : "total_payable_before_settlement_discount_tpse_008",
+            "name" : "Total Payable (before settlement discount)",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TPSI" : {
+            "id" : "TPSI",
+            "slug" : "total_payable_after_settlement_discount_tpsi_009",
+            "name" : "Total Payable (after settlement discount)",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "11",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    },
+    "segmentsList" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CLO" : {
+        "name" : "CUSTOMER'S LOCATION",
+        "slug" : "customers_location_clo",
+        "position" : "02",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CLO",
+        "values" : {
+          "CLOC" : {
+            "id" : "CLOC",
+            "slug" : "customers_location_cloc_000",
+            "name" : "Customer's Location",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Customer's EAN Location Number",
+              "slug" : "customers_ean_location_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Own Location Code",
+              "slug" : "customers_own_location_code_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Identification of Customer's",
+              "slug" : "suppliers_identification_of_customers_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "CNAM" : {
+            "id" : "CNAM",
+            "slug" : "customers_name_cnam_001",
+            "name" : "Customer's name",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "CADD" : {
+            "id" : "CADD",
+            "slug" : "customers_address_cadd_002",
+            "name" : "Customer's address",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's address line 1",
+              "slug" : "customers_address_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's address line 2",
+              "slug" : "customers_address_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's address line 3",
+              "slug" : "customers_address_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's address line 4",
+              "slug" : "customers_address_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Post Code",
+              "slug" : "customers_post_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 8,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CRF" : {
+        "name" : "CREDIT NOTE REFERENCES",
+        "slug" : "credit_note_references_crf",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CRF",
+        "values" : {
+          "CRNR" : {
+            "id" : "CRNR",
+            "slug" : "credit_note_number_crnr_000",
+            "name" : "Credit Note Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "CRDT" : {
+            "id" : "CRDT",
+            "slug" : "credit_note_date_crdt_001",
+            "name" : "Credit Note Date",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "TXDT" : {
+            "id" : "TXDT",
+            "slug" : "tax-point_date_txdt_002",
+            "name" : "Tax-point Date",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "DNNR" : {
+            "id" : "DNNR",
+            "slug" : "debit_note_number_dnnr_003",
+            "name" : "Debit Note Number",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "DNDT" : {
+            "id" : "DNDT",
+            "slug" : "debit_note_date_dndt_004",
+            "name" : "Debit Note Date",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "CNNR" : {
+            "id" : "CNNR",
+            "slug" : "collection_note_number_cnnr_005",
+            "name" : "Collection Note Number",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "CNDT" : {
+            "id" : "CNDT",
+            "slug" : "collection_note_date_cndt_006",
+            "name" : "Collection Note Date",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "PYT" : {
+        "name" : "SETTLEMENT TERMS",
+        "slug" : "settlement_terms_pyt",
+        "position" : "04",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "PYT",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "PAYT" : {
+            "id" : "PAYT",
+            "slug" : "terms_of_payment_payt_001",
+            "name" : "Terms of Payment",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "PAYD" : {
+            "id" : "PAYD",
+            "slug" : "payment_date_and_terms_payd_002",
+            "name" : "Payment Date and Terms",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Payment Date",
+              "slug" : "payment_date_000",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Settlement Discount Percentage",
+              "slug" : "settlement_discount_percentage_001",
+              "usage" : "M",
+              "type" : "num.3",
+              "length" : null,
+              "minLength" : 4,
+              "maxLength" : 6,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "PAYY" : {
+            "id" : "PAYY",
+            "slug" : "settlemet_terms_payy_003",
+            "name" : "Settlemet Terms",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Number of days",
+              "slug" : "number_of_days_000",
+              "usage" : "M",
+              "type" : null,
+              "length" : null,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ {
+                "name" : "Settlement Discount Percentage",
+                "slug" : "settlement_discount_percentage_000",
+                "usage" : "O",
+                "type" : "num.3",
+                "minLength" : 4,
+                "maxLength" : 6
+              }, {
+                "name" : "Settlement Code",
+                "slug" : "settlement_code_001",
+                "usage" : "O",
+                "type" : "char",
+                "minLength" : 1,
+                "maxLength" : 3
+              } ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "OIR" : {
+        "name" : "ORIGINAL INVOICE REFERENCES",
+        "slug" : "original_invoice_references_oir",
+        "position" : "05",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "OIR",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "INVN" : {
+            "id" : "INVN",
+            "slug" : "invoice_number_invn_001",
+            "name" : "Invoice Number",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 17,
+            "length" : null
+          },
+          "IVDT" : {
+            "id" : "IVDT",
+            "slug" : "date_of_invoice_ivdt_002",
+            "name" : "Date of Invoice",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "TXDT" : {
+            "id" : "TXDT",
+            "slug" : "tax-point_date_txdt_003",
+            "name" : "Tax-point Date",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "ORNO" : {
+            "id" : "ORNO",
+            "slug" : "order_number_and_date_orno_004",
+            "name" : "Order Number and Date",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's Order Number",
+              "slug" : "customers_order_number_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Order Number",
+              "slug" : "suppliers_order_number_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Date Order Placed by Customer",
+              "slug" : "date_order_placed_by_customer_002",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Date Order Received by Supplier",
+              "slug" : "date_order_received_by_supplier_003",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "SCRF" : {
+            "id" : "SCRF",
+            "slug" : "specification_contract_references_scrf_005",
+            "name" : "Specification/Contract References",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Specification Number",
+              "slug" : "specification_number_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Contract Number",
+              "slug" : "contract_number_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "DNA" : {
+        "name" : "DATA NARRATIVE",
+        "slug" : "data_narrative_dna",
+        "position" : "06",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "DNA",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "DNAC" : {
+            "id" : "DNAC",
+            "slug" : "data_narrative_code_dnac_001",
+            "name" : "Data Narrative Code",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Code Table Number",
+              "slug" : "code_table_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 4,
+              "values" : [ ]
+            }, {
+              "name" : "Code SegmentValue",
+              "slug" : "code_segmentvalue_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "RTEX" : {
+            "id" : "RTEX",
+            "slug" : "registered_text_rtex_002",
+            "name" : "Registered Text",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "First Registered Application Code",
+              "slug" : "first_registered_application_code_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Second Registered Application Code",
+              "slug" : "second_registered_application_code_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Third Registered Application Code",
+              "slug" : "third_registered_application_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_005",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Fourth Registered Application Code",
+              "slug" : "fourth_registered_application_code_006",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_007",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "GNAR" : {
+            "id" : "GNAR",
+            "slug" : "general_narrative_gnar_003",
+            "name" : "General Narrative",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "General Narrative Line 1",
+              "slug" : "general_narrative_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 2",
+              "slug" : "general_narrative_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 3",
+              "slug" : "general_narrative_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 4",
+              "slug" : "general_narrative_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CLD" : {
+        "name" : "CREDIT NOTE LINE DETAILS",
+        "slug" : "credit_note_line_details_cld",
+        "position" : "07",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CLD",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "SPRO" : {
+            "id" : "SPRO",
+            "slug" : "suppliers_product_number_spro_001",
+            "name" : "Supplier's Product Number",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "EAN-13 Article Number for Traded",
+              "slug" : "ean-13_article_number_for_traded_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Code for Traded Unit",
+              "slug" : "suppliers_code_for_traded_unit_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 30,
+              "values" : [ ]
+            }, {
+              "name" : "DUN-14 Code for Traded Unit",
+              "slug" : "dun-14_code_for_traded_unit_002",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 14,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "SACU" : {
+            "id" : "SACU",
+            "slug" : "suppliers_ean_number_for_the_sacu_002",
+            "name" : "Supplier's EAN Number for the",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 13
+          },
+          "CPRO" : {
+            "id" : "CPRO",
+            "slug" : "customers_product_number_cpro_003",
+            "name" : "Customer's Product Number",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's Own Brand EAN Number",
+              "slug" : "customers_own_brand_ean_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 15,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Item Code.",
+              "slug" : "customers_item_code_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 30,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "UNOR" : {
+            "id" : "UNOR",
+            "slug" : "unit_of_ordering_unor_004",
+            "name" : "Unit of Ordering",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Consumer Units in Traded Unit",
+              "slug" : "consumer_units_in_traded_unit_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 15,
+              "values" : [ ]
+            }, {
+              "name" : "Ordering Measure",
+              "slug" : "ordering_measure_001",
+              "usage" : "O",
+              "type" : "num.3",
+              "length" : null,
+              "minLength" : 4,
+              "maxLength" : 13,
+              "values" : [ ]
+            }, {
+              "name" : "Measure Indicator",
+              "slug" : "measure_indicator_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 6,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "QTYC" : {
+            "id" : "QTYC",
+            "slug" : "quantity_credited_qtyc_005",
+            "name" : "Quantity Credited",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Number of Traded Units Credited",
+              "slug" : "number_of_traded_units_credited_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 15,
+              "values" : [ ]
+            }, {
+              "name" : "Total Measure Credited",
+              "slug" : "total_measure_credited_001",
+              "usage" : "O",
+              "type" : "num.3",
+              "length" : null,
+              "minLength" : 4,
+              "maxLength" : 13,
+              "values" : [ ]
+            }, {
+              "name" : "Measure Indicator",
+              "slug" : "measure_indicator_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 6,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "UCRV" : {
+            "id" : "UCRV",
+            "slug" : "unit_credit_segmentvalue_before_vat_ucrv_006",
+            "name" : "Unit Credit SegmentValue (before VAT)",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Credit SegmentValue (before VAT)",
+              "slug" : "credit_segmentvalue_before_vat_000",
+              "usage" : "M",
+              "type" : "num.4",
+              "length" : null,
+              "minLength" : 5,
+              "maxLength" : 14,
+              "values" : [ ]
+            }, {
+              "name" : "Measure Indicator",
+              "slug" : "measure_indicator_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 6,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "EXLV" : {
+            "id" : "EXLV",
+            "slug" : "nett_credit_segmentvalue_before_vat_exlv_007",
+            "name" : "Nett Credit SegmentValue (before VAT)",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.4",
+            "minLength" : 5,
+            "maxLength" : 14,
+            "length" : null
+          },
+          "VATC" : {
+            "id" : "VATC",
+            "slug" : "vat_rate_category_code_vatc_008",
+            "name" : "VAT Rate Category Code",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 1
+          },
+          "VATP" : {
+            "id" : "VATP",
+            "slug" : "vat_rate_percentage_vatp_009",
+            "name" : "VAT Rate Percentage",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.3",
+            "minLength" : 4,
+            "maxLength" : 6,
+            "length" : null
+          },
+          "CRRE" : {
+            "id" : "CRRE",
+            "slug" : "reason_for_credit_crre_010",
+            "name" : "Reason for Credit",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "ANA Credit Reason Code",
+              "slug" : "ana_credit_reason_code_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : 2,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Trading Partner's Own Code",
+              "slug" : "trading_partners_own_code_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 2,
+              "values" : [ ]
+            }, {
+              "name" : "Credit Reason Description",
+              "slug" : "credit_reason_description_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "MIXI" : {
+            "id" : "MIXI",
+            "slug" : "mixed_vat_rate_product_indicator_mixi_011",
+            "name" : "Mixed VAT Rate Product Indicator",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 1
+          },
+          "DRLI" : {
+            "id" : "DRLI",
+            "slug" : "debit_line_indicator_drli_012",
+            "name" : "Debit Line Indicator",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 4,
+            "length" : null
+          },
+          "TDES" : {
+            "id" : "TDES",
+            "slug" : "traded_unit_description_tdes_013",
+            "name" : "Traded Unit Description",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Traded Unit Description Line 1",
+              "slug" : "traded_unit_description_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Traded Unit Description Line 2",
+              "slug" : "traded_unit_description_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "UCRB" : {
+            "id" : "UCRB",
+            "slug" : "unit_credit_segmentvalue_before_discount_and_ucrb_014",
+            "name" : "Unit Credit SegmentValue Before Discount and",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.4",
+            "minLength" : 5,
+            "maxLength" : 14,
+            "length" : null
+          },
+          "CDSV" : {
+            "id" : "CDSV",
+            "slug" : "credit_discount_segmentvalue_cdsv_015",
+            "name" : "Credit Discount SegmentValue",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.4",
+            "minLength" : 5,
+            "maxLength" : 14,
+            "length" : null
+          },
+          "IGPI" : {
+            "id" : "IGPI",
+            "slug" : "item_group_identifier_igpi_016",
+            "name" : "Item Group Identifier",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 4,
+            "length" : null
+          },
+          "SCRF" : {
+            "id" : "SCRF",
+            "slug" : "specification_contract_references_scrf_017",
+            "name" : "Specification/Contract References",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Specification Number",
+              "slug" : "specification_number_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            }, {
+              "name" : "Contract Number",
+              "slug" : "contract_number_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "DNB" : {
+        "name" : "DATA NARRATIVE",
+        "slug" : "data_narrative_dnb",
+        "position" : "08",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "DNB",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "SEQB" : {
+            "id" : "SEQB",
+            "slug" : "second_level_sequence_number_seqb_001",
+            "name" : "Second Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "DNAC" : {
+            "id" : "DNAC",
+            "slug" : "data_narrative_code_dnac_002",
+            "name" : "Data Narrative Code",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Code Table Number",
+              "slug" : "code_table_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 4,
+              "values" : [ ]
+            }, {
+              "name" : "Code SegmentValue",
+              "slug" : "code_segmentvalue_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "RTEX" : {
+            "id" : "RTEX",
+            "slug" : "registered_text_rtex_003",
+            "name" : "Registered Text",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "First Registered Application Code",
+              "slug" : "first_registered_application_code_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Second Registered Application Code",
+              "slug" : "second_registered_application_code_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Third Registered Application Code",
+              "slug" : "third_registered_application_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_005",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Fourth Registered Application Code",
+              "slug" : "fourth_registered_application_code_006",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_007",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "GNAR" : {
+            "id" : "GNAR",
+            "slug" : "general_narrative_gnar_004",
+            "name" : "General Narrative",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "General Narrative Line 1",
+              "slug" : "general_narrative_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 2",
+              "slug" : "general_narrative_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 3",
+              "slug" : "general_narrative_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 4",
+              "slug" : "general_narrative_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CST" : {
+        "name" : "VAT RATE CREDIT SUB-TRAILER",
+        "slug" : "vat_rate_credit_sub-trailer_cst",
+        "position" : "09",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CST",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "VATC" : {
+            "id" : "VATC",
+            "slug" : "vat_rate_category_code_vatc_001",
+            "name" : "VAT Rate Category Code",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 1
+          },
+          "VATP" : {
+            "id" : "VATP",
+            "slug" : "vat_rate_percentage_vatp_002",
+            "name" : "VAT Rate Percentage",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.3",
+            "minLength" : 4,
+            "maxLength" : 6,
+            "length" : null
+          },
+          "NRIL" : {
+            "id" : "NRIL",
+            "slug" : "number_of_item_lines_nril_003",
+            "name" : "Number of Item Lines",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "LVLA" : {
+            "id" : "LVLA",
+            "slug" : "line_sub-total_amount_before_settlement_lvla_004",
+            "name" : "Line Sub-Total Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "QYCA" : {
+            "id" : "QYCA",
+            "slug" : "discount_reclaimed_for_credit_quantity_qyca_005",
+            "name" : "Discount Reclaimed for Credit Quantity",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VLCA" : {
+            "id" : "VLCA",
+            "slug" : "discount_reclaimed_for_credit_segmentvalue_vlca_006",
+            "name" : "Discount Reclaimed for Credit SegmentValue",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "EVLA" : {
+            "id" : "EVLA",
+            "slug" : "extended_sub-total_amount_before_evla_007",
+            "name" : "Extended Sub-Total Amount (before",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "SEDA" : {
+            "id" : "SEDA",
+            "slug" : "sub-total_settlement_discount_amount_seda_008",
+            "name" : "Sub-Total Settlement Discount Amount",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "ASDA" : {
+            "id" : "ASDA",
+            "slug" : "extended_sub-total_amount_after_asda_009",
+            "name" : "Extended Sub-Total Amount (after",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VATA" : {
+            "id" : "VATA",
+            "slug" : "vat_amount_payable_vata_010",
+            "name" : "VAT Amount Payable",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "APSE" : {
+            "id" : "APSE",
+            "slug" : "payable_sub-total_amount_before_apse_011",
+            "name" : "Payable Sub-Total Amount (before",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "APSI" : {
+            "id" : "APSI",
+            "slug" : "payable_sub-total_amount_after_apsi_012",
+            "name" : "Payable Sub-Total Amount (after",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CTR" : {
+        "name" : "CREDIT NOTE TRAILER",
+        "slug" : "credit_note_trailer_ctr",
+        "position" : "10",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CTR",
+        "values" : {
+          "NCST" : {
+            "id" : "NCST",
+            "slug" : "number_of_total_segments_ncst_000",
+            "name" : "Number of Total Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "LVLT" : {
+            "id" : "LVLT",
+            "slug" : "lines_total_amount_before_settlement_lvlt_001",
+            "name" : "Lines Total Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "QYCT" : {
+            "id" : "QYCT",
+            "slug" : "total_discount_reclaimed_for_credit_qyct_002",
+            "name" : "Total Discount Reclaimed for Credit",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VLCT" : {
+            "id" : "VLCT",
+            "slug" : "total_discount_reclaimed_for_credit_vlct_003",
+            "name" : "Total Discount Reclaimed for Credit",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "EVLT" : {
+            "id" : "EVLT",
+            "slug" : "total_extended_amount_before_settlement_evlt_004",
+            "name" : "Total Extended Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "SEDT" : {
+            "id" : "SEDT",
+            "slug" : "total_settlement_amount_sedt_005",
+            "name" : "Total Settlement Amount",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "ASDT" : {
+            "id" : "ASDT",
+            "slug" : "total_amount_after_settlement_discount_asdt_006",
+            "name" : "Total Amount (after settlement discount",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TVAT" : {
+            "id" : "TVAT",
+            "slug" : "total_vat_amount_payable_tvat_007",
+            "name" : "Total VAT Amount Payable",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TPSE" : {
+            "id" : "TPSE",
+            "slug" : "total_payable_before_settlement_discount_tpse_008",
+            "name" : "Total Payable (before settlement discount)",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TPSI" : {
+            "id" : "TPSI",
+            "slug" : "total_payable_after_settlement_discount_tpsi_009",
+            "name" : "Total Payable (after settlement discount)",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "11",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    }
+  }, {
+    "id" : "CREHDR",
+    "messageClass" : "1",
+    "name" : "CREHDR:9",
+    "segments" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "TYP" : {
+        "name" : "TRANSACTION TYPE DETAILS",
+        "slug" : "transaction_type_details_typ",
+        "position" : "02",
+        "usage" : "M",
+        "count" : null,
+        "id" : "TYP",
+        "values" : {
+          "TCDE" : {
+            "id" : "TCDE",
+            "slug" : "transaction_code_tcde_000",
+            "name" : "Transaction Code",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 4
+          },
+          "TTYP" : {
+            "id" : "TTYP",
+            "slug" : "transaction_type_ttyp_001",
+            "name" : "Transaction Type",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "SDT" : {
+        "name" : "SUPPLIER DETAILS",
+        "slug" : "supplier_details_sdt",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "SDT",
+        "values" : {
+          "SIDN" : {
+            "id" : "SIDN",
+            "slug" : "suppliers_identity_sidn_000",
+            "name" : "Supplier's Identity",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Supplier's EAN Location Number",
+              "slug" : "suppliers_ean_location_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Suppliers's Identity Allocated by",
+              "slug" : "supplierss_identity_allocated_by_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "SNAM" : {
+            "id" : "SNAM",
+            "slug" : "suppliers_name_snam_001",
+            "name" : "Supplier's Name",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "SADD" : {
+            "id" : "SADD",
+            "slug" : "suppliers_address_sadd_002",
+            "name" : "Supplier's Address",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Supplier's Address Line 1",
+              "slug" : "suppliers_address_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Address Line 2",
+              "slug" : "suppliers_address_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Address Line 3",
+              "slug" : "suppliers_address_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Address Line 4",
+              "slug" : "suppliers_address_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Post Code",
+              "slug" : "suppliers_post_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 8,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "VATN" : {
+            "id" : "VATN",
+            "slug" : "suppliers_vat_registration_number_vatn_003",
+            "name" : "Supplier's VAT Registration Number",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Numeric VAT Registration Number",
+              "slug" : "numeric_vat_registration_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 9,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Alphanumeric VAT Registration",
+              "slug" : "alphanumeric_vat_registration_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CDT" : {
+        "name" : "CUSTOMER DETAILS",
+        "slug" : "customer_details_cdt",
+        "position" : "04",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CDT",
+        "values" : {
+          "CIDN" : {
+            "id" : "CIDN",
+            "slug" : "customers_identity_cidn_000",
+            "name" : "Customer's Identity",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Customer's EAN Location Number",
+              "slug" : "customers_ean_location_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Identity Allocated by",
+              "slug" : "customers_identity_allocated_by_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "CNAM" : {
+            "id" : "CNAM",
+            "slug" : "customers_name_cnam_001",
+            "name" : "Customer's Name",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "CADD" : {
+            "id" : "CADD",
+            "slug" : "customers_address_cadd_002",
+            "name" : "Customer's Address",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's Address Line 1",
+              "slug" : "customers_address_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Address Line 2",
+              "slug" : "customers_address_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Address Line 3",
+              "slug" : "customers_address_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Address Line 4",
+              "slug" : "customers_address_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Post Code",
+              "slug" : "customers_post_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 8,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "VATR" : {
+            "id" : "VATR",
+            "slug" : "customers_vat_registration_number_vatr_003",
+            "name" : "Customer's VAT Registration Number",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Numeric VAT Registration Number",
+              "slug" : "numeric_vat_registration_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 9,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Alphanumeric VAT Registration",
+              "slug" : "alphanumeric_vat_registration_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "DNA" : {
+        "name" : "DATA NARRATIVE",
+        "slug" : "data_narrative_dna",
+        "position" : "05",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "DNA",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "DNAC" : {
+            "id" : "DNAC",
+            "slug" : "data_narrative_code_dnac_001",
+            "name" : "Data Narrative Code",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Code Table Number",
+              "slug" : "code_table_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 4,
+              "values" : [ ]
+            }, {
+              "name" : "Code SegmentValue",
+              "slug" : "code_segmentvalue_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "RTEX" : {
+            "id" : "RTEX",
+            "slug" : "registered_text_rtex_002",
+            "name" : "Registered Text",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "First Registered Application Code",
+              "slug" : "first_registered_application_code_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Second Registered Application Code",
+              "slug" : "second_registered_application_code_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Third Registered Application Code",
+              "slug" : "third_registered_application_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_005",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Fourth Registered Application Code",
+              "slug" : "fourth_registered_application_code_006",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_007",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "GNAR" : {
+            "id" : "GNAR",
+            "slug" : "general_narrative_gnar_003",
+            "name" : "General Narrative",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "General Narrative Line 1",
+              "slug" : "general_narrative_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 2",
+              "slug" : "general_narrative_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 3",
+              "slug" : "general_narrative_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 4",
+              "slug" : "general_narrative_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "FIL" : {
+        "name" : "FILE DETAILS",
+        "slug" : "file_details_fil",
+        "position" : "06",
+        "usage" : "M",
+        "count" : null,
+        "id" : "FIL",
+        "values" : {
+          "FLGN" : {
+            "id" : "FLGN",
+            "slug" : "file_generation_number_flgn_000",
+            "name" : "File Generation Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 4,
+            "length" : null
+          },
+          "FLVN" : {
+            "id" : "FLVN",
+            "slug" : "file_version_number_flvn_001",
+            "name" : "File Version Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 4,
+            "length" : null
+          },
+          "FLDT" : {
+            "id" : "FLDT",
+            "slug" : "file_creation_date_fldt_002",
+            "name" : "File Creation Date",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "FLID" : {
+            "id" : "FLID",
+            "slug" : "file_reel_identification_flid_003",
+            "name" : "File (Reel) Identification",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 6,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "07",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    },
+    "segmentsList" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "TYP" : {
+        "name" : "TRANSACTION TYPE DETAILS",
+        "slug" : "transaction_type_details_typ",
+        "position" : "02",
+        "usage" : "M",
+        "count" : null,
+        "id" : "TYP",
+        "values" : {
+          "TCDE" : {
+            "id" : "TCDE",
+            "slug" : "transaction_code_tcde_000",
+            "name" : "Transaction Code",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 4
+          },
+          "TTYP" : {
+            "id" : "TTYP",
+            "slug" : "transaction_type_ttyp_001",
+            "name" : "Transaction Type",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "SDT" : {
+        "name" : "SUPPLIER DETAILS",
+        "slug" : "supplier_details_sdt",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "SDT",
+        "values" : {
+          "SIDN" : {
+            "id" : "SIDN",
+            "slug" : "suppliers_identity_sidn_000",
+            "name" : "Supplier's Identity",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Supplier's EAN Location Number",
+              "slug" : "suppliers_ean_location_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Suppliers's Identity Allocated by",
+              "slug" : "supplierss_identity_allocated_by_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "SNAM" : {
+            "id" : "SNAM",
+            "slug" : "suppliers_name_snam_001",
+            "name" : "Supplier's Name",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "SADD" : {
+            "id" : "SADD",
+            "slug" : "suppliers_address_sadd_002",
+            "name" : "Supplier's Address",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Supplier's Address Line 1",
+              "slug" : "suppliers_address_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Address Line 2",
+              "slug" : "suppliers_address_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Address Line 3",
+              "slug" : "suppliers_address_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Address Line 4",
+              "slug" : "suppliers_address_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Supplier's Post Code",
+              "slug" : "suppliers_post_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 8,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "VATN" : {
+            "id" : "VATN",
+            "slug" : "suppliers_vat_registration_number_vatn_003",
+            "name" : "Supplier's VAT Registration Number",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Numeric VAT Registration Number",
+              "slug" : "numeric_vat_registration_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 9,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Alphanumeric VAT Registration",
+              "slug" : "alphanumeric_vat_registration_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "CDT" : {
+        "name" : "CUSTOMER DETAILS",
+        "slug" : "customer_details_cdt",
+        "position" : "04",
+        "usage" : "M",
+        "count" : null,
+        "id" : "CDT",
+        "values" : {
+          "CIDN" : {
+            "id" : "CIDN",
+            "slug" : "customers_identity_cidn_000",
+            "name" : "Customer's Identity",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Customer's EAN Location Number",
+              "slug" : "customers_ean_location_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 13,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Identity Allocated by",
+              "slug" : "customers_identity_allocated_by_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "CNAM" : {
+            "id" : "CNAM",
+            "slug" : "customers_name_cnam_001",
+            "name" : "Customer's Name",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 40,
+            "length" : null
+          },
+          "CADD" : {
+            "id" : "CADD",
+            "slug" : "customers_address_cadd_002",
+            "name" : "Customer's Address",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Customer's Address Line 1",
+              "slug" : "customers_address_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Address Line 2",
+              "slug" : "customers_address_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Address Line 3",
+              "slug" : "customers_address_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Address Line 4",
+              "slug" : "customers_address_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 35,
+              "values" : [ ]
+            }, {
+              "name" : "Customer's Post Code",
+              "slug" : "customers_post_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 8,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "VATR" : {
+            "id" : "VATR",
+            "slug" : "customers_vat_registration_number_vatr_003",
+            "name" : "Customer's VAT Registration Number",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Numeric VAT Registration Number",
+              "slug" : "numeric_vat_registration_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : 9,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Alphanumeric VAT Registration",
+              "slug" : "alphanumeric_vat_registration_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 17,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "DNA" : {
+        "name" : "DATA NARRATIVE",
+        "slug" : "data_narrative_dna",
+        "position" : "05",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "DNA",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "DNAC" : {
+            "id" : "DNAC",
+            "slug" : "data_narrative_code_dnac_001",
+            "name" : "Data Narrative Code",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "Code Table Number",
+              "slug" : "code_table_number_000",
+              "usage" : "O",
+              "type" : "int",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 4,
+              "values" : [ ]
+            }, {
+              "name" : "Code SegmentValue",
+              "slug" : "code_segmentvalue_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "RTEX" : {
+            "id" : "RTEX",
+            "slug" : "registered_text_rtex_002",
+            "name" : "Registered Text",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "First Registered Application Code",
+              "slug" : "first_registered_application_code_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Second Registered Application Code",
+              "slug" : "second_registered_application_code_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Third Registered Application Code",
+              "slug" : "third_registered_application_code_004",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_005",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "Fourth Registered Application Code",
+              "slug" : "fourth_registered_application_code_006",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 3,
+              "values" : [ ]
+            }, {
+              "name" : "Application Text",
+              "slug" : "application_text_007",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          },
+          "GNAR" : {
+            "id" : "GNAR",
+            "slug" : "general_narrative_gnar_003",
+            "name" : "General Narrative",
+            "usage" : "O",
+            "values" : [ {
+              "name" : "General Narrative Line 1",
+              "slug" : "general_narrative_line_1_000",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 2",
+              "slug" : "general_narrative_line_2_001",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 3",
+              "slug" : "general_narrative_line_3_002",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            }, {
+              "name" : "General Narrative Line 4",
+              "slug" : "general_narrative_line_4_003",
+              "usage" : "O",
+              "type" : "char",
+              "length" : null,
+              "minLength" : 1,
+              "maxLength" : 40,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "FIL" : {
+        "name" : "FILE DETAILS",
+        "slug" : "file_details_fil",
+        "position" : "06",
+        "usage" : "M",
+        "count" : null,
+        "id" : "FIL",
+        "values" : {
+          "FLGN" : {
+            "id" : "FLGN",
+            "slug" : "file_generation_number_flgn_000",
+            "name" : "File Generation Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 4,
+            "length" : null
+          },
+          "FLVN" : {
+            "id" : "FLVN",
+            "slug" : "file_version_number_flvn_001",
+            "name" : "File Version Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 4,
+            "length" : null
+          },
+          "FLDT" : {
+            "id" : "FLDT",
+            "slug" : "file_creation_date_fldt_002",
+            "name" : "File Creation Date",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 6
+          },
+          "FLID" : {
+            "id" : "FLID",
+            "slug" : "file_reel_identification_flid_003",
+            "name" : "File (Reel) Identification",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : 1,
+            "maxLength" : 6,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "07",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    }
+  }, {
+    "id" : "CRETLR",
+    "messageClass" : "4",
+    "name" : "CRETLR:9",
+    "segments" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "TOT" : {
+        "name" : "FILE TOTALS",
+        "slug" : "file_totals_tot",
+        "position" : "02",
+        "usage" : "M",
+        "count" : null,
+        "id" : "TOT",
+        "values" : {
+          "FASE" : {
+            "id" : "FASE",
+            "slug" : "file_total_amount_before_vat_and_fase_000",
+            "name" : "File Total Amount (before VAT and",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FASI" : {
+            "id" : "FASI",
+            "slug" : "file_total_amount_before_vat_but_after_fasi_001",
+            "name" : "File Total Amount (before VAT but after",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FVAT" : {
+            "id" : "FVAT",
+            "slug" : "file_total_vat_amount_fvat_002",
+            "name" : "File Total VAT Amount",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FPSE" : {
+            "id" : "FPSE",
+            "slug" : "file_total_payable_before_settlement_fpse_003",
+            "name" : "File Total Payable (before settlement",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FPSI" : {
+            "id" : "FPSI",
+            "slug" : "file_total_payable_after_settlement_fpsi_004",
+            "name" : "File Total Payable (after settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FTNI" : {
+            "id" : "FTNI",
+            "slug" : "file_total_number_of_invoice_messages_ftni_005",
+            "name" : "File Total Number of Invoice Messages",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    },
+    "segmentsList" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "TOT" : {
+        "name" : "FILE TOTALS",
+        "slug" : "file_totals_tot",
+        "position" : "02",
+        "usage" : "M",
+        "count" : null,
+        "id" : "TOT",
+        "values" : {
+          "FASE" : {
+            "id" : "FASE",
+            "slug" : "file_total_amount_before_vat_and_fase_000",
+            "name" : "File Total Amount (before VAT and",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FASI" : {
+            "id" : "FASI",
+            "slug" : "file_total_amount_before_vat_but_after_fasi_001",
+            "name" : "File Total Amount (before VAT but after",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FVAT" : {
+            "id" : "FVAT",
+            "slug" : "file_total_vat_amount_fvat_002",
+            "name" : "File Total VAT Amount",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FPSE" : {
+            "id" : "FPSE",
+            "slug" : "file_total_payable_before_settlement_fpse_003",
+            "name" : "File Total Payable (before settlement",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FPSI" : {
+            "id" : "FPSI",
+            "slug" : "file_total_payable_after_settlement_fpsi_004",
+            "name" : "File Total Payable (after settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "FTNI" : {
+            "id" : "FTNI",
+            "slug" : "file_total_number_of_invoice_messages_ftni_005",
+            "name" : "File Total Number of Invoice Messages",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    }
+  }, {
+    "id" : "VATTLR",
+    "messageClass" : "3",
+    "name" : "VATTLR:9",
+    "segments" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "VRS" : {
+        "name" : "VAT RATE SUMMARY",
+        "slug" : "vat_rate_summary_vrs",
+        "position" : "02",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "VRS",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "VATC" : {
+            "id" : "VATC",
+            "slug" : "vat_rate_category_code_vatc_001",
+            "name" : "VAT Rate Category Code",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 1
+          },
+          "VATP" : {
+            "id" : "VATP",
+            "slug" : "vat_rate_percentage_vatp_002",
+            "name" : "VAT Rate Percentage",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.3",
+            "minLength" : 4,
+            "maxLength" : 6,
+            "length" : null
+          },
+          "VSDE" : {
+            "id" : "VSDE",
+            "slug" : "file_sub-total_amount_before_settlement_vsde_003",
+            "name" : "File Sub-Total Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VSDI" : {
+            "id" : "VSDI",
+            "slug" : "file_sub-total_amount_after_settlement_vsdi_004",
+            "name" : "File Sub-Total Amount (after settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VVAT" : {
+            "id" : "VVAT",
+            "slug" : "file_vat_sub-total_vvat_005",
+            "name" : "File VAT Sub-Total",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VPSE" : {
+            "id" : "VPSE",
+            "slug" : "file_sub-total_payable_before_settlement_vpse_006",
+            "name" : "File Sub-Total Payable (before settlement",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VPSI" : {
+            "id" : "VPSI",
+            "slug" : "file_sub-total_payable_after_settlement_vpsi_007",
+            "name" : "File Sub-Total Payable (after settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    },
+    "segmentsList" : {
+      "MHD" : {
+        "name" : "MESSAGE HEADER",
+        "slug" : "message_header_mhd",
+        "position" : "01",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MHD",
+        "values" : {
+          "MSRF" : {
+            "id" : "MSRF",
+            "slug" : "message_reference_msrf_000",
+            "name" : "Message Reference",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "TYPE" : {
+            "id" : "TYPE",
+            "slug" : "type_of_message_type_001",
+            "name" : "Type of Message",
+            "usage" : "M",
+            "values" : [ {
+              "name" : "Type",
+              "slug" : "type_000",
+              "usage" : "M",
+              "type" : "char",
+              "length" : 6,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            }, {
+              "name" : "Version Number",
+              "slug" : "version_number_001",
+              "usage" : "M",
+              "type" : "int",
+              "length" : 1,
+              "minLength" : null,
+              "maxLength" : null,
+              "values" : [ ]
+            } ],
+            "type" : null,
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "VRS" : {
+        "name" : "VAT RATE SUMMARY",
+        "slug" : "vat_rate_summary_vrs",
+        "position" : "02",
+        "usage" : "O",
+        "count" : ">1",
+        "id" : "VRS",
+        "values" : {
+          "SEQA" : {
+            "id" : "SEQA",
+            "slug" : "first_level_sequence_number_seqa_000",
+            "name" : "First Level Sequence Number",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          },
+          "VATC" : {
+            "id" : "VATC",
+            "slug" : "vat_rate_category_code_vatc_001",
+            "name" : "VAT Rate Category Code",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "char",
+            "minLength" : null,
+            "maxLength" : null,
+            "length" : 1
+          },
+          "VATP" : {
+            "id" : "VATP",
+            "slug" : "vat_rate_percentage_vatp_002",
+            "name" : "VAT Rate Percentage",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.3",
+            "minLength" : 4,
+            "maxLength" : 6,
+            "length" : null
+          },
+          "VSDE" : {
+            "id" : "VSDE",
+            "slug" : "file_sub-total_amount_before_settlement_vsde_003",
+            "name" : "File Sub-Total Amount (before settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VSDI" : {
+            "id" : "VSDI",
+            "slug" : "file_sub-total_amount_after_settlement_vsdi_004",
+            "name" : "File Sub-Total Amount (after settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VVAT" : {
+            "id" : "VVAT",
+            "slug" : "file_vat_sub-total_vvat_005",
+            "name" : "File VAT Sub-Total",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VPSE" : {
+            "id" : "VPSE",
+            "slug" : "file_sub-total_payable_before_settlement_vpse_006",
+            "name" : "File Sub-Total Payable (before settlement",
+            "usage" : "O",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          },
+          "VPSI" : {
+            "id" : "VPSI",
+            "slug" : "file_sub-total_payable_after_settlement_vpsi_007",
+            "name" : "File Sub-Total Payable (after settlement",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "num.2",
+            "minLength" : 3,
+            "maxLength" : 12,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      },
+      "MTR" : {
+        "name" : "MESSAGE TRAILER",
+        "slug" : "message_trailer_mtr",
+        "position" : "03",
+        "usage" : "M",
+        "count" : null,
+        "id" : "MTR",
+        "values" : {
+          "NOSG" : {
+            "id" : "NOSG",
+            "slug" : "number_of_segments_nosg_000",
+            "name" : "Number of Segments",
+            "usage" : "M",
+            "values" : [ ],
+            "type" : "int",
+            "minLength" : 1,
+            "maxLength" : 10,
+            "length" : null
+          }
+        },
+        "type" : "SEGMENT"
+      }
+    }
+  } ]
+}

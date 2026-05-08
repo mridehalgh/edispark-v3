@@ -1,0 +1,1738 @@
+Sterling Standards Library
+Using TRADACOMS
+Version 8.0
+Sterling Standards Library
+Using TRADACOMS
+Version 8.0
+Note
+Before using this information and the product it supports, read the information in “Notices” on page 43.
+Copyright
+This edition applies to the 8.0 Version of the IBM Sterling Standards Library and to all subsequent releases and
+modifications until otherwise indicated in new editions.
+© Copyright IBM Corporation 2000, 2011.
+US Government Users Restricted Rights – Use, duplication or disclosure restricted by GSA ADP Schedule Contract
+with IBM Corp.
+Contents
+Chapter 1. Using TRADACOMS with
+Sterling B2B Integrator . . . . . . . . 1
+Use TRADACOMS with Sterling B2B Integrator . . 3
+Chapter 2. TRADACOMS Business
+Processes . . . . . . . . . . . . . . 5
+TRADACOMSDeenvelope Business Process . . . . 5
+TRADACOMSEnvelope Business Process . . . . . 8
+Before Using the TRADACOMSEnvelope Business
+Process . . . . . . . . . . . . . . . . 11
+Chapter 3. TRADACOMS Enveloping
+Overview . . . . . . . . . . . . . . 13
+Create a TRADACOMS Envelope . . . . . . . 14
+Update a TRADACOMS Envelope. . . . . . . 14
+Importing and Exporting Envelopes . . . . . . 15
+Delete a TRADACOMS Envelope . . . . . . . 15
+Using Wildcards in TRADACOMS Envelopes . . . 16
+Chapter 4. TRADACOMS Inbound STX
+END Envelope Properties. . . . . . . 19
+Chapter 5. TRADACOMS Outbound
+STX END Envelope Properties . . . . 23
+Chapter 6. TRADACOMS Outbound
+MHD MTR Envelope Properties . . . . 29
+Chapter 7. Creating TRADACOMS Maps 35
+TRADACOMS Components in the Sterling B2B
+Integrator Map Editor . . . . . . . . . . . 35
+Create a TRADACOMS Map . . . . . . . . 36
+Chapter 8. Generate a TRADACOMS
+Report . . . . . . . . . . . . . . . 39
+Chapter 9. Search for TRADACOMS
+Correlations . . . . . . . . . . . . 41
+Notices . . . . . . . . . . . . . . 43
+© Copyright IBM Corp. 2000, 2011 iii
+iv Sterling Standards Library: Using TRADACOMS
+Chapter 1. Using TRADACOMS with Sterling B2B Integrator
+TRADACOMS (Trading Data Communications Standard) is the international EDI
+standard developed by the UK ANA (Article Numbering Association, also called
+GS1 UK). The TRADACOMS standard provides a set of syntax rules to structure
+data, an interactive exchange protocol (I-EDI), and standard messages which allow
+multi-country and multi-industry exchange.
+This table describes how Sterling B2B Integrator supports TRADACOMS:
+Functionality Details
+Action You Need to Take to
+Implement TRADACOMS
+Services v Generic Envelope service translates
+messages, determines which
+business processes need to run to
+apply EDI envelopes, and starts
+those business processes.
+v Generic Deenvelope service
+removes the envelopes from
+inbound messages.
+Configure the services in
+Sterling B2B Integrator
+Graphic Process Modeler
+(GPM).
+Note: As a way to help
+reduce the number of
+envelopes you need to create
+and use, the Generic
+Envelope and Generic
+Deenvelope services support
+use of an asterisk (*) as a
+wildcard character in
+mandatory envelope fields for
+TRADACOMS. By using
+wildcards, you can set up one
+set of envelopes that can be
+used for multiple trading
+partners. If certain trading
+partners have specific
+requirements, you can still
+have envelopes that pertain
+just to them, and the EDI
+Enveloping service chooses
+the envelope that is the best
+match. In other words, the
+envelope that has the most
+matches to specific fields in
+the data (for example
+Receiver ID, Receiver ID
+Qualifier), is the one selected.
+Envelopesv Inbound TRADACOMS envelope
+wizard to implement inbound
+TRADACOMS.
+v Outbound TRADACOMS envelope
+wizard to implement outbound
+TRADACOMS.
+v Create the appropriate
+TRADACOMS envelopes
+for the TRADACOMS
+messages you are sending
+and receiving.
+© Copyright IBM Corp. 2000, 2011 1
+Functionality Details
+Action You Need to Take to
+Implement TRADACOMS
+Predefined business
+processes
+v TRADACOMSDeenvelope extracts
+EDI documents from a
+TRADACOMS interchange and
+locates an associated contract,
+according to the content of the
+envelopes.
+TRADACOMSDeenvelope then
+starts the appropriate business
+process.
+v TRADACOMSEnvelope applies a
+TRADACOMS envelope to one or
+more TRADACOMS messages and
+then uses the envelope data to
+translate and process them.
+Configure the predefined
+business processes and create
+new ones as necessary.
+IBM Sterling B2B
+Integrator Map
+Editor
+v Sterling B2B Integrator Map Editor
+wizard enables you to generate a
+file layout for you using the
+TRADACOMS message that you
+select. Included in the
+TRADACOMS map are groups,
+segments, composite elements, and
+elements that are defined by
+TRADACOMS.
+v Properties dialog boxes enable you
+to define and modify EDI map
+components for TRADACOMS.
+v Autolink function automatically
+creates links between input and
+output fields that have the same
+name or business name. This
+function can be used with any data
+format.
+v Additional mapping operations as
+needed.
+v Download Sterling B2B
+Integrator Map Editor.
+v Create a map or maps to
+translate your
+TRADACOMS messages.
+v Create code lists, if
+necessary.
+Correlation Search Search by TRADACOMS information. Use the EDI Correlation
+search functionality to search
+for TRADACOMS correlation
+information.
+Reports Report by TRADACOMS standard. Use the EDI Translation
+Detail report to search for
+details of inbound and
+outbound TRADACOMS
+messages and easily create
+useful reports on your
+inbound and outbound
+TRADACOMS messaging.
+Prerequisite for Using TRADACOMS
+The audience using this software should be familiar with Sterling B2B Integrator
+and the TRADACOMS standard.
+Note: This documentation is not intended to explain the TRADACOMS standard.
+2 Sterling Standards Library: Using TRADACOMS
+Use TRADACOMS with Sterling B2B Integrator
+About this task
+To use TRADACOMS with Sterling B2B Integrator, you must complete the
+following tasks:
+Procedure
+1. 2. 3. Create inbound and outbound TRADACOMS envelopes.
+Configure the Generic Envelope and Generic Deenvelope service appropriately.
+Use the predefined TRADACOMS business processes or create your own
+business processes.
+4. 5. Create any necessary code lists and maintain them as needed.
+Create your TRADACOMS map or maps, linking your proprietary file format
+to the appropriate TRADACOMS message format.
+6. 7. To track TRADACOMS messages, use the EDI Correlation Search functionality.
+To receive reports on inbound and outbound TRADACOMS message flow, use
+the EDI Translation Detail report features.
+Chapter 1. Using TRADACOMS with Sterling B2B Integrator 3
+4 Sterling Standards Library: Using TRADACOMS
+Chapter 2. TRADACOMS Business Processes
+To help you accomplish your business goals, Sterling B2B Integrator provides
+business processes to implement TRADACOMS processing:
+The following table lists business goals for the predefined TRADACOMS business
+processes:
+Business Process
+Business Goals
+TRADACOMSDeenvelope
+Extracts EDI documents from a TRADACOMS interchange and locates an
+associated contract, according to the content of the envelopes.
+TRADACOMSDeenvelope then starts the appropriate business process.
+TRADACOMSEnvelope
+Applies a TRADACOMS envelope to one or more TRADACOMS messages
+and then uses the envelope data to translate and process them.
+TRADACOMSDeenvelope Business Process
+The TRADACOMS Deenvelope business process includes the Generic
+Deenveloping service to support non-printable characters as EDI delimiters and
+perform the following steps:
+1. 2. Puts delimiters sent in the message into process data.
+Starts the TRADACOMS Enveloping or TRADACOMS Deenveloping business
+processes, as appropriate.
+If exceptions occur when running a TRADACOMS Deenvelope business process,
+Sterling B2B Integrator generates an EDI Compliance Report.
+This table lists the configuration parameters for the TRADACOMSDeenvelope
+business process:
+Parameter Default Description
+Document Tracking False When document tracking is enabled for a
+business process, tracking information is carried
+with the message throughout the process, and
+the tracking information is persisted about the
+message regardless of the persistence level you
+configured globally for Sterling B2B Integrator.
+Set onfault
+processing
+False Onfault processing allows the process to
+immediately execute Sterling B2B Integrator
+fault activity specified in the process, even if the
+process has not yet reached that step in the
+process.
+For example, if a process fails at step 3, but the
+on-fault activity is specified in step 7, if onfault
+processing is enabled, the process proceeds to
+the step 7 on-fault rather than halting at step 3.
+© Copyright IBM Corp. 2000, 2011 5
+Parameter Default Description
+Set Queue 4 Sterling B2B Integrator enables you to set
+performance optimizations by queue, defining
+queue levels to allocate resources. This number
+indicates the previously allocated queue level
+that you selected for this business process
+model for processing.
+Use BP Queuing
+(recommended)
+True Enable business processes to execute in a
+sequence. It is possible to queue business
+processes such that one executes after one
+business process ends.
+Enable Transaction False This option instructs Sterling B2B Integrator to
+treat the entire process as a single transaction so
+that either all of the steps complete, or, in the
+event of an error, none of them complete. When
+an error occurs, no data is committed; data
+returns to its pre-process state. By default, this
+transaction mode is not enabled.
+Commit All steps
+when there is error
+False This option enables you to have the business
+process commit all work to the database, at the
+time an error is generated. With this option you
+can either rollback or commit all work prior to
+the error before the onfault block is called.
+Category N/A A category name to which this business process
+belongs.
+Set the Persistence
+Level to
+Full The level of data to retain for generating a
+status report that describes each step that the
+business process completes. System default
+indicates that, for the data, configuration is
+already defined in Sterling B2B Integrator to
+retain data.
+Set the Event
+Reporting Level to
+None The level of event reporting that is retrieved for
+this business process when it runs. Full specifies
+to generate events for the business process,
+including the business process start and end
+time, start and end times for all services or
+services running as a result of this business
+process, and any resulting errors and exceptions.
+Set the Recovery
+Level to
+Manual The level of recovery for this business process if
+the business process should halt during
+execution. Manual requires you to resume or
+restart the business process manually.
+Set the Document
+Storage to
+System Default The level of document storage for messages that
+process when the business process runs. System
+Default specifies to store messages in the file
+system or database, according to how you
+configured archiving and purging in Sterling
+B2B Integrator.
+6 Sterling Standards Library: Using TRADACOMS
+Parameter Default Description
+Deadline Settings Do not set
+deadline
+Note: To set a
+deadline you must
+change it in the
+business process.
+Complete by – The deadline time, in hours and
+minutes, by which the business process must
+complete process once it starts.
+v First Notification: Hours and Minutes –
+Whether to receive notification before a
+business process deadline.
+v Second Notification: Hours and Minutes –
+Whether to receive another notification before
+a business process deadline.
+Life Span System Default The length of time, in days and hours, to retain
+the data in Sterling B2B Integrator, along with
+the life span type and removal method. If you
+select Process Specific, then you can select the
+number of days and hours for the life span.
+Also, you can select if you want Sterling B2B
+Integrator to archive or purge a business process
+after its life span is over.
+The following BPML code makes up the TRADACOMSDeenvelope business
+process:
+<process name="TRADACOMSDeenvelope">
+<rule name="contract">
+<condition>CONTRACT_FOUND = "YES"</condition>
+</rule>
+<sequence>
+<sequence>
+<operation>
+<participant name="DeenvelopeGeneric" />
+<output message="Xout" >
+<assign to="map_name">TRADACOMS_Deenvelope</assign>
+<assign to="." from="*"></assign>
+</output>
+<input message="Xin" >
+<assign to="." from="*"></assign>
+</input>
+</operation>
+<onFault code="Interchange-Non-Compliant">
+<!-- Just catch the error, so that the BP will continue. -->
+<!-- Dummy assign, since we need something here. -->
+<assign to="BREAK">YES</assign>
+</onFault>
+<onFault code="Transaction-Non-Compliant">
+<!-- Just catch the error, so that the BP will continue. -->
+<!-- Dummy assign, since we need something here. -->
+<assign to="BREAK">YES</assign>
+</onFault>
+<onFault>
+<operation>
+<participant name="BPExceptionService"/>
+<output message="Xout" >
+<assign to="exceptionCode" from="Prev_NotSuccess_Adv_Status/text()"/>
+</output>
+<input message="Xin"/>
+</operation>
+</onFault>
+</sequence>
+<choice>
+<select>
+Chapter 2. TRADACOMS Business Processes 7
+<case ref="contract" activity="invoke_contract_workflow" />
+</select>
+<sequence name="invoke_contract_workflow">
+<operation>
+<participant name="InvokeBusinessProcessService" />
+<output message="Xout">
+<assign to="INVOKE_MODE">ASYNC</assign>
+<assign to="." from="*"></assign>
+</output>
+<input message="Xin" >
+<assign to="." from="*"></assign>
+</input>
+</operation>
+</sequence>
+</choice>
+</sequence>
+</process>
+The following scenario shows how the TRADACOMSDeenvelope business process
+can deenvelope TRADACOMS documents:
+1. The File System adapter collects a file from a TRADACOMS collection folder
+and invokes the EDIDeenvelope business process.
+2. The EDI Deenvelope service determines that the file contains a TRADACOMS
+document and starts the TRADACOMSDeenvelope business process.
+3. The TRADACOMSDeenvelope business process removes the envelopes to make
+available the transaction set envelope for the TRADACOMS document and
+determine the next action to perform.
+Note: If the TRADACOMSDeenvelope business process does not locate a
+matching envelope, the business process stops. Sterling B2B Integrator
+generates an EDI Compliance Report that describes the reason that the
+TRADACOMSDeenvelope business process could not locate the envelope.
+Before Using TRADACOMSDeenvelope
+Before you use the TRADACOMSDeenvelope business process, you must complete
+the following tasks:
+1. Create the trading profile, including a contract.
+2. Create necessary envelopes.
+3. Create a business process that initiates the TRADACOMSDeenvelope business
+processes.
+When creating a business process that enables inbound STX envelopes to
+translate transactions when running TRADACOMSDeenvelope business
+processes, consider the following:
+v Delimiters are placed into process data in Sterling B2B Integrator.
+v The GPM makes available parameters that represent the delimiters, which
+you must configure to enable the envelopes to translate transaction.
+v You must create an XPath expression that describes the location of envelopes
+and apply it to the Translation service.
+TRADACOMSEnvelope Business Process
+The TRADACOMSEnvelope business process is initiated when it is called by
+another business process or the Generic Enveloping service.
+8 Sterling Standards Library: Using TRADACOMS
+The TRADACOMSEnvelope business processes performs the following primary
+activities:
+1. Starting with one or more TRADACOMS documents, the Generic Enveloping
+services applies envelope properties at the document level to each document.
+2. The Generic Envelope service takes one or more transaction sets and applies an
+envelope.
+3. The Generic Envelope service takes a functional group and applies the
+envelope and searches for a matching contract.
+4. Using the envelope data, the service either looks up a contract or runs a
+business process.
+This table lists the configuration parameters for the TRADACOMSEnvelope
+business process:
+Parameter Default Description
+Document Tracking False When document tracking is enabled for a
+business process, tracking information is carried
+with the message throughout the process, and
+the tracking information is persisted about the
+message regardless of the persistence level you
+configured globally for Sterling B2B Integrator.
+Set onfault
+processing
+False Onfault processing allows the process to
+immediately execute the on-fault activity
+specified in the process, even if the process has
+not yet reached that step in the process.
+For example, if a process fails at step 3, but the
+on-fault activity is specified in step 7, if onfault
+processing is enabled, the process proceeds to
+the step 7 on-fault rather than halting at step 3.
+Set Queue 4 Sterling B2B Integrator enables you to set
+performance optimizations by queue, defining
+queue levels to allocate resources. This number
+indicates the previously allocated queue level
+that you selected for this business process
+model for processing.
+Use BP Queuing
+(recommended)
+True Enables business processes to execute in a
+sequence, so that one executes after one
+business process ends.
+Enable Transaction False This option instructs Sterling B2B Integrator to
+treat the entire process as a single transaction so
+that either all of the steps complete, or, in the
+event of an error, none of them complete. When
+an error occurs, no data is committed; data
+returns to its pre-process state. By default, this
+transaction mode is not enabled.
+Commit All steps
+when there is error
+False This option enables you to have the business
+process commit all work to the database, at the
+time an error is generated. With this option you
+can either rollback or commit all work prior to
+the error before the onfault block is called.
+Category N/A A category name to which this business process
+belongs.
+Chapter 2. TRADACOMS Business Processes 9
+Parameter Default Description
+Set the Persistence
+Level to
+Full The level of data to retain for generating a
+status report that describes each step that the
+business process completes. System default
+indicates that, for the data, configuration is
+already defined in Sterling B2B Integrator to
+retain data.
+Set the Event
+Reporting Level to
+None The level of event reporting that is retrieved for
+this business process when it runs. Full specifies
+to generate events for the business process,
+including the business process start and end
+time, start and end times for all services or
+services running as a result of this business
+process, and any resulting errors and exceptions.
+Set the Recovery
+Level to
+Manual The level of recovery for this business process if
+the business process should halt during
+execution. Manual requires you to resume or
+restart the business process manually.
+Set the Document
+Storage to
+System Default The level of document storage for messages that
+process when the business process runs. System
+Default specifies to store messages in the file
+system or database, according to how you
+configured archiving and purging in Sterling
+B2B Integrator.
+Deadline Settings Do not set
+deadline
+Note: To set a
+deadline you must
+change it in the
+business process.
+Complete by – The deadline time, in hours and
+minutes, by which the business process must
+complete process once it starts.
+v First Notification: Hours and Minutes –
+Whether to receive notification before a
+business process deadline.
+v Second Notification: Hours and Minutes –
+Whether to receive another notification before
+a business process deadline.
+Life Span System Default The length of time, in days and hours, to retain
+the data inSterling B2B Integrator along with the
+life span type and removal method. If you select
+Process Specific, then you can select the
+number of days and hours for the life span.
+Also, you can select if you want Sterling B2B
+Integrator to archive or purge a business process
+after its life span is over.
+The following BPML code makes up the TRADACOMSEnvelope business process:
+<process name="TRADACOMSEnvelope">
+<rule name="contract">
+<condition>CONTRACT_FOUND = "YES"</condition>
+</rule>
+<sequence>
+<sequence>
+<operation>
+<participant name="EnvelopeGeneric" />
+<output message="Xout" >
+<assign to="." from="*"></assign>
+</output>
+<input message="Xin" >
+10 Sterling Standards Library: Using TRADACOMS
+<assign to="." from="*"></assign>
+</input>
+</operation>
+<onFault code="Translation-Error-Some-Docs">
+<assign to="BREAK">YES</assign>
+</onFault>
+<onFault code="Envelope-Translation-Error-Some-Docs">
+<assign to="BREAK">YES</assign>
+</onFault>
+<onFault>
+<operation>
+<participant name="BPExceptionService"/>
+<output message="Xout" >
+<assign to="exceptionCode" from="Prev_NotSuccess_Adv_Status/text()"/>
+</output>
+<input message="Xin"/>
+</operation>
+</onFault>
+</sequence>
+<choice>
+<select>
+<case ref="contract" activity="invoke_contract_workflow" />
+</select>
+<sequence name="invoke_contract_workflow">
+<operation>
+<participant name="InvokeBusinessProcessService" />
+<output message="Xout">
+<assign to="INVOKE_MODE">ASYNC</assign>
+<assign to="." from="*"></assign>
+</output>
+<input message="Xin" >
+<assign to="." from="*"></assign>
+</input>
+</operation>
+</sequence>
+</choice>
+</sequence>
+</process>
+Before Using the TRADACOMSEnvelope Business Process
+About this task
+Before you use the TRADACOMSEnvelope business process, complete the
+following task:
+Procedure
+1. 2. Create inbound envelopes for your TRADACOMS messages.
+Create outbound envelopes for your TRADACOMS messages.
+Chapter 2. TRADACOMS Business Processes 11
+12 Sterling Standards Library: Using TRADACOMS
+Chapter 3. TRADACOMS Enveloping Overview
+A document envelope consists of control information that enables organizations to
+effectively exchange messages. This information is added in headers and trailers to
+messages. Document envelopes are specific to the message protocol used. Creating
+document envelopes is necessary to use TRADACOMS with your trading partners.
+During the envelope creation process, you need to assign the envelope name,
+description, and parameters, such as unique identification numbers (control
+numbers).
+Note: Each time a user adds, modifies, or deletes an envelope, the action is logged
+to create an audit trail based on the user who performed the event.
+Each envelope type has a specific properties page for the envelope and other pages
+that enable you to specify additional requirements for the envelope. Properties for
+the following envelopes can be found in this documentation:
+v TRADACOMS Inbound STX END Envelope Properties
+v TRADACOMS Outbound STX END Envelope Properties
+v TRADACOMS Outbound MHD MTR Envelope Properties
+Document Life Span
+In previous releases, the document life span default was zero so that when the
+workflow expired, all associated documents were purged/archived with the
+workflow. Now the lifespan for TRADACOMS messages awaiting
+acknowledgement is configurable, and the default is thirty days.
+Note: You can change the default lifespan by editing the document.lifespan
+property in the enveloping.properties file. The document lifespan of the outbound
+document is automatically reset to zero after the acknowledgement for the
+document is received or if the user manually accepts the acknowledgement.
+Envelope Structure
+Sterling B2B Integrator supports the use of many EDI protocols, including
+TRADACOMS. TRADACOMS has one level of envelope that is the message group
+header.
+Base Envelopes
+Sterling B2B Integrator uses a concept of a base envelope as a starting point to create
+a new envelope. The base envelope maintains a link to the new envelope that
+inherited its properties. If you modify the base envelope, all related envelopes (that
+is, ones that inherited the base envelope properties) change, as well.
+Note: If you plan to create many envelopes using base envelopes, it is
+recommended that you do not use the base envelopes in production. You may
+want to document how your base envelopes are linked to other envelopes.
+The default envelope is the version of the document envelope that Sterling B2B
+Integrator uses. You can specify a default envelope only if there are two or more
+© Copyright IBM Corp. 2000, 2011 13
+versions of the same envelope. One version must be selected as the default.
+Types of Envelopes
+There are many types of envelopes provided in Sterling B2B Integrator. Each
+envelope is defined by its envelope properties. These predefined enveloping and
+deenveloping business processes are available for you to incorporate into your own
+business processes. Envelope parameters specify whether the document is inbound
+or outbound:
+v Inbound envelopes identify documents that come into Sterling B2B Integrator so
+they can be properly routed. Inbound envelopes also give you the option to
+translate documents when you choose to check documents for compliance. By
+choosing to translate documents from within the envelope, you can reduce
+document processing time because you do not need to specify a separate
+Translation service step in the business process.
+v Outbound envelopes identify documents so that they can be sent to and received
+by trading partners.
+Create a TRADACOMS Envelope
+About this task
+You can create a TRADACOMS envelope by using Sterling B2B Integrator.
+To create a new envelope using the Sterling B2B Integrator:
+Procedure
+1. From the Administration menu, select Trading Partner > Document Envelopes
+> Envelopes
+2. 3. 4. Under Create, next to New Envelope, click Go!
+On the Envelope Standards page, select TRADACOMS and click Next.
+Select the envelope you want to create, including inbound or outbound, and
+click Next.
+5. Do one of the following:
+v To create this envelope from a base envelope, select the Base envelope from
+the Select Envelope list, and click Next.
+Note: All the properties are pre-filled but you can update them as needed.
+v To create a new envelope, select the Not Applicable from the Select Envelope
+list, and click Next.
+6. On the Name page, type a unique name for the envelope, and a description or
+comments, then click Next.
+7. Complete the properties for the envelope as necessary and click Next after each
+page until you reach the confirm page. Required fields are highlighted in blue.
+8. Click Finish to add the envelope.
+9. Click Return to continue.
+Update a TRADACOMS Envelope
+About this task
+Sterling B2B Integrator enables you to modify any information in your envelopes,
+except the name of the envelope.
+14 Sterling Standards Library: Using TRADACOMS
+To update envelope properties:
+Procedure
+1. From the Administration menu, select Trading Partner > Document Envelopes
+> Envelopes
+2. 3. Find the envelope using the Search or List function.
+From the list of envelopes, click source manager next to the envelope you want
+to update.
+4. 5. 6. Click edit next to the envelope you want to update.
+Update envelope properties and settings as necessary, clicking Next to continue.
+Click Finish to update the envelope.
+7. Click Return to continue.
+Importing and Exporting Envelopes
+The Import/Export feature enables you to save time and increase the accuracy of
+duplicating resources on different systems. This feature enables you to move
+resources and data between Sterling Integrator® environments of the same version.
+The Import/Export feature enables you to:
+v Move from a test application environment to a production application
+environment.
+v Move resources from one application system to another. The ability to import
+and export
+envelopes means that you can configure resources on one system and then move
+or copy them to a different system, thereby avoiding having to recreate the
+resources on each system. Even if you have resources that are going to be slightly
+different from one system to another, you can export the resources from one
+system and import them to a different system, and then make the necessary
+changes to the resource on the second system.
+The Import/Export feature supports several different resource types, including
+envelopes.
+Note: Importing an export file of envelopes always requires a passphrase, even if a
+passphrase was not required during the export. The passphrase is now required
+because of the addition of encrypted passwords that apply to some envelopes.
+When you are prompted for a passphrase for envelopes during the import of
+envelopes (when you did not use a passphrase when the envelopes were
+exported), you can supply any value for the passphrase.
+Delete a TRADACOMS Envelope
+About this task
+Note: Before deleting a base envelope, consider the impact on all related envelopes
+(envelopes that inherited the base envelope properties).
+To delete an individual envelope or all versions of an envelope:
+Procedure
+1. From the Administration menu, select Trading Partner > Document Envelopes
+> Envelopes.
+2. Find the envelope using the Search or List function.
+Chapter 3. TRADACOMS Enveloping Overview 15
+3. 4. Next to the envelope you want to delete, click source manager.
+In Envelope Source Manager page, do one of the following:
+To delete an individual envelope:
+v Next to the version, under Delete, select the check box.
+v Next to Delete Selected Versions, click Go!.
+To delete all versions of this envelope, next to Delete All Versions, click Go!.
+Using Wildcards in TRADACOMS Envelopes
+As a way to help reduce the number of envelopes you need to create and use, the
+TRADACOMS Envelope service supports the use of an asterisk (*) as a wildcard
+character in all mandatory TRADACOMS envelope field and most optional fields,
+consistent with wildcard usage for the EDIFACT standard. By using wildcards in
+TRADACOMS envelope, you can create one set of envelopes that can be used for
+multiple trading partners. Then, when the TRADACOMS Envelope service runs, it
+replaces the wildcards with correlation values. If any of your trading partners have
+specific requirements, you can still create envelopes that pertain specifically to
+those trading partners, and the TRADACOMS Envelope service chooses the
+envelope that is the best match (the envelope that has the most matches to specific
+fields in the data (for example Receiver Code, Sender Code)).
+To use wildcards in Outbound TRADACOMS envelopes, you must set correlations
+using the Correlation service or a map (if you are translating a document prior to
+passing it to the TRADACOMS Envelope service). You need to set the correlation
+that corresponds to the field for which you are using a wildcard (for example,
+Out_SenderID for the FROM Sender Code data field).
+The following list contains the correlation values that can be set to a wildcard
+value (*) and can override Interchange-level and transaction-level envelope values
+(the names correspond directly to the names the TRADACOMS standard uses).
+Interchange-level correlation values
+Note: The fields that are marked with (^) are used for envelope lookup.
+v STDS Syntax Rules ID (Out_SyntaxRulesId)
+v STDS Syntax Version (Out_SyntaxVersion)
+v FROM Sender Code (Out_SenderID) ^
+v FROM Sender Name (Out_SenderName)
+v UNTO Receiver Code (Out_ReceiverID) ^
+v UNTO Receiver Name (Out_ReceiverName)
+v RCRF Receiver Reference (Out_ReceiverReference)
+v APRF Application Reference (Out_ApplicationReference)
+v PRCD Transmission Priority (Out_TransmissionPriority)
+v Maximum number of documents per interchange (Out_MaxDocsPerInterchange)
+v Maximum Interchange Size (Out_MaxInterchangeSizeI)
+Transaction-level correlation values
+Note: The fields that are marked with (^) are used for envelope lookup.
+v MHD TYPE Message Type of Header Message (Out_MessageType)
+v FROM Sender Code (Out_SenderID) ^
+16 Sterling Standards Library: Using TRADACOMS
+v UNTO Receiver Code (Out_ReceiverID) ^
+v TCDE Transaction Code (Out_TransactionCode)
+v TTYP Transaction Type (Out_TransactionType)
+v SIDN Supplier's EAN Location Number (Out_SupplierLocationNumber)
+v SIDN Supplier's Identity Allocated by Customer (Out_SupplierId)
+v SNAM Supplier's Name (Out_SupplierName)
+v SADD Supplier's Address Line 1 (Out_SupplierAddress1)
+v SADD Supplier's Address Line 2 (Out_SupplierAddress2)
+v SADD Supplier's Address Line 3 (Out_SupplierAddress3)
+v SADD Supplier's Address Line 4 (Out_SupplierAddress4)
+v SADD Supplier's Post Code (Out_SupplierPostCode)
+v VATN Supplier's Numeric VAT Registration Number
+(Out_SupplierNumericVatCode)
+v VATN Supplier's Alphanumeric VAT Registration Number
+(Out_SupplierAlphaVatCode)
+v CIDN Customer's EAN Location Number (Out_CustomerLocationNumber)
+v CIDN Customer's Identity Allocated by Supplier (Out_CustomerId)
+v CNAM Customer's Name (Out_CustomerName)
+v CADD Customer's Address Line 1 (Out_CustomerAddress1)
+v CADD Customer's Address Line 2 (Out_CustomerAddress2)
+v CADD Customer's Address Line 3 (Out_CustomerAddress3)
+v CADD Customer's Address Line 4 (Out_CustomerAddress4)
+v CADD Customer's Post Code (Out_CustomerPostCode)
+v VATR Customer's Numeric VAT Registration Number
+(Out_CustomerNumericVatCode)
+v VATR Customer's Alphanumeric VAT Registration Number
+(Out_CustomerAlphaVatCode)
+v Bank Identity Code (Out_BankID)
+v Bank Name (Out_BankName)
+v Service Code (Out_ServiceCode)
+v User Code (Out_UserCode)
+v Bank Information (Out_BankInformation)
+v Currency Indicator (Out_CurrencyIndicator)
+v INLO Invoice System EAN Location Number
+(Out_InvoiceSystemEANLocationNumber)
+v INLO Invoice System Supplier's Own Code
+(Out_InvoiceSystemSuppliersOwnCode)
+v Accepter Lookup Alias (Out_AccepterLookupAlias) ^
+v Maximum Interchange Size (Out_MaxInterchangeSizeT)
+Chapter 3. TRADACOMS Enveloping Overview 17
+18 Sterling Standards Library: Using TRADACOMS
+Chapter 4. TRADACOMS Inbound STX END Envelope
+Properties
+Note: An (*) asterisk indicates that a wildcard value can be used with that
+parameter (the wildcard value is an asterisk). For Inbound envelopes, a wildcard
+value in the envelope matches any value in the input document, while an empty
+value in the envelope matches only an empty value in the input document. For
+Outbound envelopes, a wildcard value is equivalent to an empty value in the
+envelope. See “Using Wildcards in TRADACOMS Envelopes” on page 16 for more
+information about using wildcards in TRADACOMS envelopes.
+The following table describes TRADACOMS inbound STX END envelope
+properties:
+Field Description
+FROM Sender Name
+Code identifies the company or division sending the transmission. Valid
+value is 14 standard characters. Required.
+UNTO Receiver Code
+Code identifies the company or division receiving the transmission. Valid
+value is 14 standard characters. Required.
+MHD TYPE Message Type of Header Message
+Transaction message type as determined by the information type in the
+header of the message group, which includes the message or by the
+information type in the transaction message. Valid value is six standard
+characters. Required.
+Maximum age of Control Number History Records in days
+Maximum days to retain a history of control numbers to use for
+duplication determinations. Valid value is nine standard characters.
+Optional.
+Compliance Check Document
+Check the transaction set body for compliance. Valid values are Yes and
+No. Required.
+Translate transactions
+Generate transactions according to the standard format from data groups
+in an EDI system and carry out reverse processing. By choosing to
+translate documents from within the envelope, you can reduce document
+processing time because you do not need to specify a separate Translation
+service step in the business process. Valid values are Yes and No. Required.
+Compliance Map Name Mode
+Mode in which to specify the map to use to perform a compliance check.
+Valid values are:
+v Specify
+v Generate from data
+Compliance Check Map Name
+Select map used to apply TRADACOMS interchange headers. Optional.
+Displayed only when Compliance Map Name Mode is set to Specify.
+© Copyright IBM Corp. 2000, 2011 19
+Primary Name Format
+Used to specify what information to include when generating a compliance
+check Map Name. Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type (selected by default)
+Displayed only when Compliance Map Name Mode is set to Generate
+from data.
+Backup Name Format
+Used to specify what information to include when generating a compliance
+check Map Name. The Backup Name Formats are used when a valid map
+cannot be determined from the Primary Name Format. Information
+includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type
+Displayed only when Compliance Map Name Mode is set to Generate
+from data.
+Backup Name Format
+Used to specify what information to include when generating a compliance
+check Map Name. The Backup Name Formats are used when a valid map
+cannot be determined from the Primary Name Format. Information
+includes the following:
+v Sender Code
+v Receiver Code
+v Message Type (selected by default)
+Displayed only when Compliance Map Name Mode is set to Generate
+from
+data.
+Generate an error if no generated map name exists in the system
+Generate an error message if the translator cannot locate the specified map
+name. Valid values are Yes and No. Required.
+Determine the Business Process by
+Required. Valid values are:
+v Specifying a contract
+v Specifying a business process
+v Generating the business process name from the data
+Contract List
+Select a previously created contract to associate with this envelope.
+Optional. Displayed only when Determine the Business Process by is set
+to Specifying a contract.
+Business Process List
+Select a business process to run when this envelope is processed. Optional.
+Displayed only when Determine the Business Process by is set to
+Specifying a business process.
+20 Sterling Standards Library: Using TRADACOMS
+Primary Name Format
+Used to specify what information to include when generating a business
+process name. Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type (selected by default)
+Displayed only when Determine the Business Process by is set to
+Generating the business process name from the data.
+Backup Name Format
+Used to specify what information to include when generating a business
+process Name. The Backup Name Formats are used when a valid business
+process name cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type
+Displayed only when Determine the Business Process by is set to
+Generating the business process name from the data.
+Backup Name Format
+Used to specify what information to include when generating a business
+process Name. The Backup Name Formats are used when a valid business
+process name cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code
+v Receiver Code
+v Message Type (selected by default)
+Displayed only when Determine the Business Process by is set to
+Generating the business process name from the data.
+Generate an error if no generated business process name exists in the system
+Generate an error message if the translator cannot locate the specified
+business process name. Valid values are Yes and No. Required.
+Extraction Options
+Required. Valid values are:
+v Determined by a business process
+v Extract to a file system directory
+v Extract to a mailbox
+Data Extraction Directory
+Directory for data extraction. Optional. Only displayed when Extraction
+Options is set to Extract to a file system directory.
+Data Extraction Filename
+Filename for data extraction. Optional. Only displayed when Extraction
+Options is set to Extract to a file system directory.
+Data Extraction Mailbox
+Mailbox for data extraction. Required. Only displayed when Extraction
+Options is set to Extract to a mailbox.
+Chapter 4. TRADACOMS Inbound STX END Envelope Properties 21
+Data Extraction Mailbox Message Name
+Mailbox message name for data extraction. Optional. Only displayed when
+Extraction Options is set to Extract to a mailbox.
+22 Sterling Standards Library: Using TRADACOMS
+Chapter 5. TRADACOMS Outbound STX END Envelope
+Properties
+Note: An (*) asterisk indicates that a wildcard value can be used with that
+parameter (the wildcard value is an asterisk). For Inbound envelopes, a wildcard
+value in the envelope matches any value in the input document, while an empty
+value in the envelope matches only an empty value in the input document. For
+Outbound envelopes, a wildcard value is equivalent to an empty value in the
+envelope. See “Using Wildcards in TRADACOMS Envelopes” on page 16 for more
+information about using wildcards in TRADACOMS envelopes.
+The following table describes TRADACOMS outbound STX END envelope
+properties:
+Field Description
+STDS Syntax Rules ID
+Coded TRADACOMS identifier of syntax rules. Valid value is four
+standard characters. Typically, this value is ANA. Required.
+STDS Syntax Version
+Version number of TRADACOMS syntax rules. Typically, this value is 1.
+Valid value is one limited standard character. Required.
+FROM Sender Code
+Code identifies the company or division sending the transmission. Valid
+value is up to 35 standard characters. Required.
+Note: Either the FROM Sender Code (FROM1), or the FROM Sender Name
+(FROM2, if the FROM Sender Code is empty) can be specified.
+FROM Sender Name
+Name identifies the transmission sender. Optional.
+UNTO Receiver Code
+Code identifies the company or division receiving the transmission. Valid
+value is up to 35 standard characters. Required.
+Note: Either the UNTO Receiver Code (UNTO1), or the UNTO Receiver
+Name (UNTO2, if the UNTO Receiver Code is empty) can be specified.
+UNTO Receiver Name
+Name identifying the transmission receiver. Valid value is 12 standard
+characters. Optional.
+Use Correlation Overrides
+Whether to use correlation overrides. Required. Valid values are:
+v Always - If a correlation override value is provided, always use that
+value instead of the value in the envelope (except for the Sender ID,
+Receiver ID, and Sender/Receiver Qualifier fields, which must have a *
+in the envelope definition to use the correlation override value).
+v Only when the envelope field has a wildcard value (*) - Only use
+correlation override values for fields in the envelope definition that are
+specified with a wildcard (*).
+v Never - Never use correlation overrides.
+© Copyright IBM Corp. 2000, 2011 23
+v Use the default specified in enveloping.properties - The
+enveloping.properties file defines when to use correlation overrides if
+this choice is selected. The properties file will either define Always,
+Never, or Only when the envelope field has a wildcard (*) value. The
+applicable properties file property is
+enveloping.correl_override_default.[standard]. Allowed values are No
+(which means never), WildcardOnly, or All (which means always, except
+for the Sender ID, Receiver ID, and Sender/Receiver Qualifier fields,
+which must have a * in the envelope definition to use the correlation
+override value).
+Use global control number for SNRF Sender Reference
+Whether this envelope definition must use a global control number to
+uniquely identify transmissions. No indicates that the envelope definition
+must use its own global SNRF Sender Reference number. Valid values are:
+v Yes (default)
+v Yes (and generate name from data)
+v No
+Required.
+RCRF Receiver Reference
+Transmission reference ID of the receiver. Optional.
+APRF Application Reference
+TRADACOMS application reference ID for this transmission. Optional.
+PRCD Transmission Priority
+TRADACOMS transmission priority code. Valid value is one limited
+numeric character. Optional.
+SNRF Sender Reference
+Key used for referencing this SNRF sender. Valid value is 14 standard
+characters. Required.
+Primary Name Format
+Used to specify what information to include when generating a global
+control number name. Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Syntax Rules ID (selected by default)
+v Syntax Version (selected by default)
+Only displayed when Use global control number for SNRF Sender
+Reference is set to Yes (and generate name from data).
+Backup Name Format
+Used to specify what information to include when generating a global
+control number name. The Backup Name Formats are used when a valid
+control number name cannot be determined from the Primary Name
+Format. Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Syntax Rules ID
+v Syntax Version
+Only displayed when Use global control number for SNRF Sender
+Reference is set to Yes (and generate name from data).
+24 Sterling Standards Library: Using TRADACOMS
+Backup Name Format
+Used to specify what information to include when generating a global
+control number name. The Backup Name Formats are used when a valid
+control number name cannot be determined from the Primary Name
+Format. Information includes the following:
+v Sender Code
+v Receiver Code
+v Syntax Rules ID (selected by default)
+v Syntax Version (selected by default)
+Only displayed when Use global control number for SNRF Sender
+Reference is set to Yes (and generate name from data).
+Maximum number of documents per interchange
+Specify the Maximum number of documents per interchange. If you do not
+specify a value or if you specify zero, the system will not check for
+maximum documents per interchange. If you specify a value greater than
+zero, only that number of documents (or less) will be included in an
+interchange. This parameter can work in conjunction with the Limit
+Interchange Size parameter to limit the number of documents per
+interchange and also limit the size of the interchange. This may result in
+less than the maximum number of documents depending upon the size
+limit you impose.
+Note: You can also specify the maximum number of documents per
+interchange globally without having to change all existing envelope
+definitions by modifying the
+enveloping.EDIFACT.MaxDocsPerInterchange property in the
+enveloping.properties file by uncommenting this line (by removing the #)
+and then specifying a value greater than zero. See the Property Files
+documentation for more information on changing properties. Note that
+anything specified in the envelope definition will override the global value
+specified in the enveloping.properties file. Additionally, any correlation
+overrides will override the value specified in the envelope definition and
+the enveloping.properties file. Optional.
+Limit Interchange Size
+Maximum size allowed for an interchange before a single interchange is
+split into multiple interchanges that are each under the maximum size
+limitation.
+Valid values are:
+v No
+v Use smallest transaction limit (default)
+Note: The Use smallest transaction limit setting is specific to the
+limitation imposed by the standard.
+v Specify size limit
+v Use global default in enveloping.properties
+Required.
+Note: If you select Use transaction set default in enveloping.properties,
+you need to specify the size limit directly (in the Maximum Interchange
+Size parameter) or by setting properties in the enveloping.properties
+property file, which contains a property for each supported standard and
+Chapter 5. TRADACOMS Outbound STX END Envelope Properties 25
+more specific properties for each message type (for example, ANA for the
+TRADACOMS standard) that can override the standard property.
+Invoke Business Process for Each Interchange
+Whether a business process is invoked for each interchange generated.
+Valid values are Yes and No (default). Required.
+Note: If Invoke Business Process for Each Interchange is set to No, the
+service places the name of the business process specified in the envelope
+into process data using the key WFD_NAME. This business process is then
+invoked by the Invoke Business Process Service. If Invoke Business
+Process For Each Interchange is set to Yes, the service directly bootstraps
+an instance of the business process specified in the envelope, and does not
+set WFD_NAME in process data.
+Maximum Interchange Size (bytes)
+Specify the maximum size of each individual interchange. Required.
+Note: Only displayed if you selected Specify size limit for the Limit
+Interchange Size parameter. If you choose to specify a maximum value,
+the value you specify is checked to make sure it is at least 354 bytes based
+on the header and trailer size for TRADACOMS standard.
+Encode Document
+Character encoding for the document. Valid values are Yes and No.
+Required.
+Stream Segments
+Insert an end-of-line character after each segment record. Valid values are
+Yes and No. Required.
+Encoding
+Type of character encoding for the message group that includes this
+header. Optional. Only displayed if Encode Document is set to Yes.
+Determine the Business Process by
+Required. Valid values are:
+v Specifying a contract
+v Specifying a business process
+v Generating the business process name from the data
+Contract List
+Select a previously created contract to associate with this envelope.
+Optional. Only displayed if Determine the business process by is set to
+Specifying a contract.
+Business Process List
+Select a business process to run when this envelope is processed. Optional.
+Only displayed if Determine the business process by is set to Specifying
+a business process.
+Primary Name Format
+Used to specify what information to include when generating a business
+process name. Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Syntax Rules ID (selected by default)
+v Syntax Version (selected by default)
+26 Sterling Standards Library: Using TRADACOMS
+Only displayed when Use global control number for SNRF Sender
+Reference is set to Yes (and generate name from data).
+Backup Name Format
+Used to specify what information to include when generating a business
+process name. The Backup Name Formats are used when a valid business
+process name cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Syntax Rules ID
+v Syntax Version
+Only displayed when Use global control number for SNRF Sender
+Reference is set to Yes (and generate name from data).
+Backup Name Format
+Used to specify what information to include when generating a business
+process name. The Backup Name Formats are used when a valid business
+process name cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code
+v Receiver Code
+v Syntax Rules ID (selected by default)
+v Syntax Version (selected by default)
+Only displayed when Use global control number for SNRF Sender
+Reference is set to Yes (and generate name from data).
+Generate an error if no generated business process name exists in the system
+Generate an error message if the translator cannot locate the specified
+business process name. Valid values are Yes and No. Required.
+Extraction Options
+Required. Valid values are:
+v Determined by a business process
+v Extract to a file system directory
+v Extract to a mailbox
+Data Extraction Directory
+Directory for data extraction. Optional. Only displayed if Extraction
+Options is set to Extract to a file system directory.
+Data Extraction Filename
+Filename for data extraction. Optional. Only displayed if Extraction
+Options is set to Extract to a file system directory.
+Data Extraction Mailbox
+Mailbox for data extraction. Required. Only displayed if Extraction
+Options is set to Extract to a mailbox.
+Data Extraction Mailbox Message Name
+Mailbox message name for data extraction. Optional. Only displayed if
+Extraction Options is set to Extract to a mailbox.
+Chapter 5. TRADACOMS Outbound STX END Envelope Properties 27
+28 Sterling Standards Library: Using TRADACOMS
+Chapter 6. TRADACOMS Outbound MHD MTR Envelope
+Properties
+Note: An (*) asterisk indicates that a wildcard value can be used with that
+parameter (the wildcard value is an asterisk). For Inbound envelopes, a wildcard
+value in the envelope matches any value in the input document, while an empty
+value in the envelope matches only an empty value in the input document. For
+Outbound envelopes, a wildcard value is equivalent to an empty value in the
+envelope. See “Using Wildcards in TRADACOMS Envelopes” on page 16 for more
+information about using wildcards in TRADACOMS envelopes.
+The following table describes TRADACOMS outbound MHD MTR envelope
+properties:
+Field Description
+Next Envelope
+Envelope to apply after this envelope. Optional.
+Create Next Envelope
+Adds Interchange level envelope to use as next envelope. Optional.
+MHD TYPE Message Type of Header Message
+Message type of the TRADACOMS header message. For example, INVFIL
+or ORDHDR. Valid value is six standard characters. Required.
+FROM Sender Code
+Coded identifier of the transmission sender. Valid value is 14 standard
+characters. Required.
+UNTO Receiver Code
+Coded identifier of the transmission receiver. Valid value is 14 standard
+characters. Required.
+Use Correlation Overrides
+Whether to use correlation overrides. Required. Valid values are:
+v Always - If a correlation override value is provided, always use that
+value instead of the value in the envelope (except for the Sender ID,
+Receiver ID, and Sender/Receiver Qualifier fields, which must have a *
+in the envelope definition to use the correlation override value).
+v Only when the envelope field has a wildcard value (*) - Only use
+correlation override values for fields in the envelope definition that are
+specified with a wildcard (*).
+v Never - Never use correlation overrides.
+v Use the default specified in enveloping.properties - The
+enveloping.properties file defines when to use correlation overrides if
+this choice is selected. The properties file will either define Always,
+Never, or Only when the envelope field has a wildcard (*) value. The
+applicable properties file property is
+enveloping.correl_override_default.[standard]. Allowed values are No
+(which means never), WildcardOnly, or All (which means always, except
+for the Sender ID, Receiver ID, and Sender/Receiver Qualifier fields,
+which must have a * in the envelope definition to use the correlation
+override value).
+© Copyright IBM Corp. 2000, 2011 29
+TCDE Transaction Code
+Coded identifier of the TRADACOMS transaction code. Valid value is four
+standard characters. Required.
+TTYP Transaction Type
+TRADACOMS transaction type. Valid value is 12 standard characters.
+Optional.
+SIDN Supplier's EAN Location Number
+EAN location number of the supplier. Optional.
+SIDN Supplier's Identity Allocated by Customer
+ID assigned to the supplier by the customer. Optional.
+SNAM Supplier's Name
+Name of supplier. Optional.
+SADD Supplier's Address Line 1
+Address of the supplier. Optional.
+SADD Supplier's Address Line 2
+Additional address of the supplier. Optional.
+SADD Supplier's Address Line 3
+Additional address of the supplier. Optional.
+SADD Supplier's Address Line 4
+Additional address of the supplier. Optional.
+SADD Supplier's Post Code
+Postal code of the supplier. Optional.
+VATN Supplier's Alphanumeric VAT Registration Number
+VAT registration alphanumeric code of the customer. Optional.
+VATN Supplier's Numeric VAT Registration Number
+VAT registration numeric code of the customer. Optional.
+CIDN Customer's EAN Location Number
+EAN location number of the customer. Optional.
+CIDN Customer's Identity Allocated by Supplier
+ID assigned to the customer by the supplier. Optional.
+CNAM Customer's Name
+Name of the customer. Optional.
+CADD Customer's Address Line 1
+Address of the customer. Optional.
+CADD Customer's Address Line 2
+Additional address of the customer. Optional.
+CADD Customer's Address Line 3
+Additional address of the customer. Optional.
+CADD Customer's Address Line 4
+Additional address of the customer. Optional.
+CADD Customer's Post Code
+Postal code of the customer. Optional.
+VATR Customer's Alphanumeric VAT Registration Number
+VAT registration alphanumeric code of the supplier. Optional.
+30 Sterling Standards Library: Using TRADACOMS
+VATR Customer's Numeric VAT Registration Number
+VAT registration numeric code of the supplier. Optional.
+Bank Identity Code
+Service bank's own identity code. Optional.
+Bank Name
+Service bank/third party bank name. Optional.
+Service Code
+Name of service as allocated by the service bank. Optional.
+User Code
+Customer's user number as allocated by the bank. Optional.
+Bank Information
+Customer-to bank-information (for example, F/X Deal Number). Optional.
+Currency Indicator
+Type of currency, three character code such as, USD, EUR, and so on.
+Optional.
+FLGN File Generation Number
+Generated number assigned to the file. Valid value is four standard
+characters. Required.
+INLO Invoice System EAN Location Number
+EAN location number assigned to the invoicing system. Valid value is 13
+standard characters. Optional.
+INLO Invoice System Supplier's Own Code
+Number assigned by the supplier to the invoicing system. Optional.
+Accepter Lookup Alias
+Identifying string used with the sender ID and the receiver ID to look up
+this envelope with the EDI Encoder service. This alias associates a
+document with the service it requires. Valid value must be at least one
+limited standard character. Required.
+Limit Interchange Size
+Maximum size allowed for an interchange before a single interchange is
+split into multiple interchanges that are each under the maximum size
+limitation.
+Valid values are:
+v No
+v Specify size limit
+v Use transaction set default in enveloping.properties (default)
+Required.
+Note: If you select Use transaction set default in enveloping.properties,
+you need to specify the size limit directly (in the Maximum Interchange
+Size parameter) or by setting properties in the enveloping.properties
+property file, which contains a property for each supported standard and
+more specific properties for each message type (for example, ANA for the
+TRADACOMS standard) that can override the standard property.
+Maximum Interchange Size
+Specify the maximum size of each individual interchange. Required.
+Chapter 6. TRADACOMS Outbound MHD MTR Envelope Properties 31
+Note: Only displayed if you selected Specify size limit for the Limit
+Interchange Size parameter. If you choose to specify a maximum value,
+the value you specify is checked to make sure it is at least 354 bytes based
+on the header and trailer size for TRADACOMS standard.
+Pre-envelope Translation Map Name Mode
+Mode in which to specify the map to use to perform a pre-envelope
+translation. Valid values are:
+v Specify
+v Generate from data
+Pre-envelope Map Name
+Select map used to apply TRADACOMS transaction headers. Optional.
+Displayed only when Pre-envelope Translation Map Name Mode is set to
+Specify.
+Primary Name Format
+Used to specify what information to include when generating a
+Pre-envelope Map Name. Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type (selected by default)
+Displayed only when Pre-envelope Map Name Mode is set to Generate
+from
+data.
+Backup Name Format
+Used to specify what information to include when generating a
+Pre-envelope Map Name. The Backup Name Formats are used when a
+valid map name cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type
+Displayed only when Pre-envelope Map Name Mode is set to Generate
+from data.
+Backup Name Format
+Used to specify what information to include when generating a
+Pre-envelope Map Name. The Backup Name Formats are used when a
+valid map cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code
+v Receiver Code
+v Message Type (selected by default)
+Displayed only when Pre-envelope Map Name Mode is set to Generate
+from data.
+Generate an error if no generated map name exists in the system
+Generate an error message if the translator cannot locate the specified map
+name. Valid values are Yes and No. Required.
+Validate translation input
+Valid values are Yes (default) or No. Required.
+32 Sterling Standards Library: Using TRADACOMS
+Validate translation output
+Valid values are Yes (default) or No. Required.
+Enveloping Map Name Mode
+How the map to use to envelope documents is specified. Valid values are:
+v Specify
+v Generate from data
+Enveloping Map Name
+Map used to apply TRADACOMS interchange headers. Required.
+Primary Name Format
+Used to specify what information to include when generating a Map
+Name. Information includes the following:
+v Sender Code
+v Receiver Code
+v Message Type (selected by default)
+Note: A modified Message Type value is used in generating the
+Enveloping Map Name as follows: ACKHDR becomes ACKMNT,
+CREHDR becomes CREDIT, DELHDR becomes DELIVR, INVFIL becomes
+INVOIC, ORDHDR becomes ORDERS, and PAYHDR becomes PAYINF. In
+this way, the generated names match the name of the enveloping maps
+shipped with Sterling B2B Integrator. Message Type values other than the
+ones listed above are not modified.
+Displayed only when Enveloping Map Name Mode is set to Generate
+from data.
+Backup Name Format
+Used to specify what information to include when generating an
+Enveloping Map Name. The Backup Name Formats are used when a valid
+map name cannot be determined from the Primary Name Format.
+Information includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type
+Displayed only when Enveloping Map Name Mode is set to Generate
+from data.
+Backup Name Format
+Used to specify what information to include when generating an
+Enveloping Map Name. The Backup Name Formats are used when a valid
+map cannot be determined from the Primary Name Format. Information
+includes the following:
+v Sender Code (selected by default)
+v Receiver Code (selected by default)
+v Message Type (selected by default)
+Displayed only when Enveloping Map Name Mode is set to Generate
+from data.
+Generate an error if no generated map name exists in the system
+Generate an error message if the translator cannot locate the specified map
+name. Valid values are Yes and No. Required.
+Chapter 6. TRADACOMS Outbound MHD MTR Envelope Properties 33
+34 Sterling Standards Library: Using TRADACOMS
+Chapter 7. Creating TRADACOMS Maps
+The Sterling B2B Integrator Map Editor enables you to map TRADACOMS
+documents, and generates a file layout for you using the components and message
+types that you select. The Sterling B2B Integrator Map Editor-generated
+TRADACOMS map consists of groups, records, composites, and fields that are
+comparable to parameters defined by TRADACOMS.
+Note: You need to download the Sterling B2B Integrator Map Editor component to
+use it.
+Sterling B2B Integrator Map Editor allows you to modify the map components by
+using the Deactivate, Promote, Split, Copy, Cut, and Paste functions.
+You can create a map for all TRADACOMS messages (for all supported
+TRADACOMS releases) loaded into the IBM Sterling Gentran Standards Database
+for EDI through the Sterling B2B Integrator Map Editor.
+TRADACOMS Components in the Sterling B2B Integrator Map Editor
+The following table lists the components that make up the TRADACOMS layout in
+the Sterling B2B Integrator Map Editor, the icons that represent the components,
+and descriptions of the components.
+Component Icon Description
+TRADACOMS
+root element
+The TRADACOMS root element represents the message that Sterling
+B2B Integrator is mapping. At the TRADACOMS file root element,
+you define the message type and encoding. It is a group and can
+contain groups and records.
+Group A group is a looping structure that contains a sequence or an
+implicit group of repeating field tags (in Sterling B2B Integrator
+Map Editor, a group is related segments and groups that repeat in
+sequence until either the group data ends, or the maximum number
+of times that the loop is permitted to repeat is exhausted).
+A group that is subordinate to another group is a subgroup (and
+corresponds to a nested looping structure, a loop within a loop).
+When a group contains an extended rule or a standard rule, an
+asterisk appears to the right of the group icon.
+Segment A TRADACOMS segment contains a field tag (in Sterling B2B
+Integrator Map Editor, a TRADACOMS segment is a group of
+related elements or composite data elements that combine to
+communicate useful data). A TRADACOMS segment can occur
+once or can repeat multiple times.
+Note: If a TRADACOMS segment occurs more than once in a map,
+it is identified by its name <ID>. The second and subsequent
+occurrences are identified by <ID>:n, where n is the number of the
+occurrence in the map.
+© Copyright IBM Corp. 2000, 2011 35
+Component Icon Description
+Element An element is a field or a group of TRADACOMS components (the
+smallest piece of information defined by the standard) that define a
+TRADACOMS element. An element can have different meanings
+depending on the context. In other data formats in the Sterling B2B
+Integrator Map Editor, an element is not considered to have useful
+meaning except in the larger context of the segment that contains it.
+However, elements used in the Sterling B2B Integrator Map
+Editorto represent TRADACOMS fields and components contain
+useful and discrete information.
+Note: If an element occurs more than once in a map it is identified
+by its name <ID>. The second and subsequent occurrences are
+identified by <ID>:n, where n is the number of the occurrence in
+the map.
+A repeating element is an element with the ability to loop (occur
+more than once) within a particular TRADACOMS segment. To
+enable a single element to repeat multiple times within a
+TRADACOMS element, the occurrence of the element must be
+separated by a start and end delimiter. The use of start and end
+delimiters help the translator determine where elements and
+components are defined within a field tag.
+When a field has a link performed against it, a red check mark
+appears over the element icon.
+When a field contains an extended rule or a standard rule, an
+asterisk appears to the right of the element icon.
+Create a TRADACOMS Map
+About this task
+When you create a new map, you can either manually create an EDI layout or you
+can use a wizard that creates a layout for you based on an EDI standard. The
+wizard saves you time and effort and minimizes the risk of having an invalid
+standard format.
+Note: If the map you are creating contains greater than 20,000 objects, you will
+receive a message noting that this map contains a very large number of objects. For
+best performance, it is recommended that you consider whether any unnecessary
+objects in the map can be removed, do not expand the entire object tree—expand
+only the section of the tree you are currently mapping, consider using the Show
+links to or from the currently selected element option instead of the Show links
+to or from all visible elements option, and save the map using the .MAP file
+format (using the Save As function).
+To create a TRADACOMS map:
+Procedure
+1. From the Sterling B2B Integrator Map Editor File menu, select New.
+2. In the New Map Wizard, complete the questions in the first window and click
+Next.
+Note: Be sure that IBM Sterling B2B Integrator is selected in the What kind
+of map are you creating list.
+36 Sterling Standards Library: Using TRADACOMS
+3. 4. 5. 6. 7. 8. 9. 10. 11. 12. 13. 14. 15. 16. 17. If you are translating from TRADACOMS, in the Input Format window select
+the Create a New Data Format Using this Syntax option.
+Then, select Delimited EDI and click Customize. If you are translating from
+another format, select that format and continue to the next page of the wizard.
+If you want to import code lists from the Sterling Standards for EDI, select the
+Import code list check box and click Next. Otherwise, just click Next.
+Note: If you select the Import code list check box, a Use Code standard rule
+is created on fields for which the element name matches a code list table
+name.
+Select the ODBC data source that contains the Sterling Standards for EDI (the
+default is IBM Sterling B2B Integrator Standards) and click Next.
+Select the standards agency ([A] TRADACOMS), the version of the standard,
+and the transaction set you want to use and click Next.
+Click Finish to load the transaction set.
+Click Next to select the Output Format.
+If you are translating to TRADACOMS, in the Output Format window (select
+the Create a New Data Format Using this Syntax option.
+Then, select Delimited EDI and click Customize. If you are translating from
+another format, select that format and continue to the next page of the wizard.
+If you want to import code lists from the Sterling Standards for EDI, select the
+Import code list check box and click Next. Otherwise, just click Next.
+Note: If you select the Import code list check box, a Use Code standard rule
+is created on fields for which the element name matches a code list table
+name.
+Select the ODBC data source that contains the Sterling Standards for EDI (the
+default is IBM Sterling B2B Integrator Standards) and click Next.
+Select the standards agency ([A] TRADACOMS), the version of the standard,
+and the transaction set you want to use and click Next.
+Click Finish to load the transaction set. The Sterling B2B Integrator Map
+Editor displays the new map.
+In the Sterling B2B Integrator Map Editor, select File > Save to save the map.
+Do not use spaces or apostrophes in the map name.
+Note: To compile the map, select File > Compile. A progress dialog box
+displays and updates during the compilation process. If the map contains a
+large number of objects, you may be prompted that you should save the map
+in .MAP format.
+To save a map as a .map file, select File > Save As and then select Source
+Maps (*.map) from the Save as type list.
+Note: Prior to opening an .mxl (XML-formatted) file, the Sterling B2B
+Integrator Map Editor verifies that you have the Microsoft XML Core Services
+(MSXML) 4.0 installed on the same computer as Sterling B2B Integrator Map
+Editor. If you do not have the Microsoft XML Core Services (MSXML) 4.0
+installed, the Sterling B2B Integrator Map Editor cannot save or load .mxl
+source files.
+Chapter 7. Creating TRADACOMS Maps 37
+38 Sterling Standards Library: Using TRADACOMS
+Chapter 8. Generate a TRADACOMS Report
+About this task
+The EDI Translation Detail report enables you to access EDI data (for a particular
+standard such as TRADACOMS) for a specified time period. It further allows you
+to organize the report by selecting criteria such as direction of the transmission,
+sender and receiver identifier, envelope name, unique identifier for the envelope
+level, EDI standard used, and translation success or failure, among other
+parameters. This report allows you to quickly and easily access information about
+EDI translation through the system.
+To run a report containing details on inbound/outbound TRADACOMS messages:
+Procedure
+1. 2. From the Operations menu, select Reports.
+Use the Report Configuration wizard to create a new EDI Translation Detail
+report.
+3. On the Detail Filtering page in the Standard parameter, clear the check boxes
+for all standards except TRADACOMS.
+4. Filter by any other desired criteria and click Finish at the end of the Report
+Configuration Wizard to generate the report.
+© Copyright IBM Corp. 2000, 2011 39
+40 Sterling Standards Library: Using TRADACOMS
+Chapter 9. Search for TRADACOMS Correlations
+About this task
+Correlation data, often called correlations, is defined as specific pieces of data that
+you may need to review in the process of monitoring, tracking, and
+troubleshooting your activities. These data items are defined by type and value.
+These type-value pairs are known as name-value pairs, and are a powerful tool
+you can use to record and search for business process- and document-specific data.
+Sterling B2B Integrator has some predefined correlations and enables you to define
+more so that you can easily and efficiently monitor and track your activities, such
+as TRADACOMS message flow.
+To search for TRADACOMS correlations:
+Procedure
+1. From the Administration menu, select Business Process > Advanced Search >
+EDI Correlation.
+2. In the Search Option area, specify any combination of the following search
+criteria, as appropriate. To search for TRADACOMS messages, in the
+Interchange Level Options Standard box, type TRADACOMS.
+3. Click Go! to display the EDI correlation records that match your search criteria.
+4. 5. In the EDI Correlation Interchange Results page, click info in the Detail
+column for the AS2 interchange for which you want to view details.
+In the EDI Correlation Interchange/Group/Transaction Detail Results page,
+click info to the right of Document Correlations for additional information
+about the TRADACOMS messages. Also, you can click info to the right of
+Business Process for details about the TRADACOMS business processes.
+© Copyright IBM Corp. 2000, 2011 41
+42 Sterling Standards Library: Using TRADACOMS
+Notices
+This information was developed for products and services offered in the U.S.A.
+IBM® may not offer the products, services, or features discussed in this document
+in other countries. Consult your local IBM representative for information on the
+products and services currently available in your area. Any reference to an IBM
+product, program, or service is not intended to state or imply that only that IBM
+product, program, or service may be used. Any functionally equivalent product,
+program, or service that does not infringe any IBM intellectual property right may
+be used instead. However, it is the user's responsibility to evaluate and verify the
+operation of any non-IBM product, program, or service.
+IBM may have patents or pending patent applications covering subject matter
+described in this document. The furnishing of this document does not grant you
+any license to these patents. You can send license inquiries, in writing, to:
+IBM Director of Licensing
+IBM Corporation
+North Castle Drive
+Armonk, NY 10504-1785
+U.S.A.
+For license inquiries regarding double-byte character set (DBCS) information,
+contact the IBM Intellectual Property Department in your country or send
+inquiries, in writing, to:
+Intellectual Property Licensing
+Legal and Intellectual Property Law
+IBM Japan Ltd.
+1623-14, Shimotsuruma, Yamato-shi
+Kanagawa 242-8502 Japan
+The following paragraph does not apply to the United Kingdom or any other
+country where such provisions are inconsistent with local law:
+INTERNATIONAL BUSINESS MACHINES CORPORATION PROVIDES THIS
+PUBLICATION "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS
+FOR A PARTICULAR PURPOSE. Some states do not allow disclaimer of express or
+implied warranties in certain transactions, therefore, this statement may not apply
+to you.
+This information could include technical inaccuracies or typographical errors.
+Changes are periodically made to the information herein; these changes will be
+© Copyright IBM Corp. 2000, 2011 43
+incorporated in new editions of the publication. IBM may make improvements
+and/or changes in the product(s) and/or the program(s) described in this
+publication at any time without notice.
+Any references in this information to non-IBM Web sites are provided for
+convenience only and do not in any manner serve as an endorsement of those Web
+sites. The materials at those Web sites are not part of the materials for this IBM
+product and use of those Web sites is at your own risk.
+IBM may use or distribute any of the information you supply in any way it
+believes appropriate without incurring any obligation to you.
+Licensees of this program who wish to have information about it for the purpose
+of enabling: (i) the exchange of information between independently created
+programs and other programs (including this one) and (ii) the mutual use of the
+information which has been exchanged, should contact:
+IBM Corporation
+J46A/G4
+555 Bailey Avenue
+San Jose, CA 95141-1003
+U.S.A.
+Such information may be available, subject to appropriate terms and conditions,
+including in some cases, payment of a fee.
+The licensed program described in this document and all licensed material
+available for it are provided by IBM under terms of the IBM Customer Agreement,
+IBM International Program License Agreement or any equivalent agreement
+between us.
+Any performance data contained herein was determined in a controlled
+environment. Therefore, the results obtained in other operating environments may
+vary significantly. Some measurements may have been made on development-level
+systems and there is no guarantee that these measurements will be the same on
+generally available systems. Furthermore, some measurements may have been
+estimated through extrapolation. Actual results may vary. Users of this document
+should verify the applicable data for their specific environment.
+Information concerning non-IBM products was obtained from the suppliers of
+those products, their published announcements or other publicly available sources.
+IBM has not tested those products and cannot confirm the accuracy of
+performance, compatibility or any other claims related to non-IBM products.
+Questions on the capabilities of non-IBM products should be addressed to the
+suppliers of those products.
+All statements regarding IBM's future direction or intent are subject to change or
+withdrawal without notice, and represent goals and objectives only.
+All IBM prices shown are IBM's suggested retail prices, are current and are subject
+to change without notice. Dealer prices may vary.
+44 Sterling Standards Library: Using TRADACOMS
+This information is for planning purposes only. The information herein is subject to
+change before the products described become available.
+This information contains examples of data and reports used in daily business
+operations. To illustrate them as completely as possible, the examples include the
+names of individuals, companies, brands, and products. All of these names are
+fictitious and any similarity to the names and addresses used by an actual business
+enterprise is entirely coincidental.
+COPYRIGHT LICENSE:
+This information contains sample application programs in source language, which
+illustrate programming techniques on various operating platforms. You may copy,
+modify, and distribute these sample programs in any form without payment to
+IBM, for the purposes of developing, using, marketing or distributing application
+programs conforming to the application programming interface for the operating
+platform for which the sample programs are written. These examples have not
+been thoroughly tested under all conditions. IBM, therefore, cannot guarantee or
+imply reliability, serviceability, or function of these programs. The sample
+programs are provided "AS IS", without warranty of any kind. IBM shall not be
+liable for any damages arising out of your use of the sample programs.
+Each copy or any portion of these sample programs or any derivative work, must
+include a copyright notice as follows:
+© IBM 2011. Portions of this code are derived from IBM Corp. Sample Programs. ©
+Copyright IBM Corp. 2011.
+If you are viewing this information softcopy, the photographs and color
+illustrations may not appear.
+Trademarks
+IBM, the IBM logo, and ibm.com® are trademarks or registered trademarks of
+International Business Machines Corp., registered in many jurisdictions worldwide.
+Other product and service names might be trademarks of IBM or other companies.
+A current list of IBM trademarks is available on the Web at “Copyright and
+trademark information” at http://www.ibm.com/legal/copytrade.shtml.
+Adobe, the Adobe logo, PostScript, and the PostScript logo are either registered
+trademarks or trademarks of Adobe Systems Incorporated in the United States,
+and/or other countries.
+IT Infrastructure Library is a registered trademark of the Central Computer and
+Telecommunications Agency which is now part of the Office of Government
+Commerce.
+Intel, Intel logo, Intel Inside, Intel Inside logo, Intel Centrino, Intel Centrino logo,
+Celeron, Intel Xeon, Intel SpeedStep, Itanium, and Pentium are trademarks or
+registered trademarks of Intel Corporation or its subsidiaries in the United States
+and other countries.
+Linux is a registered trademark of Linus Torvalds in the United States, other
+countries, or both.
+Notices 45
+Microsoft, Windows, Windows NT, and the Windows logo are trademarks of
+Microsoft Corporation in the United States, other countries, or both.
+ITIL is a registered trademark, and a registered community trademark of the Office
+of Government Commerce, and is registered in the U.S. Patent and Trademark
+Office.
+UNIX is a registered trademark of The Open Group in the United States and other
+countries.
+Java and all Java-based trademarks and logos are trademarks or registered
+trademarks of Oracle and/or its affiliates.
+Cell Broadband Engine is a trademark of Sony Computer Entertainment, Inc. in the
+United States, other countries, or both and is used under license therefrom.
+Linear Tape-Open, LTO, the LTO Logo, Ultrium and the Ultrium Logo are
+trademarks of HP, IBM Corp. and Quantum in the U.S. and other countries.
+Connect Control Center®, Connect:Direct®, Connect:Enterprise™, Gentran®
+,
+Gentran®:Basic®, Gentran:Control®, Gentran:Director®, Gentran:Plus®
+,
+Gentran:Realtime®, Gentran:Server®, Gentran:Viewpoint®, Sterling Commerce™
+,
+Sterling Information Broker®, and Sterling Integrator® are trademarks or registered
+trademarks of Sterling Commerce™, Inc., an IBM Company.
+Other company, product, and service names may be trademarks or service marks
+of others.
+46 Sterling Standards Library: Using TRADACOMS
+Printed in USA

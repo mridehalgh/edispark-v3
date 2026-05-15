@@ -1,0 +1,3 @@
+The test window stayed open longer than expected, but nothing unusual happened.
+Someone left a half-finished checklist on the desk beside the staging laptop.
+For now, these sentences are only filler content for the demo folder.

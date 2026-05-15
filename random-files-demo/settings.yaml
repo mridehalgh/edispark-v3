@@ -1,0 +1,9 @@
+app_name: random-files-demo
+environment: sandbox
+feature_flags:
+  quick_preview: true
+  verbose_logs: false
+limits:
+  max_items: 25
+  timeout_seconds: 12
+owner: "[email]"

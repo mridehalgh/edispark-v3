@@ -79,8 +79,24 @@ public final class DocumentSet {
             ContentHash contentHash,
             String createdBy,
             Map<String, String> metadata) {
+        return createWithDocument(documentType, schemaRef, contentRef, contentHash, createdBy, metadata, Format.XML,
+                null, null, List.of());
+    }
+
+    public static DocumentSet createWithDocument(
+            DocumentType documentType,
+            SchemaVersionRef schemaRef,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            Map<String, String> metadata,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         DocumentSet documentSet = create(createdBy, metadata);
-        documentSet.addDocument(documentType, schemaRef, contentRef, contentHash, createdBy);
+        documentSet.addDocument(documentType, schemaRef, contentRef, contentHash, createdBy, format, parseStatus,
+                messageType, parseErrors);
         return documentSet;
     }
 
@@ -109,7 +125,21 @@ public final class DocumentSet {
             ContentRef contentRef,
             ContentHash contentHash,
             String createdBy) {
-        Document document = Document.create(type, schemaRef, contentRef, contentHash, createdBy);
+        return addDocument(type, schemaRef, contentRef, contentHash, createdBy, Format.XML, null, null, List.of());
+    }
+
+    public Document addDocument(
+            DocumentType type,
+            SchemaVersionRef schemaRef,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
+        Document document = Document.create(type, schemaRef, contentRef, contentHash, createdBy, format, parseStatus,
+                messageType, parseErrors);
         documents.put(document.id(), document);
         
         // Emit DocumentAdded event
@@ -136,9 +166,25 @@ public final class DocumentSet {
             ContentHash contentHash,
             String createdBy,
             DocumentId relatedDocumentId) {
+        return addDocumentWithRelation(type, schemaRef, contentRef, contentHash, createdBy, relatedDocumentId,
+                Format.XML, null, null, List.of());
+    }
+
+    public Document addDocumentWithRelation(
+            DocumentType type,
+            SchemaVersionRef schemaRef,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            DocumentId relatedDocumentId,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         validateRelatedDocumentExists(relatedDocumentId);
         Document document = Document.createWithRelation(
-                type, schemaRef, contentRef, contentHash, createdBy, relatedDocumentId);
+                type, schemaRef, contentRef, contentHash, createdBy, relatedDocumentId, format, parseStatus,
+                messageType, parseErrors);
         documents.put(document.id(), document);
         
         // Emit DocumentAdded event
@@ -163,8 +209,21 @@ public final class DocumentSet {
             ContentRef contentRef,
             ContentHash contentHash,
             String createdBy) {
+        return addVersion(documentId, contentRef, contentHash, createdBy, Format.XML, null, null, List.of());
+    }
+
+    public DocumentVersion addVersion(
+            DocumentId documentId,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         Document document = getDocumentOrThrow(documentId);
-        DocumentVersion newVersion = document.addVersion(contentRef, contentHash, createdBy);
+        DocumentVersion newVersion = document.addVersion(contentRef, contentHash, createdBy, format, parseStatus,
+                messageType, parseErrors);
         
         // Emit DocumentVersionAdded event
         registerEvent(DocumentVersionAdded.now(

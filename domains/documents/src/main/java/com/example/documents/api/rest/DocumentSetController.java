@@ -3,8 +3,13 @@ package com.example.documents.api.rest;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +22,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -42,7 +49,9 @@ import com.example.documents.application.handler.DocumentSetCommandHandler;
 import com.example.documents.application.handler.DocumentNotFoundException;
 import com.example.documents.application.handler.DocumentSetNotFoundException;
 import com.example.documents.application.handler.VersionNotFoundException;
+import com.example.documents.application.query.DocumentContentQueryService;
 import com.example.documents.application.query.DocumentSetQueryHandler;
+import com.example.documents.application.query.RetrievedContent;
 import com.example.documents.application.query.ListDocumentSetsQuery;
 import com.example.documents.domain.model.Content;
 import com.example.documents.domain.model.Derivative;
@@ -59,7 +68,6 @@ import com.example.documents.domain.model.VersionIdentifier;
 import com.example.documents.domain.repository.DocumentSetRepository;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 
 /**
  * REST controller for document set operations.
@@ -71,15 +79,34 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController
 @RequestMapping("/api/document-sets")
-@RequiredArgsConstructor
 @Tag(name = "Document Sets", description = "Manage document sets, documents, versions, and derivatives")
 public class DocumentSetController {
 
     private final DocumentSetCommandHandler commandHandler;
     private final DocumentSetRepository repository;
     private final DocumentSetQueryHandler queryHandler;
+    private final DocumentContentQueryService documentContentQueryService;
 
     private static final int DEFAULT_LIMIT = 20;
+
+    @Autowired
+    public DocumentSetController(
+            DocumentSetCommandHandler commandHandler,
+            DocumentSetRepository repository,
+            DocumentSetQueryHandler queryHandler,
+            DocumentContentQueryService documentContentQueryService) {
+        this.commandHandler = commandHandler;
+        this.repository = repository;
+        this.queryHandler = queryHandler;
+        this.documentContentQueryService = documentContentQueryService;
+    }
+
+    DocumentSetController(
+            DocumentSetCommandHandler commandHandler,
+            DocumentSetRepository repository,
+            DocumentSetQueryHandler queryHandler) {
+        this(commandHandler, repository, queryHandler, null);
+    }
 
     /**
      * Lists document sets with pagination support.
@@ -388,6 +415,46 @@ public class DocumentSetController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{setId}/documents/{docId}/versions/{versionNumber}/content")
+    @Operation(summary = "Get document version content",
+               description = "Retrieves the raw content bytes for a specific document version")
+    @ApiResponses(value = {
+        @ApiResponse(
+                responseCode = "200",
+                description = "Version content found",
+                content = @io.swagger.v3.oas.annotations.media.Content(mediaType = "application/octet-stream",
+                        schema = @Schema(type = "string", format = "binary")),
+                headers = {
+                    @Header(name = "X-Document-Set-Id", description = "Document set identifier"),
+                    @Header(name = "X-Document-Id", description = "Document identifier"),
+                    @Header(name = "X-Document-Version", description = "Document version number"),
+                    @Header(name = "X-Content-Hash", description = "Stored content hash"),
+                    @Header(name = "X-Document-Format", description = "Stored document format")
+                }),
+        @ApiResponse(responseCode = "404", description = "Document set, document, version, or content not found")
+    })
+    public ResponseEntity<byte[]> getVersionContent(
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId,
+            @Parameter(description = "Version number (1-based)") @PathVariable int versionNumber) {
+
+        RetrievedContent content = documentContentQueryService.getVersionContent(
+                new DocumentSetId(setId),
+                new DocumentId(docId),
+                versionNumber);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename(content.fileName(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Document-Set-Id", setId.toString())
+                .header("X-Document-Id", docId.toString())
+                .header("X-Document-Version", Integer.toString(versionNumber))
+                .header("X-Content-Hash", content.contentHash())
+                .header("X-Document-Format", content.format().name())
+                .body(content.bytes());
+    }
+
     /**
      * Creates a derivative from a document version.
      *
@@ -565,7 +632,11 @@ public class DocumentSetController {
                 currentVersion.versionNumber(),
                 currentVersion.contentHash().toFullString(),
                 currentVersion.createdAt(),
-                currentVersion.createdBy()
+                currentVersion.createdBy(),
+                currentVersion.format(),
+                currentVersion.parseStatus(),
+                currentVersion.messageType(),
+                currentVersion.parseErrors()
         );
         
         // Map derivatives
@@ -602,7 +673,11 @@ public class DocumentSetController {
                 version.versionNumber(),
                 version.contentHash().toFullString(),
                 version.createdAt(),
-                version.createdBy()
+                version.createdBy(),
+                version.format(),
+                version.parseStatus(),
+                version.messageType(),
+                version.parseErrors()
         );
     }
 

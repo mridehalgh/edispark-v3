@@ -161,8 +161,21 @@ public final class DocumentSetItemMapper {
         item.put("contentHash", AttributeValue.builder().s(version.contentHash().toFullString()).build());
         item.put("contentHashAlgorithm", AttributeValue.builder().s(version.contentHash().algorithm()).build());
         item.put("contentHashValue", AttributeValue.builder().s(version.contentHash().hash()).build());
+        item.put("format", AttributeValue.builder().s(version.format().name()).build());
         item.put("createdAt", AttributeValue.builder().s(version.createdAt().toString()).build());
         item.put("createdBy", AttributeValue.builder().s(version.createdBy()).build());
+
+        if (version.parseStatus() != null) {
+            item.put("parseStatus", AttributeValue.builder().s(version.parseStatus()).build());
+        }
+        if (version.messageType() != null) {
+            item.put("messageType", AttributeValue.builder().s(version.messageType()).build());
+        }
+        if (!version.parseErrors().isEmpty()) {
+            item.put("parseErrors", AttributeValue.builder()
+                    .l(version.parseErrors().stream().map(error -> AttributeValue.builder().s(error).build()).toList())
+                    .build());
+        }
         
         if (version.previousVersion() != null) {
             item.put("previousVersionId", AttributeValue.builder().s(version.previousVersion().toString()).build());
@@ -190,16 +203,25 @@ public final class DocumentSetItemMapper {
         String hashValue = item.get("contentHashValue").s();
         ContentHash contentHash = new ContentHash(algorithm, hashValue);
         ContentRef contentRef = ContentRef.of(contentHash);
-        
+        Format format = item.containsKey("format")
+                ? Format.valueOf(item.get("format").s())
+                : Format.XML;
+
         Instant createdAt = Instant.parse(item.get("createdAt").s());
         String createdBy = item.get("createdBy").s();
-        
+        String parseStatus = item.containsKey("parseStatus") ? item.get("parseStatus").s() : null;
+        String messageType = item.containsKey("messageType") ? item.get("messageType").s() : null;
+        List<String> parseErrors = item.containsKey("parseErrors")
+                ? item.get("parseErrors").l().stream().map(AttributeValue::s).toList()
+                : List.of();
+
         DocumentVersionId previousVersion = null;
         if (item.containsKey("previousVersionId") && item.get("previousVersionId").s() != null) {
             previousVersion = DocumentVersionId.fromString(item.get("previousVersionId").s());
         }
-        
-        return DocumentVersion.reconstitute(id, versionNumber, contentRef, contentHash, createdAt, createdBy, previousVersion);
+
+        return DocumentVersion.reconstitute(id, versionNumber, contentRef, contentHash, format, createdAt, createdBy,
+                previousVersion, parseStatus, messageType, parseErrors);
     }
 
     // ========== Derivative ==========

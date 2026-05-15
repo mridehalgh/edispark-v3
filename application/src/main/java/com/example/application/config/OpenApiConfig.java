@@ -33,10 +33,11 @@ public class OpenApiConfig {
                                 ## Features
                                 - Create and manage document sets with multiple document types
                                 - Version control for documents with immutable versions
-                                - Schema management with versioning support
-                                - Document validation against schemas
-                                - Derivative document creation (transformations)
-                                - Content-addressable storage with hash verification
+                                 - Schema management with versioning support
+                                 - Document validation against schemas
+                                 - Derivative document creation (transformations)
+                                 - Raw document-version content download, including preserved EDI source payloads
+                                 - Content-addressable storage with hash verification
                                 
                                 ## Domain Concepts
                                 - **Document Set**: Container for related documents of different types

@@ -4,6 +4,7 @@ import com.example.documents.application.command.AddDocumentCommand;
 import com.example.documents.application.command.AddVersionCommand;
 import com.example.documents.application.command.CreateDerivativeCommand;
 import com.example.documents.application.command.CreateDocumentSetCommand;
+import com.example.documents.application.command.StoreSourceDocumentCommand;
 import com.example.documents.application.command.ValidateDocumentCommand;
 import com.example.documents.domain.model.Content;
 import com.example.documents.domain.model.ContentRef;
@@ -13,10 +14,13 @@ import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.model.DocumentVersion;
 import com.example.documents.domain.model.Format;
 import com.example.documents.domain.model.Schema;
+import com.example.documents.domain.model.SchemaId;
 import com.example.documents.domain.model.SchemaFormat;
 import com.example.documents.domain.model.SchemaVersion;
+import com.example.documents.domain.model.SchemaVersionRef;
 import com.example.documents.domain.model.TransformationMethod;
 import com.example.documents.domain.model.ValidationResult;
+import com.example.documents.domain.model.VersionIdentifier;
 import com.example.documents.domain.repository.ContentStore;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import com.example.documents.domain.repository.SchemaRepository;
@@ -41,6 +45,10 @@ import java.util.Objects;
  * <p>Requirements: 1.2, 3.7, 4.1, 4.6, 6.4, 6.5, 6.6</p>
  */
 public class DocumentSetCommandHandler {
+
+    private static final SchemaVersionRef SOURCE_SCHEMA_REF = SchemaVersionRef.of(
+            SchemaId.fromString("00000000-0000-0000-0000-000000000001"),
+            VersionIdentifier.of("source"));
 
     private final DocumentSetRepository documentSetRepository;
     private final SchemaRepository schemaRepository;
@@ -86,7 +94,11 @@ public class DocumentSetCommandHandler {
                 contentRef,
                 command.initialContent().hash(),
                 command.createdBy(),
-                command.metadata());
+                command.metadata(),
+                command.initialContent().format(),
+                null,
+                null,
+                List.of());
 
         // Persist
         documentSetRepository.save(documentSet);
@@ -165,7 +177,11 @@ public class DocumentSetCommandHandler {
                 command.documentId(),
                 contentRef,
                 command.content().hash(),
-                command.createdBy());
+                command.createdBy(),
+                command.content().format(),
+                null,
+                null,
+                List.of());
 
         // Persist
         documentSetRepository.save(documentSet);
@@ -205,7 +221,7 @@ public class DocumentSetCommandHandler {
                         "Content not found for hash: " + sourceVersion.contentRef().hash()));
 
         // Determine source format from document's schema
-        Format sourceFormat = determineSourceFormat(document);
+        Format sourceFormat = sourceVersion.format();
         Content sourceContent = new Content(sourceData, sourceFormat, sourceVersion.contentHash());
 
         // Find transformer
@@ -275,7 +291,7 @@ public class DocumentSetCommandHandler {
                         "Schema content not found for hash: " + schemaVersion.definitionRef().hash()));
 
         // Determine formats
-        Format documentFormat = determineSourceFormat(document);
+        Format documentFormat = version.format();
         Content documentContent = new Content(documentData, documentFormat, version.contentHash());
         Content schemaContent = new Content(schemaData, determineSchemaContentFormat(schema.format()), null);
 
@@ -289,6 +305,26 @@ public class DocumentSetCommandHandler {
     private DocumentSet findDocumentSetOrThrow(com.example.documents.domain.model.DocumentSetId documentSetId) {
         return documentSetRepository.findById(documentSetId)
                 .orElseThrow(() -> new DocumentSetNotFoundException(documentSetId));
+    }
+
+    public DocumentSet handle(StoreSourceDocumentCommand command) {
+        contentStore.store(command.content());
+        ContentRef contentRef = ContentRef.of(command.content().hash());
+
+        DocumentSet documentSet = DocumentSet.createWithDocument(
+                command.documentType(),
+                SOURCE_SCHEMA_REF,
+                contentRef,
+                command.content().hash(),
+                command.createdBy(),
+                command.metadata(),
+                command.content().format(),
+                command.parseStatus(),
+                command.messageType(),
+                command.parseErrors());
+
+        documentSetRepository.save(documentSet);
+        return documentSet;
     }
 
     private void validateSchemaVersionExists(
@@ -316,20 +352,6 @@ public class DocumentSetCommandHandler {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         "No validator found for " + documentFormat + " / " + schemaFormat));
-    }
-
-    private Format determineSourceFormat(Document document) {
-        // Determine format based on schema format
-        Schema schema = schemaRepository.findById(document.schemaRef().schemaId())
-                .orElse(null);
-        if (schema != null) {
-            return switch (schema.format()) {
-                case XSD, RELAXNG -> Format.XML;
-                case JSON_SCHEMA -> Format.JSON;
-            };
-        }
-        // Default to XML if schema not found
-        return Format.XML;
     }
 
     private Format determineSchemaContentFormat(SchemaFormat schemaFormat) {

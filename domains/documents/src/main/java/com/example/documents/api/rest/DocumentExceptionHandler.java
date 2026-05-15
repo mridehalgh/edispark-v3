@@ -6,6 +6,7 @@ import com.example.documents.application.handler.DocumentSetNotFoundException;
 import com.example.documents.application.handler.InvalidPaginationTokenException;
 import com.example.documents.application.handler.SchemaNotFoundException;
 import com.example.documents.application.handler.SchemaVersionNotFoundException;
+import com.example.documents.application.handler.ContentNotFoundException;
 import com.example.documents.application.handler.UnsupportedFormatException;
 import com.example.documents.application.handler.VersionNotFoundException;
 import com.example.documents.domain.model.ContentHashMismatchException;
@@ -86,6 +87,17 @@ public class DocumentExceptionHandler {
                     "documentId", ex.documentId().toString(),
                     "versionNumber", ex.versionNumber()
                 )
+            ));
+    }
+
+    @ExceptionHandler(ContentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleContentNotFound(ContentNotFoundException ex) {
+        log.error("Stored content missing for hash: {}", ex.contentHash().toFullString());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.of(
+                "CONTENT_NOT_FOUND",
+                ex.getMessage(),
+                Map.of("contentHash", ex.contentHash().toFullString())
             ));
     }
 

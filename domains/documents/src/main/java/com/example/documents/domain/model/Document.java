@@ -47,7 +47,21 @@ public final class Document {
             ContentRef contentRef,
             ContentHash contentHash,
             String createdBy) {
-        DocumentVersion firstVersion = DocumentVersion.createFirst(contentRef, contentHash, createdBy);
+        return create(type, schemaRef, contentRef, contentHash, createdBy, Format.XML, null, null, List.of());
+    }
+
+    public static Document create(
+            DocumentType type,
+            SchemaVersionRef schemaRef,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
+        DocumentVersion firstVersion = DocumentVersion.createFirst(contentRef, contentHash, format, createdBy,
+                parseStatus, messageType, parseErrors);
         return new Document(
                 DocumentId.generate(),
                 type,
@@ -67,7 +81,23 @@ public final class Document {
             ContentHash contentHash,
             String createdBy,
             DocumentId relatedDocumentId) {
-        DocumentVersion firstVersion = DocumentVersion.createFirst(contentRef, contentHash, createdBy);
+        return createWithRelation(type, schemaRef, contentRef, contentHash, createdBy, relatedDocumentId, Format.XML,
+                null, null, List.of());
+    }
+
+    public static Document createWithRelation(
+            DocumentType type,
+            SchemaVersionRef schemaRef,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            DocumentId relatedDocumentId,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
+        DocumentVersion firstVersion = DocumentVersion.createFirst(contentRef, contentHash, format, createdBy,
+                parseStatus, messageType, parseErrors);
         return new Document(
                 DocumentId.generate(),
                 type,
@@ -96,12 +126,24 @@ public final class Document {
      * @throws InvalidVersionSequenceException if the version sequence would be broken
      */
     public DocumentVersion addVersion(ContentRef contentRef, ContentHash contentHash, String createdBy) {
+        return addVersion(contentRef, contentHash, createdBy, Format.XML, null, null, List.of());
+    }
+
+    public DocumentVersion addVersion(
+            ContentRef contentRef,
+            ContentHash contentHash,
+            String createdBy,
+            Format format,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         if (versions.isEmpty()) {
             throw new IllegalStateException("Document must have at least one version");
         }
         
         DocumentVersion currentVersion = getCurrentVersion();
-        DocumentVersion newVersion = DocumentVersion.createNext(currentVersion, contentRef, contentHash, createdBy);
+        DocumentVersion newVersion = DocumentVersion.createNext(currentVersion, contentRef, contentHash, format,
+                createdBy, parseStatus, messageType, parseErrors);
         versions.add(newVersion);
         return newVersion;
     }

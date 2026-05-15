@@ -1,6 +1,7 @@
 package com.example.documents.domain.model;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -17,23 +18,35 @@ public final class DocumentVersion {
     private final int versionNumber;
     private final ContentRef contentRef;
     private final ContentHash contentHash;
+    private final Format format;
     private final Instant createdAt;
     private final String createdBy;
     private final DocumentVersionId previousVersion;
+    private final String parseStatus;
+    private final String messageType;
+    private final List<String> parseErrors;
 
     private DocumentVersion(
             DocumentVersionId id,
             int versionNumber,
             ContentRef contentRef,
             ContentHash contentHash,
+            Format format,
             Instant createdAt,
             String createdBy,
-            DocumentVersionId previousVersion) {
+            DocumentVersionId previousVersion,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         this.id = Objects.requireNonNull(id, "Version ID cannot be null");
         this.contentRef = Objects.requireNonNull(contentRef, "Content reference cannot be null");
         this.contentHash = Objects.requireNonNull(contentHash, "Content hash cannot be null");
+        this.format = Objects.requireNonNull(format, "Format cannot be null");
         this.createdAt = Objects.requireNonNull(createdAt, "Created timestamp cannot be null");
         this.createdBy = Objects.requireNonNull(createdBy, "Created by cannot be null");
+        this.parseStatus = parseStatus;
+        this.messageType = messageType;
+        this.parseErrors = List.copyOf(parseErrors == null ? List.of() : parseErrors);
         
         if (versionNumber < 1) {
             throw new IllegalArgumentException("Version number must be at least 1");
@@ -57,14 +70,29 @@ public final class DocumentVersion {
             ContentRef contentRef,
             ContentHash contentHash,
             String createdBy) {
+        return createFirst(contentRef, contentHash, Format.XML, createdBy, null, null, List.of());
+    }
+
+    public static DocumentVersion createFirst(
+            ContentRef contentRef,
+            ContentHash contentHash,
+            Format format,
+            String createdBy,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         return new DocumentVersion(
                 DocumentVersionId.generate(),
                 1,
                 contentRef,
                 contentHash,
+                format,
                 Instant.now(),
                 createdBy,
-                null);
+                null,
+                parseStatus,
+                messageType,
+                parseErrors);
     }
 
     /**
@@ -75,15 +103,31 @@ public final class DocumentVersion {
             ContentRef contentRef,
             ContentHash contentHash,
             String createdBy) {
+        return createNext(previousVersion, contentRef, contentHash, Format.XML, createdBy, null, null, List.of());
+    }
+
+    public static DocumentVersion createNext(
+            DocumentVersion previousVersion,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            Format format,
+            String createdBy,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
         Objects.requireNonNull(previousVersion, "Previous version cannot be null");
         return new DocumentVersion(
                 DocumentVersionId.generate(),
                 previousVersion.versionNumber() + 1,
                 contentRef,
                 contentHash,
+                format,
                 Instant.now(),
                 createdBy,
-                previousVersion.id());
+                previousVersion.id(),
+                parseStatus,
+                messageType,
+                parseErrors);
     }
 
     /**
@@ -97,7 +141,24 @@ public final class DocumentVersion {
             Instant createdAt,
             String createdBy,
             DocumentVersionId previousVersion) {
-        return new DocumentVersion(id, versionNumber, contentRef, contentHash, createdAt, createdBy, previousVersion);
+        return reconstitute(id, versionNumber, contentRef, contentHash, Format.XML, createdAt, createdBy, previousVersion,
+                null, null, List.of());
+    }
+
+    public static DocumentVersion reconstitute(
+            DocumentVersionId id,
+            int versionNumber,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            Format format,
+            Instant createdAt,
+            String createdBy,
+            DocumentVersionId previousVersion,
+            String parseStatus,
+            String messageType,
+            List<String> parseErrors) {
+        return new DocumentVersion(id, versionNumber, contentRef, contentHash, format, createdAt, createdBy,
+                previousVersion, parseStatus, messageType, parseErrors);
     }
 
     public DocumentVersionId id() {
@@ -116,6 +177,10 @@ public final class DocumentVersion {
         return contentHash;
     }
 
+    public Format format() {
+        return format;
+    }
+
     public Instant createdAt() {
         return createdAt;
     }
@@ -126,6 +191,18 @@ public final class DocumentVersion {
 
     public DocumentVersionId previousVersion() {
         return previousVersion;
+    }
+
+    public String parseStatus() {
+        return parseStatus;
+    }
+
+    public String messageType() {
+        return messageType;
+    }
+
+    public List<String> parseErrors() {
+        return parseErrors;
     }
 
     /**
@@ -150,6 +227,7 @@ public final class DocumentVersion {
 
     @Override
     public String toString() {
-        return "DocumentVersion[id=" + id + ", versionNumber=" + versionNumber + ", contentHash=" + contentHash + "]";
+        return "DocumentVersion[id=" + id + ", versionNumber=" + versionNumber + ", contentHash=" + contentHash
+                + ", format=" + format + "]";
     }
 }

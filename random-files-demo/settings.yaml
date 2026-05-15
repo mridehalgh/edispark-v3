@@ -1,0 +1,10 @@
+environment: demo
+featureFlags:
+  quickPreview: true
+  verboseMode: false
+service:
+  host: demo.local
+  port: 4123
+limits:
+  retries: 1
+  timeoutSeconds: 12

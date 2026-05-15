@@ -1,0 +1,10 @@
+service_name: random-files-demo
+mode: local-demo
+features:
+  sample_export: true
+  auto_refresh: true
+  debug_banner: false
+thresholds:
+  retry_limit: 2
+  batch_size: 8
+contact: "[email]"

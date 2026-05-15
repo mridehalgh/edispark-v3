@@ -1,0 +1,3 @@
+This folder is filled with harmless sample content.
+The sentences do not mean much, but they look realistic enough.
+Everything here is meant to be lightweight and disposable.

@@ -1,0 +1,13 @@
+{
+  "recordId": "rnd-7319",
+  "profile": {
+    "displayName": "[name]",
+    "region": "eu-west-1"
+  },
+  "enabled": false,
+  "scores": [12, 27, 34],
+  "metadata": {
+    "source": "demo-generator",
+    "revision": 2
+  }
+}

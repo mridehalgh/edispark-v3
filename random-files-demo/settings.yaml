@@ -1,0 +1,11 @@
+app_name: random-files-demo
+environment: sandbox
+feature_flags:
+  quick_preview: true
+  verbose_mode: false
+limits:
+  max_items: 25
+  timeout_seconds: 8
+endpoints:
+  api_base: https://example.test/api
+  asset_bucket: demo-placeholder-bucket

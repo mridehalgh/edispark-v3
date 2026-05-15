@@ -1,0 +1,21 @@
+{
+  "sessionId": "demo-4821",
+  "owner": "[name]",
+  "active": true,
+  "score": 17,
+  "tags": [
+    "sandbox",
+    "placeholder",
+    "demo"
+  ],
+  "items": [
+    {
+      "id": "A-14",
+      "label": "blue widget"
+    },
+    {
+      "id": "B-03",
+      "label": "orange cable"
+    }
+  ]
+}

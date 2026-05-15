@@ -17,14 +17,6 @@
     <name>Documents Domain</name>
     <description>Documents bounded context - manages business documents, versioning, schemas, and transformations</description>
 
-    <properties>
-        <!-- AWS SDK v2 -->
-        <aws.sdk.version>2.44.4</aws.sdk.version>
-        <!-- DynamoDB Local for testing -->
-        <dynamodb.local.version>2.6.1</dynamodb.local.version>
-        <sqlite4java.version>1.0.392</sqlite4java.version>
-    </properties>
-
     <dependencies>
         <!-- Support/common module for pagination -->
         <dependency>
@@ -66,7 +58,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.0.3</version>
+            <version>${springdoc.version}</version>
         </dependency>
 
         <!-- Spring Boot dependencies for configuration -->
@@ -134,7 +126,7 @@
         <dependency>
             <groupId>org.glassfish.expressly</groupId>
             <artifactId>expressly</artifactId>
-            <version>6.0.0</version>
+            <version>${expressly.version}</version>
             <scope>test</scope>
         </dependency>
         <!-- ArchUnit for architecture testing -->
@@ -147,7 +139,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <version>${junit4.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -190,7 +182,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.6.1</version>
                 <executions>
                     <execution>
                         <id>copy-native-libs</id>

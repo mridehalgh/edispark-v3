@@ -66,7 +66,6 @@
             <plugin>
                 <groupId>org.jsonschema2pojo</groupId>
                 <artifactId>jsonschema2pojo-maven-plugin</artifactId>
-                <version>1.2.2</version>
                 <configuration>
                     <sourceDirectory>${basedir}/../ubl-source/json-schema</sourceDirectory>
                     <targetPackage>oasis.names.specification.ubl.schema.xsd</targetPackage>
@@ -107,7 +106,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <id>add-generated-sources</id>

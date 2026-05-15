@@ -1,9 +1,10 @@
-app_name: random-demo
-environment: sandbox
-feature_flags:
-  previews_enabled: true
-  audit_mode: false
+environment: demo
+featureFlags:
+  randomPreview: true
+  verboseLogging: false
+service:
+  host: demo.internal.local
+  port: 4080
 limits:
-  max_items: 25
-  timeout_seconds: 12
-endpoint: https://example.invalid/api/demo
+  retries: 1
+  timeoutSeconds: 12

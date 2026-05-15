@@ -2,10 +2,14 @@
   "sessionId": "demo-4821",
   "owner": "[name]",
   "active": true,
-  "tags": ["sample", "random", "placeholder"],
+  "tags": [
+    "sandbox",
+    "placeholder",
+    "demo"
+  ],
   "metrics": {
-    "score": 73,
-    "visits": 14,
-    "ratio": 0.42
+    "items": 7,
+    "score": 91.4,
+    "region": "eu-west-1"
   }
 }

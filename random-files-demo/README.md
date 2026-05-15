@@ -1,10 +1,10 @@
 # Random Files Demo
 
-This folder contains a small set of sample files created for a demo:
+This folder contains a small set of random sample files created for demonstration purposes:
 
-- `alpha.txt`: short placeholder notes
-- `beta.txt`: a few random sentences
-- `sample.json`: fake structured sample data
-- `settings.yaml`: fake configuration values
+- `alpha.txt`: random placeholder notes
+- `beta.txt`: a few random sample sentences
+- `sample.json`: fake random structured data
+- `settings.yaml`: fake configuration settings
 
-The contents are intentionally simple and non-production.
+The contents are intentionally simple, synthetic, and non-production.

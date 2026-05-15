@@ -1,10 +1,10 @@
-environment: demo
+environment: sandbox
 featureFlags:
-  randomPreview: true
-  verboseLogging: false
+  quickPreview: true
+  auditTrail: true
 service:
-  host: demo.internal.local
-  port: 4080
+  host: mock-service.local
+  port: 5123
 limits:
-  retries: 1
-  timeoutSeconds: 12
+  retries: 2
+  timeoutSeconds: 9

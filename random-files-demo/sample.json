@@ -1,15 +1,14 @@
 {
-  "sessionId": "demo-4821",
-  "owner": "[name]",
-  "active": true,
-  "tags": [
-    "sandbox",
-    "placeholder",
-    "demo"
+  "recordId": "rnd-7319",
+  "label": "mock-batch",
+  "enabled": true,
+  "owners": [
+    "[name]",
+    "[name]"
   ],
-  "metrics": {
-    "items": 7,
-    "score": 91.4,
-    "region": "eu-west-1"
+  "stats": {
+    "count": 4,
+    "priority": "medium",
+    "zone": "eu-central-1"
   }
 }

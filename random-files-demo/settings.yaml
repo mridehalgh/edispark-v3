@@ -1,0 +1,10 @@
+environment: sandbox
+feature_flags:
+  enablePreview: true
+  useMockData: true
+limits:
+  retryCount: 2
+  timeoutSeconds: 15
+service:
+  endpoint: https://example.test/api/demo
+  region: eu-west-1

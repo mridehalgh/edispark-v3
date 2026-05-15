@@ -33,6 +33,12 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>tradacoms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Lombok for reducing boilerplate (DTOs and controllers) -->
         <dependency>
             <groupId>org.projectlombok</groupId>

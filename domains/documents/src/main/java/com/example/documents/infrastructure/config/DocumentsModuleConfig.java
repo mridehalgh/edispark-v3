@@ -2,7 +2,10 @@ package com.example.documents.infrastructure.config;
 
 import com.example.documents.application.handler.DocumentSetCommandHandler;
 import com.example.documents.application.handler.SchemaCommandHandler;
+import com.example.documents.application.query.DocumentContentQueryService;
 import com.example.documents.application.query.DocumentSetQueryHandler;
+import com.example.documents.application.tradacoms.InboundTradacomsIngestionService;
+import com.example.documents.application.tradacoms.TradacomsMessageParser;
 import com.example.documents.domain.repository.ContentStore;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import com.example.documents.domain.repository.SchemaRepository;
@@ -241,5 +244,27 @@ public class DocumentsModuleConfig {
     public DocumentSetQueryHandler documentSetQueryHandler(
             DocumentSetRepository documentSetRepository) {
         return new DocumentSetQueryHandler(documentSetRepository);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DocumentContentQueryService documentContentQueryService(
+            DocumentSetRepository documentSetRepository,
+            ContentStore contentStore) {
+        return new DocumentContentQueryService(documentSetRepository, contentStore);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TradacomsMessageParser tradacomsMessageParser() {
+        return new TradacomsMessageParser();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public InboundTradacomsIngestionService inboundTradacomsIngestionService(
+            DocumentSetCommandHandler commandHandler,
+            TradacomsMessageParser parser) {
+        return new InboundTradacomsIngestionService(commandHandler, parser);
     }
 }

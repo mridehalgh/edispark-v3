@@ -6,7 +6,7 @@ The Documents domain provides the foundation for managing business documents thr
 
 ## Overview
 
-The Documents bounded context solves the problem of managing business documents (invoices, orders, credit notes) across their full lifecycle. It handles document versioning, schema conformance validation, format transformations, and derivative relationships. The domain supports various document standards including UBL, EDIFACT, and custom schemas through a pluggable architecture.
+The Documents bounded context solves the problem of managing business documents (invoices, orders, credit notes) across their full lifecycle. It handles document versioning, schema conformance validation, format transformations, derivative relationships, and retrieval of preserved source content by document version. The domain supports various document standards including UBL, EDIFACT, TRADACOMS, and custom schemas through a pluggable architecture.
 
 This domain does NOT cover:
 - Document rendering or presentation (PDF generation is a derivative, not core)
@@ -22,7 +22,7 @@ When a business needs to store a document, they create a DocumentSet to group re
 
 When a user adds a document to a set, the system first validates it against the referenced schema. If validation passes, the system computes a content hash and stores the content separately from the metadata. This content-addressable approach means identical documents are stored only once, regardless of how many times they appear across different document sets.
 
-Documents are never modified in place. When changes are needed, a new version is created. Each version has a sequential number starting from 1, and maintains a reference to its predecessor. This creates an immutable audit trail. The system always knows which version is current and can retrieve any historical version on demand.
+Documents are never modified in place. When changes are needed, a new version is created. Each version has a sequential number starting from 1, and maintains a reference to its predecessor. This creates an immutable audit trail. The system always knows which version is current and can retrieve any historical version on demand, including the raw bytes of preserved source payloads such as inbound EDI evidence.
 
 Sometimes documents need to exist in multiple formats. A JSON invoice might need an XML representation for a trading partner, or a PDF rendering for human review. These are called derivatives. Each derivative links back to its source version and records how the transformation was performed. The system prevents duplicate derivatives by ensuring only one derivative exists for each source version and target format combination.
 
@@ -74,4 +74,4 @@ When significant events occur, the domain publishes events. A new document set t
 |-----------|--------|-----------|
 | Publishes to | Any subscriber | Domain events via event bus |
 | Consumes from | External schema providers | Schema definitions via ContentStore |
-| Provides to | Downstream systems | Document content via ContentStore |
+| Provides to | Downstream systems | Document metadata and version content via Documents API |

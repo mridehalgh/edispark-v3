@@ -1,0 +1,11 @@
+{
+  "sessionId": "demo-4821",
+  "owner": "[name]",
+  "active": true,
+  "tags": ["sample", "random", "placeholder"],
+  "metrics": {
+    "score": 73,
+    "visits": 14,
+    "ratio": 0.42
+  }
+}

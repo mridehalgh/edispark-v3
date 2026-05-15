@@ -1,0 +1,9 @@
+appName: random-files-demo
+environment: sandbox
+featureFlags:
+  previewMode: true
+  verboseLogging: false
+limits:
+  maxItems: 12
+  retryDelayMs: 250
+ownerEmail: "[email]"

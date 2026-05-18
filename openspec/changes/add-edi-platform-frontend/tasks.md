@@ -7,16 +7,16 @@
 
 ## 2. Core Implementation
 
-- [ ] 2.1 Implement the application shell with navigation, connection-state banner, and UK retail-oriented visual framing
-- [ ] 2.2 Implement the frontend discovery service that resolves the backend origin and loads `/api-docs`
-- [ ] 2.3 Implement the OpenAPI endpoint catalogue builder and operator-facing grouping rules
-- [ ] 2.4 Implement the resource client for the current document-set, schema, derivative, validation, and content-related backend operations
-- [ ] 2.5 Implement the dashboard and API explorer views from discovered backend metadata
-- [ ] 2.6 Implement document-set list and detail views with pagination support
-- [ ] 2.7 Implement schema list, schema detail, and schema-version inspection views
-- [ ] 2.8 Implement action workflows for create schema, add schema version, create document set, add document, add version, create derivative, and validate document
-- [ ] 2.9 Implement the payload adapter for request preview, Base64 encoding, and response debugging panels
-- [ ] 2.10 Implement degraded-mode behaviour that disables unavailable backend-dependent actions while keeping independent UI surfaces accessible
+- [x] 2.1 Implement the application shell with navigation, connection-state banner, and UK retail-oriented visual framing
+- [x] 2.2 Implement the frontend discovery service that resolves the backend origin and loads `/api-docs`
+- [x] 2.3 Implement the OpenAPI endpoint catalogue builder and operator-facing grouping rules
+- [x] 2.4 Implement the resource client for the current document-set, schema, derivative, validation, and content-related backend operations
+- [x] 2.5 Implement the dashboard and API explorer views from discovered backend metadata
+- [x] 2.6 Implement document-set list and detail views with pagination support
+- [x] 2.7 Implement schema list, schema detail, and schema-version inspection views
+- [x] 2.8 Implement action workflows for create schema, add schema version, create document set, add document, add version, create derivative, and validate document
+- [x] 2.9 Implement the payload adapter for request preview, Base64 encoding, and response debugging panels
+- [x] 2.10 Implement degraded-mode behaviour that disables unavailable backend-dependent actions while keeping independent UI surfaces accessible
 
 ## 3. Example-Driven Tests
 

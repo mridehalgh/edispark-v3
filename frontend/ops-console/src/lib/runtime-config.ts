@@ -1,6 +1,6 @@
 export const DEFAULT_BACKEND_ORIGIN = 'http://localhost:8080'
 
-const normalizeOrigin = (origin: string) => origin.replace(/\/$/, '')
+export const normalizeOrigin = (origin: string) => origin.replace(/\/$/, '')
 
 const backendOrigin = normalizeOrigin(
   import.meta.env.VITE_BACKEND_ORIGIN || DEFAULT_BACKEND_ORIGIN,

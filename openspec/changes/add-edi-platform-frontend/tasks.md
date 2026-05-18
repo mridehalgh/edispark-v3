@@ -1,9 +1,9 @@
 ## 1. Setup
 
-- [ ] 1.1 Create the frontend application scaffold for the EDI operations console
-- [ ] 1.2 Add the frontend dependencies for React, TypeScript, `shadcn/ui`, routing, data fetching, `vitest`, `@testing-library/react`, and `fast-check`
-- [ ] 1.3 Configure local frontend runtime settings with a documented default backend origin and environment override support
-- [ ] 1.4 Add a local development workflow so the frontend can run against the Spring Boot backend on `http://localhost:8080`
+- [x] 1.1 Create the frontend application scaffold for the EDI operations console
+- [x] 1.2 Add the frontend dependencies for React, TypeScript, `shadcn/ui`, routing, data fetching, `vitest`, `@testing-library/react`, and `fast-check`
+- [x] 1.3 Configure local frontend runtime settings with a documented default backend origin and environment override support
+- [x] 1.4 Add a local development workflow so the frontend can run against the Spring Boot backend on `http://localhost:8080`
 
 ## 2. Core Implementation
 

@@ -13,6 +13,11 @@
 *.tar.gz
 *.rar
 
+# Node
+node_modules/
+dist/
+coverage/
+
 # Maven
 target/
 pom.xml.tag

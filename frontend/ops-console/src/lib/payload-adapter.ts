@@ -134,3 +134,16 @@ export const buildValidateDocumentState = <TInput, TRequest, TResponse>(
   response,
   status: 'idle',
 })
+
+export const buildMutationFailureState = <TInput, TRequest, TResponse>(
+  input: TInput,
+  errorMessage: string,
+  requestPreview?: TRequest,
+  response?: TResponse,
+): MutationDebugState<TInput, TRequest, TResponse> => ({
+  input,
+  requestPreview,
+  response,
+  status: 'error',
+  errorMessage,
+})

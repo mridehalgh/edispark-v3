@@ -20,7 +20,7 @@ const groups = (): Record<EndpointCatalogueGroup, EndpointDescriptor[]> => ({
   'api-reference': [],
 })
 
-const expectedOperations: ExpectedOperation[] = [
+export const expectedOperations: ExpectedOperation[] = [
   { capabilityKey: 'listDocumentSets', method: 'GET', path: '/api/document-sets', summary: 'List document sets', group: 'document-sets', matchPath: /^\/api\/document-sets$/ },
   { capabilityKey: 'createDocumentSet', method: 'POST', path: '/api/document-sets', summary: 'Create document set', group: 'document-sets', matchPath: /^\/api\/document-sets$/ },
   { capabilityKey: 'getDocumentSet', method: 'GET', path: '/api/document-sets/{id}', summary: 'Get document set', group: 'document-sets', matchPath: /^\/api\/document-sets\/\{id\}$/ },

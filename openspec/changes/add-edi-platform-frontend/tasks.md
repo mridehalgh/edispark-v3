@@ -26,47 +26,47 @@
 
 ## 4. Property-Based Tests
 
-- [ ] 4.1 Implement property: Supported message types remain selectable and visible with `fast-check`
+- [x] 4.1 Implement property: Supported message types remain selectable and visible with `fast-check`
   - Generator: supported message-type enum values and workflow states that accept message framing
   - Test: every supported message type remains preserved in workflow state and available in presentation
   - **Validates: Requirements 1.3, 4.2**
 
-- [ ] 4.2 Implement property: Rendered resource views reflect backend payloads with `fast-check`
+- [x] 4.2 Implement property: Rendered resource views reflect backend payloads with `fast-check`
   - Generator: normalized list and detail payload objects with identifiers, metadata, and optional nested items
   - Test: rendered view models expose the same identifiers and core fields returned by the backend payloads
   - **Validates: Requirements 2.1, 2.2, 3.3, 4.3, 5.2, 5.3**
 
-- [ ] 4.3 Implement property: Pagination preserves continuation semantics with `fast-check`
+- [x] 4.3 Implement property: Pagination preserves continuation semantics with `fast-check`
   - Generator: paginated response objects with optional continuation tokens
   - Test: follow-up requests reuse the returned continuation token exactly
   - **Validates: Requirements 2.3**
 
-- [ ] 4.4 Implement property: Payload preview encoding is a round trip with `fast-check`
+- [x] 4.4 Implement property: Payload preview encoding is a round trip with `fast-check`
   - Generator: valid operator-entered text including multi-line EDI payloads and separator-heavy samples
   - Test: encoding then decoding yields the original payload text
   - **Validates: Requirements 3.2**
 
-- [ ] 4.5 Implement property: Failed submissions preserve operator inputs with `fast-check`
+- [x] 4.5 Implement property: Failed submissions preserve operator inputs with `fast-check`
   - Generator: valid action-form inputs and failed mutation results
   - Test: failed workflow state retains the same operator input values after submission failure
   - **Validates: Requirements 3.4**
 
-- [ ] 4.6 Implement property: Configured origin resolution is deterministic with `fast-check`
+- [x] 4.6 Implement property: Configured origin resolution is deterministic with `fast-check`
   - Generator: combinations of explicit backend origins, default origins, and manual-state inputs
   - Test: explicit origin wins whenever present
   - **Validates: Requirements 6.3, 9.2**
 
-- [ ] 4.7 Implement property: Endpoint catalogue entries are contract-derived with `fast-check`
+- [x] 4.7 Implement property: Endpoint catalogue entries are contract-derived with `fast-check`
   - Generator: simplified OpenAPI path maps with tagged GET and POST operations
   - Test: every catalogue entry maps back to a source operation and belongs to exactly one operator-facing group
   - **Validates: Requirements 6.2, 7.1, 7.2**
 
-- [ ] 4.8 Implement property: Unavailable or invalid contract operations are rejected safely with `fast-check`
+- [x] 4.8 Implement property: Unavailable or invalid contract operations are rejected safely with `fast-check`
   - Generator: expected-operation sets plus OpenAPI documents that omit subsets or violate structural assumptions
   - Test: unavailable operations do not produce actionable endpoint bindings and invalid contracts yield unavailable action states
   - **Validates: Requirements 7.4, 9.4**
 
-- [ ] 4.9 Implement property: Degraded mode only disables dependent surfaces with `fast-check`
+- [x] 4.9 Implement property: Degraded mode only disables dependent surfaces with `fast-check`
   - Generator: view registries annotated with backend dependency flags and degraded capability maps
   - Test: independent surfaces stay available and backend-dependent unavailable surfaces are disabled
   - **Validates: Requirements 8.4**

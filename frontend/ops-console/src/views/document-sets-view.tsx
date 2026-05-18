@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 
@@ -57,6 +57,12 @@ function DocumentSetActions({ setId, docId }: { setId: string; docId?: string })
     sourceVersionNumber: 1,
     targetFormat: 'JSON',
   })
+
+  useEffect(() => {
+    setAddDocumentState((current) => ({ ...current, setId }))
+    setAddVersionState((current) => ({ ...current, setId, docId: docId || '' }))
+    setDerivativeState((current) => ({ ...current, setId, docId: docId || '' }))
+  }, [docId, setId])
 
   const createPreview = useMemo(() => buildCreateDocumentSetRequest(createState), [createState])
   const addDocumentPreview = useMemo(() => buildAddDocumentRequest(addDocumentState), [addDocumentState])
@@ -241,9 +247,10 @@ function DocumentSetDetail() {
             <div className="mt-3 space-y-2">
               {documentSet.documents.map((document) => (
                 <button className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left ${document.id === documentId ? 'border-primary bg-primary/5' : 'hover:bg-slate-50'}`} key={document.id} onClick={() => setSearchParams((current) => {
-                  current.set('docId', document.id)
-                  current.delete('versionNumber')
-                  return current
+                  const next = new URLSearchParams(current)
+                  next.set('docId', document.id)
+                  next.delete('versionNumber')
+                  return next
                 })} type="button">
                   <div>
                     <p className="font-medium">{document.type}</p>
@@ -252,6 +259,12 @@ function DocumentSetDetail() {
                   <span className="text-xs text-muted-foreground">{document.versionCount} versions</span>
                 </button>
               ))}
+              {!documentSet.documents.length ? (
+                <EmptyPanel
+                  description="This set has been created, but no documents have been attached yet. Use the add-document workflow below once the trading payload is ready."
+                  title="No documents in this set yet"
+                />
+              ) : null}
             </div>
           </div>
           <JsonDebugPanel payload={documentSet} title="Raw document-set payload" />
@@ -269,9 +282,10 @@ function DocumentSetDetail() {
                 <p className="font-semibold">Current version</p>
                 <div className="mt-2 text-sm text-muted-foreground">Version {documentQuery.data.currentVersion.versionNumber} · {documentQuery.data.currentVersion.format} · parse status {documentQuery.data.currentVersion.parseStatus || 'n/a'}</div>
                 <button className="mt-3 text-sm font-medium text-primary underline underline-offset-4" onClick={() => setSearchParams((current) => {
-                  current.set('docId', documentQuery.data!.id)
-                  current.set('versionNumber', `${documentQuery.data!.currentVersion.versionNumber}`)
-                  return current
+                  const next = new URLSearchParams(current)
+                  next.set('docId', documentQuery.data!.id)
+                  next.set('versionNumber', `${documentQuery.data!.currentVersion.versionNumber}`)
+                  return next
                 })} type="button">Inspect version</button>
               </div>
               <div className="rounded-2xl border p-4">
@@ -283,6 +297,12 @@ function DocumentSetDetail() {
                       <div className="text-xs text-muted-foreground">Derivative ID: {derivative.id} · Source version: {derivative.sourceVersionId}</div>
                     </div>
                   ))}
+                  {!(derivativesQuery.data || documentQuery.data.derivatives).length ? (
+                    <EmptyPanel
+                      description="No derivative payloads have been generated for this document yet. Use the derivative workflow below to create downstream formats for debugging."
+                      title="No derivatives returned"
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 
@@ -18,6 +18,10 @@ function SchemaActions({ schemaId }: { schemaId?: string }) {
     versionIdentifier: '1.0.0',
     definitionText: '<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"></xsd:schema>',
   })
+
+  useEffect(() => {
+    setVersionState((current) => ({ ...current, schemaId: schemaId || '' }))
+  }, [schemaId])
 
   const createPreview = useMemo(() => buildCreateSchemaRequest(createState), [createState])
   const versionPreview = useMemo(() => buildAddSchemaVersionRequest(versionState), [versionState])
@@ -120,6 +124,12 @@ function SchemaDetail() {
                   <span className="text-xs text-muted-foreground">{version.deprecated ? 'Deprecated' : 'Active'}</span>
                 </button>
               ))}
+              {!schema.versions.length ? (
+                <EmptyPanel
+                  description="This schema exists, but no published versions are available yet. Add the first version from the workflow panel to start validation work."
+                  title="No schema versions published"
+                />
+              ) : null}
             </div>
           </div>
           <JsonDebugPanel payload={schema} title="Schema payload" />
@@ -159,6 +169,7 @@ export function SchemaCentreView() {
       enabled: capabilityAvailable(catalogue, 'getSchema', connection),
     })),
   })
+  const knownSchemaCards = knownSchemas.flatMap((query) => (query.data ? [query.data] : []))
 
   if (schemaId) {
     return <SchemaDetail />
@@ -181,27 +192,23 @@ export function SchemaCentreView() {
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <SurfaceCard>
           <h2 className="text-lg font-semibold">Known schemas</h2>
-          <p className="mt-2 text-sm text-muted-foreground">No backend list endpoint is currently published, so this operator list is built from schema details previously returned by the API.</p>
+          <p className="mt-2 text-sm text-muted-foreground">No backend list endpoint is currently published, so this operator list is built from schema details previously returned by the API. Pin a schema by creating it here or by opening a known schema ID directly.</p>
           <div className="mt-4 space-y-3">
-            {knownSchemas.length ? knownSchemas.map((query) => {
-              if (!query.data) {
-                return null
-              }
-
+            {knownSchemaCards.length ? knownSchemaCards.map((schema) => {
               return (
-                <div className="rounded-2xl border p-4" key={query.data.id}>
+                <div className="rounded-2xl border p-4" key={schema.id}>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-semibold">{query.data.name}</p>
-                      <p className="text-xs text-muted-foreground">{query.data.id} · {query.data.format}</p>
+                      <p className="font-semibold">{schema.name}</p>
+                      <p className="text-xs text-muted-foreground">{schema.id} · {schema.format}</p>
                     </div>
-                    <Link className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground" to={`/schemas/${query.data.id}`}>
+                    <Link className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground" to={`/schemas/${schema.id}`}>
                       Inspect
                     </Link>
                   </div>
                 </div>
               )
-            }) : <EmptyPanel title="No schemas pinned yet" description="Create a schema or inspect one by ID to keep it visible in this list." />}
+            }) : <EmptyPanel title="No schemas pinned yet" description="Create a schema or inspect one by ID to keep it visible in this list for later validation, document-set, and schema-version work." />}
           </div>
         </SurfaceCard>
 

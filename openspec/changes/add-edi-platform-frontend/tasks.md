@@ -73,6 +73,6 @@
 
 ## 5. Review and Finish
 
-- [ ] 5.1 Conduct code review for the frontend change set
-- [ ] 5.2 Fix review findings and stabilise the UI copy, empty states, and developer-facing integration guidance
+- [x] 5.1 Conduct code review for the frontend change set
+- [x] 5.2 Fix review findings and stabilise the UI copy, empty states, and developer-facing integration guidance
 - [ ] 5.3 Run the frontend test suite, verify local backend integration manually, and document the startup steps

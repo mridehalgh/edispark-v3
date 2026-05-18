@@ -34,7 +34,10 @@ describe('ops console workflow behaviour', () => {
           createdAt: '2026-05-18T08:00:00Z',
           createdBy: 'integration.analyst',
           metadata: { channel: 'ecommerce' },
-          documents: [{ id: 'doc-001', type: 'ORDER', versionCount: 1 }],
+          documents: [
+            { id: 'doc-001', type: 'ORDER', versionCount: 1 },
+            { id: 'doc-002', type: 'INVOICE', versionCount: 2 },
+          ],
         })
       }
 
@@ -56,6 +59,27 @@ describe('ops console workflow behaviour', () => {
             parseErrors: [],
           },
           derivatives: [{ id: 'derivative-001', sourceVersionId: 'version-001', targetFormat: 'JSON', contentHash: 'hash-json', transformationMethod: 'EDI_TO_JSON', createdAt: '2026-05-18T08:02:00Z' }],
+        })
+      }
+
+      if (method === 'GET' && url.pathname === '/api/document-sets/set-001/documents/doc-002') {
+        return jsonResponse({
+          id: 'doc-002',
+          type: 'INVOICE',
+          schemaRef: { schemaId: 'schema-invoice', version: '2.0' },
+          versionCount: 2,
+          currentVersion: {
+            id: 'version-002',
+            versionNumber: 2,
+            contentHash: 'hash-002',
+            createdAt: '2026-05-18T09:01:00Z',
+            createdBy: 'operations.user',
+            format: 'EDI',
+            parseStatus: 'VALIDATED',
+            messageType: 'INVOIC',
+            parseErrors: [],
+          },
+          derivatives: [],
         })
       }
 
@@ -95,6 +119,9 @@ describe('ops console workflow behaviour', () => {
 
     await screen.findByText(/"fileName": "order\.edi"/)
     expect(screen.getByText(/"text": "UNH\+1\+ORDERS:D:03B:UN:EAN008'"/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Document ID: doc-002/i }))
+    await screen.findByDisplayValue('doc-002')
   })
 
   it('shows successful schema creation and schema-version submission results', async () => {
@@ -133,6 +160,7 @@ describe('ops console workflow behaviour', () => {
 
     await screen.findByRole('heading', { name: 'Retail Orders XSD' })
     expect(screen.getByText(/Backend version ID schema-version-1/i)).toBeInTheDocument()
+    expect(screen.getByDisplayValue('schema-uk')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Create schema' }))
     await screen.findByText(/schema-created/)

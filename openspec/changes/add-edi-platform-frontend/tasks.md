@@ -20,9 +20,9 @@
 
 ## 3. Example-Driven Tests
 
-- [ ] 3.1 Add unit and component tests for root-route rendering, workflow navigation, and connection-state banners
-- [ ] 3.2 Add unit and component tests for error rendering, retry behaviour, and degraded discovery guidance
-- [ ] 3.3 Add unit and component tests for document-set and schema workflow happy paths against representative mocked backend responses
+- [x] 3.1 Add unit and component tests for root-route rendering, workflow navigation, and connection-state banners
+- [x] 3.2 Add unit and component tests for error rendering, retry behaviour, and degraded discovery guidance
+- [x] 3.3 Add unit and component tests for document-set and schema workflow happy paths against representative mocked backend responses
 
 ## 4. Property-Based Tests
 

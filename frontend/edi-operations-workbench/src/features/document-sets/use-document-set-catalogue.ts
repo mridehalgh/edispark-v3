@@ -11,13 +11,14 @@ export function useDocumentSetCatalogue(limit = 50) {
   const [requestState, setRequestState] = useState<RequestLifecycleState<DocumentSetPageResponse>>(
     createIdleRequestState(listDocumentSetsOperationId) as RequestLifecycleState<DocumentSetPageResponse>
   )
+  const [nextToken, setNextToken] = useState<string | undefined>()
 
   const refresh = useCallback(async () => {
     resetRequestState(listDocumentSetsOperationId)
-    const nextState = await runRequest(listDocumentSetsOperationId, (client) => client.listDocumentSets({ limit }))
+    const nextState = await runRequest(listDocumentSetsOperationId, (client) => client.listDocumentSets({ limit, nextToken }))
 
     setRequestState(nextState)
-  }, [limit, resetRequestState, runRequest])
+  }, [limit, nextToken, resetRequestState, runRequest])
 
   useEffect(() => {
     if (contractState.kind !== 'connected') {
@@ -28,6 +29,19 @@ export function useDocumentSetCatalogue(limit = 50) {
   }, [contractState.kind, refresh])
 
   return {
+    goToNextPage() {
+      if (requestState.status === 'succeeded' && requestState.data.nextToken) {
+        setNextToken(requestState.data.nextToken)
+      }
+    },
+    goToPreviousPage() {
+      if (requestState.status === 'succeeded') {
+        setNextToken(requestState.data.previousToken)
+      }
+    },
+    hasNextPage: requestState.status === 'succeeded' ? requestState.data.hasNext : false,
+    hasPreviousPage: requestState.status === 'succeeded' ? requestState.data.hasPrevious : false,
+    nextToken,
     refresh,
     requestState,
     page: requestState.status === 'succeeded' ? requestState.data : undefined

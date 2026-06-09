@@ -4,6 +4,12 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  projectDocumentSetEvidence,
+  validateAddDocumentForm,
+  validateAddVersionForm,
+  validateDerivativeSourceVersion
+} from '@/features/document-sets/document-workflow'
 import { ErrorState, LoadingState } from '@/components/workbench-states'
 import { useIntegration } from '@/integration/integration-provider'
 import { canSubmitWhileDisconnected } from '@/integration/request-lifecycle'
@@ -56,12 +62,7 @@ export function DocumentSetDetailPage() {
 
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const errors = [
-      form.schemaId.trim() ? undefined : 'Schema ID is required.',
-      form.schemaVersion.trim() ? undefined : 'Schema version is required.',
-      form.contentText.trim() ? undefined : 'Document content is required.',
-      form.createdBy.trim() ? undefined : 'Created by is required.'
-    ].filter(Boolean) as string[]
+    const errors = validateAddDocumentForm(form)
     setAddDocumentErrors(errors)
     setAddDocumentResult(undefined)
 
@@ -98,6 +99,8 @@ export function DocumentSetDetailPage() {
     return <ErrorState title="Document-set detail is unavailable" description="The live backend response could not be projected into this workflow view." details={error} onRetry={() => void loadDetail()} />
   }
 
+  const evidence = projectDocumentSetEvidence(data.documentSet, data.documents)
+
   return (
     <div className="space-y-6">
       <Card className="border-border/70 bg-card/95 shadow-sm">
@@ -109,7 +112,7 @@ export function DocumentSetDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>{data.documents.length} document detail record(s) loaded for this set.</p>
+          <p>{evidence.documentCount} document detail record(s) loaded for this set.</p>
           {data.documentSet.metadata ? <pre className="rounded-2xl bg-muted p-4 text-xs">{JSON.stringify(data.documentSet.metadata, null, 2)}</pre> : null}
         </CardContent>
       </Card>
@@ -155,7 +158,7 @@ function DocumentWorkflowCard(props: { setId: string; document: DocumentResponse
 
   async function addVersion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const errors = [versionForm.contentText.trim() ? undefined : 'Version content is required.', versionForm.createdBy.trim() ? undefined : 'Created by is required.'].filter(Boolean) as string[]
+    const errors = validateAddVersionForm(versionForm)
     if (errors.length > 0) {
       setMessages(errors)
       return
@@ -174,12 +177,13 @@ function DocumentWorkflowCard(props: { setId: string; document: DocumentResponse
 
   async function createDerivative(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const sourceVersionNumber = Number(derivativeForm.sourceVersionNumber)
-    if (!Number.isInteger(sourceVersionNumber) || sourceVersionNumber < 1) {
-      setMessages(['Source version number must be 1 or greater.'])
+    const errors = validateDerivativeSourceVersion(derivativeForm.sourceVersionNumber)
+    if (errors.length > 0) {
+      setMessages(errors)
       return
     }
 
+    const sourceVersionNumber = Number(derivativeForm.sourceVersionNumber)
     const request: CreateDerivativeRequest = { sourceVersionNumber, targetFormat: derivativeForm.targetFormat as Format }
     const result = await runRequest(`createDerivative:${props.document.id}`, (client) => client.createDerivative(props.setId, props.document.id, request))
     setMessages(

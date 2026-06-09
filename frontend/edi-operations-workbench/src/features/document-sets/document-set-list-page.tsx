@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { validateCreateDocumentSetForm } from '@/features/document-sets/document-workflow'
 import { EmptyState, ErrorState, LoadingState } from '@/components/workbench-states'
 import { useDocumentSetCatalogue } from '@/features/document-sets/use-document-set-catalogue'
 import type { DocumentType } from '@/integration/documents-api-client'
@@ -28,12 +29,7 @@ export function DocumentSetListPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const nextErrors = [
-      form.schemaId.trim() ? undefined : 'Schema ID is required.',
-      form.schemaVersion.trim() ? undefined : 'Schema version is required.',
-      form.contentText.trim() ? undefined : 'Document content is required.',
-      form.createdBy.trim() ? undefined : 'Created by is required.'
-    ].filter(Boolean) as string[]
+    const nextErrors = validateCreateDocumentSetForm(form)
     setErrors(nextErrors)
     setResultMessage(undefined)
 

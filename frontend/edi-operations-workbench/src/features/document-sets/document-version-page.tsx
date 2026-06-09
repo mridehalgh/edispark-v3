@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { createDownloadDescriptor, projectValidationEvidence } from '@/features/document-sets/document-workflow'
 import { ErrorState, LoadingState } from '@/components/workbench-states'
 import type { DocumentVersionResponse, ValidationResultResponse } from '@/integration/documents-api-client'
 import { useIntegration } from '@/integration/integration-provider'
@@ -60,11 +61,12 @@ export function DocumentVersionPage() {
       return
     }
 
-    const blob = new Blob([result.data.bytes.buffer as ArrayBuffer], { type: result.data.mediaType })
+    const descriptor = createDownloadDescriptor(result.data)
+    const blob = new Blob([descriptor.bytes.buffer as ArrayBuffer], { type: descriptor.mediaType })
     const objectUrl = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = objectUrl
-    anchor.download = result.data.fileName
+    anchor.download = descriptor.fileName
     anchor.click()
     URL.revokeObjectURL(objectUrl)
   }
@@ -76,6 +78,8 @@ export function DocumentVersionPage() {
   if (!version || error) {
     return <ErrorState title="Document version detail is unavailable" description="The version inspection view could not load its live backend response." details={error} onRetry={() => void loadVersion()} />
   }
+
+  const validationEvidence = validationResult ? projectValidationEvidence(validationResult) : undefined
 
   return (
     <div className="space-y-6">
@@ -104,20 +108,20 @@ export function DocumentVersionPage() {
         </CardContent>
       </Card>
 
-      {validationResult ? (
+      {validationEvidence ? (
         <Card className="border-border/70 bg-card/95 shadow-sm">
           <CardHeader>
             <CardTitle>Validation outcome</CardTitle>
-            <CardDescription>{validationResult.valid ? 'This version passed validation.' : 'This version failed validation.'}</CardDescription>
+            <CardDescription>{validationEvidence.valid ? 'This version passed validation.' : 'This version failed validation.'}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <div className="flex flex-wrap gap-2">
-              <Badge className={validationResult.valid ? 'border-transparent bg-primary text-primary-foreground' : 'border-transparent bg-destructive text-destructive-foreground'}>
-                {validationResult.valid ? 'Pass' : 'Fail'}
+              <Badge className={validationEvidence.valid ? 'border-transparent bg-primary text-primary-foreground' : 'border-transparent bg-destructive text-destructive-foreground'}>
+                {validationEvidence.statusLabel}
               </Badge>
             </div>
-            {validationResult.errors.length > 0 ? <pre className="rounded-2xl bg-muted p-4 text-xs">{JSON.stringify(validationResult.errors, null, 2)}</pre> : null}
-            {validationResult.warnings.length > 0 ? <pre className="rounded-2xl bg-muted p-4 text-xs">{JSON.stringify(validationResult.warnings, null, 2)}</pre> : null}
+            {validationEvidence.errors.length > 0 ? <pre className="rounded-2xl bg-muted p-4 text-xs">{JSON.stringify(validationEvidence.errors, null, 2)}</pre> : null}
+            {validationEvidence.warnings.length > 0 ? <pre className="rounded-2xl bg-muted p-4 text-xs">{JSON.stringify(validationEvidence.warnings, null, 2)}</pre> : null}
           </CardContent>
         </Card>
       ) : null}

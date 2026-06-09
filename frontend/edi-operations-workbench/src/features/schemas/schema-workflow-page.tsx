@@ -4,6 +4,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LoadingState } from '@/components/workbench-states'
+import {
+  projectAddSchemaVersionSubmission,
+  projectCreateSchemaSubmission
+} from '@/features/schemas/schema-workflow'
 import { canSubmitWhileDisconnected } from '@/integration/request-lifecycle'
 import { useIntegration } from '@/integration/integration-provider'
 import { encodeTextToBase64 } from '@/lib/base64'
@@ -30,11 +34,11 @@ export function SchemaWorkflowPage() {
   async function submitSchema(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const errors = [schemaForm.name.trim() ? undefined : 'Schema name is required.'].filter(Boolean) as string[]
-    setSchemaErrors(errors)
+    const submission = projectCreateSchemaSubmission(schemaForm)
+    setSchemaErrors(submission.errors)
     setSchemaResult(undefined)
 
-    if (errors.length > 0) {
+    if (!submission.shouldSubmit) {
       return
     }
 
@@ -47,27 +51,25 @@ export function SchemaWorkflowPage() {
     )
     setSubmitting(undefined)
 
+    const nextSubmission = projectCreateSchemaSubmission(schemaForm, result)
+    setSchemaErrors(nextSubmission.errors)
+
     if (result.status !== 'succeeded') {
-      setSchemaErrors([result.status === 'failed' ? result.reason : 'The schema request did not complete.'])
       return
     }
 
     setVersionForm((current) => ({ ...current, schemaId: result.data.id }))
-    setSchemaResult(`${result.data.name} created as ${result.data.id} in ${result.data.format} format.`)
+    setSchemaResult(nextSubmission.summary)
   }
 
   async function submitVersion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const errors = [
-      versionForm.schemaId.trim() ? undefined : 'Schema ID is required.',
-      versionForm.versionIdentifier.trim() ? undefined : 'Version identifier is required.',
-      versionForm.definitionText.trim() ? undefined : 'Schema definition text is required.'
-    ].filter(Boolean) as string[]
-    setVersionErrors(errors)
+    const submission = projectAddSchemaVersionSubmission(versionForm)
+    setVersionErrors(submission.errors)
     setVersionResult(undefined)
 
-    if (errors.length > 0) {
+    if (!submission.shouldSubmit) {
       return
     }
 
@@ -80,14 +82,14 @@ export function SchemaWorkflowPage() {
     )
     setSubmitting(undefined)
 
+    const nextSubmission = projectAddSchemaVersionSubmission(versionForm, result)
+    setVersionErrors(nextSubmission.errors)
+
     if (result.status !== 'succeeded') {
-      setVersionErrors([result.status === 'failed' ? result.reason : 'The schema version request did not complete.'])
       return
     }
 
-    setVersionResult(
-      `${result.data.versionIdentifier} created as ${result.data.id} on ${new Date(result.data.createdAt).toLocaleString()}. Deprecated: ${result.data.deprecated ? 'yes' : 'no'}.`
-    )
+    setVersionResult(nextSubmission.summary)
   }
 
   return (

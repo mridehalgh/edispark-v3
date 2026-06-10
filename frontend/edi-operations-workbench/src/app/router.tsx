@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { DocumentSetDetailPage } from '@/features/document-sets/document-set-detail-page'
@@ -8,7 +8,7 @@ import { RetailJourneyDetailPage, RetailJourneysPage } from '@/features/journeys
 import { SchemaWorkflowPage } from '@/features/schemas/schema-workflow-page'
 import { PlannedWorkbenchPage, WorkbenchShell } from '@/app/workbench-shell'
 
-export const router = createBrowserRouter([
+export const workbenchRoutes: RouteObject[] = [
   {
     path: '/',
     element: <WorkbenchShell />,
@@ -39,4 +39,6 @@ export const router = createBrowserRouter([
       }
     ]
   }
-])
+]
+
+export const router = createBrowserRouter(workbenchRoutes)

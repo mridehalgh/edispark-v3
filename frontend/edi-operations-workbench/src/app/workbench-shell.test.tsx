@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import fc from 'fast-check'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -155,5 +156,28 @@ describe('workbench shell', () => {
       }),
       { numRuns: 100 }
     )
+  })
+
+  it('shows a recoverable error state when the contract fails to load', async () => {
+    const refreshContract = vi.fn().mockResolvedValue(undefined)
+    currentIntegration = {
+      contractState: {
+        kind: 'contract-failed',
+        baseUrl: 'http://localhost:18080',
+        openApiUrl: 'http://localhost:18080/api-docs',
+        reason: 'OpenAPI contract request failed with status 503. Expected local backend contract at http://localhost:18080/api-docs.'
+      },
+      refreshContract
+    }
+
+    renderShell('/', currentIntegration.contractState)
+
+    expect(screen.getByText('Initial application state is unavailable')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Retry contract load' })).toHaveLength(2)
+    expect(screen.queryByText('Dashboard child')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Retry contract load' })[0])
+
+    expect(refreshContract).toHaveBeenCalledOnce()
   })
 })

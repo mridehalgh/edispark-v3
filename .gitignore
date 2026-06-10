@@ -83,3 +83,10 @@ dynamodb-local-metadata.json
 shared-local-instance.db
 .history
 .content-store
+
+# Node and frontend build output
+node_modules/
+coverage/
+dist/
+*.tsbuildinfo
+frontend/edi-operations-workbench/*.d.ts

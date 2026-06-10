@@ -17,23 +17,23 @@ type LifecycleAction =
   | { type: 'reset' }
   | { type: 'refresh' }
 
-const actionArb = fc.oneof<LifecycleAction>(
-  fc.constant({ type: 'pending' }),
+const actionArb: fc.Arbitrary<LifecycleAction> = fc.oneof(
+  fc.constant<LifecycleAction>({ type: 'pending' }),
   fc.record({ type: fc.constant<'succeeded'>('succeeded'), data: textArb }),
   fc.record({
     type: fc.constant<'failed'>('failed'),
     reason: textArb,
     statusCode: fc.option(fc.integer({ min: 400, max: 599 }), { nil: undefined })
   }),
-  fc.constant({ type: 'reset' }),
-  fc.constant({ type: 'refresh' })
+  fc.constant<LifecycleAction>({ type: 'reset' }),
+  fc.constant<LifecycleAction>({ type: 'refresh' })
 )
 
 describe('request lifecycle properties', () => {
   it('Feature: local-openapi-api-integration, Property 9: Request lifecycle transitions are recoverable', () => {
     fc.assert(
       fc.property(fc.array(actionArb, { minLength: 1, maxLength: 25 }), textArb, (actions, operationId) => {
-        let requestStateMap = {}
+        let requestStateMap = Object.create(null) as Record<string, ReturnType<typeof getRequestLifecycleState>>
         let contractState: ConnectedContractState = {
           kind: 'connected',
           baseUrl: 'http://localhost:8080',
@@ -62,11 +62,14 @@ describe('request lifecycle properties', () => {
               retryable: true,
               statusCode: action.statusCode
             })
-            contractState = createRequestFailureState(contractState, operationId, action.reason, action.statusCode)
+            contractState = createRequestFailureState(contractState, operationId, action.reason, action.statusCode) as ConnectedContractState
 
             expect(contractState.kind).toBe('request-failed')
-            expect(contractState.operationId).toBe(operationId)
-            expect(contractState.reason).toBe(action.reason)
+
+            if (contractState.kind === 'request-failed') {
+              expect(contractState.operationId).toBe(operationId)
+              expect(contractState.reason).toBe(action.reason)
+            }
           }
 
           if (action.type === 'reset') {

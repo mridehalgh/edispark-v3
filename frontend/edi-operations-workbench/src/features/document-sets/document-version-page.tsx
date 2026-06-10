@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
@@ -8,22 +8,29 @@ import { createDownloadDescriptor, projectValidationEvidence } from '@/features/
 import { ErrorState, LoadingState } from '@/components/workbench-states'
 import type { DocumentVersionResponse, ValidationResultResponse } from '@/integration/documents-api-client'
 import { useIntegration } from '@/integration/integration-provider'
+import { canSubmitWhileDisconnected } from '@/integration/request-lifecycle'
 
 export function DocumentVersionPage() {
   const params = useParams<{ setId: string; docId: string; versionNumber: string }>()
-  const { runRequest } = useIntegration()
+  const { contractState, runRequest } = useIntegration()
   const [version, setVersion] = useState<DocumentVersionResponse>()
   const [validationResult, setValidationResult] = useState<ValidationResultResponse>()
+  const [validationError, setValidationError] = useState<string>()
   const [error, setError] = useState<string>()
   const [downloadError, setDownloadError] = useState<string>()
   const [loading, setLoading] = useState(true)
   const setId = params.setId ?? ''
   const docId = params.docId ?? ''
   const versionNumber = Number(params.versionNumber ?? '0')
+  const canRunLiveActions = canSubmitWhileDisconnected(contractState)
+  const versionRequestKey = `${setId}:${docId}:${versionNumber}`
 
-  async function loadVersion() {
+  const loadVersion = useCallback(async () => {
     setLoading(true)
     setError(undefined)
+    setValidationResult(undefined)
+    setValidationError(undefined)
+    setDownloadError(undefined)
     const result = await runRequest(`documentVersion:${setId}:${docId}:${versionNumber}`, (client) => client.getVersion(setId, docId, versionNumber))
     setLoading(false)
 
@@ -33,20 +40,26 @@ export function DocumentVersionPage() {
     }
 
     setVersion(result.data)
-  }
+  }, [docId, runRequest, setId, versionNumber])
 
   useEffect(() => {
-    void loadVersion()
-  }, [setId, docId, versionNumber])
+    setVersion(undefined)
+  }, [versionRequestKey])
+
+  useEffect(() => {
+    if ((contractState.kind === 'connected' || contractState.kind === 'request-failed') && !version) {
+      void loadVersion()
+    }
+  }, [contractState.kind, loadVersion, version])
 
   async function validateVersion() {
     const result = await runRequest(`validateDocument:${setId}:${docId}:${versionNumber}`, (client) => client.validateDocument(setId, docId, versionNumber))
     if (result.status === 'succeeded') {
       setValidationResult(result.data)
-      setDownloadError(undefined)
+      setValidationError(undefined)
     } else {
       setValidationResult(undefined)
-      setDownloadError(result.status === 'failed' ? result.reason : 'The validation request did not complete.')
+      setValidationError(result.status === 'failed' ? result.reason : 'The validation request did not complete.')
     }
   }
 
@@ -62,13 +75,16 @@ export function DocumentVersionPage() {
     }
 
     const descriptor = createDownloadDescriptor(result.data)
-    const blob = new Blob([descriptor.bytes.buffer as ArrayBuffer], { type: descriptor.mediaType })
+    const blobBytes = new Uint8Array(descriptor.bytes)
+    const blob = new Blob([blobBytes], { type: descriptor.mediaType })
     const objectUrl = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = objectUrl
     anchor.download = descriptor.fileName
     anchor.click()
-    URL.revokeObjectURL(objectUrl)
+    setTimeout(() => {
+      URL.revokeObjectURL(objectUrl)
+    }, 0)
   }
 
   if (loading) {
@@ -101,10 +117,11 @@ export function DocumentVersionPage() {
           <p>Content hash: {version.contentHash}</p>
           {version.parseErrors.length > 0 ? <pre className="rounded-2xl bg-muted p-4 text-xs">{JSON.stringify(version.parseErrors, null, 2)}</pre> : <p>No parse errors were returned for this version.</p>}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => void validateVersion()} type="button" variant="outline">Validate version</Button>
-            <Button onClick={() => void downloadContent()} type="button">Download raw content</Button>
+            <Button disabled={!canRunLiveActions} onClick={() => void validateVersion()} type="button" variant="outline">Validate version</Button>
+            <Button disabled={!canRunLiveActions} onClick={() => void downloadContent()} type="button">Download raw content</Button>
             <Button asChild type="button" variant="outline"><Link to={`/document-sets/${setId}`}>Back to document set</Link></Button>
           </div>
+          {!canRunLiveActions ? <p className="text-sm text-destructive">Live actions are blocked until the backend connection recovers.</p> : null}
         </CardContent>
       </Card>
 
@@ -126,12 +143,22 @@ export function DocumentVersionPage() {
         </Card>
       ) : null}
 
+      {validationError ? (
+        <ErrorState
+          title="Validation could not be completed"
+          description="This is recoverable. Retry validation after the backend validation flow becomes available again."
+          details={validationError}
+          onRetry={canRunLiveActions ? () => void validateVersion() : undefined}
+          retryLabel="Retry validation"
+        />
+      ) : null}
+
       {downloadError ? (
         <ErrorState
           title="Raw content could not be downloaded"
           description="This is recoverable. Retry the same document version after the backend content becomes available again."
           details={downloadError}
-          onRetry={() => void downloadContent()}
+          onRetry={canRunLiveActions ? () => void downloadContent() : undefined}
           retryLabel="Retry download"
         />
       ) : null}

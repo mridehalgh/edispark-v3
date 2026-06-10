@@ -10,42 +10,62 @@ import type { SchemaResponse, SchemaVersionResponse } from '@/integration/docume
 
 const textArb = fc.string({ minLength: 1, maxLength: 40 }).filter((value) => value.trim().length > 0)
 const maybeBlankTextArb = fc.oneof(textArb, fc.constant(''), fc.constant('   '))
-const formatArb = fc.constantFrom('XSD', 'JSON_SCHEMA', 'RELAXNG')
+const formatArb: fc.Arbitrary<SchemaResponse['format']> = fc.constantFrom('XSD', 'JSON_SCHEMA', 'RELAXNG')
+
+type CreateSchemaCase = {
+  form: {
+    name: string
+    format: SchemaResponse['format']
+  }
+  success: SchemaResponse
+  failureReason: string
+}
+
+type AddVersionCase = {
+  form: {
+    schemaId: string
+    versionIdentifier: string
+    definitionText: string
+  }
+  success: SchemaVersionResponse
+  failureReason: string
+}
 
 describe('schema workflow projection', () => {
   it('Feature: edi-operations-workbench, Property 3: Schema workflow validation and recovery preserve user intent', () => {
-    const createSchemaCaseArb = fc.record({
+    const createSchemaCaseArb: fc.Arbitrary<CreateSchemaCase> = fc.record({
       form: fc.record({
         name: maybeBlankTextArb,
         format: formatArb
       }),
-      success: fc.record({
+      success: fc.record<SchemaResponse>({
         id: textArb,
         name: textArb,
         format: formatArb,
         versions: fc.constant([])
-      }) satisfies fc.Arbitrary<SchemaResponse>,
+      }),
       failureReason: textArb
     })
 
-    const addVersionCaseArb = fc.record({
+    const addVersionCaseArb: fc.Arbitrary<AddVersionCase> = fc.record({
       form: fc.record({
         schemaId: maybeBlankTextArb,
         versionIdentifier: maybeBlankTextArb,
         definitionText: maybeBlankTextArb
       }),
-      success: fc.record({
+      success: fc.record<SchemaVersionResponse>({
         id: textArb,
         versionIdentifier: textArb,
         createdAt: fc.date().map((value) => value.toISOString()),
         deprecated: fc.boolean()
-      }) satisfies fc.Arbitrary<SchemaVersionResponse>,
+      }),
       failureReason: textArb
     })
 
     fc.assert(
       fc.property(fc.oneof(createSchemaCaseArb, addVersionCaseArb), fc.boolean(), (testCase, shouldSucceed) => {
         if ('name' in testCase.form) {
+          const success = testCase.success as SchemaResponse
           const initial = projectCreateSchemaSubmission(testCase.form)
 
           if (!testCase.form.name.trim()) {
@@ -55,7 +75,7 @@ describe('schema workflow projection', () => {
           }
 
           const result: RequestLifecycleState<SchemaResponse> = shouldSucceed
-            ? { status: 'succeeded', operationId: 'createSchemaWorkflow', data: testCase.success }
+            ? { status: 'succeeded', operationId: 'createSchemaWorkflow', data: success }
             : {
                 status: 'failed',
                 operationId: 'createSchemaWorkflow',
@@ -67,9 +87,9 @@ describe('schema workflow projection', () => {
           expect(submission.form).toEqual(testCase.form)
 
           if (shouldSucceed) {
-            expect(submission.summary).toContain(testCase.success.id)
-            expect(submission.summary).toContain(testCase.success.name)
-            expect(submission.summary).toContain(testCase.success.format)
+            expect(submission.summary).toContain(success.id)
+            expect(submission.summary).toContain(success.name)
+            expect(submission.summary).toContain(success.format)
             return
           }
 
@@ -78,6 +98,7 @@ describe('schema workflow projection', () => {
         }
 
         const initial = projectAddSchemaVersionSubmission(testCase.form)
+        const success = testCase.success as SchemaVersionResponse
 
         if (!testCase.form.schemaId.trim() || !testCase.form.versionIdentifier.trim() || !testCase.form.definitionText.trim()) {
           expect(initial.shouldSubmit).toBe(false)
@@ -86,7 +107,7 @@ describe('schema workflow projection', () => {
         }
 
         const result: RequestLifecycleState<SchemaVersionResponse> = shouldSucceed
-          ? { status: 'succeeded', operationId: 'addSchemaVersionWorkflow', data: testCase.success }
+          ? { status: 'succeeded', operationId: 'addSchemaVersionWorkflow', data: success }
           : {
               status: 'failed',
               operationId: 'addSchemaVersionWorkflow',
@@ -98,9 +119,9 @@ describe('schema workflow projection', () => {
         expect(submission.form).toEqual(testCase.form)
 
         if (shouldSucceed) {
-          expect(submission.summary).toContain(testCase.success.id)
-          expect(submission.summary).toContain(testCase.success.versionIdentifier)
-          expect(submission.summary).toContain(testCase.success.deprecated ? 'yes' : 'no')
+          expect(submission.summary).toContain(success.id)
+          expect(submission.summary).toContain(success.versionIdentifier)
+          expect(submission.summary).toContain(success.deprecated ? 'yes' : 'no')
           return
         }
 

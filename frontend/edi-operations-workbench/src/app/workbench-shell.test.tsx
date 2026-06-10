@@ -1,5 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import fc from 'fast-check'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -86,9 +85,11 @@ const contractStateArb = baseUrlArb.chain((baseUrl) => {
 })
 
 function renderShell(route: string, contractState: ContractState) {
+  const refreshContract = currentIntegration?.refreshContract ?? vi.fn().mockResolvedValue(undefined)
+
   currentIntegration = {
     contractState,
-    refreshContract: vi.fn().mockResolvedValue(undefined)
+    refreshContract
   }
 
   return render(
@@ -173,11 +174,13 @@ describe('workbench shell', () => {
     renderShell('/', currentIntegration.contractState)
 
     expect(screen.getByText('Initial application state is unavailable')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retry connection' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Retry contract load' })).toHaveLength(2)
     expect(screen.queryByText('Dashboard child')).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getAllByRole('button', { name: 'Retry contract load' })[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Retry connection' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Retry contract load' })[0])
 
-    expect(refreshContract).toHaveBeenCalledOnce()
+    expect(refreshContract).toHaveBeenCalledTimes(2)
   })
 })

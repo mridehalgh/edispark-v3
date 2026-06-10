@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
@@ -36,7 +36,7 @@ export function DocumentSetDetailPage() {
   const [submittingAddDocument, setSubmittingAddDocument] = useState(false)
   const [form, setForm] = useState({ documentType: 'ORDER', schemaId: '', schemaVersion: '', contentText: '', createdBy: '', relatedDocumentId: '' })
 
-  async function loadDetail() {
+  const loadDetail = useCallback(async () => {
     setLoading(true)
     setError(undefined)
     const result = await runRequest(`documentSetDetail:${setId}`, async (client) => {
@@ -52,13 +52,13 @@ export function DocumentSetDetailPage() {
     }
 
     setData(result.data)
-  }
+  }, [runRequest, setId])
 
   useEffect(() => {
     if (contractState.kind === 'connected' || contractState.kind === 'request-failed') {
       void loadDetail()
     }
-  }, [contractState.kind, setId])
+  }, [contractState.kind, loadDetail])
 
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

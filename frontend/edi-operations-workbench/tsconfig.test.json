@@ -19,13 +19,13 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client"]
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src"],
-  "exclude": [
+  "include": [
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.property.test.ts",
-    "src/**/*.property.test.tsx"
+    "src/**/*.property.test.tsx",
+    "vitest.setup.ts"
   ]
 }

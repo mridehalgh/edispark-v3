@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -64,18 +64,38 @@ describe('workbench routes', () => {
         operationCount: 12
       },
       refreshContract: vi.fn().mockResolvedValue(undefined),
-      runRequest: vi.fn().mockResolvedValue({
-        status: 'succeeded',
-        operationId: 'documentSetDetail:set-123',
-        data: {
-          documentSet: {
-            id: 'set-123',
-            createdAt: '2026-01-01T00:00:00.000Z',
-            createdBy: 'ops-user',
-            metadata: { source: 'ORDERS' },
+      runRequest: vi.fn().mockImplementation(async (operationId: string) => {
+        if (operationId === 'documentVersion:set-123:doc-456:1') {
+          return {
+            status: 'succeeded',
+            operationId,
+            data: {
+              id: 'version-1',
+              versionNumber: 1,
+              contentHash: 'hash-123',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              createdBy: 'ops-user',
+              format: 'EDI',
+              parseStatus: 'SUCCESS',
+              messageType: 'ORDERS',
+              parseErrors: []
+            }
+          }
+        }
+
+        return {
+          status: 'succeeded',
+          operationId,
+          data: {
+            documentSet: {
+              id: 'set-123',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              createdBy: 'ops-user',
+              metadata: { source: 'ORDERS' },
+              documents: []
+            },
             documents: []
-          },
-          documents: []
+          }
         }
       })
     }
@@ -96,15 +116,36 @@ describe('workbench routes', () => {
 
     renderRoute('/schemas')
     expect(await screen.findByRole('heading', { name: 'Create schema' })).toBeInTheDocument()
+    cleanup()
 
     renderRoute('/document-sets')
     expect(await screen.findByRole('heading', { name: 'Create document set' })).toBeInTheDocument()
+    cleanup()
 
     renderRoute('/document-sets/set-123')
     expect(await screen.findByRole('heading', { name: 'Add document' })).toBeInTheDocument()
+    cleanup()
+
+    renderRoute('/document-sets/set-123/documents/doc-456/versions/1')
+    expect(await screen.findByText('version-1')).toBeInTheDocument()
+    cleanup()
 
     renderRoute('/retail-journeys')
-    expect(await screen.findByRole('link', { name: 'Open detail view' })).toBeInTheDocument()
+    expect((await screen.findAllByRole('link', { name: 'Open detail view' })).length).toBeGreaterThan(0)
+    cleanup()
+
+    currentCatalogueState = {
+      status: 'succeeded',
+      operationId: 'listDocumentSets',
+      data: {
+        items: []
+      }
+    }
+
+    renderRoute('/retail-journeys/orders')
+    expect(await screen.findByText('No ORDERS records yet')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open document-set area' })).toBeInTheDocument()
+    cleanup()
 
     renderRoute('/api-explorer')
     expect(await screen.findByText('API explorer view is planned')).toBeInTheDocument()

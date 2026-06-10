@@ -18,12 +18,12 @@ const schemaRefArb = fc.constantFrom<OpenApiReferenceObject>(
   { $ref: '#/components/schemas/SchemaResponse' },
   { $ref: '#/components/schemas/ErrorResponse' }
 )
-const schemaObjectArb = fc.oneof<OpenApiSchemaObject>(
+const schemaObjectArb: fc.Arbitrary<OpenApiSchemaObject> = fc.oneof(
   fc.record({ title: textArb, type: fc.constantFrom('object', 'string', 'number') }),
   fc.record({ type: fc.constant('array'), items: schemaRefArb }),
   fc.record({ type: fc.constant('string'), enum: fc.uniqueArray(textArb, { minLength: 1, maxLength: 3 }) })
 )
-const schemaMetadataArb = fc.oneof(schemaRefArb, schemaObjectArb)
+const schemaMetadataArb: fc.Arbitrary<OpenApiReferenceObject | OpenApiSchemaObject> = fc.oneof(schemaRefArb, schemaObjectArb)
 
 type OperationSeed = {
   path: string

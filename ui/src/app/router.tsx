@@ -9,6 +9,7 @@ import { FilesPage } from '@/app/files/files';
 import { FilesList } from './files/list';
 import { DocumentsList } from '@/app/documents/list';
 import { OrderDocumentPage } from '@/app/documents/order';
+import { InvoiceDocumentPage } from '@/app/documents/invoice';
 import { AuthGate, ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage, TwoFactorPage, WorkspaceSelectionPage } from "@/components/auth/auth-pages"
 import { OrganizationSettingsPage } from "@/app/organization/settings"
 import { InvitePage } from "@/components/auth/invite-page"
@@ -61,6 +62,10 @@ function ReactRouterComponent() {
           {
             path: "/documents/:setId/:documentId",
             element: <AuthGate><OrderDocumentPage /></AuthGate>,
+          },
+          {
+            path: "/documents/:setId/:documentId/invoice",
+            element: <AuthGate><InvoiceDocumentPage /></AuthGate>,
           },
           {
             path: "/organization",

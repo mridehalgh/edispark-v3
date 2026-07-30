@@ -8,8 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run && pnpm check:ubl-order-contract",
-    "check:ubl-order-contract": "node scripts/check-ubl-order-contract.mjs"
+    "test": "vitest run && pnpm check:ubl-contracts",
+    "check:ubl-order-contract": "node scripts/check-ubl-order-contract.mjs",
+    "check:ubl-invoice-contract": "node scripts/check-ubl-invoice-contract.mjs",
+    "check:ubl-contracts": "pnpm check:ubl-order-contract && pnpm check:ubl-invoice-contract"
   },
   "dependencies": {
     "@edispark/documents-client": "workspace:*",

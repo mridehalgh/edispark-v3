@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  Files,
   FileText,
   LayoutDashboard,
   Menu,
@@ -36,7 +37,8 @@ import { UserNav } from "./user-nav"
 
 const navigation = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
-  { label: "Documents", href: "/file", icon: FileText },
+  { label: "Documents", href: "/documents", icon: FileText },
+  { label: "Files", href: "/file", icon: Files },
   { label: "Workspaces", href: "/organization", icon: Settings },
 ]
 
@@ -114,7 +116,7 @@ export default function Header() {
           <div className="hidden sm:block lg:hidden"><Brand /></div>
           <div className="hidden lg:block"><OrgSwitcher /></div>
 
-          <form action="/file" className="relative mx-auto hidden w-full max-w-md md:block" role="search">
+          <form action="/documents" className="relative mx-auto hidden w-full max-w-md md:block" role="search">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input name="q" aria-label="Search documents" placeholder="Search documents…" className="h-9 bg-card pl-9 pr-14" />
             <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">⌘ K</kbd>
@@ -131,7 +133,7 @@ export default function Header() {
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild className="items-start py-2.5">
-                <NavLink to="/file?status=attention" className="flex-col">
+                <NavLink to="/documents?status=attention" className="flex-col">
                   <span className="text-sm font-medium">3 documents need attention</span>
                   <span className="mt-0.5 text-xs text-muted-foreground">Review issues before fulfilment is delayed.</span>
                 </NavLink>

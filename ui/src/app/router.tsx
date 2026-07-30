@@ -7,6 +7,8 @@ import Header from "@/components/layout/header";
 import {AccountSettingsPage} from "@/app/account/settings";
 import { FilesPage } from '@/app/files/files';
 import { FilesList } from './files/list';
+import { DocumentsList } from '@/app/documents/list';
+import { OrderDocumentPage } from '@/app/documents/order';
 import { AuthGate, ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage, TwoFactorPage, WorkspaceSelectionPage } from "@/components/auth/auth-pages"
 import { OrganizationSettingsPage } from "@/app/organization/settings"
 import { InvitePage } from "@/components/auth/invite-page"
@@ -51,6 +53,14 @@ function ReactRouterComponent() {
           {
             path: "/file/:id",
             element: <AuthGate><FilesPage /></AuthGate>,
+          },
+          {
+            path: "/documents",
+            element: <AuthGate><DocumentsList /></AuthGate>,
+          },
+          {
+            path: "/documents/:setId/:documentId",
+            element: <AuthGate><OrderDocumentPage /></AuthGate>,
           },
           {
             path: "/organization",

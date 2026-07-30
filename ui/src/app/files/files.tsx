@@ -101,7 +101,7 @@ export function FilesPage() {
 
   useEffect(() => {
     if (!id) {
-      setError("The document set identifier is missing.")
+      setError("The file set identifier is missing.")
       setLoading(false)
       return
     }
@@ -117,7 +117,7 @@ export function FilesPage() {
       })
       .catch((requestError: unknown) => {
         if (requestError instanceof DOMException && requestError.name === "AbortError") return
-        setError(requestError instanceof Error ? requestError.message : "The document set could not be loaded.")
+        setError(requestError instanceof Error ? requestError.message : "The file set could not be loaded.")
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
@@ -193,7 +193,7 @@ export function FilesPage() {
 
   if (loading) {
     return (
-      <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8" aria-label="Loading document set">
+      <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8" aria-label="Loading file set">
         <div className="animate-pulse">
           <div className="h-4 w-32 rounded bg-muted" />
           <div className="mt-6 h-8 w-72 rounded bg-muted" />
@@ -212,12 +212,12 @@ export function FilesPage() {
       <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
         <Link to="/file" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to documents
+          Back to files
         </Link>
         <section className="mt-8 max-w-xl rounded-lg border bg-card p-6">
           <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
-          <h1 className="mt-4 text-lg font-semibold">Document set unavailable</h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{error ?? "This document set could not be found."}</p>
+          <h1 className="mt-4 text-lg font-semibold">File set unavailable</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{error ?? "This file set could not be found."}</p>
           <Button className="mt-5 gap-2" onClick={() => setReloadKey((value) => value + 1)}>
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Try again
@@ -228,7 +228,7 @@ export function FilesPage() {
   }
 
   const { documentSet } = detail
-  const title = documentSet.metadata?.name || `Document set ${documentSet.id?.slice(0, 8) ?? ""}`
+  const title = documentSet.metadata?.name || `File set ${documentSet.id?.slice(0, 8) ?? ""}`
   const metadata = Object.entries(documentSet.metadata ?? {})
     .filter(([key]) => key !== "name" && key !== "description")
   const currentVersion = selectedDocument?.currentVersion
@@ -244,7 +244,7 @@ export function FilesPage() {
     <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
       <Link to="/file" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to documents
+        Back to files
       </Link>
 
       <header className="mt-3 border-b pb-6">
@@ -258,7 +258,7 @@ export function FilesPage() {
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
             <FileStack className="h-4 w-4 text-primary" aria-hidden="true" />
-            {detail.documents.length} {detail.documents.length === 1 ? "document" : "documents"}
+              {detail.documents.length} {detail.documents.length === 1 ? "file" : "files"}
           </div>
         </div>
       </header>
@@ -274,8 +274,8 @@ export function FilesPage() {
       <div className="mt-6 grid items-start gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
         <aside aria-labelledby="set-documents-title" className="overflow-hidden rounded-lg border bg-card">
           <div className="border-b px-4 py-3">
-            <h2 id="set-documents-title" className="text-sm font-semibold">Documents in this set</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Select a document to inspect its current version.</p>
+            <h2 id="set-documents-title" className="text-sm font-semibold">Files in this set</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Select a file to inspect its current version.</p>
           </div>
           <div className="divide-y">
             {detail.documents.map((document) => (
@@ -300,7 +300,7 @@ export function FilesPage() {
               </button>
             ))}
             {detail.documents.length === 0 && (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">This set has no documents.</p>
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">This set has no files.</p>
             )}
           </div>
         </aside>
@@ -364,7 +364,7 @@ export function FilesPage() {
                 <div className="border-b px-5 py-4">
                   <h3 className="text-sm font-semibold">Available representations</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Inspect the original source or a generated derivative without leaving this document.
+                    Inspect the original source or a generated derivative without leaving this file.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Document representations">
                     <Button
@@ -474,8 +474,8 @@ export function FilesPage() {
           </section>
         ) : (
           <section className="rounded-lg border bg-card px-5 py-14 text-center">
-            <p className="text-sm font-medium">No document selected</p>
-            <p className="mt-1 text-xs text-muted-foreground">Choose a document from this set to inspect it.</p>
+            <p className="text-sm font-medium">No file selected</p>
+            <p className="mt-1 text-xs text-muted-foreground">Choose a file from this set to inspect it.</p>
           </section>
         )}
       </div>

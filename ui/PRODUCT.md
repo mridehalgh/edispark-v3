@@ -38,6 +38,15 @@ The dashboard must not feel like dense traditional enterprise EDI software, over
 4. **Expose complexity progressively.** Keep routine workflows simple and reveal raw messages, mappings, and integration detail only when useful.
 5. **Make routine processing fast.** Reduce portal hopping, re-keying, repetitive decisions, and unnecessary navigation.
 
+## Documents and Files
+
+Documents and Files are intentionally separate product concepts:
+
+- **Documents** are business-facing projections of supported UBL content. They present an order, invoice, or response in the familiar form an operations user expects, without exposing protocol or storage mechanics.
+- **Files** are the technical evidence behind those documents. They expose correlated sets, immutable source versions, generated derivatives, parsing outcomes, hashes, and raw content for integration analysis and debugging.
+
+This separation keeps routine business work understandable while preserving complete technical traceability. New business document types should receive their own UBL-derived presentation in Documents; unsupported or uncommon fields remain available through the corresponding File.
+
 ## Accessibility & Inclusion
 
 Target WCAG 2.2 AA. Support complete keyboard operation, clearly visible focus, semantic screen-reader navigation, sufficient text and interface contrast, status communication that does not rely on colour alone, comfortable target sizes, and reduced-motion preferences.

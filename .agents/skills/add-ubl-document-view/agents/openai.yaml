@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add UBL Document View"
+  short_description: "Build schema-driven UBL business document views"
+  default_prompt: "Use $add-ubl-document-view to add a business-friendly UBL document view to EdiSpark."

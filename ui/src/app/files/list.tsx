@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import {
   ArrowRight,
   Download,
@@ -13,14 +13,7 @@ import { Link, useSearchParams } from "react-router-dom"
 import { LayoutBody } from "@/components/layout/layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  getDocumentSets,
-  type DocumentSetsPage,
-} from "@/lib/documents-api"
-
-type DocumentSet = NonNullable<DocumentSetsPage["items"]>[number]
-
-const PAGE_SIZE = 20
+import { type DocumentSetSummary, useDocumentSets } from "@/lib/use-document-sets"
 
 function documentTypeLabel(value: string) {
   return value
@@ -38,8 +31,8 @@ function formatDate(value?: string) {
   }).format(new Date(value))
 }
 
-function setName(documentSet: DocumentSet) {
-  return documentSet.metadata?.name || `Document set ${documentSet.id?.slice(0, 8) ?? "unknown"}`
+function setName(documentSet: DocumentSetSummary) {
+  return documentSet.metadata?.name || `File set ${documentSet.id?.slice(0, 8) ?? "unknown"}`
 }
 
 function csvCell(value: unknown) {
@@ -50,33 +43,15 @@ export function FilesList() {
   const [searchParams] = useSearchParams()
   const [query, setQuery] = useState(searchParams.get("q") ?? "")
   const [documentType, setDocumentType] = useState("all")
-  const [page, setPage] = useState<DocumentSetsPage | null>(null)
-  const [documentSets, setDocumentSets] = useState<DocumentSet[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
-
-    void getDocumentSets({ limit: PAGE_SIZE, signal: controller.signal })
-      .then((response) => {
-        setPage(response)
-        setDocumentSets(response.items ?? [])
-      })
-      .catch((requestError: unknown) => {
-        if (requestError instanceof DOMException && requestError.name === "AbortError") return
-        setError(requestError instanceof Error ? requestError.message : "Documents could not be loaded.")
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false)
-      })
-
-    return () => controller.abort()
-  }, [reloadKey])
+  const {
+    documentSets,
+    error,
+    hasNext,
+    loading,
+    loadingMore,
+    loadNextPage,
+    reload,
+  } = useDocumentSets()
 
   const types = useMemo(() => {
     return Array.from(new Set(
@@ -104,27 +79,8 @@ export function FilesList() {
     })
   }, [documentSets, documentType, query])
 
-  const loadNextPage = useCallback(async () => {
-    if (!page?.nextToken || loadingMore) return
-    setLoadingMore(true)
-    setError(null)
-
-    try {
-      const response = await getDocumentSets({
-        limit: PAGE_SIZE,
-        nextToken: page.nextToken,
-      })
-      setPage(response)
-      setDocumentSets((current) => [...current, ...(response.items ?? [])])
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "The next page could not be loaded.")
-    } finally {
-      setLoadingMore(false)
-    }
-  }, [loadingMore, page?.nextToken])
-
   const exportDocumentSets = () => {
-    const header = ["Document set", "Set ID", "Document types", "Documents", "Versions", "Created", "Created by"]
+    const header = ["File set", "Set ID", "File types", "Files", "Versions", "Created", "Created by"]
     const rows = filteredDocumentSets.map((documentSet) => {
       const documents = documentSet.documents ?? []
       return [
@@ -141,7 +97,7 @@ export function FilesList() {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
     const link = window.document.createElement("a")
     link.href = url
-    link.download = "edi-spark-document-sets.csv"
+    link.download = "edi-spark-file-sets.csv"
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -150,9 +106,9 @@ export function FilesList() {
     <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
       <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Files</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Trace related business documents together, including every version and generated derivative.
+            Inspect source files, immutable versions, and generated derivatives for technical traceability.
           </p>
         </div>
         <Button
@@ -166,9 +122,9 @@ export function FilesList() {
         </Button>
       </header>
 
-      <section aria-label="Document filters" className="mb-4 flex flex-col gap-2 sm:flex-row">
+      <section aria-label="File filters" className="mb-4 flex flex-col gap-2 sm:flex-row">
         <label className="relative flex-1 sm:max-w-lg">
-          <span className="sr-only">Search document sets</span>
+          <span className="sr-only">Search file sets</span>
           <Search
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
@@ -176,18 +132,18 @@ export function FilesList() {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search set name, identifier, creator, or type…"
+            placeholder="Search file name, identifier, creator, or type…"
             className="pl-9"
           />
         </label>
         <label>
-          <span className="sr-only">Filter by document type</span>
+          <span className="sr-only">Filter by file type</span>
           <select
             value={documentType}
             onChange={(event) => setDocumentType(event.target.value)}
             className="h-10 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-56"
           >
-            <option value="all">All document types</option>
+            <option value="all">All file types</option>
             {types.map((type) => (
               <option key={type} value={type}>{documentTypeLabel(type)}</option>
             ))}
@@ -198,7 +154,7 @@ export function FilesList() {
       {error && (
         <div className="mb-4 flex items-center justify-between gap-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           <span>{error}</span>
-          <Button variant="outline" size="sm" onClick={() => setReloadKey((value) => value + 1)} className="shrink-0 gap-2">
+          <Button variant="outline" size="sm" onClick={reload} className="shrink-0 gap-2">
             <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
             Retry
           </Button>
@@ -208,8 +164,8 @@ export function FilesList() {
       <section aria-labelledby="results-title" className="overflow-hidden rounded-lg border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div>
-            <h2 id="results-title" className="text-sm font-semibold">Document sets</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">A set keeps related source documents, responses, and transformations correlated.</p>
+            <h2 id="results-title" className="text-sm font-semibold">File sets</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">A set keeps related source files, responses, and transformations correlated.</p>
           </div>
           <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
             {filteredDocumentSets.length} shown
@@ -217,7 +173,7 @@ export function FilesList() {
         </div>
 
         {loading ? (
-          <div className="divide-y" aria-label="Loading document sets">
+          <div className="divide-y" aria-label="Loading file sets">
             {Array.from({ length: 6 }, (_, index) => (
               <div key={index} className="grid animate-pulse gap-3 px-4 py-4 md:grid-cols-[minmax(16rem,1fr)_12rem_7rem_10rem]">
                 <span className="h-4 rounded bg-muted" />
@@ -233,9 +189,9 @@ export function FilesList() {
               <table className="w-full min-w-[62rem] text-left text-sm">
                 <thead className="border-b bg-muted/55 text-xs text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Document set</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Document types</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Documents</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">File set</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">File types</th>
+                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Files</th>
                     <th scope="col" className="px-4 py-2.5 text-right font-medium">Versions</th>
                     <th scope="col" className="px-4 py-2.5 font-medium">Created</th>
                     <th scope="col" className="px-4 py-2.5 font-medium">Created by</th>
@@ -259,7 +215,7 @@ export function FilesList() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
-                          {documentTypes.join(", ") || "No documents"}
+                          {documentTypes.join(", ") || "No files"}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums">{documents.length}</td>
                         <td className="px-4 py-3 text-right tabular-nums">{versions}</td>
@@ -296,7 +252,7 @@ export function FilesList() {
                         <p className="truncate text-sm font-medium">{setName(documentSet)}</p>
                         <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{documentSet.id}</p>
                         <p className="mt-3 text-xs text-muted-foreground">
-                          {documents.length} {documents.length === 1 ? "document" : "documents"} · {versions} {versions === 1 ? "version" : "versions"}
+                          {documents.length} {documents.length === 1 ? "file" : "files"} · {versions} {versions === 1 ? "version" : "versions"}
                         </p>
                         <time className="mt-1 block text-xs text-muted-foreground">{formatDate(documentSet.createdAt)}</time>
                       </div>
@@ -312,19 +268,19 @@ export function FilesList() {
         {!loading && filteredDocumentSets.length === 0 && (
           <div className="px-4 py-14 text-center">
             <FileStack className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
-            <p className="mt-3 text-sm font-medium">No document sets found</p>
+            <p className="mt-3 text-sm font-medium">No file sets found</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {documentSets.length === 0
-                ? "Document sets will appear here when the Documents API receives them."
-                : "Try a different document type or search term."}
+                ? "File sets will appear here when the Documents API receives them."
+                : "Try a different file type or search term."}
             </p>
           </div>
         )}
 
-        {page?.hasNext && (
+        {hasNext && (
           <div className="border-t px-4 py-3 text-center">
             <Button variant="outline" size="sm" onClick={() => void loadNextPage()} disabled={loadingMore}>
-              {loadingMore ? "Loading…" : "Load more document sets"}
+              {loadingMore ? "Loading…" : "Load more file sets"}
             </Button>
           </div>
         )}

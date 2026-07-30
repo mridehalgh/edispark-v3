@@ -1,0 +1,239 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "CreditNote": [
+    {
+      "UBLVersionID": [
+        {
+          "_": "2.1"
+        }
+      ],
+      "ID": [
+        {
+          "_": "CN-1007"
+        }
+      ],
+      "IssueDate": [
+        {
+          "_": "2026-07-29"
+        }
+      ],
+      "CreditNoteTypeCode": [
+        {
+          "_": "381",
+          "listID": "UNCL1001"
+        }
+      ],
+      "Note": [
+        {
+          "_": "Credit for four damaged cases reported at goods receipt."
+        }
+      ],
+      "DocumentCurrencyCode": [
+        {
+          "_": "GBP",
+          "listID": "ISO 4217 Alpha",
+          "listAgencyID": "6"
+        }
+      ],
+      "BillingReference": [
+        {
+          "InvoiceDocumentReference": [
+            {
+              "ID": [
+                {
+                  "_": "INV-100045"
+                }
+              ],
+              "IssueDate": [
+                {
+                  "_": "2026-07-25"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "AccountingSupplierParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5012345678901",
+                  "schemeID": "GLN",
+                  "schemeAgencyID": "9"
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Northstar Foods Ltd"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "AccountingCustomerParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5098765432109",
+                  "schemeID": "GLN",
+                  "schemeAgencyID": "9"
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Cedar Retail Group Ltd"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "TaxTotal": [
+        {
+          "TaxAmount": [
+            {
+              "_": 15,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxSubtotal": [
+            {
+              "TaxableAmount": [
+                {
+                  "_": 75,
+                  "currencyID": "GBP"
+                }
+              ],
+              "TaxAmount": [
+                {
+                  "_": 15,
+                  "currencyID": "GBP"
+                }
+              ],
+              "TaxCategory": [
+                {
+                  "ID": [
+                    {
+                      "_": "S"
+                    }
+                  ],
+                  "Percent": [
+                    {
+                      "_": 20
+                    }
+                  ],
+                  "TaxScheme": [
+                    {
+                      "ID": [
+                        {
+                          "_": "VAT"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "LegalMonetaryTotal": [
+        {
+          "LineExtensionAmount": [
+            {
+              "_": 75,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxExclusiveAmount": [
+            {
+              "_": 75,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxInclusiveAmount": [
+            {
+              "_": 90,
+              "currencyID": "GBP"
+            }
+          ],
+          "PayableAmount": [
+            {
+              "_": 90,
+              "currencyID": "GBP"
+            }
+          ]
+        }
+      ],
+      "CreditNoteLine": [
+        {
+          "ID": [
+            {
+              "_": "1"
+            }
+          ],
+          "CreditedQuantity": [
+            {
+              "_": 4,
+              "unitCode": "EA"
+            }
+          ],
+          "LineExtensionAmount": [
+            {
+              "_": 75,
+              "currencyID": "GBP"
+            }
+          ],
+          "Item": [
+            {
+              "Description": [
+                {
+                  "_": "Damaged cases credited in full"
+                }
+              ],
+              "Name": [
+                {
+                  "_": "Oat Bar 12 Pack"
+                }
+              ],
+              "SellersItemIdentification": [
+                {
+                  "ID": [
+                    {
+                      "_": "OAT-BAR-12PK"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "Price": [
+            {
+              "PriceAmount": [
+                {
+                  "_": 18.75,
+                  "currencyID": "GBP"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

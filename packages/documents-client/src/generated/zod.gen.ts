@@ -357,6 +357,17 @@ export const zGetDocumentVersionContentPath = z.object({
  */
 export const zGetDocumentVersionContentResponse = z.string();
 
+export const zGetDerivativeContentPath = z.object({
+    setId: z.uuid(),
+    docId: z.uuid(),
+    derivativeId: z.uuid()
+});
+
+/**
+ * Derivative content found
+ */
+export const zGetDerivativeContentResponse = z.string();
+
 export const zGetDocumentSetPath = z.object({
     id: z.uuid()
 });

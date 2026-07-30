@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
-import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
+import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
+import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -346,6 +346,25 @@ export class DocumentsClient extends HeyApiClient {
             responseValidator: async (data) => await zGetDocumentVersionContentResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/document-sets/{setId}/documents/{docId}/versions/{versionNumber}/content',
+            ...options
+        });
+    }
+    
+    /**
+     * Get derivative content
+     *
+     * Retrieves the raw content bytes for a generated document derivative
+     */
+    public getDerivativeContent<ThrowOnError extends boolean = false>(options: Options<GetDerivativeContentData, ThrowOnError>): RequestResult<GetDerivativeContentResponses, GetDerivativeContentErrors, ThrowOnError> {
+        return (options.client ?? this.client).get<GetDerivativeContentResponses, GetDerivativeContentErrors, ThrowOnError>({
+            requestValidator: async (data) => await z.object({
+                body: z.never().optional(),
+                path: zGetDerivativeContentPath,
+                query: z.never().optional()
+            }).parseAsync(data),
+            responseValidator: async (data) => await zGetDerivativeContentResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/document-sets/{setId}/documents/{docId}/derivatives/{derivativeId}/content',
             ...options
         });
     }

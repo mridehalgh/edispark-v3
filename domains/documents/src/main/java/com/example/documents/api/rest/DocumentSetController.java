@@ -55,6 +55,7 @@ import com.example.documents.application.query.RetrievedContent;
 import com.example.documents.application.query.ListDocumentSetsQuery;
 import com.example.documents.domain.model.Content;
 import com.example.documents.domain.model.Derivative;
+import com.example.documents.domain.model.DerivativeId;
 import com.example.documents.domain.model.Document;
 import com.example.documents.domain.model.DocumentId;
 import com.example.documents.domain.model.DocumentSet;
@@ -537,6 +538,46 @@ public class DocumentSetController {
                 .toList();
         
         return ResponseEntity.ok(derivativeResponses);
+    }
+
+    @GetMapping("/{setId}/documents/{docId}/derivatives/{derivativeId}/content")
+    @Operation(operationId = "getDerivativeContent", summary = "Get derivative content",
+               description = "Retrieves the raw content bytes for a generated document derivative")
+    @ApiResponses(value = {
+        @ApiResponse(
+                responseCode = "200",
+                description = "Derivative content found",
+                content = @io.swagger.v3.oas.annotations.media.Content(mediaType = "application/octet-stream",
+                        schema = @Schema(type = "string", format = "binary")),
+                headers = {
+                    @Header(name = "X-Document-Set-Id", description = "Document set identifier"),
+                    @Header(name = "X-Document-Id", description = "Document identifier"),
+                    @Header(name = "X-Derivative-Id", description = "Derivative identifier"),
+                    @Header(name = "X-Content-Hash", description = "Stored content hash"),
+                    @Header(name = "X-Document-Format", description = "Stored derivative format")
+                }),
+        @ApiResponse(responseCode = "404", description = "Document set, document, derivative, or content not found")
+    })
+    public ResponseEntity<byte[]> getDerivativeContent(
+            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable UUID docId,
+            @Parameter(description = "Derivative UUID") @PathVariable UUID derivativeId) {
+
+        RetrievedContent content = documentContentQueryService.getDerivativeContent(
+                new DocumentSetId(setId),
+                new DocumentId(docId),
+                new DerivativeId(derivativeId));
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline().filename(content.fileName(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Document-Set-Id", setId.toString())
+                .header("X-Document-Id", docId.toString())
+                .header("X-Derivative-Id", derivativeId.toString())
+                .header("X-Content-Hash", content.contentHash())
+                .header("X-Document-Format", content.format().name())
+                .body(content.bytes());
     }
 
     /**

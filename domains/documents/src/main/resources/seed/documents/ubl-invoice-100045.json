@@ -1,0 +1,305 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:Invoice-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "Invoice": [
+    {
+      "UBLVersionID": [
+        {
+          "_": "2.1"
+        }
+      ],
+      "ID": [
+        {
+          "_": "INV-100045"
+        }
+      ],
+      "IssueDate": [
+        {
+          "_": "2026-07-25"
+        }
+      ],
+      "DueDate": [
+        {
+          "_": "2026-08-24"
+        }
+      ],
+      "InvoiceTypeCode": [
+        {
+          "_": "380",
+          "listID": "UNCL1001"
+        }
+      ],
+      "DocumentCurrencyCode": [
+        {
+          "_": "GBP",
+          "listID": "ISO 4217 Alpha",
+          "listAgencyID": "6"
+        }
+      ],
+      "OrderReference": [
+        {
+          "ID": [
+            {
+              "_": "PO-2026-0042"
+            }
+          ]
+        }
+      ],
+      "AccountingSupplierParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5012345678901",
+                  "schemeID": "GLN",
+                  "schemeAgencyID": "9"
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Northstar Foods Ltd"
+                    }
+                  ]
+                }
+              ],
+              "PartyTaxScheme": [
+                {
+                  "CompanyID": [
+                    {
+                      "_": "GB000000001"
+                    }
+                  ],
+                  "TaxScheme": [
+                    {
+                      "ID": [
+                        {
+                          "_": "VAT"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "AccountingCustomerParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5098765432109",
+                  "schemeID": "GLN",
+                  "schemeAgencyID": "9"
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Cedar Retail Group Ltd"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "PaymentMeans": [
+        {
+          "PaymentMeansCode": [
+            {
+              "_": "30",
+              "name": "Credit transfer"
+            }
+          ],
+          "PaymentID": [
+            {
+              "_": "INV-100045"
+            }
+          ]
+        }
+      ],
+      "TaxTotal": [
+        {
+          "TaxAmount": [
+            {
+              "_": 111.6,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxSubtotal": [
+            {
+              "TaxableAmount": [
+                {
+                  "_": 558,
+                  "currencyID": "GBP"
+                }
+              ],
+              "TaxAmount": [
+                {
+                  "_": 111.6,
+                  "currencyID": "GBP"
+                }
+              ],
+              "TaxCategory": [
+                {
+                  "ID": [
+                    {
+                      "_": "S"
+                    }
+                  ],
+                  "Percent": [
+                    {
+                      "_": 20
+                    }
+                  ],
+                  "TaxScheme": [
+                    {
+                      "ID": [
+                        {
+                          "_": "VAT"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "LegalMonetaryTotal": [
+        {
+          "LineExtensionAmount": [
+            {
+              "_": 558,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxExclusiveAmount": [
+            {
+              "_": 558,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxInclusiveAmount": [
+            {
+              "_": 669.6,
+              "currencyID": "GBP"
+            }
+          ],
+          "PayableAmount": [
+            {
+              "_": 669.6,
+              "currencyID": "GBP"
+            }
+          ]
+        }
+      ],
+      "InvoiceLine": [
+        {
+          "ID": [
+            {
+              "_": "1"
+            }
+          ],
+          "InvoicedQuantity": [
+            {
+              "_": 48,
+              "unitCode": "EA"
+            }
+          ],
+          "LineExtensionAmount": [
+            {
+              "_": 108,
+              "currencyID": "GBP"
+            }
+          ],
+          "Item": [
+            {
+              "Name": [
+                {
+                  "_": "Spark Water 750"
+                }
+              ],
+              "SellersItemIdentification": [
+                {
+                  "ID": [
+                    {
+                      "_": "SPARK-WATER-750"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "Price": [
+            {
+              "PriceAmount": [
+                {
+                  "_": 2.25,
+                  "currencyID": "GBP"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "ID": [
+            {
+              "_": "2"
+            }
+          ],
+          "InvoicedQuantity": [
+            {
+              "_": 24,
+              "unitCode": "EA"
+            }
+          ],
+          "LineExtensionAmount": [
+            {
+              "_": 450,
+              "currencyID": "GBP"
+            }
+          ],
+          "Item": [
+            {
+              "Name": [
+                {
+                  "_": "Oat Bar 12 Pack"
+                }
+              ],
+              "SellersItemIdentification": [
+                {
+                  "ID": [
+                    {
+                      "_": "OAT-BAR-12PK"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "Price": [
+            {
+              "PriceAmount": [
+                {
+                  "_": 18.75,
+                  "currencyID": "GBP"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -82,3 +82,32 @@ export async function getDocumentVersionContent(
 
   return response.blob()
 }
+
+export async function getDerivativeContent(
+  setId: string,
+  documentId: string,
+  derivativeId: string,
+  signal?: AbortSignal,
+) {
+  const path = [
+    "/api/documents",
+    encodeURIComponent(setId),
+    "documents",
+    encodeURIComponent(documentId),
+    "derivatives",
+    encodeURIComponent(derivativeId),
+    "content",
+  ].join("/")
+  const response = await fetch(path, {
+    credentials: "include",
+    headers: { Accept: "*/*" },
+    signal,
+  })
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as BffErrorBody | null
+    throw new Error(body?.error?.message ?? "Derivative content could not be loaded.")
+  }
+
+  return response.blob()
+}

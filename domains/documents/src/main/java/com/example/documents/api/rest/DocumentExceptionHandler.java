@@ -2,6 +2,7 @@ package com.example.documents.api.rest;
 
 import com.example.documents.api.dto.ErrorResponse;
 import com.example.documents.application.handler.DocumentNotFoundException;
+import com.example.documents.application.handler.DerivativeNotFoundException;
 import com.example.documents.application.handler.DocumentSetNotFoundException;
 import com.example.documents.application.handler.InvalidPaginationTokenException;
 import com.example.documents.application.handler.SchemaNotFoundException;
@@ -98,6 +99,20 @@ public class DocumentExceptionHandler {
                 "CONTENT_NOT_FOUND",
                 ex.getMessage(),
                 Map.of("contentHash", ex.contentHash().toFullString())
+            ));
+    }
+
+    @ExceptionHandler(DerivativeNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDerivativeNotFound(DerivativeNotFoundException ex) {
+        log.debug("Derivative {} not found for document: {}", ex.derivativeId(), ex.documentId());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(ErrorResponse.of(
+                "DERIVATIVE_NOT_FOUND",
+                ex.getMessage(),
+                Map.of(
+                    "documentId", ex.documentId().toString(),
+                    "derivativeId", ex.derivativeId().toString()
+                )
             ));
     }
 

@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import com.example.documents.api.dto.ErrorResponse;
 import com.example.documents.application.handler.DocumentNotFoundException;
+import com.example.documents.application.handler.DerivativeNotFoundException;
 import com.example.documents.application.handler.DocumentSetNotFoundException;
 import com.example.documents.application.handler.SchemaNotFoundException;
 import com.example.documents.application.handler.SchemaVersionNotFoundException;
@@ -26,6 +27,7 @@ import com.example.documents.application.handler.VersionNotFoundException;
 import com.example.documents.domain.model.ContentHash;
 import com.example.documents.domain.model.ContentHashMismatchException;
 import com.example.documents.domain.model.DocumentId;
+import com.example.documents.domain.model.DerivativeId;
 import com.example.documents.domain.model.DocumentSetId;
 import com.example.documents.domain.model.DocumentVersionId;
 import com.example.documents.domain.model.DuplicateDerivativeException;
@@ -112,6 +114,23 @@ class DocumentExceptionHandlerTest {
             assertThat(response.getBody().details())
                 .containsEntry("documentSetId", documentSetId.toString())
                 .containsEntry("documentId", documentId.toString());
+        }
+
+        @Test
+        @DisplayName("DerivativeNotFoundException returns 404 with traceable identifiers")
+        void derivativeNotFoundReturns404WithDetails() {
+            DocumentId documentId = DocumentId.generate();
+            DerivativeId derivativeId = DerivativeId.generate();
+
+            ResponseEntity<ErrorResponse> response = handler.handleDerivativeNotFound(
+                    new DerivativeNotFoundException(documentId, derivativeId));
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().code()).isEqualTo("DERIVATIVE_NOT_FOUND");
+            assertThat(response.getBody().details())
+                    .containsEntry("documentId", documentId.toString())
+                    .containsEntry("derivativeId", derivativeId.toString());
         }
 
         @Test

@@ -47,7 +47,7 @@ import java.util.Objects;
 public class DocumentSetCommandHandler {
 
     private static final SchemaVersionRef SOURCE_SCHEMA_REF = SchemaVersionRef.of(
-            SchemaId.fromString("00000000-0000-0000-0000-000000000001"),
+            SchemaId.fromString("00000000-0000-4000-8000-000000000001"),
             VersionIdentifier.of("source"));
 
     private final DocumentSetRepository documentSetRepository;
@@ -135,14 +135,22 @@ public class DocumentSetCommandHandler {
                     contentRef,
                     command.content().hash(),
                     command.createdBy(),
-                    command.relatedDocumentId());
+                    command.relatedDocumentId(),
+                    command.content().format(),
+                    null,
+                    null,
+                    List.of());
         } else {
             document = documentSet.addDocument(
                     command.type(),
                     command.schemaRef(),
                     contentRef,
                     command.content().hash(),
-                    command.createdBy());
+                    command.createdBy(),
+                    command.content().format(),
+                    null,
+                    null,
+                    List.of());
         }
 
         // Persist

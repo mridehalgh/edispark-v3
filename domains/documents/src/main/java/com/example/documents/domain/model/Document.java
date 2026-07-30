@@ -224,6 +224,15 @@ public final class Document {
     }
 
     /**
+     * Returns a derivative by its identifier, if it exists.
+     */
+    public Optional<Derivative> getDerivative(DerivativeId derivativeId) {
+        return derivatives.stream()
+                .filter(derivative -> derivative.id().equals(derivativeId))
+                .findFirst();
+    }
+
+    /**
      * Checks if a derivative exists for the given source version and target format.
      */
     public boolean hasDerivative(DocumentVersionId sourceVersionId, Format targetFormat) {

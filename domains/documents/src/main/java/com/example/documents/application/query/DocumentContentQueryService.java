@@ -3,9 +3,12 @@ package com.example.documents.application.query;
 import java.util.Objects;
 
 import com.example.documents.application.handler.ContentNotFoundException;
+import com.example.documents.application.handler.DerivativeNotFoundException;
 import com.example.documents.application.handler.DocumentNotFoundException;
 import com.example.documents.application.handler.DocumentSetNotFoundException;
 import com.example.documents.application.handler.VersionNotFoundException;
+import com.example.documents.domain.model.Derivative;
+import com.example.documents.domain.model.DerivativeId;
 import com.example.documents.domain.model.DocumentId;
 import com.example.documents.domain.model.DocumentSet;
 import com.example.documents.domain.model.DocumentSetId;
@@ -42,6 +45,27 @@ public class DocumentContentQueryService {
                 fileNameFor(documentSet, documentId, versionNumber, version.format()));
     }
 
+    public RetrievedContent getDerivativeContent(
+            DocumentSetId setId,
+            DocumentId documentId,
+            DerivativeId derivativeId) {
+        DocumentSet documentSet = documentSetRepository.findById(setId)
+                .orElseThrow(() -> new DocumentSetNotFoundException(setId));
+        var document = documentSet.getDocument(documentId)
+                .orElseThrow(() -> new DocumentNotFoundException(setId, documentId));
+        Derivative derivative = document.getDerivative(derivativeId)
+                .orElseThrow(() -> new DerivativeNotFoundException(documentId, derivativeId));
+        byte[] bytes = contentStore.retrieve(derivative.contentHash())
+                .orElseThrow(() -> new ContentNotFoundException(derivative.contentHash()));
+
+        return new RetrievedContent(
+                bytes,
+                derivative.targetFormat(),
+                derivative.contentHash().toFullString(),
+                contentTypeFor(derivative.targetFormat()),
+                derivativeFileNameFor(documentId, derivative));
+    }
+
     private String contentTypeFor(Format format) {
         return switch (format) {
             case XML -> "application/xml";
@@ -57,6 +81,10 @@ public class DocumentContentQueryService {
             return sourceFileName;
         }
         return documentId.value() + "-v" + versionNumber + extensionFor(format);
+    }
+
+    private String derivativeFileNameFor(DocumentId documentId, Derivative derivative) {
+        return documentId.value() + "-derivative-" + derivative.id().value() + extensionFor(derivative.targetFormat());
     }
 
     private String extensionFor(Format format) {

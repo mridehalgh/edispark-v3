@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import com.example.documents.domain.model.Format;
 import com.example.documents.domain.model.SchemaId;
 import com.example.documents.domain.model.SchemaVersionRef;
 import com.example.documents.domain.model.VersionIdentifier;
+import com.example.documents.domain.model.TransformationMethod;
 import com.example.documents.domain.repository.ContentStore;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import com.example.documents.tradacoms.TradacomsInboundFixtures;
@@ -59,6 +61,50 @@ class DocumentContentQueryServiceTest {
         assertThat(retrieved.format()).isEqualTo(Format.EDI);
         assertThat(retrieved.contentType()).isEqualTo("application/edi");
         assertThat(retrieved.fileName()).isEqualTo(TradacomsInboundFixtures.sourceFileName());
+    }
+
+    @Test
+    @DisplayName("returns stored derivative bytes with their target format")
+    void returnsStoredDerivativeBytesWithTargetFormat() {
+        InMemoryDocumentSetRepository repository = new InMemoryDocumentSetRepository();
+        InMemoryContentStore contentStore = new InMemoryContentStore();
+        DocumentContentQueryService service = new DocumentContentQueryService(repository, contentStore);
+
+        Content source = Content.of(TradacomsInboundFixtures.validSupportedPayload(), Format.EDI);
+        Content derivativeContent = Content.of(
+                "{\"Order\":{\"ID\":\"PO-2026-0042\"}}".getBytes(StandardCharsets.UTF_8),
+                Format.JSON);
+        contentStore.store(source);
+        contentStore.store(derivativeContent);
+
+        DocumentSet documentSet = DocumentSet.createWithDocument(
+                DocumentType.ORDER,
+                SchemaVersionRef.of(SchemaId.generate(), VersionIdentifier.of("source")),
+                ContentRef.of(source.hash()),
+                source.hash(),
+                "[email]",
+                Map.of(),
+                Format.EDI,
+                "SUCCESS",
+                "ORDER",
+                java.util.List.of());
+        var document = documentSet.getAllDocuments().getFirst();
+        var derivative = documentSet.createDerivative(
+                document.id(),
+                document.getCurrentVersion().id(),
+                Format.JSON,
+                ContentRef.of(derivativeContent.hash()),
+                derivativeContent.hash(),
+                TransformationMethod.PROGRAMMATIC);
+        repository.save(documentSet);
+
+        RetrievedContent retrieved = service.getDerivativeContent(
+                documentSet.id(), document.id(), derivative.id());
+
+        assertThat(retrieved.bytes()).isEqualTo(derivativeContent.data());
+        assertThat(retrieved.format()).isEqualTo(Format.JSON);
+        assertThat(retrieved.contentType()).isEqualTo("application/json");
+        assertThat(retrieved.fileName()).endsWith(".json").contains(derivative.id().toString());
     }
 
     private static final class InMemoryDocumentSetRepository implements DocumentSetRepository {

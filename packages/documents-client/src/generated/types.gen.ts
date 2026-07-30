@@ -636,6 +636,44 @@ export type GetDocumentVersionContentResponses = {
 
 export type GetDocumentVersionContentResponse = GetDocumentVersionContentResponses[keyof GetDocumentVersionContentResponses];
 
+export type GetDerivativeContentData = {
+    body?: never;
+    path: {
+        /**
+         * Document set UUID
+         */
+        setId: string;
+        /**
+         * Document UUID
+         */
+        docId: string;
+        /**
+         * Derivative UUID
+         */
+        derivativeId: string;
+    };
+    query?: never;
+    url: '/api/document-sets/{setId}/documents/{docId}/derivatives/{derivativeId}/content';
+};
+
+export type GetDerivativeContentErrors = {
+    /**
+     * Document set, document, derivative, or content not found
+     */
+    404: ApiError;
+};
+
+export type GetDerivativeContentError = GetDerivativeContentErrors[keyof GetDerivativeContentErrors];
+
+export type GetDerivativeContentResponses = {
+    /**
+     * Derivative content found
+     */
+    200: Blob | File;
+};
+
+export type GetDerivativeContentResponse = GetDerivativeContentResponses[keyof GetDerivativeContentResponses];
+
 export type GetDocumentSetData = {
     body?: never;
     path: {

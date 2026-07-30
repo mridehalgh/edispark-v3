@@ -40,6 +40,12 @@
         </dependency>
         <dependency>
             <groupId>com.example</groupId>
+            <artifactId>ubl-model</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
             <artifactId>multi-tenancy</artifactId>
             <version>${project.version}</version>
         </dependency>

@@ -1,0 +1,315 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:Order-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "Order": [
+    {
+      "UBLVersionID": [
+        {
+          "_": "2.1"
+        }
+      ],
+      "CustomizationID": [
+        {
+          "_": "urn:edispark:ubl:customization:retail-order:1"
+        }
+      ],
+      "ProfileID": [
+        {
+          "_": "urn:edispark:profile:retail-order:1"
+        }
+      ],
+      "ID": [
+        {
+          "_": "PO-2026-0042"
+        }
+      ],
+      "IssueDate": [
+        {
+          "_": "2026-07-24"
+        }
+      ],
+      "IssueTime": [
+        {
+          "_": "09:45:00"
+        }
+      ],
+      "Note": [
+        {
+          "_": "Deliver as one consignment. Source: inbound TRADACOMS ORDERS message."
+        }
+      ],
+      "DocumentCurrencyCode": [
+        {
+          "_": "GBP",
+          "listID": "ISO 4217 Alpha",
+          "listAgencyID": "6"
+        }
+      ],
+      "BuyerCustomerParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5098765432109",
+                  "schemeID": "GLN",
+                  "schemeAgencyID": "9"
+                }
+              ],
+              "PartyIdentification": [
+                {
+                  "ID": [
+                    {
+                      "_": "CEDAR-DC-04"
+                    }
+                  ]
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Cedar Retail Group Ltd"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "SellerSupplierParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5012345678901",
+                  "schemeID": "GLN",
+                  "schemeAgencyID": "9"
+                }
+              ],
+              "PartyIdentification": [
+                {
+                  "ID": [
+                    {
+                      "_": "NORTHSTAR"
+                    }
+                  ]
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Northstar Foods Ltd"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "Delivery": [
+        {
+          "RequestedDeliveryPeriod": [
+            {
+              "StartDate": [
+                {
+                  "_": "2026-07-31"
+                }
+              ],
+              "EndDate": [
+                {
+                  "_": "2026-07-31"
+                }
+              ]
+            }
+          ],
+          "DeliveryLocation": [
+            {
+              "ID": [
+                {
+                  "_": "CEDAR-DC-04",
+                  "schemeID": "buyer-assigned"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "AnticipatedMonetaryTotal": [
+        {
+          "LineExtensionAmount": [
+            {
+              "_": 558,
+              "currencyID": "GBP"
+            }
+          ],
+          "TaxExclusiveAmount": [
+            {
+              "_": 558,
+              "currencyID": "GBP"
+            }
+          ],
+          "PayableAmount": [
+            {
+              "_": 558,
+              "currencyID": "GBP"
+            }
+          ]
+        }
+      ],
+      "OrderLine": [
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "1"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 48,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineExtensionAmount": [
+                {
+                  "_": 108,
+                  "currencyID": "GBP"
+                }
+              ],
+              "Price": [
+                {
+                  "PriceAmount": [
+                    {
+                      "_": 2.25,
+                      "currencyID": "GBP"
+                    }
+                  ],
+                  "BaseQuantity": [
+                    {
+                      "_": 1,
+                      "unitCode": "EA"
+                    }
+                  ]
+                }
+              ],
+              "Item": [
+                {
+                  "Description": [
+                    {
+                      "_": "Sparkling mineral water, 750 ml case"
+                    }
+                  ],
+                  "Name": [
+                    {
+                      "_": "Spark Water 750"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SPARK-WATER-750"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "5010000000015",
+                          "schemeID": "GTIN",
+                          "schemeAgencyID": "9"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "2"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 24,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineExtensionAmount": [
+                {
+                  "_": 450,
+                  "currencyID": "GBP"
+                }
+              ],
+              "Price": [
+                {
+                  "PriceAmount": [
+                    {
+                      "_": 18.75,
+                      "currencyID": "GBP"
+                    }
+                  ],
+                  "BaseQuantity": [
+                    {
+                      "_": 1,
+                      "unitCode": "EA"
+                    }
+                  ]
+                }
+              ],
+              "Item": [
+                {
+                  "Description": [
+                    {
+                      "_": "Oat and honey snack bars, 12 pack"
+                    }
+                  ],
+                  "Name": [
+                    {
+                      "_": "Oat Bar 12 Pack"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "OAT-BAR-12PK"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "5010000000022",
+                          "schemeID": "GTIN",
+                          "schemeAgencyID": "9"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

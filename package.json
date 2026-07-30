@@ -1,0 +1,23 @@
+{
+  "name": "edispark-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "contracts:export:documents": "./mvnw -B -pl application -am -Popenapi-export verify -DskipTests",
+    "contracts:generate:documents": "pnpm --filter @edispark/documents-client generate",
+    "contracts:sync:documents": "pnpm contracts:export:documents && pnpm contracts:generate:documents",
+    "dev:prepare": "pnpm contracts:sync:documents",
+    "contracts:generate": "pnpm contracts:generate:documents",
+    "contracts:check": "pnpm --filter @edispark/documents-client generate && pnpm --filter @edispark/documents-client typecheck && git diff --exit-code -- api-contracts/documents packages/documents-client/src/generated"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "^0.99.0",
+    "zod": "^4.4.3",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
+}

@@ -116,7 +116,7 @@ public class DocumentSetController {
      * @return paginated list of document sets
      */
     @GetMapping
-    @Operation(summary = "List document sets", 
+    @Operation(operationId = "listDocumentSets", summary = "List document sets",
                description = "Retrieves document sets with pagination. Use nextToken or nextUrl from response to fetch subsequent pages.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Document sets retrieved successfully"),
@@ -154,7 +154,7 @@ public class DocumentSetController {
      * @return 201 Created with the document set details
      */
     @PostMapping
-    @Operation(summary = "Create a new document set", 
+    @Operation(operationId = "createDocumentSet", summary = "Create a new document set",
                description = "Creates a new document set with an initial document. The document content must be Base64 encoded.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Document set created successfully",
@@ -204,7 +204,7 @@ public class DocumentSetController {
      * @throws DocumentSetNotFoundException if the document set does not exist
      */
     @GetMapping("/{id}")
-    @Operation(summary = "Get a document set", description = "Retrieves a document set by its unique identifier")
+    @Operation(operationId = "getDocumentSet", summary = "Get a document set", description = "Retrieves a document set by its unique identifier")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Document set found",
                      content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentSetResponse.class))),
@@ -233,7 +233,7 @@ public class DocumentSetController {
      * <p>Requirements: 2.1, 2.2, 2.3</p>
      */
     @PostMapping("/{setId}/documents")
-    @Operation(summary = "Add a document to a set", 
+    @Operation(operationId = "addDocument", summary = "Add a document to a set",
                description = "Adds a new document to an existing document set. Content must be Base64 encoded.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Document added successfully",
@@ -293,7 +293,7 @@ public class DocumentSetController {
      * <p>Requirements: 2.4, 2.5</p>
      */
     @GetMapping("/{setId}/documents/{docId}")
-    @Operation(summary = "Get a document", description = "Retrieves a document by its unique identifier within a document set")
+    @Operation(operationId = "getDocument", summary = "Get a document", description = "Retrieves a document by its unique identifier within a document set")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Document found",
                      content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentResponse.class))),
@@ -333,7 +333,7 @@ public class DocumentSetController {
      * <p>Requirements: 3.1, 3.2</p>
      */
     @PostMapping("/{setId}/documents/{docId}/versions")
-    @Operation(summary = "Add a document version", 
+    @Operation(operationId = "addDocumentVersion", summary = "Add a document version",
                description = "Adds a new version to an existing document. Content must be Base64 encoded.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Version added successfully",
@@ -383,7 +383,7 @@ public class DocumentSetController {
      * <p>Requirements: 3.3, 3.4</p>
      */
     @GetMapping("/{setId}/documents/{docId}/versions/{versionNumber}")
-    @Operation(summary = "Get a document version", description = "Retrieves a specific version of a document by version number")
+    @Operation(operationId = "getDocumentVersion", summary = "Get a document version", description = "Retrieves a specific version of a document by version number")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Version found",
                      content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = DocumentVersionResponse.class))),
@@ -416,7 +416,7 @@ public class DocumentSetController {
     }
 
     @GetMapping("/{setId}/documents/{docId}/versions/{versionNumber}/content")
-    @Operation(summary = "Get document version content",
+    @Operation(operationId = "getDocumentVersionContent", summary = "Get document version content",
                description = "Retrieves the raw content bytes for a specific document version")
     @ApiResponses(value = {
         @ApiResponse(
@@ -469,7 +469,7 @@ public class DocumentSetController {
      * <p>Requirements: 4.1, 4.2, 4.3</p>
      */
     @PostMapping("/{setId}/documents/{docId}/derivatives")
-    @Operation(summary = "Create a derivative", 
+    @Operation(operationId = "createDerivative", summary = "Create a derivative",
                description = "Creates a derivative (transformed version) from a document version in a different format")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Derivative created successfully",
@@ -511,7 +511,7 @@ public class DocumentSetController {
      * <p>Requirements: 4.4</p>
      */
     @GetMapping("/{setId}/documents/{docId}/derivatives")
-    @Operation(summary = "Get all derivatives", description = "Retrieves all derivatives for a document")
+    @Operation(operationId = "listDerivatives", summary = "Get all derivatives", description = "Retrieves all derivatives for a document")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Derivatives retrieved successfully"),
         @ApiResponse(responseCode = "404", description = "Document set or document not found")
@@ -553,7 +553,7 @@ public class DocumentSetController {
      * <p>Requirements: 5.1, 5.2, 5.3, 5.4</p>
      */
     @PostMapping("/{setId}/documents/{docId}/versions/{versionNumber}/validate")
-    @Operation(summary = "Validate a document version", 
+    @Operation(operationId = "validateDocumentVersion", summary = "Validate a document version",
                description = "Validates a document version against its schema. Returns 200 if valid, 422 if invalid.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Document is valid",

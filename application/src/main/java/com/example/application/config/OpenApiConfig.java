@@ -5,8 +5,17 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.DateTimeSchema;
+import io.swagger.v3.oas.models.media.MediaType;
+import io.swagger.v3.oas.models.media.ObjectSchema;
+import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -57,6 +66,38 @@ public class OpenApiConfig {
                         new Server()
                                 .url("http://localhost:" + serverPort)
                                 .description("Local development server")
-                ));
+                ))
+                .components(new Components().addSecuritySchemes("bearerAuth",
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                                .description("OIDC access token containing tenant_id and role claims")))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
+    }
+
+    /**
+     * Keeps non-success responses consistent with the API exception handler.
+     * Without this, Springdoc infers the successful response model for an
+     * {@code @ApiResponse} that only provides a description.
+     */
+    @Bean
+    public OpenApiCustomizer errorResponseContract() {
+        return openApi -> {
+            openApi.getComponents().addSchemas("ApiError", new ObjectSchema()
+                    .addProperty("code", new StringSchema())
+                    .addProperty("message", new StringSchema())
+                    .addProperty("timestamp", new DateTimeSchema())
+                    .addProperty("details", new ObjectSchema().additionalProperties(new ObjectSchema()))
+                    .required(List.of("code", "message", "timestamp", "details")));
+
+            openApi.getPaths().values().forEach(path -> path.readOperations().forEach(operation ->
+                    operation.getResponses().forEach((status, response) -> {
+                        if (!status.startsWith("2")) {
+                            response.setContent(new Content().addMediaType("application/json", new MediaType()
+                                    .schema(new ObjectSchema().$ref("#/components/schemas/ApiError"))));
+                        }
+                    })));
+        };
     }
 }

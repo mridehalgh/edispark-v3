@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Contract SDK"
+  short_description: "Generate typed frontend SDKs from APIs"
+  default_prompt: "Use $api-contract-sdk to wire this API module to its generated frontend SDK."

@@ -38,6 +38,11 @@
             <artifactId>tradacoms</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>multi-tenancy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Lombok for reducing boilerplate (DTOs and controllers) -->
         <dependency>

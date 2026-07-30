@@ -27,8 +27,9 @@ spring:
   
   # Jackson JSON configuration
   jackson:
-    serialization:
-      write-dates-as-timestamps: false
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
     default-property-inclusion: non_null
@@ -40,7 +41,7 @@ documents:
     table-name: ${DOCUMENTS_TABLE_NAME:myapp-documents-dev}
   
   # Tenant configuration (for multi-tenancy support)
-  tenant-id: ${DOCUMENTS_TENANT_ID:DEFAULT}
+  tenant-id: ${DOCUMENTS_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
   
   # Content storage configuration
   content:

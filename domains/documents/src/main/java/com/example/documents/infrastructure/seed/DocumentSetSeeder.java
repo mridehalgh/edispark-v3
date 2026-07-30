@@ -18,6 +18,10 @@ import com.example.documents.domain.model.VersionIdentifier;
 import com.example.documents.domain.repository.DocumentSetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.edispark.identifiers.tenant.TenantId;
+import io.cottn.core.tenancy.TenantContext;
+import io.cottn.core.tenancy.TenantContextHolder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -38,7 +42,7 @@ import java.util.Random;
  * to ensure the table exists before seeding data.</p>
  */
 @Component
-@Profile("local")
+@Profile("local & !openapi-export")
 @RequiredArgsConstructor
 @Slf4j
 public class DocumentSetSeeder {
@@ -49,12 +53,19 @@ public class DocumentSetSeeder {
     private final SchemaCommandHandler schemaCommandHandler;
     private final DocumentSetRepository documentSetRepository;
     private final Random random = new Random();
+
+    @Value("${documents.tenant-id}")
+    private String localTenantId;
     
     private final Map<DocumentType, SchemaVersionRef> schemaRefs = new EnumMap<>(DocumentType.class);
 
     @EventListener(ApplicationReadyEvent.class)
     @Order(10) // Run after LocalDynamoDbInitializer (HIGHEST_PRECEDENCE)
     public void seed() {
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(localTenantId)), this::seedTenantData);
+    }
+
+    private void seedTenantData() {
         if (dataAlreadyExists()) {
             log.info("Data already exists, skipping seeding");
             return;

@@ -11,8 +11,8 @@ import com.example.documents.domain.repository.DocumentSetRepository;
 import com.example.documents.domain.repository.SchemaRepository;
 import com.example.documents.domain.service.DocumentTransformer;
 import com.example.documents.domain.service.DocumentValidator;
-import com.example.documents.infrastructure.persistence.DynamoDbDocumentSetRepository;
-import com.example.documents.infrastructure.persistence.DynamoDbSchemaRepository;
+import com.example.documents.infrastructure.persistence.TenantScopedDocumentSetRepository;
+import com.example.documents.infrastructure.persistence.TenantScopedSchemaRepository;
 import com.example.documents.infrastructure.storage.FileSystemContentStore;
 import com.example.documents.infrastructure.transformation.NoOpTransformer;
 import com.example.documents.infrastructure.validation.NoOpValidator;
@@ -113,9 +113,8 @@ public class DocumentsModuleConfig {
     @ConditionalOnMissingBean
     public DocumentSetRepository documentSetRepository(
             DynamoDbClient dynamoDbClient,
-            @Value("${documents.dynamodb.table-name}") String tableName,
-            @Value("${documents.tenant-id:DEFAULT}") String tenantId) {
-        return new DynamoDbDocumentSetRepository(dynamoDbClient, tableName, tenantId);
+            @Value("${documents.dynamodb.table-name}") String tableName) {
+        return new TenantScopedDocumentSetRepository(dynamoDbClient, tableName);
     }
 
     /**
@@ -125,9 +124,8 @@ public class DocumentsModuleConfig {
     @ConditionalOnMissingBean
     public SchemaRepository schemaRepository(
             DynamoDbClient dynamoDbClient,
-            @Value("${documents.dynamodb.table-name}") String tableName,
-            @Value("${documents.tenant-id:DEFAULT}") String tenantId) {
-        return new DynamoDbSchemaRepository(dynamoDbClient, tableName, tenantId);
+            @Value("${documents.dynamodb.table-name}") String tableName) {
+        return new TenantScopedSchemaRepository(dynamoDbClient, tableName);
     }
 
     /**

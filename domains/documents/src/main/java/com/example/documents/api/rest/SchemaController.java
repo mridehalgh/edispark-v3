@@ -62,7 +62,7 @@ public class SchemaController {
      * @return 201 Created with the schema details
      */
     @PostMapping
-    @Operation(summary = "Create a new schema", 
+    @Operation(operationId = "createSchema", summary = "Create a new schema",
                description = "Creates a new schema for document validation. Schemas define structure and validation rules.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Schema created successfully",
@@ -95,7 +95,7 @@ public class SchemaController {
      * @throws SchemaNotFoundException if the schema does not exist
      */
     @GetMapping("/{id}")
-    @Operation(summary = "Get a schema", description = "Retrieves a schema by its unique identifier")
+    @Operation(operationId = "getSchema", summary = "Get a schema", description = "Retrieves a schema by its unique identifier")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Schema found",
                      content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaResponse.class))),
@@ -122,7 +122,7 @@ public class SchemaController {
      * @throws SchemaNotFoundException if the schema does not exist
      */
     @PostMapping("/{schemaId}/versions")
-    @Operation(summary = "Add a schema version", 
+    @Operation(operationId = "addSchemaVersion", summary = "Add a schema version",
                description = "Adds a new version to an existing schema. Schema definition must be Base64 encoded.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Schema version added successfully",
@@ -166,7 +166,7 @@ public class SchemaController {
      * @throws SchemaVersionNotFoundException if the version does not exist
      */
     @GetMapping("/{schemaId}/versions/{versionId}")
-    @Operation(summary = "Get a schema version", description = "Retrieves a specific version of a schema")
+    @Operation(operationId = "getSchemaVersion", summary = "Get a schema version", description = "Retrieves a specific version of a schema")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Schema version found",
                      content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaVersionResponse.class))),

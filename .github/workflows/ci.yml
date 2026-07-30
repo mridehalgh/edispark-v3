@@ -13,12 +13,14 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Set up Java 21
+      - name: Set up Java 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
           cache-dependency-path: |
             pom.xml
@@ -35,5 +37,32 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
-      - name: Run Maven verify
-        run: ./mvnw -B -T 1C --no-transfer-progress verify
+      - name: Export OpenAPI contract
+        run: ./mvnw -B -T 1C --no-transfer-progress -pl application -am -Popenapi-export verify
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install frontend tooling
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify generated SDK is current and type-safe
+        run: pnpm contracts:check
+
+      - name: Detect breaking API changes
+        if: github.event_name == 'pull_request'
+        run: |
+          base_contract=/tmp/documents-openapi-base.json
+          if git show "origin/${{ github.base_ref }}:api-contracts/documents/openapi.json" > "$base_contract"; then
+            docker run --rm -v "$PWD:/workspace:ro" -v /tmp:/baseline:ro tufin/oasdiff:latest breaking \
+              /baseline/documents-openapi-base.json \
+              /workspace/api-contracts/documents/openapi.json
+          else
+            echo "No base Documents API contract exists; skipping breaking-change comparison."
+          fi

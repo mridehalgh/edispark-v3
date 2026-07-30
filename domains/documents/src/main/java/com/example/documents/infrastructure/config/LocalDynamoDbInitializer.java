@@ -19,7 +19,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
  * the DynamoDB table if it doesn't exist. It runs before the seeder.</p>
  */
 @Component
-@Profile("local")
+@Profile("local & !openapi-export")
 @RequiredArgsConstructor
 @Slf4j
 public class LocalDynamoDbInitializer {

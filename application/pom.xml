@@ -108,7 +108,8 @@
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
                         <configuration>
-                            <jvmArguments>-Dspring.application.admin.enabled=true -Dspring.profiles.active=local,openapi-export</jvmArguments>
+                            <jmxPort>19001</jmxPort>
+                            <jvmArguments>-Dspring.application.admin.enabled=true -Dspring.profiles.active=local,openapi-export -Dserver.port=18080</jvmArguments>
                         </configuration>
                         <executions>
                             <execution>
@@ -139,7 +140,7 @@
                                     <goal>generate</goal>
                                 </goals>
                                 <configuration>
-                                    <apiDocsUrl>http://localhost:8080/api-docs</apiDocsUrl>
+                                    <apiDocsUrl>http://localhost:18080/api-docs</apiDocsUrl>
                                     <outputDir>${project.basedir}/../api-contracts/documents</outputDir>
                                     <outputFileName>openapi.json</outputFileName>
                                 </configuration>

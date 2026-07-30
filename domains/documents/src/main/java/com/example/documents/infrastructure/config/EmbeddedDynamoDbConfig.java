@@ -30,7 +30,7 @@ import java.net.URI;
  * {@link LocalDynamoDbInitializer}.</p>
  */
 @Configuration
-@Profile("local")
+@Profile("local & !openapi-export")
 @ConditionalOnProperty(
     name = "dynamodb.local.embedded",
     havingValue = "true",

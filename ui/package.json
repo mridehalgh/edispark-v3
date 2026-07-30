@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "pnpm --workspace-root contracts:sync:documents",
+    "predev": "pnpm --dir .. contracts:sync:documents",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

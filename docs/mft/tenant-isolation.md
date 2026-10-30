@@ -33,7 +33,7 @@ The global partnership registry contains only the minimal routing data needed to
 - API authorization filters every control-plane lookup by the current tenant.
 - DynamoDB tenant records use tenant-prefixed partition keys and conditional mutations.
 - S3 uses non-guessable object IDs under tenant prefixes; access points or cell roles restrict the reachable prefix.
-- Stored data uses the tenant symmetric key and exact encryption context.
+- Stored data uses the tenant's branch key (or explicit dedicated key) and exact encryption context.
 - AS2 private operations use cell-shared asymmetric keys, with signing and decryption in separate roles.
 - Per-tenant rate, concurrency, queue-depth, and payload-size limits protect shared workers and KMS quota.
 - Evidence records include tenant, cell, certificate fingerprint, key version, algorithm, and KMS request ID.
@@ -49,7 +49,15 @@ Sharing an AS2 key pair across tenants is a cost/blast-radius tradeoff:
 
 Compensating controls are mandatory: small cells, different roles for signing/decryption, no general-purpose KMS client, immutable tenant-to-cell mapping, exact certificate selection, policy-as-code tests, CloudTrail anomaly alerts, and independently reviewable authorization logs.
 
-The design must never describe the cell-shared asymmetric keys as per-tenant cryptographic isolation. Tenant isolation for AS2 is logical and operational; tenant data-at-rest encryption remains tenant-keyed.
+The design must never describe either cell-shared asymmetric keys or a shared Hierarchical root as per-tenant physical KMS isolation. Tenant data remains cryptographically separated by branch key and authenticated context, but root/key-store compromise or disablement has a cell-wide blast radius. Tenants requiring an independent physical key use the explicit dedicated-key policy.
+
+## Hierarchical branch selection
+
+The trusted tenant registry binds `(tenant_id, cell_id, logical_key_store_name, branch_key_id, mode)`. Storage authorization verifies record ownership before invoking crypto. A tenant-scoped branch supplier/keyring accepts only the branch associated with the already trusted tenant and rejects a mismatched ciphertext context. The service never authorizes access based only on a branch ID or tenant value found inside ciphertext.
+
+Branch materials can be cached, so immediate tenant suspension is enforced at API, worker admission, and queue dispatch before crypto. Cache TTL bounds residual material lifetime. Root-key and DynamoDB key-store failures are cell incidents; point-in-time recovery and restore tests are mandatory because deleting the key store can make ciphertext unrecoverable.
+
+A compromised hierarchical workload can expose every branch material currently resident in that process cache. Cache capacity, TTL, cell size, workload isolation, disabled heap/crash dumps, restricted debugging, and per-cell roles bound this risk. Tenants that prohibit plaintext branch material in workload memory do not use hierarchical mode.
 
 ## Static stability
 

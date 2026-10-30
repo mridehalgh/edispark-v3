@@ -48,9 +48,9 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The first start compiles and installs the local Maven modules, so it can take around a minute. Later starts reuse compiled output. The runner waits for both Java API health checks before launching Next.js, then warms the local JWKS route before printing `EdiSpark local stack is ready.` This prevents the first page load from racing the Java builds or Next.js route compilation. Stop the complete stack with `Ctrl+C`.
+The first start compiles and installs the local Maven modules, so it can take around a minute. Later starts reuse compiled output. The runner waits for the Java APIs and AS2 simulator health checks before launching Next.js, then warms the local JWKS route before printing `EdiSpark local stack is ready.` This prevents the first page load from racing service builds or Next.js route compilation. Stop the complete stack with `Ctrl+C`.
 
-Before launching, the development runner terminates any processes listening on its configured local ports (3000, 8000, 8080, and 8081 by default) and verifies that each port is free. This prevents Next.js from silently selecting another port and keeps service URLs deterministic. The service-specific commands perform equivalent cleanup for their ports. Save or stop unrelated work using those ports before running these commands because its process will be terminated.
+Before launching, the development runner terminates any processes listening on its configured local ports (3000, 8000, 8080, 8081, and 8082 by default) and verifies that each port is free. This prevents Next.js from silently selecting another port and keeps service URLs deterministic. The service-specific commands perform equivalent cleanup for their ports. Save or stop unrelated work using those ports before running these commands because its process will be terminated.
 
 `pnpm dev` starts:
 
@@ -69,6 +69,8 @@ Before launching, the development runner terminates any processes listening on i
 | MFT health | http://localhost:8081/actuator/health |
 | MFT Swagger UI | http://localhost:8081/swagger-ui.html |
 | MFT OpenAPI JSON | http://localhost:8081/api-docs |
+| AS2 partner simulator | http://localhost:8082 |
+| Simulator health | http://localhost:8082/actuator/health |
 | Embedded DynamoDB | http://localhost:8000 |
 
 The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and reconciles a complete safe demo workspace. The demo includes three Documents examples plus an MFT partner, public/local certificates, and transfers in delivered, awaiting-MDN, retry, and needs-review states. These generated files are ignored by Git.
@@ -82,7 +84,7 @@ The local runner provisions this development-only account on the first authentic
 | Username / email | `local@edispark.test` |
 | Password | `EdiSpark-Local-2026!` |
 
-When running `pnpm dev`, the sign-in page shows a floating **Local test login** button in the lower-right corner. Select it to sign in with the test account and open the automatically provisioned `EdiSpark Local` workspace in one step. You can also enter the credentials above manually.
+When running `pnpm dev`, every page shows a floating **Local tools** dock in the lower-right corner. Open it to sign in with the test account and activate the automatically provisioned `EdiSpark Local` workspace. Once signed in, the same dock can run live MFT inbound and outbound simulations. Future local simulators should extend this dock instead of adding separate floating controls. You can also enter the credentials above manually.
 
 The button and its login route are development-only: the control is absent from the production client bundle and the route returns HTTP 404 outside `next dev`. The predictable credential is enabled only by `tooling/scripts/local-environment.mjs`; do not enable `LOCAL_TEST_USER_BOOTSTRAP` in a deployed environment.
 
@@ -90,7 +92,7 @@ You can still create additional accounts in the web application. When Resend is 
 
 The `EdiSpark Local` organization is pinned one-to-one to `LOCAL_SEED_TENANT_ID`, which is also used by the Documents and MFT seeders. The database prevents either side of that mapping from being reused. Additional workspaces receive distinct tenant IDs. The web application issues ES256 JWTs, publishes the matching public key through its JWKS endpoint, and the Spring APIs validate issuer, audience, signature, and the `tenant_id` claim. API routes remain protected in the local profile; there is no authentication bypass.
 
-The local MFT adapter behaves like a small KMS test double: it resolves a logical tenant alias, derives a tenant-specific AES key from one disposable local root, and authenticates the tenant and resource context during AES-GCM encryption. This gives local code the same tenant/resource failure behavior without pretending the local root file is a production security boundary. The repository-wide fixture contract is in [docs/local-demo-data.md](docs/local-demo-data.md); the detailed MFT model is in [docs/mft/local-development.md](docs/mft/local-development.md).
+The local MFT adapter behaves like a small Hierarchical-keyring test double: it resolves a tenant branch beneath one disposable local root, derives resource-scoped AES material, and authenticates tenant/resource context during AES-GCM encryption. This gives local code the same isolation failure behavior without pretending to reproduce AWS ciphertext, DynamoDB key storage, or production cache custody. The repository-wide fixture contract is in [docs/local-demo-data.md](docs/local-demo-data.md); the detailed MFT model is in [docs/mft/local-development.md](docs/mft/local-development.md).
 
 ## Common commands 🧰
 
@@ -100,7 +102,7 @@ The local MFT adapter behaves like a small KMS test double: it resolves a logica
 | `pnpm dev:web` | Run only Next.js with local auth settings |
 | `pnpm dev:api` | Build dependencies and run only the Spring API with embedded DynamoDB |
 | `pnpm dev:mft-api` | Build dependencies and run only the local MFT API |
-| `pnpm dev:as2-simulator` | Run the optional local AS2 trading-partner peer |
+| `pnpm dev:as2-simulator` | Run only the local AS2 trading-partner peer |
 | `pnpm mft:lab:certs` | Generate disposable local AS2 lab certificates |
 | `pnpm local:reset` | Delete generated `.local/` auth, settings, and DynamoDB state |
 | `./mvnw -B clean test` | Clean and test every Java module |
@@ -129,8 +131,14 @@ The local runner supplies safe defaults; copying an environment file is not requ
 | `LOCAL_TEST_USER_PASSWORD` | `EdiSpark-Local-2026!` | Local-only predictable test password |
 | `DOCUMENTS_API_URL` | `http://localhost:8080` | Server-only API URL used by Next.js |
 | `MFT_API_URL` | `http://localhost:8081` | Server-only MFT API URL used by Next.js |
+| `AS2_SIMULATOR_URL` | `http://localhost:8082` | Server-only local simulator URL used by the development BFF |
 | `MFT_ALLOW_PRIVATE_NETWORKS` | `true` locally | Allows the loopback simulator; keep `false` in production |
 | `MFT_LOCAL_DEMO_SEED_ENABLED` | `true` locally | Reconciles the complete MFT demo fixture on startup |
+| `MFT_PUBLIC_AS2_URL` | `http://localhost:8081/as2` | Externally reachable AS2 receiving URL shared with retailers |
+| `MFT_PUBLIC_AS2_MDN_URL` | `http://localhost:8081/as2/mdn` | Externally reachable asynchronous MDN URL shared with retailers |
+| `MFT_SUPPORTED_ENCRYPTION_ALGORITHMS` | `AES128-GCM` | Comma-separated content-encryption algorithms advertised to partners |
+| `MFT_SUPPORTED_SIGNATURE_ALGORITHMS` | `SHA-256` | Comma-separated signature algorithms advertised to partners |
+| `MFT_KEY_ENCRYPTION_ALGORITHM` | `RSA-OAEP` | Required public-key transport advertised to partners |
 | `LOCAL_SEED_TENANT_ID` | Stable local KSUID | Links the first workspace to sample data |
 | `DYNAMODB_LOCAL_ENDPOINT` | `http://localhost:8000` | Local DynamoDB endpoint |
 | `DYNAMODB_LOCAL_DATA_DIR` | `.local/dynamodb` | Persistent local DynamoDB files |
@@ -141,7 +149,7 @@ The local runner supplies safe defaults; copying an environment file is not requ
 
 Never commit secrets, private keys, real customer data, or local databases. Production must use explicit Better Auth migrations, HTTPS, managed secrets, a production database, remote JWT signing, and managed persistence. Local automatic migrations and embedded storage are development conveniences only.
 
-The production MFT design does not allow private AS2 keys in the application database or filesystem. It uses a cost-conscious KMS hierarchy: one symmetric key per tenant across services plus separate cell-shared AS2 signing and decryption keys. KMS-native AS2 requires RSA-OAEP and separate certificates; incompatible partners cannot be activated. Operators can use the in-product documentation at `/mft/docs`; repository design records remain under [docs/mft](docs/mft/README.md), with the complete [sensitive-data inventory](docs/mft-security-and-operations.md).
+The production MFT design does not allow private AS2 keys in the application database or filesystem. Standard tenants use an AWS Encryption SDK Hierarchical keyring: one symmetric KMS root per bounded cell, one branch key per tenant, and cached branch materials to reduce KMS calls. A dedicated tenant KMS key is created only through an explicit policy override. AS2 still uses separate cell-shared signing and decryption keys; KMS-native AS2 requires RSA-OAEP and separate certificates. Organisation administrators can use `/mft/docs`; repository design records remain under [docs/mft](docs/mft/README.md), with the complete [sensitive-data inventory](docs/mft-security-and-operations.md).
 
 ## Contracts
 

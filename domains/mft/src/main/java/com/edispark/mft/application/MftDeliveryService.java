@@ -44,7 +44,7 @@ public final class MftDeliveryService {
                     certificateService.load(partner.localCertificateId()),
                     certificateService.load(partner.partnerCertificateId()));
             if (result.awaitingAsyncMdn()) transfer.awaitMdn(clock.instant());
-            else if (result.disposition() != null && result.disposition().toLowerCase().contains("processed")) {
+            else if (result.processed()) {
                 transfer.deliver(result.disposition(), clock.instant());
             } else {
                 transfer.requireReview(result.disposition() == null ? "Partner returned no MDN" : result.disposition(), clock.instant());

@@ -1,6 +1,7 @@
 package com.edispark.mft.infrastructure.config;
 
 import com.edispark.mft.application.CertificateService;
+import com.edispark.mft.application.ConnectionDetailsService;
 import com.edispark.mft.application.As2ExchangePort;
 import com.edispark.mft.application.MftDeliveryService;
 import com.edispark.mft.application.MftService;
@@ -14,7 +15,10 @@ import com.edispark.mft.infrastructure.as2.MftDeliveryWorker;
 import com.edispark.mft.infrastructure.as2.Phase2As2ExchangeAdapter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.net.URI;
 import java.time.Clock;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -57,6 +61,18 @@ public class MftModuleConfig {
     }
 
     @Bean
+    ConnectionDetailsService mftConnectionDetailsService(
+            MftRepository repository,
+            @Value("${mft.as2.public-inbound-url:http://localhost:8081/as2}") URI inboundUrl,
+            @Value("${mft.as2.public-async-mdn-url:http://localhost:8081/as2/mdn}") URI asynchronousMdnUrl,
+            @Value("${mft.as2.supported-encryption-algorithms:AES128-GCM}") String encryptionAlgorithms,
+            @Value("${mft.as2.supported-signature-algorithms:SHA-256}") String signatureAlgorithms,
+            @Value("${mft.as2.key-encryption-algorithm:RSA-OAEP}") String keyEncryptionAlgorithm) {
+        return new ConnectionDetailsService(repository, inboundUrl, asynchronousMdnUrl,
+                commaSeparated(encryptionAlgorithms), commaSeparated(signatureAlgorithms), keyEncryptionAlgorithm);
+    }
+
+    @Bean
     As2ExchangePort as2ExchangePort(
             @Value("${mft.as2.allow-private-networks:false}") boolean allowPrivateNetworks,
             @Value("${mft.as2.async-mdn-url:http://localhost:8081/as2/mdn}") String asyncMdnUrl) {
@@ -79,5 +95,12 @@ public class MftModuleConfig {
     MftService mftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
             @Value("${mft.as2.allow-legacy-crypto:false}") boolean allowLegacyCrypto) {
         return new MftService(repository, payloadStore, clock, allowLegacyCrypto);
+    }
+
+    private List<String> commaSeparated(String value) {
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .toList();
     }
 }

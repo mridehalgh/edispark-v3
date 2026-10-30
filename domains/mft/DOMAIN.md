@@ -10,7 +10,7 @@ The domain owns local AS2 identities, trading-partner transport profiles, certif
 
 ## Narrative
 
-An integration analyst registers the workspace AS2 identity and a partner's endpoint and certificate policy. When an operations user submits a file, the service records one idempotent transfer, stores immutable bytes, prepares an AS2 message, and waits for verifiable receipt evidence. Incoming messages are matched by the exact AS2 identities, authenticated, stored once, and acknowledged. Transient network failures may retry with the same message identity; protocol or trust failures require human review. A manual resend is a new, linked exchange so the original evidence never changes.
+An integration analyst registers the workspace AS2 identity and a partner's endpoint and certificate policy. The organisation administrator can then share the tenant-scoped AS2 identifier, public receiving URLs, supported algorithms, certificate fingerprint, and public certificate with that partner. Private key material is never part of the onboarding pack. When an operations user submits a file, the service records one idempotent transfer, stores immutable bytes, prepares an AS2 message, and waits for verifiable receipt evidence. Incoming messages are matched by the exact AS2 identities, authenticated, stored once, and acknowledged. Transient network failures may retry with the same message identity; protocol or trust failures require human review. A manual resend is a new, linked exchange so the original evidence never changes.
 
 ## Boundaries
 

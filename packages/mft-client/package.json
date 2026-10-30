@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "openapi-ts -f openapi-ts.config.ts",
+    "generate": "openapi-ts -f openapi-ts.config.ts && node scripts/normalize-generated.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

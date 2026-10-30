@@ -18,13 +18,15 @@
 
 2.4 Local PKCS#12 identities SHALL be available only in local simulation and contract-export profiles.
 
-2.5 Tenant payload and evidence encryption SHALL use one symmetric customer-managed key per tenant reused across approved services with exact alias authorization and encryption context.
+2.5 Tenant payload and evidence encryption SHALL use one logical branch key per standard tenant beneath a bounded-cell KMS Hierarchical keyring root, with a dedicated physical KMS key available only through explicit policy.
 
 2.6 Standard-tier AS2 identities SHALL share one RSA signing key and one RSA decryption key within a bounded deployment cell; signing and decryption SHALL use separate workload roles.
 
 2.7 Production partner activation SHALL require RSA-OAEP key transport and separate signing and encryption certificates. RSA PKCS#1 v1.5 decryption SHALL NOT have a production fallback.
 
 2.8 The system SHALL NOT represent cell-shared asymmetric keys as per-tenant cryptographic isolation because KMS asymmetric operations do not support encryption context.
+
+2.9 An organisation administrator SHALL be able to copy the AS2 identifier, public receiving URLs, supported algorithms, certificate fingerprint, and expiry for a partner connection and download the associated public X.509 certificate. This operation SHALL be tenant-scoped and SHALL NOT return private keys, PKCS#12 material, passwords, or managed-key references.
 
 ## 3. Transfers
 
@@ -59,4 +61,6 @@
 5.2 It SHALL support folder-driven inbound files, received-file inspection, synchronous and asynchronous MDNs, duplicates, negative MDNs, transient HTTP failures, and invalid-certificate scenarios.
 
 5.3 Simulator endpoints and UI SHALL be unavailable outside the local profile.
+
+5.4 The complete local runner SHALL start the simulator, and an authenticated development-only tools dock SHALL trigger deterministic inbound and outbound exchanges on demand without exposing backend credentials or service URLs to browser JavaScript.
 

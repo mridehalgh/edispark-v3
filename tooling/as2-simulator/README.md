@@ -9,7 +9,7 @@ and can send files back to `http://localhost:8081/as2`.
 2. Upload `edispark.p12` as a **Local identity** and `simulator.cer` as a **Partner public** certificate.
 3. Create a partner with local AS2 ID `EDISPARK`, remote AS2 ID `SIMULATOR`, and endpoint
    `http://localhost:8082/as2`. Local development must set `MFT_ALLOW_PRIVATE_NETWORKS=true`.
-4. Run the MFT API and `pnpm dev:as2-simulator`.
+4. Run `pnpm dev` for the complete stack. It starts this simulator automatically after the MFT API is healthy. Use `pnpm dev:as2-simulator` only when running the peer independently.
 
 Send a file into EdiSpark:
 
@@ -24,3 +24,5 @@ curl http://localhost:8082/api/simulator/messages
 ```
 
 Certificates and private keys are test-only, disposable, and ignored with the rest of `.local`. This simulator intentionally uses local PKCS#12 files; it is not the production key-custody model. See the [MFT documentation](../../docs/mft/README.md) for the KMS-only production design, RSA-OAEP compatibility gate, and remaining sensitive-data inventory.
+
+The web application's development-only **Local tools** dock calls the authenticated same-origin BFF. It never exposes the MFT bearer token or simulator URL to browser JavaScript.

@@ -174,8 +174,9 @@ public class TenantProvisioningService {
     // Create tenant-specific S3 directories
     s3Service.createTenantDirectories(tenantId);
     
-    // Generate tenant-specific encryption keys
-    encryptionService.generateTenantKeys(tenantId);
+    // Default: create a branch under the cell Hierarchical keyring.
+    // Provision a dedicated KMS key only when tenant policy explicitly requires it.
+    encryptionService.provisionTenantBranchOrDedicatedOverride(tenantId);
     
     // Initialize tenant-specific database schemas
     databaseService.initializeTenantSchema(tenantId);

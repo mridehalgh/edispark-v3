@@ -15,6 +15,7 @@ public record CertificateRecord(
         Instant notBefore,
         Instant notAfter,
         boolean hasPrivateKey,
+        String publicCertificatePem,
         String secretRef,
         Instant createdAt) {
     public CertificateRecord {
@@ -26,6 +27,7 @@ public record CertificateRecord(
         if (tenantId == null || tenantId.isBlank()) throw new IllegalArgumentException("tenantId must not be blank");
         if (name == null || name.isBlank()) throw new IllegalArgumentException("name must not be blank");
         if (fingerprintSha256 == null || fingerprintSha256.isBlank()) throw new IllegalArgumentException("fingerprint must not be blank");
+        if (publicCertificatePem == null || publicCertificatePem.isBlank()) throw new IllegalArgumentException("publicCertificatePem must not be blank");
         if (secretRef == null || secretRef.isBlank()) throw new IllegalArgumentException("secretRef must not be blank");
     }
 }

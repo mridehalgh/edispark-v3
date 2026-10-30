@@ -29,6 +29,11 @@ mft:
     allow-private-networks: ${MFT_ALLOW_PRIVATE_NETWORKS:false}
     allow-legacy-crypto: ${MFT_ALLOW_LEGACY_CRYPTO:false}
     async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8081/as2/mdn}
+    public-inbound-url: ${MFT_PUBLIC_AS2_URL:http://localhost:8081/as2}
+    public-async-mdn-url: ${MFT_PUBLIC_AS2_MDN_URL:http://localhost:8081/as2/mdn}
+    supported-encryption-algorithms: ${MFT_SUPPORTED_ENCRYPTION_ALGORITHMS:AES128-GCM}
+    supported-signature-algorithms: ${MFT_SUPPORTED_SIGNATURE_ALGORITHMS:SHA-256}
+    key-encryption-algorithm: ${MFT_KEY_ENCRYPTION_ALGORITHM:RSA-OAEP}
   delivery:
     poll-interval-ms: ${MFT_DELIVERY_POLL_INTERVAL_MS:1000}
   local-demo:

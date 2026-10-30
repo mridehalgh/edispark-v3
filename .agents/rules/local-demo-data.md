@@ -23,4 +23,6 @@ Pure refactors, infrastructure changes with no observable local state, and produ
 - Reconcile named fixtures; do not use “the table is non-empty” as evidence that the demo is complete.
 - Preserve developer-created local data. Do not reset the workspace during normal startup.
 - If a fixture shape changes incompatibly, implement an explicit local migration or versioned replacement. Reserve `pnpm local:reset` for unrecoverable generated state and disclose the data loss.
-- Keep the local organization, JWT tenant, Documents tenant, MFT tenant, and local KMS alias anchored to `LOCAL_SEED_TENANT_ID`.
+- Keep the local organization, JWT tenant, Documents tenant, MFT tenant, and local Hierarchical-keyring branch ID anchored to `LOCAL_SEED_TENANT_ID`.
+- Put interactive local-only actions in the shared **Local tools** dock. Add a module to the dock rather than another floating button, authenticate through a same-origin BFF, and keep service URLs and tokens out of browser JavaScript.
+- Guard both the frontend module and every backing route so they are unavailable outside local development.

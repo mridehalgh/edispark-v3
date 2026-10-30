@@ -10,13 +10,14 @@ import org.junit.jupiter.api.Test;
 
 class LocalKmsBehaviorTest {
     @Test
-    void tenantAliasesAndEncryptionContextIsolateLocalCiphertext() throws Exception {
+    void branchKeysAndEncryptionContextIsolateLocalCiphertext() throws Exception {
         LocalKms kms = new LocalKms(Files.createTempDirectory("local-kms").resolve("root.key"));
         byte[] nonce = new byte[12];
         LocalKms.Context context = new LocalKms.Context("tenant-a", "payload", "transfer-1");
         byte[] ciphertext = kms.cipher(Cipher.ENCRYPT_MODE, nonce, context).doFinal("EDI".getBytes());
 
-        assertThat(kms.tenantKeyAlias("tenant-a")).isEqualTo("alias/edispark/tenant/tenant-a/data");
+        assertThat(kms.rootKeyAlias()).isEqualTo("alias/edispark/local/hierarchical-root");
+        assertThat(kms.branchKeyId("tenant-a")).isEqualTo("tenant/tenant-a");
         assertThat(kms.cipher(Cipher.DECRYPT_MODE, nonce, context).doFinal(ciphertext)).isEqualTo("EDI".getBytes());
         assertThatThrownBy(() -> kms.cipher(Cipher.DECRYPT_MODE, nonce,
                 new LocalKms.Context("tenant-b", "payload", "transfer-1")).doFinal(ciphertext))

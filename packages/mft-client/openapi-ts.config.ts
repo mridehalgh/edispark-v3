@@ -11,7 +11,10 @@ export default defineConfig({
         containerName: 'MftClient',
         strategy: 'single',
       },
-      validator: 'zod',
+      validator: {
+        request: false,
+        response: 'zod',
+      },
     },
   ],
 })

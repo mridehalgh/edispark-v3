@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class MftAs2ReceiverConfiguration {
+    private static final char[] RUNTIME_KEYSTORE_PASSWORD = "runtime-only".toCharArray();
     private final ServletContext servletContext;
     private AS2Session session;
 
@@ -43,6 +44,7 @@ public class MftAs2ReceiverConfiguration {
         certificates.setPassword("runtime-only");
         certificates.setSaveChangesToFile(false);
         certificates.initDynamicComponent(created, null);
+        initializeRuntimeKeyStore(certificates);
         created.setCertificateFactory(certificates);
 
         MftAs2PartnershipFactory partnerships = new MftAs2PartnershipFactory(repository, certificateService, certificates);
@@ -58,6 +60,14 @@ public class MftAs2ReceiverConfiguration {
         processor.startActiveModules();
         session = created;
         return created;
+    }
+
+    private void initializeRuntimeKeyStore(CertificateFactory certificates) throws AS2Exception {
+        try {
+            certificates.getKeyStore().load(null, RUNTIME_KEYSTORE_PASSWORD);
+        } catch (Exception exception) {
+            throw new AS2Exception("Unable to initialize the runtime AS2 keystore", exception);
+        }
     }
 
     private void addModules(AS2Session session, DefaultMessageProcessor processor, MftService service) throws AS2Exception {

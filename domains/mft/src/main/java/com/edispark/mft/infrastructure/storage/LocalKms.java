@@ -15,24 +15,29 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-/** Local test double for tenant-scoped AWS KMS envelope encryption. */
+/** Local behavior-level test double for the AWS KMS Hierarchical keyring. */
 public final class LocalKms {
     private static final String SERVICE = "mft";
+    private static final String ROOT_KEY_ALIAS = "alias/edispark/local/hierarchical-root";
     private final SecretKey rootKey;
 
     public LocalKms(Path rootKeyPath) throws IOException {
         rootKey = loadOrCreateKey(rootKeyPath.toAbsolutePath().normalize());
     }
 
-    public String tenantKeyAlias(String tenantId) {
+    public String rootKeyAlias() {
+        return ROOT_KEY_ALIAS;
+    }
+
+    public String branchKeyId(String tenantId) {
         requireText(tenantId, "tenantId");
-        return "alias/edispark/tenant/" + tenantId + "/data";
+        return "tenant/" + tenantId;
     }
 
     public Cipher cipher(int mode, byte[] nonce, Context context) throws IOException {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(mode, tenantKey(context.tenantId()), new GCMParameterSpec(128, nonce));
+            cipher.init(mode, resourceKey(context), new GCMParameterSpec(128, nonce));
             cipher.updateAAD(context.authenticatedData());
             return cipher;
         } catch (GeneralSecurityException exception) {
@@ -40,10 +45,15 @@ public final class LocalKms {
         }
     }
 
-    private SecretKey tenantKey(String tenantId) throws GeneralSecurityException {
+    private SecretKey resourceKey(Context context) throws GeneralSecurityException {
+        SecretKey branchKey = derive(rootKey, branchKeyId(context.tenantId()));
+        return derive(branchKey, context.resourceType() + ":" + context.resourceId());
+    }
+
+    private SecretKey derive(SecretKey parent, String identifier) throws GeneralSecurityException {
         Mac hmac = Mac.getInstance("HmacSHA256");
-        hmac.init(new SecretKeySpec(rootKey.getEncoded(), "HmacSHA256"));
-        return new SecretKeySpec(hmac.doFinal(tenantKeyAlias(tenantId).getBytes(StandardCharsets.UTF_8)), "AES");
+        hmac.init(new SecretKeySpec(parent.getEncoded(), "HmacSHA256"));
+        return new SecretKeySpec(hmac.doFinal(identifier.getBytes(StandardCharsets.UTF_8)), "AES");
     }
 
     private static SecretKey loadOrCreateKey(Path path) throws IOException {

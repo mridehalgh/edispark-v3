@@ -13,6 +13,7 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.Optional;
 
 final class MftAs2PartnershipFactory extends SelfFillingPartnershipFactory {
     private static final char[] RUNTIME_PASSWORD = "runtime-only".toCharArray();
@@ -30,17 +31,28 @@ final class MftAs2PartnershipFactory extends SelfFillingPartnershipFactory {
     @Override
     protected void onBeforeAddPartnership(Partnership partnership) throws AS2Exception {
         super.onBeforeAddPartnership(partnership);
-        PartnerProfile partner = repository.findInboundPartner(partnership.getReceiverAS2ID(),
-                        partnership.getSenderAS2ID())
+        PartnerProfile partner = registeredPartner(partnership)
                 .orElseThrow(() -> new AS2Exception("Unknown inbound AS2 partnership"));
         try {
             loadIdentity(partner);
             loadPartnerCertificate(partner);
-            partnership.setReceiverX509Alias(partner.localAs2Id());
-            partnership.setSenderX509Alias(partner.remoteAs2Id());
+            assignCertificateAliases(partnership, partner);
         } catch (Exception exception) {
             throw new AS2Exception("Unable to load partnership certificate material", exception);
         }
+    }
+
+    private Optional<PartnerProfile> registeredPartner(Partnership partnership) {
+        Optional<PartnerProfile> inbound = repository.findInboundPartner(
+                partnership.getReceiverAS2ID(), partnership.getSenderAS2ID());
+        if (inbound.isPresent()) return inbound;
+        return repository.findInboundPartner(partnership.getSenderAS2ID(), partnership.getReceiverAS2ID());
+    }
+
+    private void assignCertificateAliases(Partnership partnership, PartnerProfile partner) {
+        boolean inbound = partner.localAs2Id().equals(partnership.getReceiverAS2ID());
+        partnership.setReceiverX509Alias(inbound ? partner.localAs2Id() : partner.remoteAs2Id());
+        partnership.setSenderX509Alias(inbound ? partner.remoteAs2Id() : partner.localAs2Id());
     }
 
     private void loadIdentity(PartnerProfile partner) throws Exception {

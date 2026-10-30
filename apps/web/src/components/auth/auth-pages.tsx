@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom"
-import { Building2, CheckCircle2, Fingerprint, FlaskConical, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react"
+import { Building2, CheckCircle2, Fingerprint, KeyRound, LockKeyhole, ShieldCheck } from "lucide-react"
 
 import Logo from "@/components/logo/logo"
 import { Button } from "@/components/ui/button"
@@ -90,21 +90,7 @@ export function SignInPage() {
     if (result.error) setError(result.error.message ?? "No company sign-in was found for that email address.")
   }
 
-  async function signInAsLocalTester() {
-    setError(null)
-    setIsSubmitting(true)
-    try {
-      const response = await fetch("/api/local-test-login", { method: "POST" })
-      if (!response.ok) throw new Error("Local test login is unavailable.")
-      navigate("/workspace", { replace: true })
-    } catch (localLoginError) {
-      setError(localLoginError instanceof Error ? localLoginError.message : "Local test login failed.")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return <>
+  return (
     <AuthShell title="Welcome back" description="Sign in to manage your EDI workspace.">
       <form onSubmit={submit} className="space-y-4">
         <ErrorMessage message={error} />
@@ -133,18 +119,7 @@ export function SignInPage() {
       )}
       <div className="mt-5 flex justify-between text-sm"><Link className="text-primary hover:underline" to="/forgot-password">Forgot password?</Link><Link className="text-primary hover:underline" to="/sign-up">Create account</Link></div>
     </AuthShell>
-    {process.env.NODE_ENV === "development" && (
-      <Button
-        type="button"
-        className="fixed bottom-4 right-4 z-50 min-h-11 bg-foreground px-4 text-background transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:bg-foreground/90 sm:bottom-6 sm:right-6"
-        disabled={isSubmitting}
-        onClick={signInAsLocalTester}
-      >
-        <FlaskConical className="mr-2 h-4 w-4" aria-hidden="true" />
-        {isSubmitting ? "Signing in locally…" : "Local test login"}
-      </Button>
-    )}
-  </>
+  )
 }
 
 export function SignUpPage() {

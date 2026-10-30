@@ -12,7 +12,8 @@ The goal is not a large synthetic database. The goal is a small, safe set of con
 | Organization | `local-test-workspace` / `EdiSpark Local` | `apps/web/src/lib/auth.ts` |
 | Internal tenant | `LOCAL_SEED_TENANT_ID` | `tooling/scripts/local-environment.mjs` |
 | Organization-to-tenant mapping | One-to-one row in `organization_tenant` | `apps/web/src/lib/auth.ts` |
-| Local data-key alias | `alias/edispark/tenant/{tenantId}/data` | `LocalKms` |
+| Local hierarchical root | `alias/edispark/local/hierarchical-root` | `LocalKms` |
+| Local tenant branch | `tenant/{tenantId}` | `LocalKms` |
 
 All local services must resolve the same internal tenant. A new tenant-aware service must join this mapping rather than inventing another demo tenant.
 
@@ -25,10 +26,12 @@ All local services must resolve the same internal tenant. A new tenant-aware ser
 | Documents business documents | `INV-100045` and `CN-1007`, UBL 2.1 JSON with matching schemas | `DocumentSetSeeder` | `DocumentSetSeederTest` creation, schema, repair, and idempotence coverage |
 | MFT partner configuration | `Northstar Trading`, local AS2 ID `EDISPARK`, remote AS2 ID `SIMULATOR` | `LocalMftDemoSeeder` | MFT startup smoke verification |
 | MFT certificate operations | One disposable local identity and one partner public X.509 certificate | `LocalMftDemoSeeder` | MFT startup plus certificate parsing/secret-store tests |
+| MFT retailer onboarding pack | Tenant-scoped `EDISPARK` connection details, local receiving and asynchronous MDN URLs, supported algorithms, fingerprint, and downloadable public certificate | `LocalMftDemoSeeder`, MFT connection-details API | `ConnectionDetailsServiceTest`, generated API contract, and web build |
 | MFT inbound operations | `PO_45001235.edi`, delivered with processed MDN evidence | `LocalMftDemoSeeder` | `LocalMftDemoSeederTest` partial repair and idempotence coverage |
 | MFT outbound operations | Delivered invoice, awaiting-MDN ASN, scheduled-retry inventory, and needs-review remittance | `LocalMftDemoSeeder` | `LocalMftDemoSeederTest` state coverage and repeat-run idempotence |
-| Local cryptographic isolation | Tenant-derived data key; payload and certificate ciphertext bound to tenant and resource | `LocalKms` | `LocalKmsBehaviorTest`, payload integrity, and encrypted secret-store tests |
-| MFT operator guidance | `/mft/docs` production KMS, certificate, tenant-isolation, and compatibility guidance | MFT docs page | Web typecheck/build and local route verification |
+| MFT live local exchange | `local-inbound-order.edi` from simulator to MFT and `local-outbound-invoice.edi` from MFT to simulator, available on demand from the local tools dock | `pnpm dev`, local simulator BFF | Authenticated local UI trigger, real AS2 exchange, MFT transfer evidence, and simulator peer activity |
+| Local cryptographic isolation | Shared test root, tenant branch, resource-derived key; ciphertext bound to tenant and resource | `LocalKms` | `LocalKmsBehaviorTest`, payload integrity, and encrypted secret-store tests |
+| MFT organisation-admin guidance | `/mft/docs` partner setup, certificates, receipt statuses, troubleshooting, and compatibility guidance | MFT setup guide | Web typecheck/build and local route verification |
 
 ## Adding or changing a feature
 
@@ -45,5 +48,6 @@ For data-bearing changes:
 - repair missing fixtures and migrate stale fixture shapes without deleting unrelated local data;
 - prove creation, repair, and repeat-run idempotence in behavior tests;
 - verify the fixture through the real API or UI, not only by inspecting storage.
+- add local-only interactive simulations to the shared local tools dock rather than creating independent floating controls.
 
 Update this manifest in the same change whenever a journey, status, entity, or fixture key changes.

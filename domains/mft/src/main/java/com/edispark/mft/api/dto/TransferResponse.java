@@ -4,6 +4,7 @@ import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferAttempt;
 import com.edispark.mft.domain.model.TransferDirection;
 import com.edispark.mft.domain.model.TransferStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -16,11 +17,11 @@ public record TransferResponse(
         String filename,
         String contentType,
         long size,
-        String sha256,
+        @Schema(nullable = true) String sha256,
         String as2MessageId,
-        String mdnDisposition,
-        String failureReason,
-        UUID resendOf,
+        @Schema(nullable = true) String mdnDisposition,
+        @Schema(nullable = true) String failureReason,
+        @Schema(nullable = true) UUID resendOf,
         Instant createdAt,
         Instant updatedAt,
         List<TransferAttempt> attempts) {

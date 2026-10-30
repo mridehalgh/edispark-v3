@@ -75,9 +75,18 @@ public class SimulatorController {
                 file.getContentType() == null ? "application/edifact" : file.getContentType());
         AS2ClientResponse response = new AS2Client().sendSynchronous(settings, request);
         if (response.hasException()) throw new IllegalStateException("AS2 simulation failed", response.getException());
+        if (!isProcessedMdn(response)) {
+            throw new IllegalStateException("MFT did not return a valid processed MDN");
+        }
         store.add(new SimulatorStore.SimulatedMessage("OUTBOUND", response.getOriginalMessageID(), senderId,
                 receiverId, file.getOriginalFilename(), file.getContentType(), file.getSize(), Instant.now()));
         return new SendResult(response.getOriginalMessageID(), response.getMDNMessageID(), response.getMDNDisposition());
+    }
+
+    private boolean isProcessedMdn(AS2ClientResponse response) {
+        String disposition = response.getMDNDisposition();
+        return response.hasMDN() && disposition != null
+                && disposition.toLowerCase(java.util.Locale.ROOT).matches(".*;\\s*processed\\s*$");
     }
 
     public record SendResult(String messageId, String mdnMessageId, String disposition) {}

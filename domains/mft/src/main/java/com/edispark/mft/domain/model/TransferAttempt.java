@@ -1,12 +1,13 @@
 package com.edispark.mft.domain.model;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
 public record TransferAttempt(
         int number,
         Instant startedAt,
-        Instant completedAt,
-        Integer httpStatus,
+        @Schema(nullable = true) Instant completedAt,
+        @Schema(nullable = true) Integer httpStatus,
         String outcome,
-        String detail) {
+        @Schema(nullable = true) String detail) {
 }

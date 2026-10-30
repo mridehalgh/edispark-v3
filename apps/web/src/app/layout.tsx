@@ -13,6 +13,9 @@ export const metadata: Metadata = {
 };
 
 const NoSSRForAdminRouting  = dynamic(async () => ReactRouterComponent, { ssr: false });
+const LocalDevelopmentDock = process.env.NODE_ENV === "development"
+  ? dynamic(() => import("@/components/local-development/local-development-dock"), { ssr: false })
+  : null
 
 // @ts-ignore
 function SafeHydrate() {
@@ -36,6 +39,7 @@ export default function RootLayout({
         "min-h-screen bg-background font-sans antialiased"
     )}>
     <SafeHydrate />
+    {LocalDevelopmentDock && <LocalDevelopmentDock />}
     </body>
     </html>
   );

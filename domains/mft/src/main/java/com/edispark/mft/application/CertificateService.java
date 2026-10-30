@@ -17,6 +17,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.util.Enumeration;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
@@ -50,7 +51,8 @@ public final class CertificateService {
         CertificateRecord record = new CertificateRecord(UUID.randomUUID(), tenantId, name, kind,
                 fingerprint(certificate), certificate.getSubjectX500Principal().getName(),
                 certificate.getIssuerX500Principal().getName(), certificate.getNotBefore().toInstant(),
-                certificate.getNotAfter().toInstant(), parsed.hasPrivateKey(), secretRef, clock.instant());
+                certificate.getNotAfter().toInstant(), parsed.hasPrivateKey(), toPem(certificate), secretRef,
+                clock.instant());
         return repository.saveCertificate(record);
     }
 
@@ -111,6 +113,15 @@ public final class CertificateService {
                     .formatHex(MessageDigest.getInstance("SHA-256").digest(certificate.getEncoded()));
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to calculate certificate fingerprint", exception);
+        }
+    }
+
+    private String toPem(X509Certificate certificate) {
+        try {
+            String encoded = Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(certificate.getEncoded());
+            return "-----BEGIN CERTIFICATE-----\n" + encoded + "\n-----END CERTIFICATE-----\n";
+        } catch (java.security.cert.CertificateEncodingException exception) {
+            throw new IllegalStateException("Unable to encode public certificate", exception);
         }
     }
 

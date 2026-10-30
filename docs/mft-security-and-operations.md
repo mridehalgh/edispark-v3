@@ -8,11 +8,12 @@ Private AS2 keys must never be stored in the EdiSpark database, payload store, c
 
 The cost-conscious hierarchy is:
 
-- one symmetric customer-managed key per tenant, reused across approved EdiSpark services for payload/evidence encryption;
+- one symmetric KMS root and DynamoDB hierarchical key store per bounded cell, with one branch key per standard tenant;
+- a dedicated symmetric KMS key only for tenants explicitly assigned that policy;
 - one RSA `SIGN_VERIFY` key per deployment cell, shared by the cell's standard-tier tenants;
 - one RSA `ENCRYPT_DECRYPT` key per deployment cell, shared by the same tenants.
 
-The AWS Architecture Blog pattern is one symmetric key **per tenant across services**, not one key for every tenant. The cell-shared AS2 keys are a separate optimization. AWS KMS asymmetric calls do not support encryption context, so they provide cell-level—not per-tenant cryptographic—separation. Exact partnership authorization, separate worker roles, cell isolation, and audit controls are mandatory.
+The Hierarchical keyring reduces monthly key count and KMS request volume by protecting persisted tenant branch keys with the cell root and caching branch materials. It creates a unique data key for each encryption operation. This is the default tier; it deliberately accepts a cell-level root/key-store blast radius. Dedicated KMS mode remains available by explicit policy when a tenant needs independent physical-key disablement or deletion.
 
 KMS RSA decryption supports RSA-OAEP, not RSA PKCS#1 v1.5. A partner requiring PKCS#1 v1.5 or one certificate/key for both signing and decryption cannot be activated on the production service. There is no alternate provider or local-key fallback.
 
@@ -28,6 +29,7 @@ Trading partner <-> AS2 data plane + managed crypto -> immutable payload/evidenc
 
 - The browser calls same-origin BFF routes. Access tokens remain server-side.
 - The control plane owns partner profiles, certificate metadata, routes, transfer search, retry requests, and operational evidence.
+- The authenticated connection-details API assembles a retailer onboarding pack from the current tenant's partner profile, deployment-advertised URLs and algorithms, and public X.509 certificate. It never returns PKCS#12 bytes, passwords, private keys, key references, or cross-tenant records.
 - The public AS2 data plane receives partner traffic and resolves the workspace from the exact `(AS2-To, AS2-From)` pair before processing content.
 - The crypto boundary owns signing and decryption. In production it is an AWS managed-key adapter, not the local secret store.
 - Payloads and MDN evidence are immutable business records. They are referenced from metadata rather than stored in DynamoDB values.
@@ -64,7 +66,7 @@ Production storage rules:
 - DynamoDB partition and index keys begin with the tenant identity for tenant-owned records.
 - The inbound AS2 identity registry is global, contains only the routing reference needed to find a tenant, and is conditionally unique.
 - S3 object keys use non-guessable IDs beneath tenant prefixes. IAM access points or cell roles restrict access to the relevant tenant/cell.
-- Symmetric tenant-data encryption context includes tenant ID and resource type. Asymmetric AS2 operations cannot use encryption context and are contained by cell/role authorization instead.
+- Symmetric tenant-data encryption resolves the expected branch from a trusted tenant registry and authenticates tenant ID, service, resource type, and resource ID. Asymmetric AS2 operations cannot use encryption context and are contained by cell/role authorization instead.
 - Background jobs carry an explicit trusted tenant context obtained from persisted work, never from ambient request state.
 - Logs and metrics include tenant/resource identifiers for authorization and audit, but never payload bytes, tokens, passwords, private keys, or certificate-upload contents.
 
@@ -76,7 +78,8 @@ The current local adapter keeps metadata in memory and encrypted files below `.l
 
 | Data | Sensitive? | Current local behavior | Production target |
 |---|---|---|---|
-| Local KMS root key | Critical test secret | Random owner-readable file below `.local/mft`; derives logical per-tenant AES keys and is never committed | Does not exist; AWS KMS owns non-exportable key material |
+| Local hierarchical root key | Critical test secret | Random owner-readable file below `.local/mft`; derives branch/resource keys and is never committed | Does not exist; AWS KMS owns the cell root and protects branch keys |
+| Hierarchical branch-key material | Critical secret | Derived only inside the local process | Decrypted and cached in cell workload memory for a bounded TTL; never logged, persisted plaintext, serialized, or included in heap/crash dumps |
 | Local AS2 private keys and PKCS#12 password | Critical secret | AES-GCM encrypted with tenant/resource context below `.local/mft`; local profile only | Non-exportable cell-shared KMS signing/decryption keys; never accepted by the production control-plane API |
 | Partner public X.509 certificates | Public, integrity-critical | Stored with tenant metadata/material | Store certificate/chain, SHA-256 fingerprint, purpose, validity, status, and rollover dates |
 | EdiSpark public X.509 certificates | Public, integrity-critical | Stored with the local test identity | Store and distribute to partners; retain versions through rotation grace periods |
@@ -85,7 +88,7 @@ The current local adapter keeps metadata in memory and encrypted files below `.l
 | AS2 IDs, endpoints, partner names, routing configuration | Confidential configuration | In-memory metadata | Tenant-scoped DynamoDB records encrypted at rest |
 | MDNs, MICs, retry/error history, certificate fingerprints | Confidential operational evidence | Transfer metadata | Immutable tenant-scoped evidence with retention and access auditing |
 | Access tokens, sessions, auth database | Secret/security-sensitive | Server-side Better Auth and local SQLite | Managed database/secret controls; tokens never persisted by the MFT API or sent to the browser-facing AS2 path |
-| KMS key ARNs, aliases, certificate versions, AWS resource IDs | Not secrets, authorization-sensitive | Logical tenant aliases are resolved by the local test double | Store as metadata; IAM, key policy, cell assignment, and registry integrity provide protection |
+| Root/dedicated KMS ARNs, branch IDs/versions, logical key-store name, certificate versions | Not secrets, authorization-sensitive | Deterministic local branch IDs are resolved by the test double | Store in a trusted registry; IAM, key-store permissions, context checks, cell assignment, and audit integrity provide protection |
 | Application logs | Potentially sensitive | IDs and state only by design | Central log retention, masking, access control, and alerts; prohibit payload and secret logging |
 
 Local test certificates and credentials under `.local` are disposable, ignored by Git, and must never be promoted to another environment. `pnpm local:reset` deletes this generated state.
@@ -101,13 +104,13 @@ Local test certificates and credentials under `.local` are disposable, ignored b
 
 ## AWS authorization and audit
 
-The runtime role receives only the precise KMS actions for the selected operation. A signing worker receives `kms:Sign` for its cell signing key; an inbound worker receives `kms:Decrypt` for its cell decryption key. Neither receives key administration or deletion permissions. Tenant-data workloads assume sessions restricted to the tenant alias and required symmetric encryption context. KMS key policies, service/network conditions, CloudTrail, and alarms provide enforcement and audit evidence.
+The hierarchical runtime receives `dynamodb:GetItem` on its cell key store and `kms:Decrypt` on its root; it cannot create or rotate branches. It temporarily holds cached plaintext branch material in memory, so process inspection, heap dumps, crash dumps, debug endpoints, and broad node access are prohibited. A separate key-store administrator receives the transactional DynamoDB writes plus `kms:GenerateDataKeyWithoutPlaintext` and `kms:ReEncrypt`. A signing worker receives `kms:Sign` for its cell signing key; an inbound worker receives `kms:Decrypt` for its cell decryption key. Dedicated-key roles are restricted to the selected tenant key and required context. None receives general key administration or deletion permissions.
 
 Provisioning roles are separate from transfer-processing roles. Certificate rotation and key scheduling are privileged, audited operations with approval. Production services use VPC endpoints where supported and must not require long-lived AWS access keys.
 
 ## Availability and recovery
 
-- KMS or HSM unavailability stops new signing/decryption; ciphertext, queued work, and evidence remain durable.
+- KMS, hierarchical key-store, or cache reauthorization failure stops affected new crypto work; ciphertext, queued work, and evidence remain durable.
 - Retries are bounded, jittered, idempotent, and preserve the AS2 Message-ID where protocol replay requires it.
 - Horizontal workers require conditional leases. An in-memory lock is not a production lease.
 - Payload/evidence storage and metadata have independent backup and retention plans linked by immutable transfer IDs.
@@ -120,7 +123,7 @@ The local vertical slice uses `phase2`, in-memory metadata, and a local KMS test
 Before production, implement and verify:
 
 1. DynamoDB metadata, atomic inbound-identity ownership, and distributed worker leases.
-2. S3 immutable payload/evidence storage with tenant-aware SSE-KMS policies and lifecycle rules.
+2. S3 immutable payload/evidence storage plus the Hierarchical-keyring adapter, DynamoDB key store, trusted branch registry, PITR/backups, cache policy, and dedicated-key override.
 3. The KMS signer/decrypter adapter, cell key registry, partner RSA-OAEP capability gate, and no private-key upload path.
 4. Certificate rotation, revocation policy, expiry alarms, CloudTrail alerts, and restore exercises.
 5. Protocol/security integration tests covering signed MDNs, replay, rollover, malformed messages, and tenant-boundary attempts.

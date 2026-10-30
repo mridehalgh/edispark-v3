@@ -1,15 +1,15 @@
 # Multi-Tenancy Architecture Standards 🏢
 
 ## Overview
-EdiSpark uses a comprehensive multi-tenant architecture with tenant-specific encryption, data isolation, and context propagation using the Cottn framework and Java 21 ScopedValues.
+EdiSpark uses a comprehensive multi-tenant architecture with tenant-scoped encryption, data isolation, and context propagation using the Cottn framework and Java 21 ScopedValues.
 
 ## Core Multi-Tenancy Principles 🎯
 
 ### Tenant Isolation Levels
 - **Data Isolation**: Complete separation of tenant data using encryption and partitioning
 - **Processing Isolation**: Tenant context propagated through all processing layers
-- **Storage Isolation**: S3 bucket partitioning with tenant-specific encryption keys
-- **Security Isolation**: Per-tenant encryption keys managed via AWS KMS and DynamoDB
+- **Storage Isolation**: S3 partitioning plus tenant branch keys and authenticated encryption context
+- **Security Isolation**: Default AWS Encryption SDK Hierarchical keyring with one branch per tenant; dedicated KMS keys only by explicit policy
 
 ### Tenant Context Management
 ```java
@@ -158,9 +158,9 @@ public class TenantEncryptionService {
 ```
 
 ### Key Management Strategy
-- **Per-Tenant Keys**: Each tenant has unique encryption keys
-- **KMS Integration**: AWS KMS manages master keys
-- **DynamoDB Storage**: Encrypted tenant keys stored in DynamoDB
+- **Per-Tenant Branches**: Each tenant has a unique Hierarchical branch key under a bounded cell root
+- **KMS Integration**: AWS KMS protects cell roots; dedicated tenant keys are an explicit override
+- **DynamoDB Storage**: KMS-protected Hierarchical branch records stored in the AWS-required key-store schema
 - **Automatic Rotation**: Keys rotated based on policy
 - **Access Control**: IAM policies restrict key access by tenant
 
@@ -416,24 +416,26 @@ public class MultiTenantEdifactStack extends Stack {
   public MultiTenantEdifactStack(Construct scope, String id, StackProps props) {
     super(scope, id, props);
     
-    // Tenant-specific S3 buckets with encryption
+    // Tenant-prefixed S3 storage. Application payloads use the Hierarchical keyring;
+    // S3-managed encryption remains a baseline storage control.
     Bucket inboundBucket = Bucket.Builder.create(this, "InboundBucket")
       .bucketName(envPrefix + "-inbound-edifact-files")
-      .encryption(BucketEncryption.KMS)
-      .encryptionKey(createTenantMasterKey())
+      .encryption(BucketEncryption.S3_MANAGED)
       .publicReadAccess(false)
       .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
       .build();
+
+    Key cellHierarchicalRootKey = createCellHierarchicalRootKey();
     
-    // DynamoDB tables for tenant key storage
-    Table keyStoreTable = Table.Builder.create(this, "TenantKeyStore")
-      .tableName(envPrefix + "-tenant-key-store")
+    // AWS Encryption SDK Hierarchical key store (one per bounded cell)
+    Table keyStoreTable = Table.Builder.create(this, "HierarchicalKeyStore")
+      .tableName(envPrefix + "-hierarchical-key-store")
       .partitionKey(Attribute.builder()
-        .name("tenantId")
+        .name("branch-key-id")
         .type(AttributeType.STRING)
         .build())
       .sortKey(Attribute.builder()
-        .name("keyId")
+        .name("type")
         .type(AttributeType.STRING)
         .build())
       .encryption(TableEncryption.AWS_MANAGED)
@@ -441,15 +443,15 @@ public class MultiTenantEdifactStack extends Stack {
       .build();
   }
   
-  private Key createTenantMasterKey() {
-    return Key.Builder.create(this, "TenantMasterKey")
-      .description("Master key for tenant-specific encryption")
+  private Key createCellHierarchicalRootKey() {
+    return Key.Builder.create(this, "CellHierarchicalRootKey")
+      .description("Cell root protecting tenant branch keys")
       .keyPolicy(PolicyDocument.Builder.create()
         .statements(List.of(
           PolicyStatement.Builder.create()
             .effect(Effect.ALLOW)
             .principals(List.of(new ServicePrincipal("lambda.amazonaws.com")))
-            .actions(List.of("kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey"))
+            .actions(List.of("kms:Decrypt", "kms:GenerateDataKeyWithoutPlaintext", "kms:ReEncrypt*"))
             .resources(List.of("*"))
             .build()
         ))
@@ -466,8 +468,8 @@ Function parserFunction = Function.Builder.create(this, "ParserFunction")
   .handler("io.edispark.parser.InboundEdifactFileHandler::demo")
   .environment(Map.of(
     "ENC_KEY_STORE_TABLE_NAME", keyStoreTable.getTableName(),
-    "ENC_LOGICAL_KEY_STORE_TABLE_NAME", logicalKeyStoreTable.getTableName(),
-    "ENC_KMS_KEY_ARN", tenantMasterKey.getKeyArn(),
+    "ENC_LOGICAL_KEY_STORE_NAME", envPrefix + "-hierarchical-key-store",
+    "ENC_KMS_KEY_ARN", cellHierarchicalRootKey.getKeyArn(),
     "S3_PARSED_FILES", parsedBucket.getBucketName()
   ))
   .build();
@@ -477,8 +479,8 @@ Function parserFunction = Function.Builder.create(this, "ParserFunction")
 
 ### Tenant Isolation Validation
 - **Data Leakage Prevention**: Ensure no cross-tenant data access
-- **Encryption Key Isolation**: Verify tenant-specific key usage
-- **Access Control**: Implement proper IAM policies per tenant
+- **Encryption Key Isolation**: Verify trusted tenant-to-branch selection and context; dedicated physical KMS keys are explicit overrides
+- **Access Control**: Use cell-scoped IAM plus trusted application authorization for branch selection
 - **Audit Logging**: Track all tenant context changes
 
 ### Security Testing Requirements
@@ -509,7 +511,7 @@ void shouldPreventCrossTenantDataAccess() {
 
 ### Tenant Context Overhead
 - **ScopedValue Performance**: Minimal overhead compared to ThreadLocal
-- **Encryption Caching**: Cache tenant keys for performance
+- **Encryption Caching**: Cache branch material only with bounded TTL/capacity; prohibit logs, persistence, heap dumps, and crash dumps
 - **Connection Pooling**: Separate pools per tenant if needed
 - **Metrics Cardinality**: Monitor tenant dimension impact
 
@@ -538,7 +540,7 @@ public class TenantKeyCache {
 
 ### New Tenant Onboarding Process
 1. **Generate Tenant ID**: Create unique tenant identifier
-2. **Provision Encryption Keys**: Set up tenant-specific KMS keys
+2. **Provision Encryption Material**: Create the tenant branch key, or an explicitly approved dedicated KMS key
 3. **Create S3 Partitions**: Initialize tenant directory structure
 4. **Configure Access Policies**: Set up IAM policies for tenant
 5. **Initialize Database Records**: Create tenant-specific configuration
@@ -605,7 +607,7 @@ public class TenantGovernanceService {
 ### Multi-Tenancy KPIs
 - **Tenant Isolation**: Zero cross-tenant data leakage incidents
 - **Performance Impact**: < 5% overhead from tenant context
-- **Security Compliance**: 100% tenant key isolation
+- **Security Compliance**: 100% trusted tenant-to-branch selection and cross-tenant decryption rejection; dedicated physical-key isolation only where explicitly configured
 - **Onboarding Time**: < 1 hour for new tenant setup
 - **Data Encryption**: 100% tenant data encrypted at rest
 

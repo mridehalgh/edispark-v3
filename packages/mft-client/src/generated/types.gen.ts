@@ -7,10 +7,10 @@ export type ClientOptions = {
 export type TransferAttempt = {
     number?: number;
     startedAt?: string;
-    completedAt?: string;
-    httpStatus?: number;
+    completedAt?: string | null;
+    httpStatus?: number | null;
     outcome?: string;
-    detail?: string;
+    detail?: string | null;
 };
 
 export type TransferResponse = {
@@ -21,11 +21,11 @@ export type TransferResponse = {
     filename?: string;
     contentType?: string;
     size?: number;
-    sha256?: string;
+    sha256?: string | null;
     as2MessageId?: string;
-    mdnDisposition?: string;
-    failureReason?: string;
-    resendOf?: string;
+    mdnDisposition?: string | null;
+    failureReason?: string | null;
+    resendOf?: string | null;
     createdAt?: string;
     updatedAt?: string;
     attempts?: Array<TransferAttempt>;
@@ -73,6 +73,22 @@ export type CertificateResponse = {
     hasPrivateKey?: boolean;
     daysUntilExpiry?: number;
     validity?: string;
+};
+
+export type As2ConnectionDetailsResponse = {
+    partnerId?: string;
+    partnerName?: string;
+    as2Identifier?: string;
+    inboundUrl?: string;
+    asynchronousMdnUrl?: string;
+    supportedEncryptionAlgorithms?: Array<string>;
+    supportedSignatureAlgorithms?: Array<string>;
+    keyEncryptionAlgorithm?: string;
+    certificateId?: string;
+    certificateName?: string;
+    certificateFingerprintSha256?: string;
+    certificateNotAfter?: string;
+    publicCertificatePem?: string;
 };
 
 export type ListMftTransfersData = {
@@ -237,3 +253,19 @@ export type DownloadMftTransferPayloadResponses = {
 };
 
 export type DownloadMftTransferPayloadResponse = DownloadMftTransferPayloadResponses[keyof DownloadMftTransferPayloadResponses];
+
+export type ListMftConnectionDetailsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/mft/connection-details';
+};
+
+export type ListMftConnectionDetailsResponses = {
+    /**
+     * OK
+     */
+    200: Array<As2ConnectionDetailsResponse>;
+};
+
+export type ListMftConnectionDetailsResponse = ListMftConnectionDetailsResponses[keyof ListMftConnectionDetailsResponses];

@@ -23,7 +23,7 @@ Do not consider a demoable feature complete with an empty state, a manual setup 
 - Map the Better Auth organization `local-test-workspace` to exactly one internal tenant ID through `organization_tenant`.
 - Use `LOCAL_SEED_TENANT_ID` as the stable tenant ID for auth, Documents, MFT, and future tenant-aware local services.
 - Preserve the database constraints: one organization has one tenant and one tenant belongs to one organization.
-- Do not equate an organization with every KMS resource. The tenant owns one logical symmetric data-encryption key. AS2 signing and decryption identities follow the separate cell-key design documented under `docs/mft/`.
+- Do not equate an organization with every KMS resource. Standard tenants map to one branch key under a cell-shared Hierarchical keyring root; a tenant receives a physical KMS data key only through the explicit dedicated-key policy. AS2 signing and decryption identities follow the separate cell-key design documented under `docs/mft/`.
 
 ## Keep the fixture manifest complete
 
@@ -41,10 +41,10 @@ When adding a fixture, give it a stable business key and update the canonical co
 ## Preserve local KMS parity
 
 - Keep application code behind the same cryptographic storage ports used by production-oriented code.
-- The local KMS test double may keep one disposable root secret below `.local`, but derive a distinct logical key for each tenant alias: `alias/edispark/tenant/{tenantId}/data`.
+- The local KMS test double may keep one disposable root secret below `.local`, but it must select a distinct tenant branch key ID and derive resource-scoped material beneath that branch. It must not pretend every tenant has a physical KMS key.
 - Authenticate ciphertext with `tenant_id`, `service`, `resource_type`, and `resource_id`. A different tenant or resource must fail decryption.
 - Keep all local key files, PKCS#12 identities, passwords, and encrypted payloads under ignored `.local` paths with owner-only permissions.
-- Never present local derivation as a production security boundary. Production uses AWS KMS and stores only key references and public certificate material.
+- Never present local derivation as a production security boundary. Production persists KMS-protected branch records and authorization-sensitive key references; plaintext branch material may exist only in the Hierarchical keyring's bounded process-memory cache and must never be logged or persisted.
 - Keep the disposable PKCS#12 bridge local-only while `phase2` requires it. Never add a production fallback that exports or stores a KMS private key.
 
 ## Implement safely
@@ -56,6 +56,7 @@ When adding a fixture, give it a stable business key and update the canonical co
 5. Prefer repairing specific missing stable fixtures. Only propose `pnpm local:reset` when state cannot be reconciled; call out that it deletes generated local state before running it.
 6. Update `README.md` and the relevant file under `docs/` whenever the identity, cryptographic, sensitive-data, or fixture contract changes.
 7. Add behavior tests for creation, repair, and idempotence. Where a fixture changes shape, test the supported local migration or versioned replacement.
+8. Add interactive simulations to the shared **Local tools** dock as pluggable modules. Do not create feature-specific floating launchers. Keep their BFF routes authenticated and development-only, and never expose backend tokens or service URLs to the browser.
 
 ## Verify the workspace
 
@@ -73,6 +74,7 @@ Confirm:
 - startup logs report a complete Documents catalogue and MFT demo;
 - local sign-in opens the same tenant in Documents and `/mft`;
 - `/mft` displays partner, certificate, and transfer examples without manual setup;
+- the Local tools dock signs in the demo user and any registered simulator module exercises its real local service path;
 - `/mft/docs` and MFT health are available;
 - cross-tenant and wrong-resource local decryption fail;
 - a second seeding pass creates no duplicate business fixtures;

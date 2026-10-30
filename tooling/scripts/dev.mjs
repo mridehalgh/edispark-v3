@@ -28,6 +28,14 @@ try {
     timeout: API_READY_TIMEOUT_MS,
     url: new URL("/actuator/health", env.MFT_API_URL).toString(),
   })
+  const simulator = start("pnpm", ["dev:as2-simulator"], { cwd, env: childEnvironment })
+  coordinator.add(simulator)
+  await waitForEndpoint({
+    child: simulator,
+    label: "AS2 simulator",
+    timeout: API_READY_TIMEOUT_MS,
+    url: new URL("/actuator/health", env.AS2_SIMULATOR_URL).toString(),
+  })
   const web = start("pnpm", ["dev:web"], { cwd, env: childEnvironment })
   coordinator.add(web)
   await waitForEndpoint({

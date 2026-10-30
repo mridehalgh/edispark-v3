@@ -5,10 +5,10 @@ import * as z from 'zod';
 export const zTransferAttempt = z.object({
     number: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
     startedAt: z.iso.datetime().optional(),
-    completedAt: z.iso.datetime().optional(),
-    httpStatus: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    completedAt: z.iso.datetime().nullish(),
+    httpStatus: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).nullish(),
     outcome: z.string().optional(),
-    detail: z.string().optional()
+    detail: z.string().nullish()
 });
 
 export const zTransferResponse = z.object({
@@ -28,11 +28,11 @@ export const zTransferResponse = z.object({
     filename: z.string().optional(),
     contentType: z.string().optional(),
     size: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    sha256: z.string().optional(),
+    sha256: z.string().nullish(),
     as2MessageId: z.string().optional(),
-    mdnDisposition: z.string().optional(),
-    failureReason: z.string().optional(),
-    resendOf: z.uuid().optional(),
+    mdnDisposition: z.string().nullish(),
+    failureReason: z.string().nullish(),
+    resendOf: z.uuid().nullish(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
     attempts: z.array(zTransferAttempt).optional()
@@ -80,6 +80,22 @@ export const zCertificateResponse = z.object({
     hasPrivateKey: z.boolean().optional(),
     daysUntilExpiry: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
     validity: z.string().optional()
+});
+
+export const zAs2ConnectionDetailsResponse = z.object({
+    partnerId: z.uuid().optional(),
+    partnerName: z.string().optional(),
+    as2Identifier: z.string().optional(),
+    inboundUrl: z.url().optional(),
+    asynchronousMdnUrl: z.url().optional(),
+    supportedEncryptionAlgorithms: z.array(z.string()).optional(),
+    supportedSignatureAlgorithms: z.array(z.string()).optional(),
+    keyEncryptionAlgorithm: z.string().optional(),
+    certificateId: z.uuid().optional(),
+    certificateName: z.string().optional(),
+    certificateFingerprintSha256: z.string().optional(),
+    certificateNotAfter: z.iso.datetime().optional(),
+    publicCertificatePem: z.string().optional()
 });
 
 /**
@@ -162,3 +178,8 @@ export const zDownloadMftTransferPayloadPath = z.object({
  * OK
  */
 export const zDownloadMftTransferPayloadResponse = z.string();
+
+/**
+ * OK
+ */
+export const zListMftConnectionDetailsResponse = z.array(zAs2ConnectionDetailsResponse);

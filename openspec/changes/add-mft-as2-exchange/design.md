@@ -22,6 +22,12 @@ KMS-native AS2 uses separate non-exportable RSA keys for signing and decryption 
 
 Remote partner and local public X.509 certificate chains remain tenant-scoped stored records. They are not confidential, but their integrity, purpose, validity, fingerprint, and rotation state are security-critical. The complete decision is in `docs/mft/` and the sensitive-data inventory is in `docs/mft-security-and-operations.md`.
 
+## Retailer onboarding pack
+
+The authenticated connection-details API assembles one retailer-facing pack per partner from the tenant-scoped partner profile, deployment-configured public AS2 URLs and algorithm policy, and the selected local identity's public X.509 certificate. The response contains PEM-encoded public material only. Encrypted PKCS#12 bytes, passwords, KMS references, and private keys stay behind the certificate boundary and never reach the browser.
+
+The organisation workspace presents this pack inside each trading-partner row so an administrator can copy the values and download the certificate without seeing platform topology. The local demo uses its disposable identity certificate. The KMS-native production adapter must expose the separate public signing and encryption certificates required by the production compatibility profile.
+
 ## Security
 
 The service limits multipart request size, normalizes filenames, blocks outbound private-network targets by default, keeps bearer tokens in the BFF, encrypts local material at rest, and uses explicit outbound timeouts. SHA-256, AES-GCM, signing, encryption, compression, and signed MDNs are defaults. Legacy algorithms require both a service-level gate and a partner-level override.
@@ -48,7 +54,7 @@ An inbound `(AS2-To, AS2-From)` identity pair belongs to exactly one tenant. Loc
 
 *For any* two distinct tenants, resources written under one tenant cannot be returned from queries executed under the other.
 
-**Validates: Requirements 1.1, 1.2, 1.3**
+**Validates: Requirements 1.1, 1.2, 1.3, 2.9**
 
 ### Property 4: Transfer state safety
 

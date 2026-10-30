@@ -1,8 +1,8 @@
 "use client"
 
-import type { CertificateResponse, PartnerResponse, TransferResponse } from "@edispark/mft-client"
+import type { As2ConnectionDetailsResponse, CertificateResponse, PartnerResponse, TransferResponse } from "@edispark/mft-client"
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BookOpen, CheckCircle2, ChevronDown, CircleAlert, Clock3, Copy, Download, FileUp, KeyRound, Plus, RefreshCw, ShieldCheck, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BookOpen, CheckCircle2, Database, ExternalLink, FileUp, KeyRound, LockKeyhole, Network, RefreshCw, Route, ShieldCheck } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
@@ -10,16 +10,18 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { LOCAL_MFT_SIMULATOR_EVENT } from "@/lib/local-mft-simulator"
 import { cn } from "@/lib/utils"
 
-type ViewState = {
-  transfers: TransferResponse[]
-  partners: PartnerResponse[]
-  certificates: CertificateResponse[]
-}
+type ViewState = { transfers: TransferResponse[]; partners: PartnerResponse[]; certificates: CertificateResponse[]; connectionDetails: As2ConnectionDetailsResponse[] }
+type MftSection = "activity" | "partners" | "certificates"
 
-const EMPTY_STATE: ViewState = { transfers: [], partners: [], certificates: [] }
+const EMPTY_STATE: ViewState = { transfers: [], partners: [], certificates: [], connectionDetails: [] }
 const LOCAL_CERTIFICATE_UPLOADS = process.env.NODE_ENV === "development"
+const STATUS_LABELS: Record<NonNullable<TransferResponse["status"]>, string> = {
+  RECEIVED: "Received", QUEUED: "Queued", PROCESSING: "Sending", AWAITING_MDN: "Waiting for receipt",
+  DELIVERED: "Delivered", RETRY_SCHEDULED: "Retry scheduled", NEEDS_REVIEW: "Needs attention", FAILED: "Failed",
+}
 
 async function readApi<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, cache: "no-store" })
@@ -34,97 +36,27 @@ function formatDate(value?: string) {
 }
 
 function StatusBadge({ status }: { status?: TransferResponse["status"] }) {
-  const tone = status === "DELIVERED"
-    ? "bg-success/30 text-success-foreground"
-    : status === "NEEDS_REVIEW" || status === "FAILED"
-      ? "bg-destructive/10 text-destructive"
-      : status === "RETRY_SCHEDULED"
-        ? "bg-warning/25 text-warning-foreground"
-        : "bg-primary/10 text-primary"
-  return <Badge className={cn("border-0", tone)}>{status?.replaceAll("_", " ") ?? "UNKNOWN"}</Badge>
+  const needsAttention = status === "NEEDS_REVIEW" || status === "FAILED"
+  const delivered = status === "DELIVERED"
+  const waiting = status === "RETRY_SCHEDULED" || status === "AWAITING_MDN"
+  const Icon = needsAttention ? CircleAlert : delivered ? CheckCircle2 : waiting ? Clock3 : RefreshCw
+  return <Badge className={cn("gap-1.5 border-0 font-medium", needsAttention && "bg-destructive/10 text-destructive", delivered && "bg-success/30 text-success-foreground", waiting && "bg-warning/25 text-warning-foreground", !needsAttention && !delivered && !waiting && "bg-primary/10 text-primary")}><Icon className="h-3 w-3" aria-hidden="true" />{status ? STATUS_LABELS[status] : "Unknown"}</Badge>
 }
 
-function Metric({ label, value, note, icon: Icon, warning = false }: { label: string; value: number; note: string; icon: typeof CheckCircle2; warning?: boolean }) {
-  return (
-    <article className="rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <Icon className={cn("h-4 w-4", warning ? "text-warning-foreground" : "text-primary")} aria-hidden="true" />
-      </div>
-      <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{note}</p>
-    </article>
-  )
+function SummaryItem({ label, value, note, warning = false }: { label: string; value: number; note: string; warning?: boolean }) {
+  return <div className="min-w-0 border-b px-4 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><div className="flex items-baseline justify-between gap-4"><span className="text-sm font-medium text-muted-foreground">{label}</span>{warning && value > 0 && <CircleAlert className="h-4 w-4 text-destructive" aria-label="Action required" />}</div><p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</p><p className="mt-0.5 text-xs text-muted-foreground">{note}</p></div>
 }
 
-function KeyStrategyPanel() {
-  return (
-    <section className="overflow-hidden rounded-lg border bg-card" aria-labelledby="key-strategy-title">
-      <div className="border-b px-5 py-5 sm:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Production target</Badge>
-          <span className="text-xs text-muted-foreground">AWS KMS only · private keys remain non-exportable</span>
-        </div>
-        <h2 id="key-strategy-title" className="mt-3 text-xl font-semibold tracking-tight">Cost-conscious key hierarchy</h2>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">Tenant data keeps a tenant-specific deletion boundary. AS2 identities share a bounded cell key set so key count does not grow with every workspace.</p>
-      </div>
-
-      <div className="grid lg:grid-cols-3">
-        <article className="border-b p-5 lg:border-b-0 lg:border-r sm:p-6">
-          <Database className="h-5 w-5 text-primary" aria-hidden="true" />
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Stored tenant data</p>
-          <h3 className="mt-1 font-semibold">One symmetric key per tenant</h3>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">The same tenant key protects approved EdiSpark services, using an exact tenant/service/resource encryption context. It is not shared with other tenants.</p>
-          <p className="mt-3 font-mono text-xs text-foreground">alias/edispark/tenant/&#123;tenant&#125;/data</p>
-        </article>
-        <article className="border-b p-5 lg:border-b-0 lg:border-r sm:p-6">
-          <KeyRound className="h-5 w-5 text-primary" aria-hidden="true" />
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">AS2 signing</p>
-          <h3 className="mt-1 font-semibold">One signing key per cell</h3>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Standard tenants in a deployment cell share a non-exportable RSA <code className="text-foreground">SIGN_VERIFY</code> key.</p>
-          <p className="mt-3 font-mono text-xs text-foreground">alias/edispark/&#123;cell&#125;/as2-signing</p>
-        </article>
-        <article className="p-5 sm:p-6">
-          <LockKeyhole className="h-5 w-5 text-primary" aria-hidden="true" />
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">AS2 decryption</p>
-          <h3 className="mt-1 font-semibold">One decryption key per cell</h3>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">A separate RSA <code className="text-foreground">ENCRYPT_DECRYPT</code> key unwraps inbound content keys.</p>
-          <p className="mt-3 font-mono text-xs text-foreground">alias/edispark/&#123;cell&#125;/as2-decryption</p>
-        </article>
-      </div>
-
-      <div className="border-y border-warning/40 bg-warning/10 px-5 py-4 sm:px-6" role="note" aria-label="KMS AS2 compatibility limitation">
-        <div className="flex gap-3">
-          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning-foreground" aria-hidden="true" />
-          <div>
-            <h3 className="font-semibold">RSA-OAEP is a partner activation requirement</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">KMS RSA decryption supports RSA-OAEP, not legacy RSA PKCS#1 v1.5. A KMS key also cannot both sign and decrypt, so partners must accept separate signing and encryption certificates. Incompatible profiles are not activated and there is no local-key fallback.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-8 px-5 py-6 lg:grid-cols-[1fr_1.15fr] sm:px-6">
-        <div>
-          <div className="flex items-center gap-2"><Network className="h-4 w-4 text-primary" aria-hidden="true" /><h3 className="font-semibold">Tenant isolation</h3></div>
-          <ul className="mt-3 space-y-3 text-sm leading-6 text-muted-foreground">
-            <li><span className="font-medium text-foreground">Control plane:</span> tenant comes from the validated JWT claim.</li>
-            <li><span className="font-medium text-foreground">AS2 data plane:</span> tenant comes from one atomically unique, exact AS2 identity pair.</li>
-            <li><span className="font-medium text-foreground">Stored data:</span> tenant-specific symmetric key, alias-scoped STS session, and encryption context.</li>
-            <li><span className="font-medium text-foreground">Shared AS2 keys:</span> bounded by cell, separate worker roles, per-tenant quotas, immutable certificate selection, and CloudTrail evidence.</li>
-          </ul>
-        </div>
-        <div>
-          <h3 className="font-semibold">What sharing changes</h3>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">Asymmetric KMS calls do not support encryption context. The cell key set therefore provides cell-level key custody, not per-tenant cryptographic isolation. A disabled, throttled, or misconfigured key affects every tenant in that cell, so cells are deliberately bounded and never fall back to filesystem keys.</p>
-          <a className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline" href="https://aws.amazon.com/blogs/architecture/simplify-multi-tenant-encryption-with-a-cost-conscious-aws-kms-key-strategy/" target="_blank" rel="noreferrer">AWS multi-tenant KMS strategy <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /><span className="sr-only">opens in a new tab</span></a>
-        </div>
-      </div>
-    </section>
-  )
+function EmptyState({ title, children }: { title: string; children: React.ReactNode }) {
+  return <div className="px-6 py-12 text-center"><h3 className="text-sm font-semibold">{title}</h3><p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted-foreground">{children}</p></div>
 }
 
 export function MftPage() {
   const [state, setState] = useState<ViewState>(EMPTY_STATE)
+  const [section, setSection] = useState<MftSection>("activity")
+  const [showSendForm, setShowSendForm] = useState(false)
+  const [showPartnerForm, setShowPartnerForm] = useState(false)
+  const [showCertificateForm, setShowCertificateForm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
@@ -133,20 +65,23 @@ export function MftPage() {
   const refresh = useCallback(async () => {
     setError(undefined)
     try {
-      const [transfers, partners, certificates] = await Promise.all([
+      const [transfers, partners, certificates, connectionDetails] = await Promise.all([
         readApi<TransferResponse[]>("/api/mft/transfers"),
         readApi<PartnerResponse[]>("/api/mft/partners"),
         readApi<CertificateResponse[]>("/api/mft/certificates"),
+        readApi<As2ConnectionDetailsResponse[]>("/api/mft/connection-details"),
       ])
-      setState({ transfers, partners, certificates })
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "MFT data could not be loaded.")
-    } finally {
-      setLoading(false)
-    }
+      setState({ transfers, partners, certificates, connectionDetails })
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "File exchange data could not be loaded.") }
+    finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => {
+    void refresh()
+    const handleSimulatorUpdate = () => { window.setTimeout(() => void refresh(), 1_000) }
+    window.addEventListener(LOCAL_MFT_SIMULATOR_EVENT, handleSimulatorUpdate)
+    return () => window.removeEventListener(LOCAL_MFT_SIMULATOR_EVENT, handleSimulatorUpdate)
+  }, [refresh])
 
   const metrics = useMemo(() => ({
     total: state.transfers.length,
@@ -154,145 +89,119 @@ export function MftPage() {
     review: state.transfers.filter(({ status }) => status === "NEEDS_REVIEW" || status === "FAILED").length,
     pending: state.transfers.filter(({ status }) => status === "AWAITING_MDN" || status === "PROCESSING" || status === "QUEUED").length,
   }), [state.transfers])
+  const partnerNames = useMemo(() => new Map(state.partners.map((partner) => [partner.id, partner.name])), [state.partners])
+  const identityCertificates = state.certificates.filter((item) => item.kind === "LOCAL_IDENTITY")
+  const partnerCertificates = state.certificates.filter((item) => item.kind === "PARTNER_PUBLIC")
 
   async function submitTransfer(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setBusy(true); setError(undefined); setNotice(undefined)
+    event.preventDefault(); setBusy(true); setError(undefined); setNotice(undefined)
     try {
       await readApi("/api/mft/transfers", { method: "POST", body: new FormData(event.currentTarget), headers: { "Idempotency-Key": crypto.randomUUID() } })
-      event.currentTarget.reset()
-      setNotice("Transfer queued. Its AS2 evidence will appear below.")
+      event.currentTarget.reset(); setShowSendForm(false)
+      setNotice("File queued for delivery. Its receipt will appear in activity when the partner responds.")
       await refresh()
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Transfer could not be queued.")
-    } finally { setBusy(false) }
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The file could not be sent.") }
+    finally { setBusy(false) }
   }
 
   async function submitPartner(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    setBusy(true); setError(undefined); setNotice(undefined)
+    event.preventDefault(); const form = new FormData(event.currentTarget); setBusy(true); setError(undefined); setNotice(undefined)
     try {
-      await readApi("/api/mft/partners", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.get("name"), localAs2Id: form.get("localAs2Id"), remoteAs2Id: form.get("remoteAs2Id"), endpoint: form.get("endpoint"),
-          localCertificateId: form.get("localCertificateId"), partnerCertificateId: form.get("partnerCertificateId"), mdnMode: form.get("mdnMode"),
-          signingRequired: true, encryptionRequired: true, compressionEnabled: true, legacyCryptoEnabled: false,
-        }),
-      })
-      event.currentTarget.reset()
-      setNotice("Trading partner profile created with secure defaults.")
+      await readApi("/api/mft/partners", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: form.get("name"), localAs2Id: form.get("localAs2Id"), remoteAs2Id: form.get("remoteAs2Id"), endpoint: form.get("endpoint"), localCertificateId: form.get("localCertificateId"), partnerCertificateId: form.get("partnerCertificateId"), mdnMode: form.get("mdnMode"), signingRequired: true, encryptionRequired: true, compressionEnabled: true, legacyCryptoEnabled: false }) })
+      event.currentTarget.reset(); setShowPartnerForm(false)
+      setNotice("Trading partner added with signing, encryption, and compression enabled.")
       await refresh()
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Partner could not be created.") }
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The trading partner could not be added.") }
     finally { setBusy(false) }
   }
 
   async function submitCertificate(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setBusy(true); setError(undefined); setNotice(undefined)
+    event.preventDefault(); setBusy(true); setError(undefined); setNotice(undefined)
     try {
       await readApi("/api/mft/certificates", { method: "POST", body: new FormData(event.currentTarget) })
-      event.currentTarget.reset()
-      setNotice(LOCAL_CERTIFICATE_UPLOADS
-        ? "Certificate validated and stored in the encrypted local simulator store."
-        : "Partner public certificate validated and registered.")
+      event.currentTarget.reset(); setShowCertificateForm(false)
+      setNotice(LOCAL_CERTIFICATE_UPLOADS ? "Certificate checked and added to the local workspace." : "Partner public certificate checked and added.")
       await refresh()
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Certificate could not be stored.") }
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The certificate could not be added.") }
     finally { setBusy(false) }
   }
 
-  return (
-    <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-      <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary"><ShieldCheck className="h-4 w-4" />MFT control plane</div>
-          <h1 className="text-2xl font-semibold tracking-tight">AS2 operations</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Send EDI, inspect signed MDN evidence, and manage partner certificates in one tenant-isolated workspace.</p>
-        </div>
-        <div className="flex gap-2 self-start">
-          <Button asChild variant="outline" className="gap-2"><Link to="/mft/docs"><BookOpen className="h-4 w-4" aria-hidden="true" />Documentation</Link></Button>
-          <Button variant="outline" className="gap-2" onClick={() => void refresh()} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</Button>
-        </div>
-      </header>
+  function openSendForm() { setSection("activity"); setShowSendForm(true) }
 
-      {error && <div role="alert" className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}
-      {notice && <div role="status" className="mb-4 rounded-md bg-success/25 px-4 py-3 text-sm text-success-foreground">{notice}</div>}
+  async function copyConnectionDetails(details: As2ConnectionDetailsResponse) {
+    const content = [
+      "AS2 CONNECTION",
+      "Organisation connection information",
+      `AS2 identifier: ${details.as2Identifier}`,
+      `Receiving URL: ${details.inboundUrl}`,
+      `Asynchronous receipt URL: ${details.asynchronousMdnUrl}`,
+      `Supported encryption algorithms: ${details.supportedEncryptionAlgorithms?.join(" ")}`,
+      `Supported signature algorithms: ${details.supportedSignatureAlgorithms?.join(" ")}`,
+      `Key encryption: ${details.keyEncryptionAlgorithm}`,
+      `Certificate SHA-256 fingerprint: ${details.certificateFingerprintSha256}`,
+      `Certificate expires: ${formatDate(details.certificateNotAfter)}`,
+    ].join("\n")
+    try {
+      await navigator.clipboard.writeText(content)
+      setNotice(`Connection details copied for ${details.partnerName}.`)
+    } catch {
+      setError("Connection details could not be copied. Copy the values individually instead.")
+    }
+  }
 
-      <section aria-label="Transfer health" className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Transfers" value={metrics.total} note="Retained in this workspace" icon={Route} />
-        <Metric label="Delivered" value={metrics.delivered} note="Receipt validated" icon={CheckCircle2} />
-        <Metric label="Needs review" value={metrics.review} note="Operator action required" icon={AlertTriangle} warning />
-        <Metric label="In progress" value={metrics.pending} note="Queued, sending, or MDN pending" icon={RefreshCw} />
-      </section>
+  function downloadPublicCertificate(details: As2ConnectionDetailsResponse) {
+    if (!details.publicCertificatePem) return
+    const objectUrl = URL.createObjectURL(new Blob([details.publicCertificatePem], { type: "application/x-pem-file" }))
+    const link = document.createElement("a")
+    const safeAs2Id = (details.as2Identifier ?? "edispark").replace(/[^a-zA-Z0-9_-]/g, "-")
+    link.href = objectUrl
+    link.download = `${safeAs2Id}-as2-public-certificate.pem`
+    link.click()
+    URL.revokeObjectURL(objectUrl)
+  }
 
-      <Tabs defaultValue="transfers" className="space-y-4">
-        <TabsList aria-label="MFT sections">
-          <TabsTrigger value="transfers">Transfers</TabsTrigger>
-          <TabsTrigger value="partners">Partners</TabsTrigger>
-          <TabsTrigger value="certificates">Certificates</TabsTrigger>
-          <TabsTrigger value="security">Security &amp; KMS</TabsTrigger>
-        </TabsList>
+  return <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
+    <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div><h1 className="text-2xl font-semibold tracking-tight">File exchange</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Send files and monitor secure exchanges with your trading partners.</p></div>
+      <div className="flex flex-wrap gap-2 self-start"><Button asChild variant="outline" className="gap-2"><Link to="/mft/docs"><BookOpen className="h-4 w-4" aria-hidden="true" />Setup guide</Link></Button><Button variant="outline" size="icon" onClick={() => void refresh()} disabled={loading} aria-label="Refresh file exchange data"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button><Button className="gap-2" onClick={openSendForm} disabled={state.partners.length === 0}><FileUp className="h-4 w-4" aria-hidden="true" />Send file</Button></div>
+    </header>
 
-        <TabsContent value="transfers" className="space-y-4">
-          <form onSubmit={submitTransfer} className="grid gap-4 rounded-lg border bg-card p-4 lg:grid-cols-[minmax(14rem,1fr)_minmax(18rem,2fr)_auto] lg:items-end">
-            <label className="grid gap-1.5 text-sm font-medium">Trading partner
-              <select name="partnerId" required className="h-10 rounded-md border bg-background px-3 text-sm">
-                <option value="">Choose a partner…</option>
-                {state.partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name} · {partner.remoteAs2Id}</option>)}
-              </select>
-            </label>
-            <label className="grid gap-1.5 text-sm font-medium">EDI payload
-              <Input name="file" type="file" required accept=".edi,.x12,.dat,.txt,.xml,application/edi-x12,application/edifact" className="cursor-pointer file:mr-3 file:border-0 file:bg-transparent file:text-sm file:font-medium" />
-            </label>
-            <Button type="submit" disabled={busy || state.partners.length === 0} className="gap-2"><FileUp className="h-4 w-4" />Send via AS2</Button>
-          </form>
+    {error && <div role="alert" className="mb-4 flex gap-3 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>{error}</span></div>}
+    {notice && <div role="status" className="mb-4 flex gap-3 rounded-md bg-success/25 px-4 py-3 text-sm text-success-foreground"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>{notice}</span></div>}
+    {metrics.review > 0 && <div className="mb-4 flex flex-col justify-between gap-3 rounded-md border border-destructive/25 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center" role="status"><div className="flex gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" /><div><p className="text-sm font-medium">{metrics.review} {metrics.review === 1 ? "exchange needs" : "exchanges need"} attention</p><p className="mt-0.5 text-xs text-muted-foreground">Open the activity list to see the reported problem before trying again.</p></div></div><Button variant="outline" size="sm" onClick={() => setSection("activity")}>Review activity</Button></div>}
 
-          <section className="overflow-hidden rounded-lg border bg-card" aria-labelledby="transfer-log-title">
-            <div className="flex items-center justify-between border-b px-4 py-3"><div><h2 id="transfer-log-title" className="text-sm font-semibold">Transfer log</h2><p className="text-xs text-muted-foreground">Every payload follows one evidence trail.</p></div><span className="text-xs tabular-nums text-muted-foreground">{state.transfers.length} records</span></div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[58rem] text-left text-sm">
-                <thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr><th className="px-4 py-2.5 font-medium">File</th><th className="px-4 py-2.5 font-medium">Direction</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium">MDN evidence</th><th className="px-4 py-2.5 font-medium">Updated</th></tr></thead>
-                <tbody className="divide-y">
-                  {state.transfers.map((transfer) => <tr key={transfer.id} className="hover:bg-muted/40"><td className="px-4 py-3"><span className="block font-medium">{transfer.filename}</span><span className="font-mono text-xs text-muted-foreground">{transfer.sha256?.slice(0, 16)}…</span></td><td className="px-4 py-3"><span className="inline-flex items-center gap-1.5">{transfer.direction === "INBOUND" ? <ArrowDownToLine className="h-3.5 w-3.5" /> : <ArrowUpFromLine className="h-3.5 w-3.5" />}{transfer.direction}</span></td><td className="px-4 py-3"><StatusBadge status={transfer.status} /></td><td className="px-4 py-3 text-xs text-muted-foreground">{transfer.mdnDisposition ?? transfer.failureReason ?? "Pending"}</td><td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(transfer.updatedAt)}</td></tr>)}
-                  {!loading && state.transfers.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-sm text-muted-foreground">No transfers yet. Upload a payload to begin an evidence trail.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </TabsContent>
+    <section aria-label="Exchange summary" className="mb-6 grid overflow-hidden rounded-lg border bg-card sm:grid-cols-4"><SummaryItem label="All exchanges" value={metrics.total} note="In this workspace" /><SummaryItem label="Delivered" value={metrics.delivered} note="Receipt confirmed" /><SummaryItem label="Needs attention" value={metrics.review} note="Action may be required" warning /><SummaryItem label="In progress" value={metrics.pending} note="Sending or awaiting receipt" /></section>
 
-        <TabsContent value="partners" className="grid gap-4 xl:grid-cols-[24rem_1fr]">
-          <form onSubmit={submitPartner} className="grid content-start gap-3 rounded-lg border bg-card p-4">
-            <div><h2 className="font-semibold">Add trading partner</h2><p className="mt-1 text-xs text-muted-foreground">Signing, encryption, and compression are enabled by default.</p></div>
-            <label className="grid gap-1 text-sm">Display name<Input name="name" required /></label>
-            <div className="grid grid-cols-2 gap-3"><label className="grid gap-1 text-sm">Our AS2 ID<Input name="localAs2Id" required /></label><label className="grid gap-1 text-sm">Partner AS2 ID<Input name="remoteAs2Id" required /></label></div>
-            <label className="grid gap-1 text-sm">AS2 endpoint<Input name="endpoint" type="url" placeholder="https://partner.example/as2" required /></label>
-            <label className="grid gap-1 text-sm">Identity certificate<select name="localCertificateId" required className="h-10 rounded-md border bg-background px-3">{state.certificates.filter((item) => item.kind === "LOCAL_IDENTITY").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label className="grid gap-1 text-sm">Partner certificate<select name="partnerCertificateId" required className="h-10 rounded-md border bg-background px-3">{state.certificates.filter((item) => item.kind === "PARTNER_PUBLIC").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label className="grid gap-1 text-sm">MDN mode<select name="mdnMode" className="h-10 rounded-md border bg-background px-3"><option value="SYNCHRONOUS">Synchronous</option><option value="ASYNCHRONOUS">Asynchronous</option></select></label>
-            <Button disabled={busy || state.certificates.length < 2}>Create partner</Button>
-          </form>
-          <section className="grid content-start gap-3 sm:grid-cols-2">{state.partners.map((partner) => <article key={partner.id} className="rounded-lg border bg-card p-4"><div className="flex items-start justify-between"><div><h3 className="font-semibold">{partner.name}</h3><p className="mt-0.5 font-mono text-xs text-muted-foreground">{partner.remoteAs2Id}</p></div><Badge variant="secondary">{partner.mdnMode === "ASYNCHRONOUS" ? "Async MDN" : "Sync MDN"}</Badge></div><dl className="mt-4 grid gap-2 text-xs"><div><dt className="text-muted-foreground">Endpoint</dt><dd className="mt-0.5 break-all font-mono">{partner.endpoint}</dd></div><div className="flex gap-2"><ShieldCheck className="h-4 w-4 text-success-foreground" /><dd>Signed · encrypted · {partner.compressionEnabled ? "compressed" : "uncompressed"}</dd></div></dl></article>)}{state.partners.length === 0 && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground sm:col-span-2">Add certificates first, then configure your first trading partner.</div>}</section>
-        </TabsContent>
+    <Tabs value={section} onValueChange={(value) => setSection(value as MftSection)} className="space-y-4">
+      <TabsList aria-label="File exchange sections"><TabsTrigger value="activity">Activity</TabsTrigger><TabsTrigger value="partners">Trading partners</TabsTrigger><TabsTrigger value="certificates">Certificates</TabsTrigger></TabsList>
 
-        <TabsContent value="certificates" className="grid gap-4 xl:grid-cols-[24rem_1fr]">
-          <form onSubmit={submitCertificate} className="grid content-start gap-3 rounded-lg border bg-card p-4">
-            <div><h2 className="font-semibold">Register certificate</h2><p className="mt-1 text-xs text-muted-foreground">{LOCAL_CERTIFICATE_UPLOADS ? "Local simulation accepts disposable PKCS#12 identities. Production accepts public certificate material only." : "Production accepts public partner certificates only. AS2 private keys are created and used inside AWS KMS."}</p></div>
-            <label className="grid gap-1 text-sm">Name<Input name="name" required /></label>
-            <label className="grid gap-1 text-sm">Material type<select name="kind" className="h-10 rounded-md border bg-background px-3">{LOCAL_CERTIFICATE_UPLOADS && <option value="LOCAL_IDENTITY">Local simulator identity (PKCS#12)</option>}<option value="PARTNER_PUBLIC">Partner public certificate</option></select></label>
-            <label className="grid gap-1 text-sm">Certificate file<Input name="file" type="file" required accept=".p12,.pfx,.pem,.cer,.crt" /></label>
-            {LOCAL_CERTIFICATE_UPLOADS && <label className="grid gap-1 text-sm">PKCS#12 password <span className="text-xs text-muted-foreground">Local simulator only; leave blank for public certificates</span><Input name="password" type="password" autoComplete="new-password" /></label>}
-            <Button disabled={busy} className="gap-2"><KeyRound className="h-4 w-4" />Validate and store</Button>
-          </form>
-          <section className="grid content-start gap-3 sm:grid-cols-2">{state.certificates.map((certificate) => <article key={certificate.id} className="rounded-lg border bg-card p-4"><div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold">{certificate.name}</h3><p className="mt-0.5 text-xs text-muted-foreground">{certificate.kind === "LOCAL_IDENTITY" ? "Signing identity" : "Partner encryption certificate"}</p></div><Badge className={cn("border-0", (certificate.daysUntilExpiry ?? 0) < 30 ? "bg-warning/25 text-warning-foreground" : "bg-success/30 text-success-foreground")}>{certificate.validity}</Badge></div><dl className="mt-4 space-y-2 text-xs"><div><dt className="text-muted-foreground">Subject</dt><dd className="mt-0.5 truncate" title={certificate.subject}>{certificate.subject}</dd></div><div><dt className="text-muted-foreground">SHA-256 fingerprint</dt><dd className="mt-0.5 truncate font-mono" title={certificate.fingerprintSha256}>{certificate.fingerprintSha256}</dd></div><div className="flex justify-between"><dt className="text-muted-foreground">Expires</dt><dd>{formatDate(certificate.notAfter)}</dd></div></dl></article>)}{state.certificates.length === 0 && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground sm:col-span-2">Upload a local identity and your partner’s public certificate to begin.</div>}</section>
-        </TabsContent>
+      <TabsContent value="activity" className="space-y-4">
+        {showSendForm && <section className="rounded-lg border bg-card" aria-labelledby="send-file-title"><div className="flex items-start justify-between gap-4 border-b px-4 py-3"><div><h2 id="send-file-title" className="text-sm font-semibold">Send a file</h2><p className="mt-0.5 text-xs text-muted-foreground">Choose the partner that should receive this file.</p></div><Button variant="ghost" size="icon" onClick={() => setShowSendForm(false)} aria-label="Close send file form"><X className="h-4 w-4" /></Button></div><form onSubmit={submitTransfer} className="grid gap-4 p-4 lg:grid-cols-[minmax(14rem,1fr)_minmax(18rem,2fr)_auto] lg:items-end"><label className="grid gap-1.5 text-sm font-medium">Trading partner<select name="partnerId" required className="h-10 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Choose a partner…</option>{state.partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}</option>)}</select></label><label className="grid gap-1.5 text-sm font-medium">File<Input name="file" type="file" required accept=".edi,.x12,.dat,.txt,.xml,application/edi-x12,application/edifact" className="cursor-pointer file:mr-3 file:border-0 file:bg-transparent file:text-sm file:font-medium" /></label><Button type="submit" disabled={busy} className="gap-2"><FileUp className="h-4 w-4" />{busy ? "Queuing…" : "Send securely"}</Button></form></section>}
 
-        <TabsContent value="security">
-          <KeyStrategyPanel />
-        </TabsContent>
-      </Tabs>
-    </LayoutBody>
-  )
+        <section className="overflow-hidden rounded-lg border bg-card" aria-labelledby="activity-title"><div className="flex items-center justify-between border-b px-4 py-3"><div><h2 id="activity-title" className="text-sm font-semibold">Recent activity</h2><p className="text-xs text-muted-foreground">Incoming and outgoing files for your organisation.</p></div><span className="text-xs tabular-nums text-muted-foreground">{state.transfers.length} records</span></div><div className="overflow-x-auto"><table className="w-full min-w-[66rem] text-left text-sm"><thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr><th className="px-4 py-2.5 font-medium">File</th><th className="px-4 py-2.5 font-medium">Partner</th><th className="px-4 py-2.5 font-medium">Flow</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium">Receipt</th><th className="px-4 py-2.5 font-medium">Last updated</th></tr></thead><tbody className="divide-y">{state.transfers.map((transfer) => {
+          const receipt = transfer.failureReason ?? (transfer.mdnDisposition
+            ? transfer.direction === "INBOUND" ? "Receipt sent" : "Confirmed by partner"
+            : transfer.status === "DELIVERED" ? "Processed" : "Not received yet")
+          return <tr key={transfer.id} className="transition-colors hover:bg-muted/40"><td className="px-4 py-3"><span className="block font-medium">{transfer.filename}</span><span className="font-mono text-xs text-muted-foreground">{transfer.sha256?.slice(0, 12)}…</span></td><td className="px-4 py-3">{partnerNames.get(transfer.partnerId) ?? "Unknown partner"}</td><td className="px-4 py-3"><span className="inline-flex items-center gap-1.5">{transfer.direction === "INBOUND" ? <ArrowDownToLine className="h-3.5 w-3.5" aria-hidden="true" /> : <ArrowUpFromLine className="h-3.5 w-3.5" aria-hidden="true" />}{transfer.direction === "INBOUND" ? "Received" : "Sent"}</span></td><td className="px-4 py-3"><StatusBadge status={transfer.status} /></td><td className={cn("max-w-[18rem] px-4 py-3 text-xs", transfer.failureReason ? "text-destructive" : "text-muted-foreground")}>{receipt}</td><td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(transfer.updatedAt)}</td></tr>
+        })}{!loading && state.transfers.length === 0 && <tr><td colSpan={6}><EmptyState title="No file activity yet">Send a file to a trading partner or wait for an incoming delivery. Each exchange will appear here with its receipt.</EmptyState></td></tr>}</tbody></table></div></section>
+      </TabsContent>
+
+      <TabsContent value="partners" className="space-y-4"><section className="overflow-hidden rounded-lg border bg-card" aria-labelledby="partners-title"><div className="flex flex-col justify-between gap-3 border-b px-4 py-4 sm:flex-row sm:items-center"><div><h2 id="partners-title" className="text-sm font-semibold">Trading partners</h2><p className="mt-0.5 text-xs text-muted-foreground">The organisations you exchange files with and the connection details they supplied.</p></div><Button size="sm" className="gap-2 self-start" onClick={() => setShowPartnerForm((value) => !value)}><Plus className="h-4 w-4" aria-hidden="true" />Add trading partner</Button></div>
+        {showPartnerForm && <form onSubmit={submitPartner} className="grid gap-4 border-b bg-muted/20 p-4 lg:grid-cols-2"><div className="lg:col-span-2"><h3 className="text-sm font-semibold">Connection details</h3><p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">Ask your partner for their AS2 identifier, receiving URL, public encryption certificate, and receipt preference. AS2 identifiers are case-sensitive.</p></div><label className="grid gap-1.5 text-sm font-medium">Partner name<Input name="name" required placeholder="Example Retailer" /></label><label className="grid gap-1.5 text-sm font-medium">Partner receiving URL<Input name="endpoint" type="url" placeholder="https://partner.example/as2" required /></label><label className="grid gap-1.5 text-sm font-medium">Your AS2 identifier<Input name="localAs2Id" required /></label><label className="grid gap-1.5 text-sm font-medium">Partner AS2 identifier<Input name="remoteAs2Id" required /></label><label className="grid gap-1.5 text-sm font-medium">Your signing certificate<select name="localCertificateId" required className="h-10 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Choose a certificate…</option>{identityCertificates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="grid gap-1.5 text-sm font-medium">Partner encryption certificate<select name="partnerCertificateId" required className="h-10 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Choose a certificate…</option>{partnerCertificates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label className="grid gap-1.5 text-sm font-medium">Receipt delivery<select name="mdnMode" className="h-10 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="SYNCHRONOUS">Return receipt immediately</option><option value="ASYNCHRONOUS">Return receipt separately</option></select></label><div className="flex items-end justify-end gap-2 lg:col-span-2"><Button type="button" variant="ghost" onClick={() => setShowPartnerForm(false)}>Cancel</Button><Button disabled={busy || identityCertificates.length === 0 || partnerCertificates.length === 0}>{busy ? "Adding…" : "Add trading partner"}</Button></div></form>}
+        <div className="divide-y">{state.partners.map((partner) => {
+          const secure = partner.signingRequired && partner.encryptionRequired
+          const details = state.connectionDetails.find((item) => item.partnerId === partner.id)
+          return <article key={partner.id} className="grid gap-4 px-4 py-4 transition-colors hover:bg-muted/25 lg:grid-cols-[minmax(13rem,1.2fr)_minmax(14rem,1fr)_minmax(16rem,1.5fr)_auto] lg:items-center"><div><h3 className="font-semibold">{partner.name}</h3><p className="mt-0.5 font-mono text-xs text-muted-foreground">{partner.remoteAs2Id}</p></div><div><p className="text-xs text-muted-foreground">Your AS2 identifier</p><p className="mt-0.5 font-mono text-xs">{partner.localAs2Id}</p></div><div className="min-w-0"><p className="text-xs text-muted-foreground">Partner receiving URL</p><p className="mt-0.5 truncate text-xs" title={partner.endpoint}>{partner.endpoint}</p></div><div className="flex flex-wrap items-center gap-2 lg:justify-end"><Badge variant="secondary">{partner.mdnMode === "ASYNCHRONOUS" ? "Separate receipt" : "Immediate receipt"}</Badge><span className={cn("inline-flex items-center gap-1 text-xs font-medium", secure ? "text-success-foreground" : "text-destructive")}>{secure ? <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> : <CircleAlert className="h-3.5 w-3.5" aria-hidden="true" />}{secure ? "Signed and encrypted" : "Security check needed"}</span></div>{details && <details className="group border-t pt-3 lg:col-span-4"><summary className="inline-flex cursor-pointer list-none items-center gap-1 text-sm font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Share your AS2 details with this partner <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" /></summary><div className="mt-4 rounded-md bg-muted/40 p-4"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><h4 className="text-sm font-semibold">Your connection information</h4><p className="mt-1 text-xs leading-5 text-muted-foreground">Send these values and the public certificate to {partner.name}. No private key material is included.</p></div><div className="flex flex-wrap gap-2"><Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => void copyConnectionDetails(details)}><Copy className="h-3.5 w-3.5" aria-hidden="true" />Copy details</Button><Button type="button" size="sm" className="gap-2" onClick={() => downloadPublicCertificate(details)} disabled={!details.publicCertificatePem}><Download className="h-3.5 w-3.5" aria-hidden="true" />Download public certificate</Button></div></div><dl className="mt-5 grid gap-x-8 gap-y-4 md:grid-cols-2"><div><dt className="text-xs text-muted-foreground">AS2 identifier</dt><dd className="mt-1 font-mono text-sm">{details.as2Identifier}</dd></div><div><dt className="text-xs text-muted-foreground">Receiving URL</dt><dd className="mt-1 break-all font-mono text-xs">{details.inboundUrl}</dd></div><div><dt className="text-xs text-muted-foreground">Asynchronous receipt URL</dt><dd className="mt-1 break-all font-mono text-xs">{details.asynchronousMdnUrl}</dd></div><div><dt className="text-xs text-muted-foreground">Key encryption</dt><dd className="mt-1 text-sm">{details.keyEncryptionAlgorithm}</dd></div><div><dt className="text-xs text-muted-foreground">Supported encryption</dt><dd className="mt-1 flex flex-wrap gap-1.5">{details.supportedEncryptionAlgorithms?.map((algorithm) => <Badge key={algorithm} variant="secondary">{algorithm}</Badge>)}</dd></div><div><dt className="text-xs text-muted-foreground">Supported signatures</dt><dd className="mt-1 flex flex-wrap gap-1.5">{details.supportedSignatureAlgorithms?.map((algorithm) => <Badge key={algorithm} variant="secondary">{algorithm}</Badge>)}</dd></div><div className="md:col-span-2"><dt className="text-xs text-muted-foreground">Public certificate SHA-256 fingerprint</dt><dd className="mt-1 break-all font-mono text-xs">{details.certificateFingerprintSha256}</dd><p className="mt-1 text-xs text-muted-foreground">Expires {formatDate(details.certificateNotAfter)}</p></div></dl></div></details>}</article>
+        })}{!loading && state.partners.length === 0 && <EmptyState title="No trading partners yet">Add both certificates first, then use the details supplied by your partner to create a secure connection.</EmptyState>}</div>
+      </section></TabsContent>
+
+      <TabsContent value="certificates" className="space-y-4"><section className="overflow-hidden rounded-lg border bg-card" aria-labelledby="certificates-title"><div className="flex flex-col justify-between gap-3 border-b px-4 py-4 sm:flex-row sm:items-center"><div><h2 id="certificates-title" className="text-sm font-semibold">Certificates</h2><p className="mt-0.5 text-xs text-muted-foreground">Certificates prove identity and protect files exchanged with each partner.</p></div><Button size="sm" className="gap-2 self-start" onClick={() => setShowCertificateForm((value) => !value)}><Plus className="h-4 w-4" aria-hidden="true" />Add certificate</Button></div>
+        {showCertificateForm && <form onSubmit={submitCertificate} className="grid gap-4 border-b bg-muted/20 p-4 lg:grid-cols-2"><div className="lg:col-span-2"><h3 className="text-sm font-semibold">Add a certificate</h3><p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">{LOCAL_CERTIFICATE_UPLOADS ? "Local development also accepts a disposable simulator identity. In production, you only upload public certificates supplied by partners." : "Upload the public certificate supplied by your trading partner. Never upload their private key."}</p></div><label className="grid gap-1.5 text-sm font-medium">Certificate name<Input name="name" required placeholder="Partner name · encryption" /></label><label className="grid gap-1.5 text-sm font-medium">Certificate purpose<select name="kind" className="h-10 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{LOCAL_CERTIFICATE_UPLOADS && <option value="LOCAL_IDENTITY">Local simulator identity</option>}<option value="PARTNER_PUBLIC">Partner public certificate</option></select></label><label className="grid gap-1.5 text-sm font-medium">Certificate file<Input name="file" type="file" required accept=".p12,.pfx,.pem,.cer,.crt" /></label>{LOCAL_CERTIFICATE_UPLOADS && <label className="grid gap-1.5 text-sm font-medium">Simulator identity password <span className="text-xs font-normal text-muted-foreground">Leave blank for a public certificate</span><Input name="password" type="password" autoComplete="new-password" /></label>}<div className="flex items-end justify-end gap-2 lg:col-span-2"><Button type="button" variant="ghost" onClick={() => setShowCertificateForm(false)}>Cancel</Button><Button disabled={busy} className="gap-2"><KeyRound className="h-4 w-4" />{busy ? "Checking…" : "Check and add"}</Button></div></form>}
+        <div className="divide-y">{state.certificates.map((certificate) => {
+          const expiring = (certificate.daysUntilExpiry ?? 0) < 30
+          return <article key={certificate.id} className="grid gap-4 px-4 py-4 transition-colors hover:bg-muted/25 lg:grid-cols-[minmax(13rem,1.2fr)_minmax(16rem,1.4fr)_minmax(12rem,1fr)_auto] lg:items-center"><div><h3 className="font-semibold">{certificate.name}</h3><p className="mt-0.5 text-xs text-muted-foreground">{certificate.kind === "LOCAL_IDENTITY" ? "Your sending identity" : "Partner public certificate"}</p></div><div className="min-w-0"><p className="text-xs text-muted-foreground">Issued to</p><p className="mt-0.5 truncate text-xs" title={certificate.subject}>{certificate.subject}</p></div><div><p className="text-xs text-muted-foreground">Expires</p><p className="mt-0.5 text-xs">{formatDate(certificate.notAfter)}</p></div><Badge className={cn("w-fit gap-1.5 border-0", expiring ? "bg-warning/25 text-warning-foreground" : "bg-success/30 text-success-foreground")}><span className="sr-only">Certificate status:</span>{expiring ? <AlertTriangle className="h-3 w-3" aria-hidden="true" /> : <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}{expiring ? "Renew soon" : "Valid"}</Badge><details className="group lg:col-span-4"><summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">View certificate fingerprint <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" /></summary><p className="mt-2 break-all font-mono text-xs text-muted-foreground">{certificate.fingerprintSha256}</p></details></article>
+        })}{!loading && state.certificates.length === 0 && <EmptyState title="No certificates yet">Add the public certificate supplied by your partner. You will use it when you create their connection.</EmptyState>}</div>
+      </section></TabsContent>
+    </Tabs>
+  </LayoutBody>
 }

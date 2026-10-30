@@ -26,6 +26,7 @@
 - [x] 3.2 Add authenticated Next.js BFF routes
 - [x] 3.3 Add overview, transfers, partner, and certificate operations UI
 - [x] 3.4 Add the KMS hierarchy, tenant boundary, blast-radius, and compatibility documentation to the MFT page
+- [x] 3.5 Add a tenant-scoped retailer onboarding pack with copyable AS2 details and public-certificate download
 
 ## 4. Simulator
 

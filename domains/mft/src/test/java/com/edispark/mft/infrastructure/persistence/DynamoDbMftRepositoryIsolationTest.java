@@ -18,8 +18,28 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsResponse;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutItemResponse;
 
 class DynamoDbMftRepositoryIsolationTest {
+    @Test
+    void deliveryLeaseUsesNumericEpochTimeForUnambiguousConditionalOrdering() {
+        AtomicReference<PutItemRequest> captured = new AtomicReference<>();
+        DynamoDbClient dynamoDb = AwsClientFake.create(DynamoDbClient.class, (proxy, method, arguments) -> {
+            captured.set((PutItemRequest) arguments[0]);
+            return PutItemResponse.builder().build();
+        });
+        Instant now = Instant.parse("2026-10-30T12:00:00.900Z");
+
+        assertThat(new DynamoDbMftRepository(dynamoDb, "mft").tryAcquireDeliveryLease(
+                "tenant-a", com.edispark.mft.domain.model.TransferId.generate(), "worker", now,
+                now.plusSeconds(60))).isTrue();
+
+        assertThat(captured.get().item().get("leaseUntil").n()).isEqualTo("1793361660900");
+        assertThat(captured.get().expressionAttributeValues().get(":now").n()).isEqualTo("1793361600900");
+        assertThat(captured.get().conditionExpression()).isEqualTo("attribute_not_exists(pk) OR leaseUntil < :now");
+    }
+
     @Test
     void partnerLookupAlwaysUsesTenantPartitionAndConsistentRead() {
         AtomicReference<GetItemRequest> captured = new AtomicReference<>();

@@ -83,7 +83,7 @@ The current local adapter keeps metadata in memory and encrypted files below `.l
 | Local AS2 private keys and PKCS#12 password | Critical secret | AES-GCM encrypted with tenant/resource context below `.local/mft`; local profile only | Non-exportable cell-shared KMS signing/decryption keys; never accepted by the production control-plane API |
 | Partner public X.509 certificates | Public, integrity-critical | Stored with tenant metadata/material | Store certificate/chain, SHA-256 fingerprint, purpose, validity, status, and rollover dates |
 | EdiSpark public X.509 certificates | Public, integrity-critical | Stored with the local test identity | Store and distribute to partners; retain versions through rotation grace periods |
-| EDI payloads | Confidential; may contain PII | AES-GCM encrypted with tenant/resource context below `.local/mft` | S3 with Block Public Access, TLS, SSE-KMS, tenant-aware authorization, version/retention policy, and audited deletion |
+| EDI payloads | Confidential; may contain PII | AES-GCM encrypted with tenant/resource context below `.local/mft` | AWS Encryption SDK ciphertext in S3 with Block Public Access, TLS, SSE-S3 defence in depth, tenant-aware authorization, version/retention policy, and audited deletion |
 | Filenames and content types | Potentially confidential | Transfer metadata | Minimise, tenant-scope, encrypt at rest, and avoid placing business data in names |
 | AS2 IDs, endpoints, partner names, routing configuration | Confidential configuration | In-memory metadata | Tenant-scoped DynamoDB records encrypted at rest |
 | MDNs, MICs, retry/error history, certificate fingerprints | Confidential operational evidence | Transfer metadata | Immutable tenant-scoped evidence with retention and access auditing |
@@ -104,7 +104,7 @@ Local test certificates and credentials under `.local` are disposable, ignored b
 
 ## AWS authorization and audit
 
-The hierarchical runtime receives `dynamodb:GetItem` on its cell key store and `kms:Decrypt` on its root; it cannot create or rotate branches. It temporarily holds cached plaintext branch material in memory, so process inspection, heap dumps, crash dumps, debug endpoints, and broad node access are prohibited. A separate key-store administrator receives the transactional DynamoDB writes plus `kms:GenerateDataKeyWithoutPlaintext` and `kms:ReEncrypt`. A signing worker receives `kms:Sign` for its cell signing key; an inbound worker receives `kms:Decrypt` for its cell decryption key. Dedicated-key roles are restricted to the selected tenant key and required context. None receives general key administration or deletion permissions.
+The hierarchical runtime receives `dynamodb:GetItem` on its cell key store and `kms:Decrypt` on its root; it cannot create or rotate branches. It temporarily holds cached plaintext branch material in memory, so process inspection, heap dumps, crash dumps, debug endpoints, and broad node access are prohibited. A separate provisioning role must create/version branch keys and write the trusted tenant mapping. A signing worker receives `kms:Sign` for its cell signing key; an inbound worker receives `kms:Decrypt` for its cell decryption key. Dedicated-key roles are restricted to the selected tenant key and required context.
 
 Provisioning roles are separate from transfer-processing roles. Certificate rotation and key scheduling are privileged, audited operations with approval. Production services use VPC endpoints where supported and must not require long-lived AWS access keys.
 
@@ -112,18 +112,12 @@ Provisioning roles are separate from transfer-processing roles. Certificate rota
 
 - KMS, hierarchical key-store, or cache reauthorization failure stops affected new crypto work; ciphertext, queued work, and evidence remain durable.
 - Retries are bounded, jittered, idempotent, and preserve the AS2 Message-ID where protocol replay requires it.
-- Horizontal workers require conditional leases. An in-memory lock is not a production lease.
+- Horizontal workers use owner-conditional DynamoDB leases with expiry and owner-safe release.
 - Payload/evidence storage and metadata have independent backup and retention plans linked by immutable transfer IDs.
 - Recovery tests prove that a tenant can restore metadata, payloads, public certificate history, and key references without exporting private keys.
 
 ## Current implementation status
 
-The local vertical slice uses `phase2`, in-memory metadata, and a local KMS test double for AES-GCM encrypted payload/PKCS#12 storage. Its ciphertext is bound to tenant, service, resource type, and resource ID. Those beans are enabled only for the `local` and `openapi-export` Spring profiles. A production start without an AWS adapter fails closed because required MFT beans are absent.
+The local vertical slice uses `phase2`, in-memory metadata, and a local KMS test double for encrypted payload/PKCS#12 storage. Production uses DynamoDB, S3 ciphertext, the Hierarchical keyring, owner-conditional worker leases, separate KMS signing/decryption keys, and production-only AS2/MDN endpoints. Production startup validates both public certificates against their KMS keys and fails closed.
 
-Before production, implement and verify:
-
-1. DynamoDB metadata, atomic inbound-identity ownership, and distributed worker leases.
-2. S3 immutable payload/evidence storage plus the Hierarchical-keyring adapter, DynamoDB key store, trusted branch registry, PITR/backups, cache policy, and dedicated-key override.
-3. The KMS signer/decrypter adapter, cell key registry, partner RSA-OAEP capability gate, and no private-key upload path.
-4. Certificate rotation, revocation policy, expiry alarms, CloudTrail alerts, and restore exercises.
-5. Protocol/security integration tests covering signed MDNs, replay, rollover, malformed messages, and tenant-boundary attempts.
+Production activation still requires certificate rotation/revocation automation, CloudTrail alert wiring, restore exercises, per-tenant admission controls, and real-partner interoperability tests covering both MDN modes, rollover, malformed messages, maximum sizes, and tenant-boundary attempts. Terraform deployment resources are defined but have not been applied.

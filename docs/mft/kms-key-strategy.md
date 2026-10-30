@@ -139,9 +139,9 @@ Root-key rotation or migration is a cell operation. It must follow AWS key-store
 
 ## Implementation status
 
-The production Hierarchical-keyring adapter is a target and is not yet implemented. It will use AWS Encryption SDK for Java 3.x and AWS SDK for Java 2.x. Until the adapter, key store, registry, IAM policies, backups, and failure tests exist, production remains fail-closed.
+The production Hierarchical-keyring adapter uses AWS Encryption SDK for Java 3.x and AWS SDK for Java 2.x with a DynamoDB branch-key store and trusted tenant-to-branch resolver. Terraform defines the root, key store, deletion protection, PITR, workload permissions, and alarms. Restore exercises, dedicated-key override automation, and deployed failure tests remain operational activation work.
 
-The local `LocalKms` adapter is behavior-level only: one disposable root derives tenant branch and resource keys, and authenticated context prevents cross-tenant/resource decryption. It does not reproduce the AWS Encryption SDK ciphertext format, DynamoDB key store, unique per-message data-key envelope, or cache implementation.
+The local `LocalKms` adapter remains behavior-level only: one disposable root derives tenant branch and resource keys, and authenticated context prevents cross-tenant/resource decryption. It intentionally does not reproduce the AWS Encryption SDK ciphertext format or cache implementation.
 
 ## Not adopted
 

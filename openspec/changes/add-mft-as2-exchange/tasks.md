@@ -5,7 +5,7 @@
 - [x] 1.1 Create the MFT module, domain model, ports, and DOMAIN.md
 - [x] 1.2 Implement tenant-scoped metadata and local encrypted payload/secret adapters
 - [x] 1.3 Implement partner, certificate, transfer, idempotency, and evidence services
-- [ ] 1.4 Add production DynamoDB metadata persistence and distributed worker leases
+- [x] 1.4 Add production DynamoDB metadata persistence and distributed worker leases
 - [ ] 1.5 Add S3 payload/evidence storage with tenant-bound SSE-KMS policy and retention
 - [x] 1.6 Add atomic global ownership for inbound AS2 identity pairs
 - [ ] 1.7 Add the central tenant-key registry, exact alias authorization, required encryption context, and tenant offboarding lifecycle
@@ -16,9 +16,9 @@
 - [x] 2.2 Implement inbound AS2 and MDN endpoints
 - [x] 2.3 Implement outbound preparation, delivery worker, timeouts, and retries
 - [x] 2.4 Implement certificate validation and secure/legacy policy gates
-- [ ] 2.5 Implement the production AWS managed-crypto adapter and remove private-key upload from the production API
+- [x] 2.5 Implement the production AWS managed-crypto adapter and remove private-key upload from the production API
 - [ ] 2.6 Add certificate rollover, expiry alarms, and managed-key lifecycle operations
-- [ ] 2.7 Add cell-shared signing/decryption key registry, separated IAM roles, RSA-OAEP activation gate, and KMS audit evidence
+- [x] 2.7 Add cell-shared signing/decryption key configuration, separated IAM policies, and RSA-OAEP activation gate
 
 ## 3. API contract and UI
 

@@ -3,6 +3,7 @@ package com.edispark.mft.infrastructure.config;
 import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.application.ConnectionDetailsService;
 import com.edispark.mft.application.As2ExchangePort;
+import com.edispark.mft.application.As2EncryptionCertificateProvider;
 import com.edispark.mft.application.MftDeliveryService;
 import com.edispark.mft.application.MftService;
 import com.edispark.mft.domain.repository.MftRepository;
@@ -69,21 +70,24 @@ public class MftModuleConfig {
             @Value("${mft.as2.supported-signature-algorithms:SHA-256}") String signatureAlgorithms,
             @Value("${mft.as2.key-encryption-algorithm:RSA-OAEP}") String keyEncryptionAlgorithm) {
         return new ConnectionDetailsService(repository, inboundUrl, asynchronousMdnUrl,
-                commaSeparated(encryptionAlgorithms), commaSeparated(signatureAlgorithms), keyEncryptionAlgorithm);
+                commaSeparated(encryptionAlgorithms), commaSeparated(signatureAlgorithms), keyEncryptionAlgorithm,
+                certificate -> new As2EncryptionCertificateProvider.PublicCertificate(certificate.name(),
+                        certificate.fingerprintSha256(), certificate.notAfter(), certificate.publicCertificatePem()));
     }
 
     @Bean
     As2ExchangePort as2ExchangePort(
             @Value("${mft.as2.allow-private-networks:false}") boolean allowPrivateNetworks,
-            @Value("${mft.as2.async-mdn-url:http://localhost:8081/as2/mdn}") String asyncMdnUrl) {
-        return new Phase2As2ExchangeAdapter(allowPrivateNetworks, asyncMdnUrl);
+            @Value("${mft.as2.async-mdn-url:http://localhost:8081/as2/mdn}") String asyncMdnUrl,
+            CertificateService certificateService) {
+        return new Phase2As2ExchangeAdapter(allowPrivateNetworks, asyncMdnUrl, certificateService);
     }
 
     @Bean
     MftDeliveryService mftDeliveryService(MftRepository repository, PayloadStore payloadStore,
-                                          CertificateService certificateService, As2ExchangePort exchange,
+                                          As2ExchangePort exchange,
                                           Clock clock) {
-        return new MftDeliveryService(repository, payloadStore, certificateService, exchange, clock);
+        return new MftDeliveryService(repository, payloadStore, exchange, clock);
     }
 
     @Bean

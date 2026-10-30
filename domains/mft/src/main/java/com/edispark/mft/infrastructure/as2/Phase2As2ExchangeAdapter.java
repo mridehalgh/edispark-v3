@@ -4,6 +4,7 @@ import com.edispark.mft.application.As2DeliveryResult;
 import com.edispark.mft.application.As2ExchangePort;
 import com.edispark.mft.application.As2TransportException;
 import com.edispark.mft.application.CertificateMaterial;
+import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
@@ -26,17 +27,23 @@ import org.apache.hc.core5.util.Timeout;
 public final class Phase2As2ExchangeAdapter implements As2ExchangePort {
     private final boolean allowPrivateNetworks;
     private final String asyncMdnUrl;
+    private final CertificateService certificateService;
 
-    public Phase2As2ExchangeAdapter(boolean allowPrivateNetworks, String asyncMdnUrl) {
+    public Phase2As2ExchangeAdapter(boolean allowPrivateNetworks, String asyncMdnUrl,
+                                    CertificateService certificateService) {
         this.allowPrivateNetworks = allowPrivateNetworks;
         this.asyncMdnUrl = asyncMdnUrl;
+        this.certificateService = certificateService;
     }
 
     @Override
-    public As2DeliveryResult send(PartnerProfile partner, Transfer transfer, byte[] payload,
-                                  CertificateMaterial localIdentity, CertificateMaterial partnerCertificate) {
+    public As2DeliveryResult send(PartnerProfile partner, Transfer transfer, byte[] payload) {
         validateEndpoint(partner.endpoint());
         try {
+            CertificateMaterial localIdentity = certificateService.load(
+                    partner.tenantId(), partner.localCertificateId());
+            CertificateMaterial partnerCertificate = certificateService.load(
+                    partner.tenantId(), partner.partnerCertificateId());
             X509Certificate receiverCertificate = (X509Certificate) CertificateFactory.getInstance("X.509")
                     .generateCertificate(new ByteArrayInputStream(partnerCertificate.bytes()));
             AS2ClientSettings settings = new AS2ClientSettings();

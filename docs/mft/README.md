@@ -32,11 +32,15 @@ AS2 requires asymmetric keys. AWS KMS cannot use one RSA key for both signing an
 - [Local development](local-development.md) — deterministic demo identity, fixture manifest, local KMS test double, and reset behavior.
 - [Connection details and multi-tenancy](connection-details-multi-tenancy.md) — JWT tenant resolution, repository isolation, retailer onboarding packs, cell-shared certificates, and production limitations.
 - [Tenant-isolation verification](tenant-isolation-verification.md) — enforced boundaries, adversarial tests, AWS table keys, and release gates.
+- [Production AS2 data plane](production-as2-data-plane.md) — KMS-native CMS, `/as2`, `/as2/mdn`, MDN correlation, timeouts, and fail-closed configuration.
 - [Sensitive-data inventory](../mft-security-and-operations.md) — current local behavior and all sensitive production records.
+- [Terraform module](../../infrastructure/terraform/mft/README.md) — reviewed AWS data-plane resources, attachable IAM policies, and optional ECS/Fargate deployment definitions.
 
 ## Status
 
-The local vertical slice uses `phase2`, disposable PKCS#12 identities, in-memory metadata, and tenant/resource-bound encrypted files. Production now has DynamoDB metadata, atomic AS2-pair ownership, S3 ciphertext storage, and an AWS Encryption SDK Hierarchical-keyring adapter. Private-key upload is rejected in the production profile. Distributed worker leases, KMS-native CMS signing/decryption, certificate lifecycle operations, deployment infrastructure, and deployed partner interoperability evidence remain release gates; there is no production software-key fallback.
+The local vertical slice continues to use `phase2`, disposable PKCS#12 identities, in-memory metadata, and tenant/resource-bound encrypted files. Production has DynamoDB metadata, atomic AS2-pair and replay ownership, S3 ciphertext storage, the AWS Encryption SDK Hierarchical keyring, distributed worker leases, KMS-native CMS signing/RSA-OAEP decryption, signed synchronous and asynchronous MDNs, and production-only `/as2` plus `/as2/mdn` routes. Private-key upload is not accepted.
+
+Terraform defines storage, KMS, IAM, alarms, and optional ECS/Fargate, ALB, TLS-listener, logging, and autoscaling resources. It has not been applied or deployed. Certificate rollover/revocation automation, per-tenant admission limits, and real-partner interoperability evidence remain production activation gates. There is no production software-key fallback.
 
 ## AWS references
 

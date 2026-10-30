@@ -78,6 +78,12 @@ rebel.xml
 # jQwik
 .jqwik-database
 
+# Terraform local working state (lock files remain versioned)
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+
 # DynamoDB Local
 dynamodb-local-metadata.json
 shared-local-instance.db

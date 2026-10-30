@@ -26,6 +26,8 @@ import java.util.UUID;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -89,9 +91,14 @@ public final class DynamoDbMftRepository implements MftRepository {
                 "pk", string(tenantPk(transfer.tenantId())),
                 "sk", string("IDEMPOTENCY#" + sha256(transfer.idempotencyKey())),
                 "transferId", string(transfer.id().toString()));
+        Map<String, AttributeValue> messageMarker = Map.of(
+                "pk", string(tenantPk(transfer.tenantId())),
+                "sk", string("OUTBOUND_MESSAGE#" + sha256(transfer.as2MessageId())),
+                "transferId", string(transfer.id().toString()));
         try {
             dynamoDb.transactWriteItems(TransactWriteItemsRequest.builder().transactItems(
                     put(marker, "attribute_not_exists(pk) AND attribute_not_exists(sk)"),
+                    put(messageMarker, "attribute_not_exists(pk) AND attribute_not_exists(sk)"),
                     put(transferItem, "attribute_not_exists(pk) AND attribute_not_exists(sk)"))
                     .build());
             return transfer;
@@ -136,6 +143,11 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
+    public Optional<Transfer> findOutboundByMessageId(String tenantId, String as2MessageId) {
+        return markerTransfer(tenantId, "OUTBOUND_MESSAGE#" + sha256(as2MessageId));
+    }
+
+    @Override
     public Optional<Transfer> findInboundDuplicate(String tenantId, String as2MessageId, String sha256) {
         return markerTransfer(tenantId, inboundMarker(as2MessageId, sha256));
     }
@@ -170,6 +182,42 @@ public final class DynamoDbMftRepository implements MftRepository {
         result.addAll(queryWork(TransferStatus.QUEUED, dueAt, limit));
         if (result.size() < limit) result.addAll(queryWork(TransferStatus.RETRY_SCHEDULED, dueAt, limit - result.size()));
         return result.stream().sorted(Comparator.comparing(Transfer::nextAttemptAt)).limit(limit).toList();
+    }
+
+    @Override
+    public boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
+                                           Instant now, Instant expiresAt) {
+        if (!expiresAt.isAfter(now)) throw new IllegalArgumentException("lease expiry must be after now");
+        Map<String, AttributeValue> lease = Map.of(
+                "pk", string("LEASE#" + tenantId + "#" + transferId),
+                "sk", string("DELIVERY"),
+                "tenantId", string(tenantId),
+                "transferId", string(transferId.toString()),
+                "leaseOwner", string(owner),
+                "leaseUntil", number(expiresAt.toEpochMilli()),
+                "expiresAt", AttributeValue.builder().n(Long.toString(expiresAt.getEpochSecond())).build());
+        try {
+            dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(lease)
+                    .conditionExpression("attribute_not_exists(pk) OR leaseUntil < :now")
+                    .expressionAttributeValues(Map.of(":now", number(now.toEpochMilli())))
+                    .build());
+            return true;
+        } catch (ConditionalCheckFailedException exception) {
+            return false;
+        }
+    }
+
+    @Override
+    public void releaseDeliveryLease(String tenantId, TransferId transferId, String owner) {
+        try {
+            dynamoDb.deleteItem(DeleteItemRequest.builder().tableName(tableName)
+                    .key(key("LEASE#" + tenantId + "#" + transferId, "DELIVERY"))
+                    .conditionExpression("leaseOwner = :owner")
+                    .expressionAttributeValues(Map.of(":owner", string(owner)))
+                    .build());
+        } catch (ConditionalCheckFailedException ignored) {
+            // An expired lease may already belong to another worker; never delete that worker's lease.
+        }
     }
 
     private List<Transfer> queryWork(TransferStatus status, Instant dueAt, int limit) {
@@ -246,6 +294,10 @@ public final class DynamoDbMftRepository implements MftRepository {
         return AttributeValue.builder().s(value).build();
     }
 
+    private AttributeValue number(long value) {
+        return AttributeValue.builder().n(Long.toString(value)).build();
+    }
+
     private String tenantPk(String tenantId) {
         return "TENANT#" + tenantId;
     }
@@ -271,19 +323,19 @@ public final class DynamoDbMftRepository implements MftRepository {
             TransferDirection direction, String filename, String contentType, String as2MessageId,
             String idempotencyKey, TransferId resendOf, TransferStatus status, Instant createdAt,
             Instant updatedAt, Instant nextAttemptAt, PayloadRef payload, String mdnDisposition,
-            String failureReason, List<TransferAttempt> attempts) {
+            String failureReason, String sentContentMic, List<TransferAttempt> attempts) {
         static TransferSnapshot from(Transfer transfer) {
             return new TransferSnapshot(transfer.id(), transfer.tenantId(), transfer.partnerId(), transfer.direction(),
                     transfer.filename(), transfer.contentType(), transfer.as2MessageId(), transfer.idempotencyKey(),
                     transfer.resendOf(), transfer.status(), transfer.createdAt(), transfer.updatedAt(),
                     transfer.nextAttemptAt(), transfer.payload(), transfer.mdnDisposition(), transfer.failureReason(),
-                    transfer.attempts());
+                    transfer.sentContentMic(), transfer.attempts());
         }
 
         Transfer toTransfer() {
             return Transfer.restore(id, tenantId, partnerId, direction, filename, contentType, as2MessageId,
                     idempotencyKey, resendOf, status, createdAt, updatedAt, nextAttemptAt, payload,
-                    mdnDisposition, failureReason, attempts);
+                    mdnDisposition, failureReason, sentContentMic, attempts);
         }
     }
 }

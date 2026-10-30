@@ -17,8 +17,10 @@ public final class InMemoryMftRepository implements MftRepository {
     private final ConcurrentHashMap<String, String> inboundOwners = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Transfer> transfers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> idempotency = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, TransferId> outboundMessages = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> inboundDeduplication = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CertificateRecord> certificates = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, DeliveryLease> deliveryLeases = new ConcurrentHashMap<>();
 
     @Override
     public synchronized PartnerProfile savePartner(PartnerProfile partner) {
@@ -55,6 +57,7 @@ public final class InMemoryMftRepository implements MftRepository {
         TransferId existing = idempotency.putIfAbsent(key, transfer.id());
         if (existing != null) return transfers.get(transfer.tenantId() + ":" + existing);
         transfers.put(transfer.tenantId() + ":" + transfer.id(), transfer);
+        outboundMessages.put(transfer.tenantId() + ":" + transfer.as2MessageId(), transfer.id());
         return transfer;
     }
 
@@ -81,6 +84,12 @@ public final class InMemoryMftRepository implements MftRepository {
     @Override
     public Optional<Transfer> findByIdempotencyKey(String tenantId, String key) {
         TransferId id = idempotency.get(tenantId + ":" + key);
+        return id == null ? Optional.empty() : findTransfer(tenantId, id);
+    }
+
+    @Override
+    public Optional<Transfer> findOutboundByMessageId(String tenantId, String as2MessageId) {
+        TransferId id = outboundMessages.get(tenantId + ":" + as2MessageId);
         return id == null ? Optional.empty() : findTransfer(tenantId, id);
     }
 
@@ -124,7 +133,25 @@ public final class InMemoryMftRepository implements MftRepository {
                 .sorted(Comparator.comparing(Transfer::nextAttemptAt)).limit(limit).toList();
     }
 
+    @Override
+    public synchronized boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
+                                                         Instant now, Instant expiresAt) {
+        String key = tenantId + ":" + transferId;
+        DeliveryLease existing = deliveryLeases.get(key);
+        if (existing != null && !existing.expiresAt().isBefore(now)) return false;
+        deliveryLeases.put(key, new DeliveryLease(owner, expiresAt));
+        return true;
+    }
+
+    @Override
+    public synchronized void releaseDeliveryLease(String tenantId, TransferId transferId, String owner) {
+        deliveryLeases.computeIfPresent(tenantId + ":" + transferId,
+                (key, lease) -> lease.owner().equals(owner) ? null : lease);
+    }
+
     private String inboundKey(String tenantId, String messageId, String sha256) {
         return tenantId + ":" + messageId + ":" + sha256;
     }
+
+    private record DeliveryLease(String owner, Instant expiresAt) {}
 }

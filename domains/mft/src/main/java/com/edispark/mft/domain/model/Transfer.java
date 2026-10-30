@@ -31,6 +31,7 @@ public final class Transfer {
     private PayloadRef payload;
     private String mdnDisposition;
     private String failureReason;
+    private String sentContentMic;
     private Instant updatedAt;
     private Instant nextAttemptAt;
 
@@ -69,7 +70,7 @@ public final class Transfer {
                                    String filename, String contentType, String as2MessageId, String idempotencyKey,
                                    TransferId resendOf, TransferStatus status, Instant createdAt, Instant updatedAt,
                                    Instant nextAttemptAt, PayloadRef payload, String mdnDisposition,
-                                   String failureReason, List<TransferAttempt> attempts) {
+                                   String failureReason, String sentContentMic, List<TransferAttempt> attempts) {
         Transfer transfer = new Transfer(id, tenantId, partnerId, direction, filename, contentType, as2MessageId,
                 idempotencyKey, resendOf, status, createdAt);
         transfer.updatedAt = Objects.requireNonNull(updatedAt);
@@ -77,6 +78,7 @@ public final class Transfer {
         transfer.payload = payload;
         transfer.mdnDisposition = mdnDisposition;
         transfer.failureReason = failureReason;
+        transfer.sentContentMic = sentContentMic;
         transfer.attempts.addAll(attempts == null ? List.of() : attempts);
         return transfer;
     }
@@ -97,6 +99,12 @@ public final class Transfer {
     public void awaitMdn(Instant now) {
         requireStatus(TransferStatus.PROCESSING);
         status = TransferStatus.AWAITING_MDN;
+        updatedAt = now;
+    }
+
+    public void recordSentContentMic(String mic, Instant now) {
+        requireStatus(TransferStatus.PROCESSING);
+        sentContentMic = requireText(mic, "mic");
         updatedAt = now;
     }
 

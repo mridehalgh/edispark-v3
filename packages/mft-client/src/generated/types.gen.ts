@@ -89,6 +89,10 @@ export type As2ConnectionDetailsResponse = {
     certificateFingerprintSha256?: string;
     certificateNotAfter?: string;
     publicCertificatePem?: string;
+    encryptionCertificateName?: string;
+    encryptionCertificateFingerprintSha256?: string;
+    encryptionCertificateNotAfter?: string;
+    encryptionPublicCertificatePem?: string;
 };
 
 export type ListMftTransfersData = {

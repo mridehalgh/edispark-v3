@@ -19,10 +19,14 @@ public interface MftRepository {
     Transfer save(Transfer transfer);
     Optional<Transfer> findTransfer(String tenantId, TransferId id);
     Optional<Transfer> findByIdempotencyKey(String tenantId, String idempotencyKey);
+    Optional<Transfer> findOutboundByMessageId(String tenantId, String as2MessageId);
     Optional<Transfer> findInboundDuplicate(String tenantId, String as2MessageId, String sha256);
     List<Transfer> listTransfers(String tenantId);
     CertificateRecord saveCertificate(CertificateRecord certificate);
     List<CertificateRecord> listCertificates(String tenantId);
     Optional<CertificateRecord> findCertificate(String tenantId, UUID certificateId);
     List<Transfer> listPendingTransfers(Instant dueAt, int limit);
+    boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
+                                    Instant now, Instant expiresAt);
+    void releaseDeliveryLease(String tenantId, TransferId transferId, String owner);
 }

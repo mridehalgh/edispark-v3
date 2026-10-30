@@ -27,6 +27,7 @@ public final class CertificateService {
     private final SecretStore secretStore;
     private final Clock clock;
     private final boolean privateKeyUploadAllowed;
+    private final byte[] managedPublicIdentity;
 
     public CertificateService(MftRepository repository, SecretStore secretStore, Clock clock) {
         this(repository, secretStore, clock, true);
@@ -38,16 +39,30 @@ public final class CertificateService {
         this.secretStore = secretStore;
         this.clock = clock;
         this.privateKeyUploadAllowed = privateKeyUploadAllowed;
+        this.managedPublicIdentity = null;
+    }
+
+    public CertificateService(MftRepository repository, SecretStore secretStore, Clock clock,
+                              byte[] managedPublicIdentity) {
+        this.repository = repository;
+        this.secretStore = secretStore;
+        this.clock = clock;
+        this.privateKeyUploadAllowed = false;
+        this.managedPublicIdentity = managedPublicIdentity.clone();
     }
 
     public CertificateRecord upload(String name, CertificateKind kind, byte[] bytes, char[] password) throws IOException {
-        if (kind == CertificateKind.LOCAL_IDENTITY && !privateKeyUploadAllowed) {
+        if (kind == CertificateKind.LOCAL_IDENTITY && !privateKeyUploadAllowed && password.length > 0) {
             throw new IllegalArgumentException("Private-key upload is disabled; register an AWS KMS identity instead");
         }
-        ParsedCertificate parsed = kind == CertificateKind.LOCAL_IDENTITY
+        ParsedCertificate parsed = kind == CertificateKind.LOCAL_IDENTITY && privateKeyUploadAllowed
                 ? parseIdentity(bytes, password)
                 : parsePublic(bytes);
-        if (kind == CertificateKind.LOCAL_IDENTITY && !parsed.hasPrivateKey()) {
+        if (kind == CertificateKind.LOCAL_IDENTITY && managedPublicIdentity != null
+                && !fingerprint(parsed.certificate()).equals(fingerprint(parsePublic(managedPublicIdentity).certificate()))) {
+            throw new IllegalArgumentException("Local identity must match the configured AWS KMS signing certificate");
+        }
+        if (kind == CertificateKind.LOCAL_IDENTITY && privateKeyUploadAllowed && !parsed.hasPrivateKey()) {
             throw new IllegalArgumentException("Local identity must contain a private key");
         }
         try {
@@ -67,7 +82,9 @@ public final class CertificateService {
     }
 
     public List<CertificateRecord> list() {
-        return repository.listCertificates(TenantContext.getCurrentTenant().asString());
+        String tenantId = TenantContext.getCurrentTenant().asString();
+        ensureManagedIdentity(tenantId);
+        return repository.listCertificates(tenantId);
     }
 
     public CertificateMaterial load(UUID certificateId) throws IOException {
@@ -77,6 +94,10 @@ public final class CertificateService {
     public CertificateMaterial load(String tenantId, UUID certificateId) throws IOException {
         CertificateRecord record = repository.findCertificate(tenantId, certificateId)
                 .orElseThrow(() -> new MftNotFoundException("Certificate was not found"));
+        if (record.secretRef().startsWith("public:")) {
+            return new CertificateMaterial(record.publicCertificatePem().getBytes(java.nio.charset.StandardCharsets.US_ASCII),
+                    "", "");
+        }
         try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(secretStore.get(tenantId, record.secretRef())))) {
             int version = input.readInt();
             if (version != 1) throw new IOException("Unsupported certificate material version");
@@ -86,6 +107,24 @@ public final class CertificateService {
             if (length < 1 || length > 20 * 1024 * 1024) throw new IOException("Invalid certificate material length");
             return new CertificateMaterial(input.readNBytes(length), password, alias);
         }
+    }
+
+    public void ensureManagedIdentity(String tenantId) {
+        if (managedPublicIdentity == null) return;
+        ParsedCertificate parsed = parsePublic(managedPublicIdentity);
+        String fingerprint = fingerprint(parsed.certificate());
+        boolean exists = repository.listCertificates(tenantId).stream()
+                .anyMatch(item -> item.kind() == CertificateKind.LOCAL_IDENTITY
+                        && item.fingerprintSha256().equals(fingerprint));
+        if (exists) return;
+        X509Certificate certificate = parsed.certificate();
+        UUID id = UUID.nameUUIDFromBytes((tenantId + "\u0000" + fingerprint)
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        repository.saveCertificate(new CertificateRecord(id, tenantId, "EdiSpark AS2 signing",
+                CertificateKind.LOCAL_IDENTITY, fingerprint,
+                certificate.getSubjectX500Principal().getName(), certificate.getIssuerX500Principal().getName(),
+                certificate.getNotBefore().toInstant(), certificate.getNotAfter().toInstant(), false,
+                toPem(certificate), "public:kms-managed-signing", clock.instant()));
     }
 
     private ParsedCertificate parseIdentity(byte[] bytes, char[] password) {

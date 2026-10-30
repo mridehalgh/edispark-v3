@@ -39,9 +39,16 @@ mft:
     async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8081/as2/mdn}
     public-inbound-url: ${MFT_PUBLIC_AS2_URL:http://localhost:8081/as2}
     public-async-mdn-url: ${MFT_PUBLIC_AS2_MDN_URL:http://localhost:8081/as2/mdn}
-    supported-encryption-algorithms: ${MFT_SUPPORTED_ENCRYPTION_ALGORITHMS:AES128-GCM}
+    supported-encryption-algorithms: ${MFT_SUPPORTED_ENCRYPTION_ALGORITHMS:AES256-CBC}
     supported-signature-algorithms: ${MFT_SUPPORTED_SIGNATURE_ALGORITHMS:SHA-256}
-    key-encryption-algorithm: ${MFT_KEY_ENCRYPTION_ALGORITHM:RSA-OAEP}
+    key-encryption-algorithm: ${MFT_KEY_ENCRYPTION_ALGORITHM:RSA-OAEP-SHA256}
+    kms:
+      signing-key-arn: ${MFT_AS2_SIGNING_KEY_ARN:}
+      decryption-key-arn: ${MFT_AS2_DECRYPTION_KEY_ARN:}
+      signing-certificate: ${MFT_AS2_SIGNING_CERTIFICATE:}
+      encryption-certificate: ${MFT_AS2_ENCRYPTION_CERTIFICATE:}
+      signing-certificate-base64: ${MFT_AS2_SIGNING_CERTIFICATE_BASE64:}
+      encryption-certificate-base64: ${MFT_AS2_ENCRYPTION_CERTIFICATE_BASE64:}
   delivery:
     poll-interval-ms: ${MFT_DELIVERY_POLL_INTERVAL_MS:1000}
   local-demo:

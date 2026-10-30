@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
+import com.edispark.mft.domain.model.TransferId;
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
@@ -40,6 +41,24 @@ class MftRepositoryPropertyTest {
 
         assertThat(repository.listPartners("tenant-a")).containsExactly(first);
         assertThat(repository.findPartner("tenant-a", second.id())).isEmpty();
+    }
+
+    @Property(tries = 100)
+    void deliveryLeaseHasOneOwnerAndCanOnlyBeReclaimedAfterExpiry(@ForAll String ownerSeed) {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        TransferId transferId = TransferId.generate();
+        Instant now = Instant.parse("2026-01-01T00:00:00Z");
+        String firstOwner = "first-" + ownerSeed;
+
+        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, firstOwner,
+                now, now.plusSeconds(60))).isTrue();
+        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, "second",
+                now.plusSeconds(30), now.plusSeconds(90))).isFalse();
+        repository.releaseDeliveryLease("tenant", transferId, "wrong-owner");
+        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, "second",
+                now.plusSeconds(30), now.plusSeconds(90))).isFalse();
+        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, "second",
+                now.plusSeconds(61), now.plusSeconds(121))).isTrue();
     }
 
     private PartnerProfile partner(String tenant, String as2Id) {

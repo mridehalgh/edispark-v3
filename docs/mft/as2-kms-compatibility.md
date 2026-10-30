@@ -7,8 +7,8 @@ An EdiSpark KMS-native partnership requires:
 | Capability | Required profile |
 |---|---|
 | Signing | RSA KMS `SIGN_VERIFY` key; SHA-256 or stronger |
-| Encryption key transport | RSA-OAEP using SHA-256 preferred; SHA-1 only by explicit temporary policy |
-| Content encryption | AES-128/256 where supported by both peers |
+| Encryption key transport | RSA-OAEP with SHA-256 and MGF1-SHA256 |
+| Content encryption | AES-256-CBC |
 | Local certificates | Separate signing and encryption X.509 certificates |
 | MDN | Signed MDN with SHA-256 MIC |
 | TLS | HTTPS with modern TLS policy; independent from AS2 message certificates |
@@ -49,9 +49,9 @@ Before activation, record and test:
 
 The activation test sends a signed/encrypted file in both directions, validates the signed MDN/MIC, replays the Message-ID to confirm idempotency, and performs a dual-certificate rollover rehearsal.
 
-## KMS-native AS2 protocol release gate
+## KMS-native AS2 implementation
 
-The local `phase2` adapter consumes a Java PKCS#12 keystore. Production needs a KMS-aware CMS adapter that:
+The local `phase2` adapter consumes a Java PKCS#12 keystore. Production uses a KMS-aware CMS adapter that:
 
 - hashes large signing inputs locally and calls `kms:Sign` with `MessageType=DIGEST`;
 - emits CMS RSA-OAEP parameters understood by the partner;
@@ -59,4 +59,6 @@ The local `phase2` adapter consumes a Java PKCS#12 keystore. Production needs a 
 - never materializes a private key or stores a PKCS#12 password;
 - records request ID, algorithm, certificate fingerprint, key version, latency, and outcome without logging plaintext.
 
-The managed DynamoDB/S3/hierarchical-keyring data plane is implemented, and the production API rejects private-key uploads. The Phase2 servlet receiver is restricted to local and contract-export profiles so it cannot accidentally provide a software-key production fallback. The KMS-native CMS signer/decrypter still requires partner interoperability evidence before the public AS2 and asynchronous-MDN endpoints can be enabled or called production-ready. Do not represent the service as KMS-native AS2 production-ready until those protocol tests pass against deployed AWS KMS keys.
+The adapter, tenant routing, distributed leases, and production routes are implemented. The Phase2 servlet receiver is restricted to local and contract-export profiles so it cannot provide a software-key production fallback. Startup verifies both configured certificates against `KMS GetPublicKey` and fails closed on mismatch.
+
+Real-partner interoperability remains an activation gate. Do not enable a partnership until protocol tests pass against deployed AWS KMS keys and that partner's implementation. See [Production AS2 data plane](production-as2-data-plane.md).

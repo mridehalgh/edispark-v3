@@ -45,6 +45,12 @@
       <artifactId>phase2-lib</artifactId>
       <version>${phase2.version}</version>
     </dependency>
+    <!-- Keep the provider aligned with Phase2's bcpkix/bcjmail artifacts. The AWS Encryption SDK
+         otherwise contributes bcprov 1.78.1, which fails CMS initialization beside Phase2 1.86. -->
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>dynamodb</artifactId>

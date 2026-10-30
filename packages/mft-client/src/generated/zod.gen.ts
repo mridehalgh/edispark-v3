@@ -95,7 +95,11 @@ export const zAs2ConnectionDetailsResponse = z.object({
     certificateName: z.string().optional(),
     certificateFingerprintSha256: z.string().optional(),
     certificateNotAfter: z.iso.datetime().optional(),
-    publicCertificatePem: z.string().optional()
+    publicCertificatePem: z.string().optional(),
+    encryptionCertificateName: z.string().optional(),
+    encryptionCertificateFingerprintSha256: z.string().optional(),
+    encryptionCertificateNotAfter: z.iso.datetime().optional(),
+    encryptionPublicCertificatePem: z.string().optional()
 });
 
 /**

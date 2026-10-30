@@ -19,12 +19,18 @@ public record As2ConnectionDetailsResponse(
         String certificateName,
         String certificateFingerprintSha256,
         Instant certificateNotAfter,
-        String publicCertificatePem) {
+        String publicCertificatePem,
+        String encryptionCertificateName,
+        String encryptionCertificateFingerprintSha256,
+        Instant encryptionCertificateNotAfter,
+        String encryptionPublicCertificatePem) {
     public static As2ConnectionDetailsResponse from(ConnectionDetailsService.ConnectionDetails details) {
         return new As2ConnectionDetailsResponse(details.partnerId(), details.partnerName(), details.as2Identifier(),
                 details.inboundUrl(), details.asynchronousMdnUrl(), details.supportedEncryptionAlgorithms(),
                 details.supportedSignatureAlgorithms(), details.keyEncryptionAlgorithm(), details.certificateId(),
                 details.certificateName(), details.certificateFingerprintSha256(), details.certificateNotAfter(),
-                details.publicCertificatePem());
+                details.publicCertificatePem(), details.encryptionCertificateName(),
+                details.encryptionCertificateFingerprintSha256(), details.encryptionCertificateNotAfter(),
+                details.encryptionPublicCertificatePem());
     }
 }

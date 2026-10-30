@@ -1,12 +1,12 @@
 # AS2 connection details and multi-tenancy
 
-The connection-details endpoint is the authenticated organisation-facing API behind the **Share your AS2 details** panel. It returns the values an organisation administrator gives to a retailer: the organisation's AS2 identifier, public receiving URLs, supported algorithms, public certificate fingerprint and expiry, and PEM-encoded public certificate.
+The connection-details endpoint is the authenticated organisation-facing API behind the **Share your AS2 details** panel. It returns the values an organisation administrator gives to a retailer: the organisation's AS2 identifier, public receiving URLs, supported algorithms, and separate signing and encryption public certificates with fingerprints and expiry dates.
 
 ## Short answer
 
 The current implementation supports multiple logical tenants in one MFT service process. A caller can receive only connection packs assembled from partner and certificate records belonging to the tenant in its validated JWT. The local in-memory adapter and behaviour tests exercise this isolation.
 
-It is not yet a production-complete multi-tenant implementation. Production DynamoDB persistence, the trusted tenant-to-cell registry, and the KMS-backed signing/decryption certificate registry remain implementation work. The application deliberately fails to start in production without those managed adapters.
+The production data plane uses DynamoDB tenant partitions and a cell-shared KMS identity. The application fails to start unless the two KMS keys and their matching public certificates are configured.
 
 ## Authenticated request path
 
@@ -41,7 +41,7 @@ certificate: {tenantId}:{certificateId}
 
 A corrupted or malicious partner record that references another tenant's certificate ID therefore receives “Organisation AS2 certificate was not found”; the service does not retry the lookup without the tenant key. `ConnectionDetailsServiceTest` covers both positive isolation and this cross-tenant reference failure.
 
-The production DynamoDB adapter must preserve the same rule. Tenant-owned items must use a tenant partition key, and certificate resolution must be a tenant-qualified key lookup rather than a scan or lookup by certificate ID alone. Authorization must not depend only on an application-side filter applied after reading a cross-tenant result.
+The production DynamoDB adapter preserves the same rule with `TENANT#{tenantId}` partitions and consistent, tenant-qualified certificate reads. Authorization never depends on a filter applied after reading a cross-tenant result.
 
 ## What is shared and what is tenant-specific
 
@@ -62,7 +62,7 @@ Public URLs and algorithm policy are currently common to every tenant served by 
 
 Standard tenants are intended to share a bounded cell's asymmetric KMS identity rather than receive two billable KMS keys each. This changes key custody, not tenant authorization.
 
-The production model needs these records:
+The production runtime uses these bindings:
 
 ```text
 tenant registry
@@ -78,9 +78,9 @@ cell public certificate registry
   -> public certificate chain, fingerprint, validity and KMS key reference
 ```
 
-The endpoint must start with the authenticated tenant, load its trusted cell assignment and identity binding, and then join only to the public certificate versions named by that binding. A caller must never provide `cell_id`, a KMS key ARN, or a certificate version to select the response. Multiple tenants may legitimately receive the same public cell certificates, but each response is still authorized through that tenant's binding.
+The endpoint starts with the authenticated tenant and its tenant-owned partner profile. A caller never provides `cell_id`, a KMS key ARN, or a certificate version to select the response. Multiple tenants legitimately receive the same public cell encryption certificate, while each response remains authorized through that tenant's partner and local signing-certificate binding.
 
-AWS KMS requires separate keys and certificates for signing and decryption. The production response must therefore expose both public certificate purposes. The current local `phase2` bridge uses one disposable PKCS#12 identity and returns its public certificate as a combined simulator identity. This is local behavior, not the final production certificate shape.
+AWS KMS requires separate keys and certificates for signing and decryption. The production response exposes both purposes and distinct fingerprints/expiry dates. The local `phase2` bridge uses one disposable PKCS#12 identity, so local mode returns the same public certificate in both roles.
 
 ## Returned and excluded data
 
@@ -122,11 +122,4 @@ Current evidence:
 - The MFT API requires bearer authentication for `/api/mft/connection-details`.
 - The BFF retains the access token server-side and returns `Cache-Control: private, no-store`.
 
-Production completion still requires:
-
-1. DynamoDB tenant-qualified partner and identity-binding lookups.
-2. The trusted tenant-to-cell registry and immutable cell certificate versions.
-3. Separate public signing and encryption certificates in the API contract and UI.
-4. Authorisation tests using tokens for two real organisations against the production-style persistence adapter.
-5. Per-tenant rate and concurrency limits so one tenant cannot exhaust the shared endpoint or metadata store.
-6. Audit events for connection-pack access and certificate download without logging the PEM, token, or private configuration.
+Remaining activation work is per-tenant rate/concurrency limits, immutable certificate-version rollover, access/download audit events, and authorization tests with two real organisation tokens against deployed infrastructure.

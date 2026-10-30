@@ -45,6 +45,7 @@
         <sqlite4java.version>1.0.392</sqlite4java.version>
         <springdoc.version>3.0.3</springdoc.version>
         <phase2.version>6.2.2</phase2.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
     </properties>
 
     <dependencyManagement>
@@ -92,6 +93,11 @@
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
             <!-- ArchUnit for architecture testing -->
             <dependency>

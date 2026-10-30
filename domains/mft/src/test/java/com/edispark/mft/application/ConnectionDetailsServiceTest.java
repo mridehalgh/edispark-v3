@@ -38,7 +38,9 @@ class ConnectionDetailsServiceTest {
                 URI.create("https://as2.edispark.example/as2/mdn"),
                 List.of("AES128-GCM", "AES256-GCM"),
                 List.of("SHA-256", "SHA-512"),
-                "RSA-OAEP");
+                "RSA-OAEP", certificate -> new As2EncryptionCertificateProvider.PublicCertificate(
+                        certificate.name(), certificate.fingerprintSha256(), certificate.notAfter(),
+                        certificate.publicCertificatePem()));
 
         AtomicReference<List<ConnectionDetailsService.ConnectionDetails>> result = new AtomicReference<>();
         TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT_ID)),
@@ -53,6 +55,7 @@ class ConnectionDetailsServiceTest {
             assertThat(details.keyEncryptionAlgorithm()).isEqualTo("RSA-OAEP");
             assertThat(details.publicCertificatePem()).isEqualTo("EDISPARK-CERTIFICATE");
             assertThat(details.certificateFingerprintSha256()).isEqualTo(identity.fingerprintSha256());
+            assertThat(details.encryptionPublicCertificatePem()).isEqualTo("EDISPARK-CERTIFICATE");
         });
     }
 
@@ -68,7 +71,9 @@ class ConnectionDetailsServiceTest {
                 URI.create("https://as2.edispark.example/as2/mdn"),
                 List.of("AES128-GCM"),
                 List.of("SHA-256"),
-                "RSA-OAEP");
+                "RSA-OAEP", certificate -> new As2EncryptionCertificateProvider.PublicCertificate(
+                        certificate.name(), certificate.fingerprintSha256(), certificate.notAfter(),
+                        certificate.publicCertificatePem()));
 
         assertThatThrownBy(() -> TenantContext.runWhere(
                 TenantContextHolder.of(TenantId.fromString(TENANT_ID)), service::list))

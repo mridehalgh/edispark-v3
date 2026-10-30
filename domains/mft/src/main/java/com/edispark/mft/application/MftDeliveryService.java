@@ -16,15 +16,13 @@ public final class MftDeliveryService {
     private static final int MAX_ATTEMPTS = 5;
     private final MftRepository repository;
     private final PayloadStore payloadStore;
-    private final CertificateService certificateService;
     private final As2ExchangePort exchange;
     private final Clock clock;
 
     public MftDeliveryService(MftRepository repository, PayloadStore payloadStore,
-                              CertificateService certificateService, As2ExchangePort exchange, Clock clock) {
+                              As2ExchangePort exchange, Clock clock) {
         this.repository = repository;
         this.payloadStore = payloadStore;
-        this.certificateService = certificateService;
         this.exchange = exchange;
         this.clock = clock;
     }
@@ -40,10 +38,12 @@ public final class MftDeliveryService {
         repository.save(transfer);
         try {
             byte[] payload = payloadStore.get(tenantId, transfer.payload()).readAllBytes();
-            As2DeliveryResult result = exchange.send(partner, transfer, payload,
-                    certificateService.load(partner.localCertificateId()),
-                    certificateService.load(partner.partnerCertificateId()));
-            if (result.awaitingAsyncMdn()) transfer.awaitMdn(clock.instant());
+            As2DeliveryResult result = exchange.send(partner, transfer, payload);
+            if (result.awaitingAsyncMdn() && transfer.status() == com.edispark.mft.domain.model.TransferStatus.PROCESSING) {
+                transfer.awaitMdn(clock.instant());
+            } else if (result.awaitingAsyncMdn()) {
+                return;
+            }
             else if (result.processed()) {
                 transfer.deliver(result.disposition(), clock.instant());
             } else {

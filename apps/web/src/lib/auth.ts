@@ -79,6 +79,29 @@ function resolveTenantId(organizationId: string) {
   return resolveTenantIdTransaction(organizationId)
 }
 
+function ensureLocalOrganizationTenantMapping() {
+  const tenantId = process.env.LOCAL_SEED_TENANT_ID ?? DEFAULT_LOCAL_SEED_TENANT_ID
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS organization_tenant (
+      organization_id TEXT PRIMARY KEY NOT NULL,
+      tenant_id TEXT UNIQUE NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (organization_id) REFERENCES organization(id) ON DELETE CASCADE
+    )
+  `)
+  const owner = database.prepare(
+    "SELECT organization_id AS organizationId FROM organization_tenant WHERE tenant_id = ?",
+  ).get(tenantId) as { organizationId: string } | undefined
+  if (owner && owner.organizationId !== LOCAL_TEST_ORGANIZATION_ID) {
+    throw new Error("The local seed tenant belongs to another workspace. Run `pnpm local:reset`.")
+  }
+  database.prepare(`
+    INSERT INTO organization_tenant (organization_id, tenant_id, created_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(organization_id) DO UPDATE SET tenant_id = excluded.tenant_id
+  `).run(LOCAL_TEST_ORGANIZATION_ID, tenantId, new Date().toISOString())
+}
+
 const appUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
 const appOrigin = new URL(appUrl).origin
 const passkeyRpId = process.env.BETTER_AUTH_PASSKEY_RP_ID ?? new URL(appUrl).hostname
@@ -290,6 +313,7 @@ async function prepareLocalAuth() {
     INSERT OR IGNORE INTO member (id, organizationId, userId, role, createdAt)
     VALUES (?, ?, ?, ?, ?)
   `).run(LOCAL_TEST_MEMBER_ID, LOCAL_TEST_ORGANIZATION_ID, user.id, "owner", createdAt)
+  ensureLocalOrganizationTenantMapping()
 }
 
 export function activateLocalTestWorkspace() {

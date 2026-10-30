@@ -67,6 +67,29 @@ class DocumentSetSeederTest {
     }
 
     @Test
+    @DisplayName("repairs a partially populated demo catalogue without duplicating existing documents")
+    void repairsPartialCatalogue() {
+        seeder.seedTenantData();
+        DocumentSet invoice = documentSets.findAll().stream()
+                .filter(set -> "INV-100045".equals(set.metadata().get("businessDocumentNumber")))
+                .findFirst()
+                .orElseThrow();
+        DocumentSet creditNote = documentSets.findAll().stream()
+                .filter(set -> "CN-1007".equals(set.metadata().get("businessDocumentNumber")))
+                .findFirst()
+                .orElseThrow();
+        documentSets.delete(invoice.id());
+        documentSets.delete(creditNote.id());
+
+        seeder.seedTenantData();
+        seeder.seedTenantData();
+
+        assertThat(documentSets.findAll())
+                .extracting(set -> set.metadata().get("businessDocumentNumber"))
+                .containsExactlyInAnyOrder("PO-2026-0042", "INV-100045", "CN-1007");
+    }
+
+    @Test
     @DisplayName("stores the parsed UBL JSON order as a derivative of the TRADACOMS source version")
     void storesParsedOrderAsDerivative() {
         seeder.seedTenantData();

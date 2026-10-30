@@ -1,0 +1,4 @@
+interface:
+  display_name: "Local Demo Workspace"
+  short_description: "Keep EdiSpark local sample data complete"
+  default_prompt: "Use $local-demo-workspace to provision, repair, or verify the deterministic EdiSpark local demo tenant and its sample data."

@@ -1,8 +1,6 @@
 package com.edispark.documents.infrastructure.seed;
 
 import com.edispark.identifiers.tenant.TenantId;
-import com.edispark.pagination.Page;
-import com.edispark.pagination.PaginatedResult;
 import com.edispark.documents.application.command.AddSchemaVersionCommand;
 import com.edispark.documents.application.command.CreateDocumentSetCommand;
 import com.edispark.documents.application.command.CreateSchemaCommand;
@@ -36,8 +34,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Seeds a small, realistic UBL 2.1 document catalogue for local development.
@@ -76,27 +76,38 @@ public class DocumentSetSeeder {
     }
 
     void seedTenantData() {
-        if (dataAlreadyExists()) {
-            log.info("Document data already exists, skipping seeding");
+        Set<DocumentType> missingTypes = missingSeedTypes();
+        if (missingTypes.isEmpty()) {
+            log.info("Document demo catalogue is complete, skipping seeding");
             return;
         }
 
-        log.info("Starting realistic UBL document seeding...");
-        createSchemas();
-        createDocumentSets();
-        log.info("Document seeding completed");
+        log.info("Repairing document demo catalogue; missing types: {}", missingTypes);
+        createSchemas(missingTypes);
+        createDocumentSets(missingTypes);
+        log.info("Document demo catalogue is complete");
     }
 
-    private boolean dataAlreadyExists() {
-        PaginatedResult<DocumentSet> existing = documentSetRepository.findAll(Page.first(1));
-        return !existing.isEmpty();
-    }
-
-    private void createSchemas() {
+    private Set<DocumentType> missingSeedTypes() {
+        Set<String> existingNumbers = documentSetRepository.findAll().stream()
+                .map(DocumentSet::metadata)
+                .map(metadata -> metadata.get("businessDocumentNumber"))
+                .collect(java.util.stream.Collectors.toSet());
+        Set<DocumentType> missingTypes = EnumSet.noneOf(DocumentType.class);
         for (DocumentType type : SEEDED_TYPES) {
+            if (!existingNumbers.contains(businessDocumentNumber(type))) {
+                missingTypes.add(type);
+            }
+        }
+        return missingTypes;
+    }
+
+    private void createSchemas(Set<DocumentType> missingTypes) {
+        schemaRefs.clear();
+        for (DocumentType type : missingTypes) {
             schemaRefs.put(type, createSchemaForType(type));
         }
-        log.info("Created {} UBL 2.1 schemas", schemaRefs.size());
+        log.info("Created {} missing UBL 2.1 schemas", schemaRefs.size());
     }
 
     private SchemaVersionRef createSchemaForType(DocumentType type) {
@@ -113,22 +124,37 @@ public class DocumentSetSeeder {
         return SchemaVersionRef.of(schema.id(), INITIAL_VERSION);
     }
 
-    private void createDocumentSets() {
-        createInboundTradacomsOrder();
-        createUblDocumentSet(
-                DocumentType.INVOICE,
-                "ubl-invoice-100045.json",
-                "Invoice INV-100045",
-                "UBL 2.1 invoice awaiting payment",
-                "INV-100045");
-        createUblDocumentSet(
-                DocumentType.CREDIT_NOTE,
-                "ubl-credit-note-1007.json",
-                "Credit note CN-1007",
-                "UBL 2.1 credit note against invoice INV-100045",
-                "CN-1007");
+    private void createDocumentSets(Set<DocumentType> missingTypes) {
+        if (missingTypes.contains(DocumentType.ORDER)) {
+            createInboundTradacomsOrder();
+        }
+        if (missingTypes.contains(DocumentType.INVOICE)) {
+            createUblDocumentSet(
+                    DocumentType.INVOICE,
+                    "ubl-invoice-100045.json",
+                    "Invoice INV-100045",
+                    "UBL 2.1 invoice awaiting payment",
+                    "INV-100045");
+        }
+        if (missingTypes.contains(DocumentType.CREDIT_NOTE)) {
+            createUblDocumentSet(
+                    DocumentType.CREDIT_NOTE,
+                    "ubl-credit-note-1007.json",
+                    "Credit note CN-1007",
+                    "UBL 2.1 credit note against invoice INV-100045",
+                    "CN-1007");
+        }
 
-        log.info("Created 3 document sets containing 3 documents and 1 UBL derivative");
+        log.info("Created {} missing document sets", missingTypes.size());
+    }
+
+    private String businessDocumentNumber(DocumentType type) {
+        return switch (type) {
+            case ORDER -> "PO-2026-0042";
+            case INVOICE -> "INV-100045";
+            case CREDIT_NOTE -> "CN-1007";
+            default -> throw new IllegalArgumentException("No demo document number for " + type);
+        };
     }
 
     private void createInboundTradacomsOrder() {

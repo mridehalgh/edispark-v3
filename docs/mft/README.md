@@ -27,11 +27,12 @@ AS2 requires asymmetric keys. AWS KMS cannot use one RSA key for both signing an
 - [AS2 KMS compatibility](as2-kms-compatibility.md) — supported algorithms, certificate profile, OAEP limitation, and onboarding gate.
 - [Tenant isolation](tenant-isolation.md) — control-plane and data-plane identity, storage boundaries, shared-key blast radius, and threat controls.
 - [Operations runbook](operations-runbook.md) — provisioning, rotation, incidents, recovery, monitoring, and offboarding.
+- [Local development](local-development.md) — deterministic demo identity, fixture manifest, local KMS test double, and reset behavior.
 - [Sensitive-data inventory](../mft-security-and-operations.md) — current local behavior and all sensitive production records.
 
 ## Status
 
-The local vertical slice uses `phase2`, disposable PKCS#12 identities, in-memory metadata, and encrypted files. These adapters are enabled only for `local` and `openapi-export`. Production has no fallback to local private-key files and cannot start until the KMS, DynamoDB, S3, and lease adapters are implemented.
+The local vertical slice uses `phase2`, disposable PKCS#12 identities, in-memory metadata, and tenant/resource-bound encrypted files. A KMS test double derives per-tenant logical keys from one disposable local root, so the application uses the same key-resolution boundary without calling AWS. These adapters are enabled only for `local` and `openapi-export`. Production has no fallback to local private-key files and cannot start until the KMS, DynamoDB, S3, and lease adapters are implemented.
 
 ## AWS references
 

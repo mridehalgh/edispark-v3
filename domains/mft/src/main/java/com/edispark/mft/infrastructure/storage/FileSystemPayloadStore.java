@@ -11,20 +11,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
 
 public final class FileSystemPayloadStore implements PayloadStore {
     private static final int NONCE_BYTES = 12;
     private static final SecureRandom RANDOM = new SecureRandom();
     private final Path root;
-    private final SecretKey key;
+    private final LocalKms kms;
 
     public FileSystemPayloadStore(Path root) throws IOException {
         this(root, root.resolve(".payload-master.key"));
@@ -32,7 +29,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
 
     public FileSystemPayloadStore(Path root, Path masterKeyPath) throws IOException {
         this.root = root.toAbsolutePath().normalize();
-        this.key = LocalEncryptedSecretStore.loadOrCreateKey(masterKeyPath.toAbsolutePath().normalize());
+        this.kms = new LocalKms(masterKeyPath);
     }
 
     @Override
@@ -41,6 +38,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
         Path directory = resolveSafe(tenantId, transferId.toString());
         Files.createDirectories(directory);
         Path target = directory.resolve(safeName).normalize();
+        String reference = root.relativize(target).toString();
         Path temporary = Files.createTempFile(directory, ".upload-", ".tmp");
         MessageDigest digest = sha256();
         long size = 0;
@@ -48,7 +46,8 @@ public final class FileSystemPayloadStore implements PayloadStore {
         RANDOM.nextBytes(nonce);
         try (OutputStream raw = Files.newOutputStream(temporary)) {
             raw.write(nonce);
-            try (OutputStream output = new CipherOutputStream(raw, cipher(Cipher.ENCRYPT_MODE, nonce))) {
+            try (OutputStream output = new CipherOutputStream(raw,
+                    cipher(Cipher.ENCRYPT_MODE, nonce, tenantId, reference))) {
             byte[] buffer = new byte[16 * 1024];
             int read;
             while ((read = content.read(buffer)) >= 0) {
@@ -59,7 +58,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
             }
         }
         Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-        return new PayloadRef(root.relativize(target).toString(), HexFormat.of().formatHex(digest.digest()), size);
+        return new PayloadRef(reference, HexFormat.of().formatHex(digest.digest()), size);
     }
 
     @Override
@@ -72,7 +71,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
             input.close();
             throw new IOException("encrypted payload is invalid");
         }
-        return new CipherInputStream(input, cipher(Cipher.DECRYPT_MODE, nonce));
+        return new CipherInputStream(input, cipher(Cipher.DECRYPT_MODE, nonce, tenantId, payload.key()));
     }
 
     private Path resolveSafe(String tenantId, String transferId) {
@@ -89,13 +88,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
         }
     }
 
-    private Cipher cipher(int mode, byte[] nonce) throws IOException {
-        try {
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(mode, key, new GCMParameterSpec(128, nonce));
-            return cipher;
-        } catch (GeneralSecurityException exception) {
-            throw new IOException("Unable to process encrypted payload", exception);
-        }
+    private Cipher cipher(int mode, byte[] nonce, String tenantId, String resourceId) throws IOException {
+        return kms.cipher(mode, nonce, new LocalKms.Context(tenantId, "payload", resourceId));
     }
 }

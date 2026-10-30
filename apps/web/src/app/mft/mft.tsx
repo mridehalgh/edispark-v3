@@ -2,7 +2,8 @@
 
 import type { CertificateResponse, PartnerResponse, TransferResponse } from "@edispark/mft-client"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, Database, ExternalLink, FileUp, KeyRound, LockKeyhole, Network, RefreshCw, Route, ShieldCheck } from "lucide-react"
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, BookOpen, CheckCircle2, Database, ExternalLink, FileUp, KeyRound, LockKeyhole, Network, RefreshCw, Route, ShieldCheck } from "lucide-react"
+import { Link } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
 import { Badge } from "@/components/ui/badge"
@@ -210,7 +211,10 @@ export function MftPage() {
           <h1 className="text-2xl font-semibold tracking-tight">AS2 operations</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Send EDI, inspect signed MDN evidence, and manage partner certificates in one tenant-isolated workspace.</p>
         </div>
-        <Button variant="outline" className="gap-2 self-start" onClick={() => void refresh()} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</Button>
+        <div className="flex gap-2 self-start">
+          <Button asChild variant="outline" className="gap-2"><Link to="/mft/docs"><BookOpen className="h-4 w-4" aria-hidden="true" />Documentation</Link></Button>
+          <Button variant="outline" className="gap-2" onClick={() => void refresh()} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />Refresh</Button>
+        </div>
       </header>
 
       {error && <div role="alert" className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div>}

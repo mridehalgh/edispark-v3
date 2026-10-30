@@ -64,13 +64,14 @@ Before launching, the development runner terminates any processes listening on i
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | OpenAPI JSON | http://localhost:8080/api-docs |
 | MFT control plane | http://localhost:3000/mft |
+| MFT documentation site | http://localhost:3000/mft/docs |
 | MFT API | http://localhost:8081 |
 | MFT health | http://localhost:8081/actuator/health |
 | MFT Swagger UI | http://localhost:8081/swagger-ui.html |
 | MFT OpenAPI JSON | http://localhost:8081/api-docs |
 | Embedded DynamoDB | http://localhost:8000 |
 
-The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and loads safe sample documents. These generated files are ignored by Git.
+The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and reconciles a complete safe demo workspace. The demo includes three Documents examples plus an MFT partner, public/local certificates, and transfers in delivered, awaiting-MDN, retry, and needs-review states. These generated files are ignored by Git.
 
 ### Local authentication
 
@@ -87,7 +88,9 @@ The button and its login route are development-only: the control is absent from 
 
 You can still create additional accounts in the web application. When Resend is not configured, verification and recovery emails are printed to the web process output instead of being sent.
 
-The first local workspace is mapped to the same tenant as the seeded Documents data. Additional workspaces receive distinct tenant IDs. The web application issues ES256 JWTs, publishes the matching public key through its JWKS endpoint, and the Spring API validates issuer, audience, signature, and the `tenant_id` claim. API routes remain protected in the local profile; there is no authentication bypass.
+The `EdiSpark Local` organization is pinned one-to-one to `LOCAL_SEED_TENANT_ID`, which is also used by the Documents and MFT seeders. The database prevents either side of that mapping from being reused. Additional workspaces receive distinct tenant IDs. The web application issues ES256 JWTs, publishes the matching public key through its JWKS endpoint, and the Spring APIs validate issuer, audience, signature, and the `tenant_id` claim. API routes remain protected in the local profile; there is no authentication bypass.
+
+The local MFT adapter behaves like a small KMS test double: it resolves a logical tenant alias, derives a tenant-specific AES key from one disposable local root, and authenticates the tenant and resource context during AES-GCM encryption. This gives local code the same tenant/resource failure behavior without pretending the local root file is a production security boundary. The full local fixture and key model is documented in [docs/mft/local-development.md](docs/mft/local-development.md).
 
 ## Common commands 🧰
 
@@ -127,6 +130,7 @@ The local runner supplies safe defaults; copying an environment file is not requ
 | `DOCUMENTS_API_URL` | `http://localhost:8080` | Server-only API URL used by Next.js |
 | `MFT_API_URL` | `http://localhost:8081` | Server-only MFT API URL used by Next.js |
 | `MFT_ALLOW_PRIVATE_NETWORKS` | `true` locally | Allows the loopback simulator; keep `false` in production |
+| `MFT_LOCAL_DEMO_SEED_ENABLED` | `true` locally | Reconciles the complete MFT demo fixture on startup |
 | `LOCAL_SEED_TENANT_ID` | Stable local KSUID | Links the first workspace to sample data |
 | `DYNAMODB_LOCAL_ENDPOINT` | `http://localhost:8000` | Local DynamoDB endpoint |
 | `DYNAMODB_LOCAL_DATA_DIR` | `.local/dynamodb` | Persistent local DynamoDB files |
@@ -137,7 +141,7 @@ The local runner supplies safe defaults; copying an environment file is not requ
 
 Never commit secrets, private keys, real customer data, or local databases. Production must use explicit Better Auth migrations, HTTPS, managed secrets, a production database, remote JWT signing, and managed persistence. Local automatic migrations and embedded storage are development conveniences only.
 
-The production MFT design does not allow private AS2 keys in the application database or filesystem. It uses a cost-conscious KMS hierarchy: one symmetric key per tenant across services plus separate cell-shared AS2 signing and decryption keys. KMS-native AS2 requires RSA-OAEP and separate certificates; incompatible partners cannot be activated. Start with the detailed [MFT documentation](docs/mft/README.md) and [sensitive-data inventory](docs/mft-security-and-operations.md).
+The production MFT design does not allow private AS2 keys in the application database or filesystem. It uses a cost-conscious KMS hierarchy: one symmetric key per tenant across services plus separate cell-shared AS2 signing and decryption keys. KMS-native AS2 requires RSA-OAEP and separate certificates; incompatible partners cannot be activated. Operators can use the in-product documentation at `/mft/docs`; repository design records remain under [docs/mft](docs/mft/README.md), with the complete [sensitive-data inventory](docs/mft-security-and-operations.md).
 
 ## Contracts
 

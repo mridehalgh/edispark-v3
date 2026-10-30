@@ -76,15 +76,16 @@ The current local adapter keeps metadata in memory and encrypted files below `.l
 
 | Data | Sensitive? | Current local behavior | Production target |
 |---|---|---|---|
-| Local AS2 private keys and PKCS#12 password | Critical secret | AES-GCM encrypted below `.local/mft`; local profile only | Non-exportable cell-shared KMS signing/decryption keys; never accepted by the production control-plane API |
+| Local KMS root key | Critical test secret | Random owner-readable file below `.local/mft`; derives logical per-tenant AES keys and is never committed | Does not exist; AWS KMS owns non-exportable key material |
+| Local AS2 private keys and PKCS#12 password | Critical secret | AES-GCM encrypted with tenant/resource context below `.local/mft`; local profile only | Non-exportable cell-shared KMS signing/decryption keys; never accepted by the production control-plane API |
 | Partner public X.509 certificates | Public, integrity-critical | Stored with tenant metadata/material | Store certificate/chain, SHA-256 fingerprint, purpose, validity, status, and rollover dates |
 | EdiSpark public X.509 certificates | Public, integrity-critical | Stored with the local test identity | Store and distribute to partners; retain versions through rotation grace periods |
-| EDI payloads | Confidential; may contain PII | AES-GCM encrypted files below `.local/mft` | S3 with Block Public Access, TLS, SSE-KMS, tenant-aware authorization, version/retention policy, and audited deletion |
+| EDI payloads | Confidential; may contain PII | AES-GCM encrypted with tenant/resource context below `.local/mft` | S3 with Block Public Access, TLS, SSE-KMS, tenant-aware authorization, version/retention policy, and audited deletion |
 | Filenames and content types | Potentially confidential | Transfer metadata | Minimise, tenant-scope, encrypt at rest, and avoid placing business data in names |
 | AS2 IDs, endpoints, partner names, routing configuration | Confidential configuration | In-memory metadata | Tenant-scoped DynamoDB records encrypted at rest |
 | MDNs, MICs, retry/error history, certificate fingerprints | Confidential operational evidence | Transfer metadata | Immutable tenant-scoped evidence with retention and access auditing |
 | Access tokens, sessions, auth database | Secret/security-sensitive | Server-side Better Auth and local SQLite | Managed database/secret controls; tokens never persisted by the MFT API or sent to the browser-facing AS2 path |
-| KMS key ARNs, aliases, certificate versions, AWS resource IDs | Not secrets, authorization-sensitive | Not yet implemented | Store as metadata; IAM, key policy, cell assignment, and registry integrity provide protection |
+| KMS key ARNs, aliases, certificate versions, AWS resource IDs | Not secrets, authorization-sensitive | Logical tenant aliases are resolved by the local test double | Store as metadata; IAM, key policy, cell assignment, and registry integrity provide protection |
 | Application logs | Potentially sensitive | IDs and state only by design | Central log retention, masking, access control, and alerts; prohibit payload and secret logging |
 
 Local test certificates and credentials under `.local` are disposable, ignored by Git, and must never be promoted to another environment. `pnpm local:reset` deletes this generated state.
@@ -114,7 +115,7 @@ Provisioning roles are separate from transfer-processing roles. Certificate rota
 
 ## Current implementation status
 
-The local vertical slice uses `phase2`, in-memory metadata, and AES-GCM encrypted local payload/PKCS#12 storage. Those beans are enabled only for the `local` and `openapi-export` Spring profiles. A production start without an AWS adapter fails closed because required MFT beans are absent.
+The local vertical slice uses `phase2`, in-memory metadata, and a local KMS test double for AES-GCM encrypted payload/PKCS#12 storage. Its ciphertext is bound to tenant, service, resource type, and resource ID. Those beans are enabled only for the `local` and `openapi-export` Spring profiles. A production start without an AWS adapter fails closed because required MFT beans are absent.
 
 Before production, implement and verify:
 

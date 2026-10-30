@@ -31,6 +31,13 @@ mft:
     async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8081/as2/mdn}
   delivery:
     poll-interval-ms: ${MFT_DELIVERY_POLL_INTERVAL_MS:1000}
+  local-demo:
+    enabled: ${MFT_LOCAL_DEMO_SEED_ENABLED:true}
+    tenant-id: ${LOCAL_SEED_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
+    identity-path: ${MFT_LOCAL_IDENTITY_PATH:../../.local/as2-simulator/edispark.p12}
+    partner-certificate-path: ${MFT_LOCAL_PARTNER_CERTIFICATE_PATH:../../.local/as2-simulator/simulator.cer}
+    password-file: ${MFT_LOCAL_IDENTITY_PASSWORD_FILE:../../.local/as2-simulator/password.txt}
+    partner-endpoint: ${MFT_LOCAL_PARTNER_ENDPOINT:http://localhost:8082/as2}
 springdoc:
   api-docs:
     path: /api-docs

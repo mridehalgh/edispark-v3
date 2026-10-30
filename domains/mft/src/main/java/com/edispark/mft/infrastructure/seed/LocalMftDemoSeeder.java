@@ -1,0 +1,147 @@
+package com.edispark.mft.infrastructure.seed;
+
+import com.edispark.identifiers.tenant.TenantId;
+import com.edispark.mft.application.CertificateService;
+import com.edispark.mft.application.MftService;
+import com.edispark.mft.domain.model.CertificateKind;
+import com.edispark.mft.domain.model.CertificateRecord;
+import com.edispark.mft.domain.model.MdnMode;
+import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.Transfer;
+import com.edispark.mft.domain.repository.MftRepository;
+import com.edispark.mft.domain.repository.PayloadStore;
+import io.cottn.core.tenancy.TenantContext;
+import io.cottn.core.tenancy.TenantContextHolder;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+@Component
+@Profile("local & !openapi-export")
+@ConditionalOnProperty(name = "mft.local-demo.enabled", havingValue = "true", matchIfMissing = true)
+@RequiredArgsConstructor
+@Slf4j
+public final class LocalMftDemoSeeder {
+    private static final String CONTENT_TYPE = "application/edifact";
+
+    private final MftRepository repository;
+    private final PayloadStore payloadStore;
+    private final CertificateService certificateService;
+    private final MftService mftService;
+    private final Clock clock;
+
+    @Value("${mft.local-demo.tenant-id}")
+    private String tenantId;
+    @Value("${mft.local-demo.identity-path}")
+    private Path identityPath;
+    @Value("${mft.local-demo.partner-certificate-path}")
+    private Path partnerCertificatePath;
+    @Value("${mft.local-demo.password-file}")
+    private Path passwordFile;
+    @Value("${mft.local-demo.partner-endpoint}")
+    private URI partnerEndpoint;
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Order(20)
+    public void seed() {
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(tenantId)), this::seedTenantData);
+    }
+
+    void seedTenantData() {
+        if (!repository.listPartners(tenantId).isEmpty()) {
+            log.info("MFT demo data already exists for tenant {}, skipping seeding", tenantId);
+            return;
+        }
+        try {
+            PartnerProfile partner = createPartner();
+            createTransfers(partner);
+            log.info("MFT demo ready for tenant {} with 1 partner, 2 certificates, and 5 transfers", tenantId);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to seed the local MFT demo", exception);
+        }
+    }
+
+    private PartnerProfile createPartner() throws IOException {
+        char[] password = Files.readString(passwordFile).trim().toCharArray();
+        try {
+            CertificateRecord identity = certificateService.upload("EdiSpark local KMS identity",
+                    CertificateKind.LOCAL_IDENTITY, Files.readAllBytes(identityPath), password);
+            CertificateRecord partnerCertificate = certificateService.upload("Northstar Trading public certificate",
+                    CertificateKind.PARTNER_PUBLIC, Files.readAllBytes(partnerCertificatePath), new char[0]);
+            return mftService.createPartner(new MftService.CreatePartner(
+                    "Northstar Trading", "EDISPARK", "SIMULATOR", partnerEndpoint,
+                    identity.id(), partnerCertificate.id(), MdnMode.SYNCHRONOUS,
+                    true, true, true, false));
+        } finally {
+            Arrays.fill(password, '\0');
+        }
+    }
+
+    private void createTransfers(PartnerProfile partner) throws IOException {
+        Instant now = clock.instant();
+        Transfer inbound = inbound(partner, "PO_45001235.edi", "<local-inbound@northstar.test>", now.minusSeconds(420));
+        inbound.deliver("automatic-action/MDN-sent-automatically; processed", now.minusSeconds(418));
+        repository.save(inbound);
+
+        Transfer delivered = outbound(partner, "invoice_77891.edi", "demo-delivered", now.minusSeconds(300));
+        delivered.startAttempt(now.minusSeconds(299));
+        delivered.deliver("automatic-action/MDN-sent-automatically; processed", now.minusSeconds(297));
+        repository.save(delivered);
+
+        Transfer awaitingMdn = outbound(partner, "ASN_9921.edi", "demo-awaiting-mdn", now.minusSeconds(120));
+        awaitingMdn.startAttempt(now.minusSeconds(119));
+        awaitingMdn.awaitMdn(now.minusSeconds(118));
+        repository.save(awaitingMdn);
+
+        Transfer retry = outbound(partner, "inventory_20261030.edi", "demo-retry", now.minusSeconds(90));
+        retry.startAttempt(now.minusSeconds(89));
+        retry.scheduleRetry("Partner endpoint returned a transient response", now.plus(Duration.ofHours(24)), now.minusSeconds(88));
+        repository.save(retry);
+
+        Transfer review = outbound(partner, "remittance_1042.edi", "demo-review", now.minusSeconds(60));
+        review.requireReview("Partner certificate rollover requires confirmation", now.minusSeconds(59));
+        repository.save(review);
+    }
+
+    private Transfer inbound(PartnerProfile partner, String filename, String messageId, Instant createdAt)
+            throws IOException {
+        Transfer transfer = Transfer.inbound(tenantId, partner.id(), filename, CONTENT_TYPE, messageId, createdAt);
+        attachPayload(transfer, filename, samplePayload("ORDERS", "PO-45001235"));
+        return transfer;
+    }
+
+    private Transfer outbound(PartnerProfile partner, String filename, String idempotencyKey, Instant createdAt)
+            throws IOException {
+        Transfer transfer = Transfer.outbound(tenantId, partner.id(), filename, CONTENT_TYPE,
+                "<" + idempotencyKey + "@as2.edispark.local>", idempotencyKey, null, createdAt);
+        attachPayload(transfer, filename, samplePayload("INVOIC", idempotencyKey));
+        return transfer;
+    }
+
+    private void attachPayload(Transfer transfer, String filename, byte[] content) throws IOException {
+        transfer.attachPayload(payloadStore.put(tenantId, transfer.id(), filename,
+                new ByteArrayInputStream(content)), transfer.createdAt());
+    }
+
+    private byte[] samplePayload(String type, String reference) {
+        String payload = "UNH+1+" + type + ":D:96A:UN'BGM+220+" + reference
+                + "+9'NAD+BY+[buyer_id]++[name]+[address]'UNT+4+1'";
+        return payload.getBytes(StandardCharsets.UTF_8);
+    }
+}

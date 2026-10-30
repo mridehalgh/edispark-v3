@@ -30,11 +30,13 @@ AS2 requires asymmetric keys. AWS KMS cannot use one RSA key for both signing an
 - [Tenant isolation](tenant-isolation.md) — control-plane and data-plane identity, storage boundaries, shared-key blast radius, and threat controls.
 - [Operations runbook](operations-runbook.md) — provisioning, rotation, incidents, recovery, monitoring, and offboarding.
 - [Local development](local-development.md) — deterministic demo identity, fixture manifest, local KMS test double, and reset behavior.
+- [Connection details and multi-tenancy](connection-details-multi-tenancy.md) — JWT tenant resolution, repository isolation, retailer onboarding packs, cell-shared certificates, and production limitations.
+- [Tenant-isolation verification](tenant-isolation-verification.md) — enforced boundaries, adversarial tests, AWS table keys, and release gates.
 - [Sensitive-data inventory](../mft-security-and-operations.md) — current local behavior and all sensitive production records.
 
 ## Status
 
-The local vertical slice uses `phase2`, disposable PKCS#12 identities, in-memory metadata, and tenant/resource-bound encrypted files. A behavior-level test double selects tenant branches beneath one disposable local root without calling AWS. It does not implement AWS ciphertext, DynamoDB branch persistence, unique envelope data keys, or caching. These adapters are enabled only for `local` and `openapi-export`. Production has no fallback to local private-key files and cannot start until the KMS, DynamoDB, S3, and lease adapters are implemented.
+The local vertical slice uses `phase2`, disposable PKCS#12 identities, in-memory metadata, and tenant/resource-bound encrypted files. Production now has DynamoDB metadata, atomic AS2-pair ownership, S3 ciphertext storage, and an AWS Encryption SDK Hierarchical-keyring adapter. Private-key upload is rejected in the production profile. Distributed worker leases, KMS-native CMS signing/decryption, certificate lifecycle operations, deployment infrastructure, and deployed partner interoperability evidence remain release gates; there is no production software-key fallback.
 
 ## AWS references
 

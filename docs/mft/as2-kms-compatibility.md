@@ -49,7 +49,7 @@ Before activation, record and test:
 
 The activation test sends a signed/encrypted file in both directions, validates the signed MDN/MIC, replays the Message-ID to confirm idempotency, and performs a dual-certificate rollover rehearsal.
 
-## Current library gap
+## KMS-native AS2 protocol release gate
 
 The local `phase2` adapter consumes a Java PKCS#12 keystore. Production needs a KMS-aware CMS adapter that:
 
@@ -59,4 +59,4 @@ The local `phase2` adapter consumes a Java PKCS#12 keystore. Production needs a 
 - never materializes a private key or stores a PKCS#12 password;
 - records request ID, algorithm, certificate fingerprint, key version, latency, and outcome without logging plaintext.
 
-Until that adapter and its protocol tests are complete, the KMS-native production profile is a documented target rather than a deployed capability.
+The managed DynamoDB/S3/hierarchical-keyring data plane is implemented, and the production API rejects private-key uploads. The Phase2 servlet receiver is restricted to local and contract-export profiles so it cannot accidentally provide a software-key production fallback. The KMS-native CMS signer/decrypter still requires partner interoperability evidence before the public AS2 and asynchronous-MDN endpoints can be enabled or called production-ready. Do not represent the service as KMS-native AS2 production-ready until those protocol tests pass against deployed AWS KMS keys.

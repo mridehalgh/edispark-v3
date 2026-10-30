@@ -1,6 +1,7 @@
 package com.edispark.mft.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.edispark.identifiers.tenant.TenantId;
 import com.edispark.mft.domain.model.CertificateKind;
@@ -53,6 +54,26 @@ class ConnectionDetailsServiceTest {
             assertThat(details.publicCertificatePem()).isEqualTo("EDISPARK-CERTIFICATE");
             assertThat(details.certificateFingerprintSha256()).isEqualTo(identity.fingerprintSha256());
         });
+    }
+
+    @Test
+    void rejectsACrossTenantCertificateReference() {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        CertificateRecord otherIdentity = identity("another-tenant", "OTHER-CERTIFICATE");
+        repository.saveCertificate(otherIdentity);
+        repository.savePartner(partner(TENANT_ID, otherIdentity.id(), "EDISPARK", "Northstar Trading"));
+        ConnectionDetailsService service = new ConnectionDetailsService(
+                repository,
+                URI.create("https://as2.edispark.example/as2"),
+                URI.create("https://as2.edispark.example/as2/mdn"),
+                List.of("AES128-GCM"),
+                List.of("SHA-256"),
+                "RSA-OAEP");
+
+        assertThatThrownBy(() -> TenantContext.runWhere(
+                TenantContextHolder.of(TenantId.fromString(TENANT_ID)), service::list))
+                .isInstanceOf(MftNotFoundException.class)
+                .hasMessage("Organisation AS2 certificate was not found");
     }
 
     private CertificateRecord identity(String tenantId, String publicCertificatePem) {

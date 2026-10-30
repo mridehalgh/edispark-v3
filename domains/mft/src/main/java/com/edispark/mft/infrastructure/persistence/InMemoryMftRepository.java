@@ -14,12 +14,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemoryMftRepository implements MftRepository {
     private final ConcurrentHashMap<String, PartnerProfile> partners = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> inboundOwners = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Transfer> transfers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> idempotency = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, TransferId> inboundDeduplication = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CertificateRecord> certificates = new ConcurrentHashMap<>();
 
     @Override
-    public PartnerProfile savePartner(PartnerProfile partner) {
+    public synchronized PartnerProfile savePartner(PartnerProfile partner) {
+        String pair = partner.localAs2Id() + "\u0000" + partner.remoteAs2Id();
+        String owner = partner.tenantId() + ":" + partner.id();
+        String existing = inboundOwners.putIfAbsent(pair, owner);
+        if (existing != null && !existing.equals(owner)) {
+            throw new IllegalArgumentException("The AS2 identity pair is already assigned to a workspace");
+        }
         partners.put(partner.tenantId() + ":" + partner.id(), partner);
         return partner;
     }
@@ -57,6 +65,15 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
+    public synchronized Transfer saveInboundIfAbsent(Transfer transfer) {
+        String key = inboundKey(transfer.tenantId(), transfer.as2MessageId(), transfer.payload().sha256());
+        TransferId existing = inboundDeduplication.putIfAbsent(key, transfer.id());
+        if (existing != null) return transfers.get(transfer.tenantId() + ":" + existing);
+        transfers.put(transfer.tenantId() + ":" + transfer.id(), transfer);
+        return transfer;
+    }
+
+    @Override
     public Optional<Transfer> findTransfer(String tenantId, TransferId id) {
         return Optional.ofNullable(transfers.get(tenantId + ":" + id));
     }
@@ -69,6 +86,8 @@ public final class InMemoryMftRepository implements MftRepository {
 
     @Override
     public Optional<Transfer> findInboundDuplicate(String tenantId, String messageId, String sha256) {
+        TransferId id = inboundDeduplication.get(inboundKey(tenantId, messageId, sha256));
+        if (id != null) return findTransfer(tenantId, id);
         return transfers.values().stream().filter(item -> item.tenantId().equals(tenantId)
                 && item.direction().name().equals("INBOUND") && item.as2MessageId().equals(messageId)
                 && item.payload() != null && item.payload().sha256().equals(sha256)).findFirst();
@@ -103,5 +122,9 @@ public final class InMemoryMftRepository implements MftRepository {
                 .filter(item -> (item.status().name().equals("QUEUED") || item.status().name().equals("RETRY_SCHEDULED"))
                         && !item.nextAttemptAt().isAfter(dueAt))
                 .sorted(Comparator.comparing(Transfer::nextAttemptAt)).limit(limit).toList();
+    }
+
+    private String inboundKey(String tenantId, String messageId, String sha256) {
+        return tenantId + ":" + messageId + ":" + sha256;
     }
 }

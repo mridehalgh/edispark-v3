@@ -65,6 +65,22 @@ public final class Transfer {
                 filename, contentType, as2MessageId, null, null, TransferStatus.RECEIVED, now);
     }
 
+    public static Transfer restore(TransferId id, String tenantId, UUID partnerId, TransferDirection direction,
+                                   String filename, String contentType, String as2MessageId, String idempotencyKey,
+                                   TransferId resendOf, TransferStatus status, Instant createdAt, Instant updatedAt,
+                                   Instant nextAttemptAt, PayloadRef payload, String mdnDisposition,
+                                   String failureReason, List<TransferAttempt> attempts) {
+        Transfer transfer = new Transfer(id, tenantId, partnerId, direction, filename, contentType, as2MessageId,
+                idempotencyKey, resendOf, status, createdAt);
+        transfer.updatedAt = Objects.requireNonNull(updatedAt);
+        transfer.nextAttemptAt = Objects.requireNonNull(nextAttemptAt);
+        transfer.payload = payload;
+        transfer.mdnDisposition = mdnDisposition;
+        transfer.failureReason = failureReason;
+        transfer.attempts.addAll(attempts == null ? List.of() : attempts);
+        return transfer;
+    }
+
     public void attachPayload(PayloadRef payload, Instant now) {
         if (this.payload != null) throw new IllegalStateException("payload is immutable once attached");
         this.payload = Objects.requireNonNull(payload);

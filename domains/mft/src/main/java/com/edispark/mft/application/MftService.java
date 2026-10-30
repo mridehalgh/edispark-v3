@@ -1,6 +1,8 @@
 package com.edispark.mft.application;
 
 import com.edispark.mft.domain.model.MdnMode;
+import com.edispark.mft.domain.model.CertificateKind;
+import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
@@ -40,10 +42,14 @@ public final class MftService {
         if (command.legacyCryptoEnabled() && !legacyCryptoAllowed) {
             throw new IllegalArgumentException("Legacy cryptography is disabled for this service");
         }
+        String tenantId = tenantId();
         if (repository.findInboundPartner(command.localAs2Id(), command.remoteAs2Id()).isPresent()) {
             throw new IllegalArgumentException("The AS2 identity pair is already assigned to a workspace");
         }
-        String tenantId = tenantId();
+        requireCertificate(tenantId, command.localCertificateId(), CertificateKind.LOCAL_IDENTITY,
+                "Organisation AS2 certificate");
+        requireCertificate(tenantId, command.partnerCertificateId(), CertificateKind.PARTNER_PUBLIC,
+                "Partner AS2 certificate");
         PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), tenantId, command.name(),
                 command.localAs2Id(), command.remoteAs2Id(), command.endpoint(), command.localCertificateId(),
                 command.partnerCertificateId(), command.mdnMode(),
@@ -93,7 +99,7 @@ public final class MftService {
         transfer.attachPayload(payloadStore.put(partner.tenantId(), transfer.id(), filename,
                 new ByteArrayInputStream(content)), now);
         transfer.deliver("automatic-action/MDN-sent-automatically; processed", now);
-        return repository.save(transfer);
+        return repository.saveInboundIfAbsent(transfer);
     }
 
     public Transfer getTransfer(TransferId id) {
@@ -112,6 +118,14 @@ public final class MftService {
 
     private String messageId() {
         return "<" + UUID.randomUUID() + "@as2.edispark.local>";
+    }
+
+    private CertificateRecord requireCertificate(String tenantId, UUID certificateId, CertificateKind kind,
+                                                  String label) {
+        CertificateRecord certificate = repository.findCertificate(tenantId, certificateId)
+                .orElseThrow(() -> new MftNotFoundException(label + " was not found"));
+        if (certificate.kind() != kind) throw new IllegalArgumentException(label + " has the wrong purpose");
+        return certificate;
     }
 
     private String sha256(byte[] content) {

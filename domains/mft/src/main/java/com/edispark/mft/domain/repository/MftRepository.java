@@ -15,6 +15,7 @@ public interface MftRepository {
     Optional<PartnerProfile> findPartner(String tenantId, UUID partnerId);
     Optional<PartnerProfile> findInboundPartner(String localAs2Id, String remoteAs2Id);
     Transfer saveOutboundIfAbsent(Transfer transfer);
+    Transfer saveInboundIfAbsent(Transfer transfer);
     Transfer save(Transfer transfer);
     Optional<Transfer> findTransfer(String tenantId, TransferId id);
     Optional<Transfer> findByIdempotencyKey(String tenantId, String idempotencyKey);

@@ -26,6 +26,10 @@ final class MftTenantContextFilter extends OncePerRequestFilter {
             return;
         }
         String claim = authentication.getToken().getClaimAsString("tenant_id");
+        if (claim == null || claim.isBlank()) {
+            response.sendError(401, "The tenant claim is invalid");
+            return;
+        }
         try {
             TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(claim)), () -> {
                 try {

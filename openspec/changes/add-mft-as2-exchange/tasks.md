@@ -7,7 +7,7 @@
 - [x] 1.3 Implement partner, certificate, transfer, idempotency, and evidence services
 - [ ] 1.4 Add production DynamoDB metadata persistence and distributed worker leases
 - [ ] 1.5 Add S3 payload/evidence storage with tenant-bound SSE-KMS policy and retention
-- [ ] 1.6 Add atomic global ownership for inbound AS2 identity pairs
+- [x] 1.6 Add atomic global ownership for inbound AS2 identity pairs
 - [ ] 1.7 Add the central tenant-key registry, exact alias authorization, required encryption context, and tenant offboarding lifecycle
 
 ## 2. AS2 service
@@ -25,7 +25,7 @@
 - [x] 3.1 Export the MFT OpenAPI contract and generate `@edispark/mft-client`
 - [x] 3.2 Add authenticated Next.js BFF routes
 - [x] 3.3 Add overview, transfers, partner, and certificate operations UI
-- [x] 3.4 Add the KMS hierarchy, tenant boundary, blast-radius, and compatibility documentation to the MFT page
+- [x] 3.4 Add the KMS hierarchy, tenant boundary, and blast-radius records under `docs/mft`, with end-user compatibility guidance in the MFT setup guide
 - [x] 3.5 Add a tenant-scoped retailer onboarding pack with copyable AS2 details and public-certificate download
 
 ## 4. Simulator

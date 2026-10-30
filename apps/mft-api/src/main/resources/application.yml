@@ -20,6 +20,14 @@ spring:
           audiences:
             - ${AUTH_AUDIENCE:http://localhost:3000}
 mft:
+  aws:
+    region: ${AWS_REGION:eu-west-2}
+    metadata-table: ${MFT_METADATA_TABLE:}
+    payload-bucket: ${MFT_PAYLOAD_BUCKET:}
+    key-store-table: ${MFT_KEY_STORE_TABLE:}
+    key-store-logical-name: ${MFT_KEY_STORE_LOGICAL_NAME:}
+    root-kms-key-arn: ${MFT_ROOT_KMS_KEY_ARN:}
+    branch-key-cache-ttl-seconds: ${MFT_BRANCH_KEY_CACHE_TTL_SECONDS:600}
   payload:
     directory: ${MFT_PAYLOAD_DIR:./.local/mft/payloads}
   secrets:

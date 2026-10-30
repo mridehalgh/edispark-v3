@@ -26,14 +26,24 @@ public final class CertificateService {
     private final MftRepository repository;
     private final SecretStore secretStore;
     private final Clock clock;
+    private final boolean privateKeyUploadAllowed;
 
     public CertificateService(MftRepository repository, SecretStore secretStore, Clock clock) {
+        this(repository, secretStore, clock, true);
+    }
+
+    public CertificateService(MftRepository repository, SecretStore secretStore, Clock clock,
+                              boolean privateKeyUploadAllowed) {
         this.repository = repository;
         this.secretStore = secretStore;
         this.clock = clock;
+        this.privateKeyUploadAllowed = privateKeyUploadAllowed;
     }
 
     public CertificateRecord upload(String name, CertificateKind kind, byte[] bytes, char[] password) throws IOException {
+        if (kind == CertificateKind.LOCAL_IDENTITY && !privateKeyUploadAllowed) {
+            throw new IllegalArgumentException("Private-key upload is disabled; register an AWS KMS identity instead");
+        }
         ParsedCertificate parsed = kind == CertificateKind.LOCAL_IDENTITY
                 ? parseIdentity(bytes, password)
                 : parsePublic(bytes);

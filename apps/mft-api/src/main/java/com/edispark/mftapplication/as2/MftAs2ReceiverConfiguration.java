@@ -24,8 +24,10 @@ import jakarta.servlet.ServletException;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
+@Profile({"local", "openapi-export"})
 public class MftAs2ReceiverConfiguration {
     private static final char[] RUNTIME_KEYSTORE_PASSWORD = "runtime-only".toCharArray();
     private final ServletContext servletContext;

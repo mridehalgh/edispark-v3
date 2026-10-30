@@ -4,22 +4,23 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>ubl-parent</artifactId>
+    <groupId>com.edispark</groupId>
+    <artifactId>edispark-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>UBL Parent</name>
-    <description>Parent POM for UBL Java projects</description>
+    <name>EdiSpark Parent</name>
+    <description>Parent POM for the EdiSpark modular monolith</description>
 
     <modules>
-        <module>support/common</module>
-        <module>support/crn</module>
-        <module>support/multi-tenancy</module>
-        <module>support/tradacoms</module>
-        <module>ubl-model</module>
+        <module>platform/pagination</module>
+        <module>platform/crn</module>
+        <module>platform/tenancy</module>
+        <module>standards/tradacoms</module>
+        <module>standards/ubl</module>
         <module>domains/documents</module>
-        <module>application</module>
+        <module>tooling/local-runtime</module>
+        <module>apps/documents-api</module>
     </modules>
 
     <properties>
@@ -36,6 +37,10 @@
         <jqwik.version>1.9.3</jqwik.version>
         <assertj.version>3.27.6</assertj.version>
         <lombok.version>1.18.46</lombok.version>
+        <aws.sdk.version>2.44.4</aws.sdk.version>
+        <dynamodb.local.version>2.6.1</dynamodb.local.version>
+        <sqlite4java.version>1.0.392</sqlite4java.version>
+        <springdoc.version>3.0.3</springdoc.version>
     </properties>
 
     <dependencyManagement>

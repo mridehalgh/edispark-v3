@@ -1,0 +1,7 @@
+interface:
+  display_name: "Distributed Systems Design"
+  short_description: "Design reliable, failure-aware distributed systems"
+  default_prompt: "Use $distributed-systems-design to review this architecture for concurrency, consistency, resilience, and operational risks."
+
+policy:
+  allow_implicit_invocation: true

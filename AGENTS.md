@@ -126,3 +126,40 @@ Trading partners exchange EDI messages (TRADACOMS and EDIFACT) that arrive as si
 - Test the public interface and observable outcomes
 - Use descriptive test names that explain the scenario and expected result
 - Arrange-Act-Assert pattern for clear test structure
+
+## Codex Project Guidance 🤖
+
+Codex-specific skills live in `.agents/skills/`. Repository engineering rules live in
+`.agents/rules/`; read only the rules relevant to the files being changed. The current
+source code, Maven configuration, and this `AGENTS.md` are authoritative when an older
+rule or specification conflicts with the implemented project.
+
+### Rule routing
+
+| Work area | Read these rules |
+|---|---|
+| Java implementation and module design | `coding-standards.md`, `java-spring-boot.md`, `ddd-java.md`, `multi-maven-project-best-practices.md` |
+| Domain modules and REST ownership | `domain-documentation.md`, `module-controller-ownership.md` |
+| Spring Boot applications | `spring-boot-application-best-practices.md` |
+| Reusable Spring libraries | `spring-boot-library-best-practices.md` |
+| DynamoDB persistence or pagination | `dynamodb-query-patterns.md`, `dynamodb-single-table.md` |
+| Tenant-aware or SaaS plane work | `multi-tenancy-architecture.md`, `saas-control-data-planes.md` |
+| Reliability and operations | `resilience-and-retry-patterns.md`, `observability-2-0.md` |
+| Tests | `testing-strategy.md`, `testing-di-solid-principles.md`, `unit-testing-behavior-over-implementation.md`, `no-testcontainers.md` |
+| Existing Groovy/Spock tests only | `spock-testing-standards.md` |
+
+`project-standards.md` is a broad supporting reference; use the narrower rule above
+when one applies.
+
+### Specifications
+
+Migrated feature specifications live under `docs/specs/`. Before changing one of these
+areas, read its `requirements.md`, `design.md`, and `tasks.md` and verify the documents
+against the current implementation:
+
+- `documents-domain`
+- `documents-api`
+- `paginated-document-sets`
+- `ubl-java-library`
+
+New proposal work continues to use the repository's active `openspec/` workflow.

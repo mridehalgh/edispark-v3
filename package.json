@@ -3,12 +3,16 @@
   "private": true,
   "packageManager": "pnpm@10.15.0",
   "scripts": {
-    "contracts:export:documents": "./mvnw -B -pl application -am -Popenapi-export verify -DskipTests",
+    "dev": "node tooling/scripts/dev.mjs",
+    "dev:api": "node tooling/scripts/dev-api.mjs",
+    "dev:web": "node tooling/scripts/dev-web.mjs",
+    "local:reset": "node tooling/scripts/reset-local.mjs",
+    "contracts:export:documents": "./mvnw -B -pl apps/documents-api -am -Popenapi-export verify -DskipTests",
     "contracts:generate:documents": "pnpm --filter @edispark/documents-client generate",
     "contracts:sync:documents": "pnpm contracts:export:documents && pnpm contracts:generate:documents",
-    "dev:prepare": "pnpm contracts:sync:documents",
     "contracts:generate": "pnpm contracts:generate:documents",
-    "contracts:check": "pnpm --filter @edispark/documents-client generate && pnpm --filter @edispark/documents-client typecheck && git diff --exit-code -- api-contracts/documents packages/documents-client/src/generated"
+    "contracts:check": "pnpm --filter @edispark/documents-client generate && pnpm --filter @edispark/documents-client typecheck && git diff --exit-code -- contracts/documents packages/documents-client/src/generated",
+    "check": "./mvnw -B test && pnpm --filter @edispark/web test && pnpm --filter @edispark/web typecheck && pnpm --filter @edispark/web build && pnpm contracts:check"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.99.0",

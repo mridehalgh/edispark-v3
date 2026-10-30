@@ -36,6 +36,6 @@ dynamodb:
 # Logging configuration for development
 logging:
   level:
-    com.example.documents: DEBUG
+    com.edispark.documents: DEBUG
     software.amazon.awssdk: WARN
     com.amazonaws: WARN

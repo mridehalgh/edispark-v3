@@ -1,0 +1,23 @@
+{
+  "skill_name": "distributed-systems-design",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I'm building a SaaS API gateway in TypeScript that serves ~200 tenants. I need to design a rate limiting system. Some tenants are on free tier (100 req/min), some on pro (1000 req/min), and enterprise gets custom limits. We're running 4 instances behind an ALB. The main concern is that a few large tenants sometimes spike and degrade the experience for everyone else. Can you design the rate limiting architecture? Include the algorithm choice, how to handle distributed state across the 4 instances, what happens when a tenant hits their limit, and how to prevent the noisy neighbor problem. Write the core implementation in TypeScript.",
+      "expected_output": "A comprehensive rate limiting design that addresses: token bucket algorithm choice with rationale, distributed state management (Redis vs local), per-tenant fairness beyond just rate limits (concurrency limits, weighted queuing), noisy neighbor mitigation (possibly shuffle sharding or bulkheads), proper 429 responses with Retry-After headers, and awareness that rate limiting alone isn't sufficient (need load shedding, circuit breakers too).",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I have a payment service in TypeScript/Node.js that processes an order by calling 3 downstream services sequentially: inventory-service (reserve items), payment-provider (charge card), and notification-service (send confirmation email). Each service has its own retry logic — 3 retries with 1 second delay. Here's my current code:\n\n```typescript\nasync function processOrder(order: Order): Promise<OrderResult> {\n  const inventory = await retry(() => inventoryService.reserve(order.items), { retries: 3, delay: 1000 });\n  const payment = await retry(() => paymentProvider.charge(order.total, order.paymentMethod), { retries: 3, delay: 1000 });\n  const notification = await retry(() => notificationService.sendConfirmation(order, payment), { retries: 3, delay: 1000 });\n  return { orderId: order.id, inventory, payment, notification };\n}\n\nasync function retry<T>(fn: () => Promise<T>, opts: { retries: number; delay: number }): Promise<T> {\n  for (let i = 0; i <= opts.retries; i++) {\n    try {\n      return await fn();\n    } catch (err) {\n      if (i === opts.retries) throw err;\n      await new Promise(r => setTimeout(r, opts.delay));\n    }\n  }\n  throw new Error('unreachable');\n}\n```\n\nReview this code and tell me everything that's wrong with it from a distributed systems perspective. Then show me a corrected version.",
+      "expected_output": "Should identify: (1) retry amplification (3x3x3=27 worst case), (2) no jitter causing thundering herd, (3) fixed delay instead of exponential backoff, (4) retrying non-idempotent payment without idempotency key, (5) no deadline/timeout propagation, (6) no circuit breakers, (7) no compensation/saga for partial failures (inventory reserved but payment fails), (8) notification should be non-critical/async, (9) retrying all errors including non-retryable ones (400s).",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We have a product catalog service (Node.js/TypeScript) that serves ~50k requests/second. The catalog has about 2M products in PostgreSQL. Most reads are for individual products by ID (80%) or category listings (20%). We do bulk catalog updates twice a day where ~10k products change at once. Currently we have no caching and the database is at 85% CPU. We're planning to add Redis as a cache layer. Design the caching architecture — what caching strategy to use, how to handle the bulk updates without causing cache stampedes, TTL strategy, and how to handle the cold-cache problem on deployment. Show me the implementation in TypeScript.",
+      "expected_output": "Should cover: cache-aside strategy for product-by-ID, stampede prevention (request coalescing or probabilistic early expiry), invalidation strategy for bulk updates (event-driven with staggered invalidation, not mass flush), TTL strategy (different for products vs categories), cold-cache mitigation (pre-warming), negative caching awareness, and stale-while-revalidate for category listings.",
+      "files": []
+    }
+  ]
+}

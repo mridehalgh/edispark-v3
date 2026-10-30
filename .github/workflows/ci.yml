@@ -16,11 +16,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Java 25
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
+          java-version: '21'
           cache: maven
           cache-dependency-path: |
             pom.xml
@@ -38,7 +38,7 @@ jobs:
         run: chmod +x mvnw
 
       - name: Export OpenAPI contract
-        run: ./mvnw -B -T 1C --no-transfer-progress -pl application -am -Popenapi-export verify
+        run: ./mvnw -B -T 1C --no-transfer-progress -pl apps/documents-api -am -Popenapi-export verify
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -59,10 +59,10 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           base_contract=/tmp/documents-openapi-base.json
-          if git show "origin/${{ github.base_ref }}:api-contracts/documents/openapi.json" > "$base_contract"; then
+          if git show "origin/${{ github.base_ref }}:contracts/documents/openapi.json" > "$base_contract"; then
             docker run --rm -v "$PWD:/workspace:ro" -v /tmp:/baseline:ro tufin/oasdiff:latest breaking \
               /baseline/documents-openapi-base.json \
-              /workspace/api-contracts/documents/openapi.json
+              /workspace/contracts/documents/openapi.json
           else
             echo "No base Documents API contract exists; skipping breaking-change comparison."
           fi

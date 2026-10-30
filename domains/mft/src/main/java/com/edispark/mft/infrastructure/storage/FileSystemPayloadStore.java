@@ -40,6 +40,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
         Path target = directory.resolve(safeName).normalize();
         String reference = root.relativize(target).toString();
         Path temporary = Files.createTempFile(directory, ".upload-", ".tmp");
+        LocalKms.restrict(temporary);
         MessageDigest digest = sha256();
         long size = 0;
         byte[] nonce = new byte[NONCE_BYTES];
@@ -58,6 +59,7 @@ public final class FileSystemPayloadStore implements PayloadStore {
             }
         }
         Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        LocalKms.restrict(target);
         return new PayloadRef(reference, HexFormat.of().formatHex(digest.digest()), size);
     }
 

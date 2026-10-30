@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 1 0 0;
+    --foreground: 0.18 0.035 270;
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.035 270;
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.035 270;
+    --primary: 0.45 0.18 270;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.96 0.012 270;
+    --secondary-foreground: 0.27 0.15 270;
+    --muted: 0.96 0.012 270;
+    --muted-foreground: 0.45 0.025 270;
+    --accent: 0.94 0.025 270;
+    --accent-foreground: 0.27 0.15 270;
+    --destructive: 0.55 0.19 25;
+    --destructive-foreground: 1 0 0;
+    --success: 0.88 0.13 155;
+    --success-foreground: 0.54 0.15 155;
+    --warning: 0.72 0.14 75;
+    --warning-foreground: 0.43 0.11 75;
+    --border: 0.94 0.025 270;
+    --input: 0.90 0.028 270;
+    --ring: 0.45 0.18 270;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-kerning: normal;
+    font-optical-sizing: auto;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  :focus-visible {
+    outline: 2px solid oklch(var(--ring));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: oklch(var(--primary) / 0.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

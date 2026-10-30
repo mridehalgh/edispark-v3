@@ -145,6 +145,7 @@ rule or specification conflicts with the implemented project.
 | DynamoDB persistence or pagination | `dynamodb-query-patterns.md`, `dynamodb-single-table.md` |
 | Tenant-aware or SaaS plane work | `multi-tenancy-architecture.md`, `saas-control-data-planes.md` |
 | Reliability and operations | `resilience-and-retry-patterns.md`, `observability-2-0.md` |
+| Any user-facing feature or local-development workflow | `local-demo-data.md` and the `local-demo-workspace` skill |
 | Tests | `testing-strategy.md`, `testing-di-solid-principles.md`, `unit-testing-behavior-over-implementation.md`, `no-testcontainers.md` |
 | Existing Groovy/Spock tests only | `spock-testing-standards.md` |
 

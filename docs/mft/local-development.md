@@ -1,6 +1,6 @@
 # MFT local development
 
-The local stack starts with one deterministic, complete demo workspace. It is designed to exercise the same tenant and cryptographic boundaries as the production architecture while remaining disposable and requiring no AWS account.
+The local stack starts with one deterministic, complete demo workspace. It is designed to exercise the same tenant and cryptographic boundaries as the production architecture while remaining disposable and requiring no AWS account. The repository-wide feature coverage manifest and completion gate live in [`docs/local-demo-data.md`](../local-demo-data.md).
 
 ## Identity and tenant mapping
 

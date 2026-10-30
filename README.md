@@ -90,7 +90,7 @@ You can still create additional accounts in the web application. When Resend is 
 
 The `EdiSpark Local` organization is pinned one-to-one to `LOCAL_SEED_TENANT_ID`, which is also used by the Documents and MFT seeders. The database prevents either side of that mapping from being reused. Additional workspaces receive distinct tenant IDs. The web application issues ES256 JWTs, publishes the matching public key through its JWKS endpoint, and the Spring APIs validate issuer, audience, signature, and the `tenant_id` claim. API routes remain protected in the local profile; there is no authentication bypass.
 
-The local MFT adapter behaves like a small KMS test double: it resolves a logical tenant alias, derives a tenant-specific AES key from one disposable local root, and authenticates the tenant and resource context during AES-GCM encryption. This gives local code the same tenant/resource failure behavior without pretending the local root file is a production security boundary. The full local fixture and key model is documented in [docs/mft/local-development.md](docs/mft/local-development.md).
+The local MFT adapter behaves like a small KMS test double: it resolves a logical tenant alias, derives a tenant-specific AES key from one disposable local root, and authenticates the tenant and resource context during AES-GCM encryption. This gives local code the same tenant/resource failure behavior without pretending the local root file is a production security boundary. The repository-wide fixture contract is in [docs/local-demo-data.md](docs/local-demo-data.md); the detailed MFT model is in [docs/mft/local-development.md](docs/mft/local-development.md).
 
 ## Common commands 🧰
 

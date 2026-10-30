@@ -1,0 +1,22 @@
+server:
+  port: ${AS2_SIMULATOR_PORT:8082}
+spring:
+  application:
+    name: as2-simulator
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 101MB
+simulator:
+  keystore: ${AS2_SIMULATOR_KEYSTORE:./.local/as2-simulator/simulator.p12}
+  keystore-password: ${AS2_SIMULATOR_PASSWORD}
+  sender-id: ${AS2_SIMULATOR_SENDER_ID:SIMULATOR}
+  sender-alias: ${AS2_SIMULATOR_SENDER_ALIAS:SIMULATOR}
+  receiver-id: ${AS2_SIMULATOR_RECEIVER_ID:EDISPARK}
+  receiver-certificate: ${AS2_SIMULATOR_RECEIVER_CERT:./.local/as2-simulator/edispark.cer}
+  receiver-url: ${AS2_SIMULATOR_RECEIVER_URL:http://localhost:8081/as2}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

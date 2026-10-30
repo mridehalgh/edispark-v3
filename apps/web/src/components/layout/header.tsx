@@ -6,6 +6,7 @@ import {
   FileText,
   LayoutDashboard,
   Menu,
+  Network,
   Search,
   Settings,
 } from "lucide-react"
@@ -38,6 +39,7 @@ import { UserNav } from "./user-nav"
 const navigation = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
   { label: "Documents", href: "/documents", icon: FileText },
+  { label: "Managed transfer", href: "/mft", icon: Network },
   { label: "Files", href: "/file", icon: Files },
   { label: "Workspaces", href: "/organization", icon: Settings },
 ]

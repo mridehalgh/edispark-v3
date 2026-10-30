@@ -1,6 +1,6 @@
 # EdiSpark
 
-EdiSpark is a composable, multi-tenant EDI platform for receiving, validating, transforming, and routing business documents. This repository currently contains the Documents bounded context, UBL and TRADACOMS standards support, a Spring Boot API, and a Next.js web application.
+EdiSpark is a composable, multi-tenant EDI platform for receiving, validating, transforming, and routing business documents. This repository contains Documents and MFT bounded contexts, UBL and TRADACOMS standards support, Spring Boot APIs, a local AS2 peer, and a Next.js control plane.
 
 ## Architecture 🏗️
 
@@ -9,8 +9,10 @@ The repository is organized by responsibility rather than framework:
 | Path | Purpose |
 |---|---|
 | `apps/documents-api` | Spring Boot composition root, HTTP security, OpenAPI, and runtime configuration |
+| `apps/mft-api` | AS2/MFT Spring Boot composition root and public protocol endpoint |
 | `apps/web` | Next.js UI, Better Auth server, and API-facing web routes |
 | `domains/documents` | Documents domain, application services, REST ownership, and DynamoDB persistence |
+| `domains/mft` | Partner, certificate, transfer, MDN evidence, retry, and AS2 adapters |
 | `platform/crn` | Reusable canonical resource names |
 | `platform/pagination` | Shared pagination contracts |
 | `platform/tenancy` | Tenant context and isolation support |
@@ -18,13 +20,16 @@ The repository is organized by responsibility rather than framework:
 | `standards/ubl` | Generated and handwritten UBL Java support |
 | `vendor/ubl/2.1` | Versioned upstream UBL schemas and examples |
 | `contracts/documents` | Exported Documents OpenAPI contract |
+| `contracts/mft` | Exported MFT OpenAPI contract |
 | `packages/documents-client` | Generated, type-safe TypeScript client |
+| `packages/mft-client` | Generated, type-safe MFT TypeScript client |
+| `tooling/as2-simulator` | Local-only AS2 trading-partner simulator |
 | `tooling/local-runtime` | Embedded DynamoDB support used only by local development |
 | `tooling/scripts` | Cross-platform local orchestration scripts |
 | `docs/specs` | Migrated feature requirements, designs, and task records |
 | `openspec` | Active proposal workflow |
 
-The intended shape is a modular monolith today: the Documents domain owns its API and persistence, while the application modules compose deployable processes. The boundaries can later become independently deployed services without moving business logic into controllers or UI code.
+The intended shape is composable services: each domain owns its API and persistence ports, while application modules compose independently deployable processes. Business rules stay outside controllers and UI code.
 
 ## Prerequisites
 
@@ -43,9 +48,9 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The first start compiles and installs the local Maven modules, so it can take around a minute. Later starts reuse compiled output. The runner waits for the Documents API health check before launching Next.js, then warms the local JWKS route before printing `EdiSpark local stack is ready.` This prevents the first page load from racing either the Java build or Next.js route compilation. Stop the complete stack with `Ctrl+C`.
+The first start compiles and installs the local Maven modules, so it can take around a minute. Later starts reuse compiled output. The runner waits for both Java API health checks before launching Next.js, then warms the local JWKS route before printing `EdiSpark local stack is ready.` This prevents the first page load from racing the Java builds or Next.js route compilation. Stop the complete stack with `Ctrl+C`.
 
-Before launching, the development runner terminates any processes listening on its configured local ports (3000, 8000, and 8080 by default) and verifies that each port is free. This prevents Next.js from silently selecting another port and keeps service URLs deterministic. `pnpm dev:web` performs the same cleanup for the web port; `pnpm dev:api` does it for the API and embedded DynamoDB ports. Save or stop unrelated work using those ports before running these commands because its process will be terminated.
+Before launching, the development runner terminates any processes listening on its configured local ports (3000, 8000, 8080, and 8081 by default) and verifies that each port is free. This prevents Next.js from silently selecting another port and keeps service URLs deterministic. The service-specific commands perform equivalent cleanup for their ports. Save or stop unrelated work using those ports before running these commands because its process will be terminated.
 
 `pnpm dev` starts:
 
@@ -58,6 +63,11 @@ Before launching, the development runner terminates any processes listening on i
 | API health | http://localhost:8080/actuator/health |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | OpenAPI JSON | http://localhost:8080/api-docs |
+| MFT control plane | http://localhost:3000/mft |
+| MFT API | http://localhost:8081 |
+| MFT health | http://localhost:8081/actuator/health |
+| MFT Swagger UI | http://localhost:8081/swagger-ui.html |
+| MFT OpenAPI JSON | http://localhost:8081/api-docs |
 | Embedded DynamoDB | http://localhost:8000 |
 
 The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and loads safe sample documents. These generated files are ignored by Git.
@@ -86,12 +96,16 @@ The first local workspace is mapped to the same tenant as the seeded Documents d
 | `pnpm dev` | Run the complete local stack |
 | `pnpm dev:web` | Run only Next.js with local auth settings |
 | `pnpm dev:api` | Build dependencies and run only the Spring API with embedded DynamoDB |
+| `pnpm dev:mft-api` | Build dependencies and run only the local MFT API |
+| `pnpm dev:as2-simulator` | Run the optional local AS2 trading-partner peer |
+| `pnpm mft:lab:certs` | Generate disposable local AS2 lab certificates |
 | `pnpm local:reset` | Delete generated `.local/` auth, settings, and DynamoDB state |
 | `./mvnw -B clean test` | Clean and test every Java module |
 | `pnpm --filter @edispark/web test` | Run web unit and UBL contract tests |
 | `pnpm --filter @edispark/web typecheck` | Type-check the web application |
 | `pnpm --filter @edispark/web build` | Create a production Next.js build |
 | `pnpm contracts:sync:documents` | Export OpenAPI and regenerate the TypeScript client |
+| `pnpm contracts:sync:mft` | Export MFT OpenAPI and regenerate the TypeScript client |
 | `pnpm contracts:check` | Verify the generated client is type-safe and current |
 | `pnpm check` | Run the combined Java, web, build, and contract checks |
 
@@ -111,6 +125,8 @@ The local runner supplies safe defaults; copying an environment file is not requ
 | `LOCAL_TEST_USER_EMAIL` | `local@edispark.test` | Local test-account email |
 | `LOCAL_TEST_USER_PASSWORD` | `EdiSpark-Local-2026!` | Local-only predictable test password |
 | `DOCUMENTS_API_URL` | `http://localhost:8080` | Server-only API URL used by Next.js |
+| `MFT_API_URL` | `http://localhost:8081` | Server-only MFT API URL used by Next.js |
+| `MFT_ALLOW_PRIVATE_NETWORKS` | `true` locally | Allows the loopback simulator; keep `false` in production |
 | `LOCAL_SEED_TENANT_ID` | Stable local KSUID | Links the first workspace to sample data |
 | `DYNAMODB_LOCAL_ENDPOINT` | `http://localhost:8000` | Local DynamoDB endpoint |
 | `DYNAMODB_LOCAL_DATA_DIR` | `.local/dynamodb` | Persistent local DynamoDB files |
@@ -119,7 +135,9 @@ The local runner supplies safe defaults; copying an environment file is not requ
 | `AUTH_AUDIENCE` | `http://localhost:3000` | JWT audience expected by the API |
 | `AUTH_JWS_ALGORITHM` | `ES256` | JWT signature algorithm trusted by Spring Security |
 
-Never commit secrets, private keys, real customer data, or local databases. Production must use explicit Better Auth migrations, HTTPS, managed secrets, a production database, remote JWT signing such as AWS KMS, and managed DynamoDB. Local automatic migrations and embedded storage are development conveniences only.
+Never commit secrets, private keys, real customer data, or local databases. Production must use explicit Better Auth migrations, HTTPS, managed secrets, a production database, remote JWT signing, and managed persistence. Local automatic migrations and embedded storage are development conveniences only.
+
+The production MFT design does not allow private AS2 keys in the application database or filesystem. It uses a cost-conscious KMS hierarchy: one symmetric key per tenant across services plus separate cell-shared AS2 signing and decryption keys. KMS-native AS2 requires RSA-OAEP and separate certificates; incompatible partners cannot be activated. Start with the detailed [MFT documentation](docs/mft/README.md) and [sensitive-data inventory](docs/mft-security-and-operations.md).
 
 ## Contracts
 
@@ -136,6 +154,7 @@ Commit the API change, exported contract, and generated client together. The web
 
 - **A local port cannot be released:** the runner first requests graceful shutdown and then forces the owning process to stop if necessary. If cleanup still fails, check whether the listener belongs to another user or requires elevated permission.
 - **The API does not become ready:** `pnpm dev` waits up to two minutes for `http://localhost:8080/actuator/health` before starting Next.js. Check the Java output for the first startup failure.
+- **The MFT control plane says the service is unavailable:** use `pnpm dev`, which now starts and checks the MFT API, or run `pnpm dev:mft-api` beside an already running web app. Verify `http://localhost:8081/actuator/health`.
 - **Authentication or JWKS fails:** verify `http://localhost:3000/api/auth/ok` first, then reset generated state with `pnpm local:reset` and restart.
 - **Local data is inconsistent:** stop the stack, run `pnpm local:reset`, and run `pnpm dev`. Reset removes all generated local users, workspaces, keys, and documents.
 - **DynamoDB native-library errors:** run `./mvnw -B -pl tooling/local-runtime -am clean package -DskipTests`, then restart the API.

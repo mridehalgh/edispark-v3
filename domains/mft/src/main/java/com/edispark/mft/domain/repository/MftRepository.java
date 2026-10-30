@@ -1,0 +1,27 @@
+package com.edispark.mft.domain.repository;
+
+import com.edispark.mft.domain.model.CertificateRecord;
+import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.Transfer;
+import com.edispark.mft.domain.model.TransferId;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.time.Instant;
+
+public interface MftRepository {
+    PartnerProfile savePartner(PartnerProfile partner);
+    List<PartnerProfile> listPartners(String tenantId);
+    Optional<PartnerProfile> findPartner(String tenantId, UUID partnerId);
+    Optional<PartnerProfile> findInboundPartner(String localAs2Id, String remoteAs2Id);
+    Transfer saveOutboundIfAbsent(Transfer transfer);
+    Transfer save(Transfer transfer);
+    Optional<Transfer> findTransfer(String tenantId, TransferId id);
+    Optional<Transfer> findByIdempotencyKey(String tenantId, String idempotencyKey);
+    Optional<Transfer> findInboundDuplicate(String tenantId, String as2MessageId, String sha256);
+    List<Transfer> listTransfers(String tenantId);
+    CertificateRecord saveCertificate(CertificateRecord certificate);
+    List<CertificateRecord> listCertificates(String tenantId);
+    Optional<CertificateRecord> findCertificate(String tenantId, UUID certificateId);
+    List<Transfer> listPendingTransfers(Instant dueAt, int limit);
+}

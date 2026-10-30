@@ -21,6 +21,8 @@ export async function localEnvironment() {
     LOCAL_TEST_USER_PASSWORD: process.env.LOCAL_TEST_USER_PASSWORD ?? "EdiSpark-Local-2026!",
     LOCAL_TEST_USER_NAME: process.env.LOCAL_TEST_USER_NAME ?? "Local Tester",
     DOCUMENTS_API_URL: process.env.DOCUMENTS_API_URL ?? "http://localhost:8080",
+    MFT_API_URL: process.env.MFT_API_URL ?? "http://localhost:8081",
+    MFT_ALLOW_PRIVATE_NETWORKS: process.env.MFT_ALLOW_PRIVATE_NETWORKS ?? "true",
     LOCAL_SEED_TENANT_ID: process.env.LOCAL_SEED_TENANT_ID ?? seedTenantId,
     DYNAMODB_LOCAL_DATA_DIR: process.env.DYNAMODB_LOCAL_DATA_DIR ?? resolve(localDirectory, "dynamodb"),
     DYNAMODB_LOCAL_EMBEDDED: process.env.DYNAMODB_LOCAL_EMBEDDED ?? "true",

@@ -24,6 +24,7 @@ export function localServices(env) {
     { name: "web application", port: new URL(env.BETTER_AUTH_URL).port || 3000 },
     { name: "embedded DynamoDB", port: new URL(env.DYNAMODB_LOCAL_ENDPOINT ?? "http://localhost:8000").port || 8000 },
     { name: "documents API", port: new URL(env.DOCUMENTS_API_URL).port || 8080 },
+    { name: "MFT API", port: new URL(env.MFT_API_URL).port || 8081 },
   ]
 }
 

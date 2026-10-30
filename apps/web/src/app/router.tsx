@@ -14,6 +14,7 @@ import { AuthGate, ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage
 import { OrganizationSettingsPage } from "@/app/organization/settings"
 import { InvitePage } from "@/components/auth/invite-page"
 import { JwtDebugPage } from "@/app/debug/jwt"
+import { MftPage } from "@/app/mft/mft"
 
 const AppLayout = () => (
     <div className="min-h-screen bg-background">
@@ -58,6 +59,10 @@ function ReactRouterComponent() {
           {
             path: "/documents",
             element: <AuthGate><DocumentsList /></AuthGate>,
+          },
+          {
+            path: "/mft",
+            element: <AuthGate><MftPage /></AuthGate>,
           },
           {
             path: "/documents/:setId/:documentId",

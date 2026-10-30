@@ -20,6 +20,14 @@ try {
     timeout: API_READY_TIMEOUT_MS,
     url: new URL("/actuator/health", env.DOCUMENTS_API_URL).toString(),
   })
+  const mftApi = start("pnpm", ["dev:mft-api"], { cwd, env: childEnvironment })
+  coordinator.add(mftApi)
+  await waitForEndpoint({
+    child: mftApi,
+    label: "MFT API",
+    timeout: API_READY_TIMEOUT_MS,
+    url: new URL("/actuator/health", env.MFT_API_URL).toString(),
+  })
   const web = start("pnpm", ["dev:web"], { cwd, env: childEnvironment })
   coordinator.add(web)
   await waitForEndpoint({

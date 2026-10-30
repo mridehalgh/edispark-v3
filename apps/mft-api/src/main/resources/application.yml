@@ -1,0 +1,44 @@
+server:
+  port: ${MFT_SERVER_PORT:8081}
+  error:
+    include-message: never
+spring:
+  application:
+    name: mft-api
+  servlet:
+    multipart:
+      max-file-size: ${MFT_MAX_FILE_SIZE:100MB}
+      max-request-size: ${MFT_MAX_REQUEST_SIZE:101MB}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER:http://localhost:3000}
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:3000/api/auth/jwks}
+          jws-algorithms:
+            - ${AUTH_JWS_ALGORITHM:ES256}
+          audiences:
+            - ${AUTH_AUDIENCE:http://localhost:3000}
+mft:
+  payload:
+    directory: ${MFT_PAYLOAD_DIR:./.local/mft/payloads}
+  secrets:
+    directory: ${MFT_SECRET_DIR:./.local/mft/secrets}
+    master-key-file: ${MFT_MASTER_KEY_FILE:./.local/mft/master.key}
+  as2:
+    allow-private-networks: ${MFT_ALLOW_PRIVATE_NETWORKS:false}
+    allow-legacy-crypto: ${MFT_ALLOW_LEGACY_CRYPTO:false}
+    async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8081/as2/mdn}
+  delivery:
+    poll-interval-ms: ${MFT_DELIVERY_POLL_INTERVAL_MS:1000}
+springdoc:
+  api-docs:
+    path: /api-docs
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+logging:
+  level:
+    com.edispark.mft: INFO

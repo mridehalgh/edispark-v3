@@ -16,11 +16,14 @@
         <module>platform/pagination</module>
         <module>platform/crn</module>
         <module>platform/tenancy</module>
+        <module>domains/mft</module>
         <module>standards/tradacoms</module>
         <module>standards/ubl</module>
         <module>domains/documents</module>
         <module>tooling/local-runtime</module>
         <module>apps/documents-api</module>
+        <module>apps/mft-api</module>
+    <module>tooling/as2-simulator</module>
     </modules>
 
     <properties>
@@ -41,6 +44,7 @@
         <dynamodb.local.version>2.6.1</dynamodb.local.version>
         <sqlite4java.version>1.0.392</sqlite4java.version>
         <springdoc.version>3.0.3</springdoc.version>
+        <phase2.version>6.2.2</phase2.version>
     </properties>
 
     <dependencyManagement>

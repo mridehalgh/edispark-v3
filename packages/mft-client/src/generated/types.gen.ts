@@ -36,7 +36,7 @@ export type TransferResponse = {
     mdnDisposition?: string | null;
     failureReason?: string | null;
     resendOf?: string | null;
-    provenance?: TransferProvenance;
+    provenance?: TransferProvenance | null;
     createdAt?: string;
     updatedAt?: string;
     attempts?: Array<TransferAttempt>;
@@ -50,7 +50,7 @@ export type CreatePartnerRequest = {
     localCertificateId: string;
     partnerSigningCertificateId: string;
     partnerEncryptionCertificateId: string;
-    asynchronousMdnEndpoint?: string;
+    asynchronousMdnEndpoint?: string | null;
     mdnMode: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
     signingRequired?: boolean;
     encryptionRequired?: boolean;
@@ -67,9 +67,9 @@ export type PartnerResponse = {
     localCertificateId?: string;
     partnerSigningCertificateId?: string;
     partnerEncryptionCertificateId?: string;
-    previousPartnerSigningCertificateId?: string;
-    signingCertificateGraceUntil?: string;
-    asynchronousMdnEndpoint?: string;
+    previousPartnerSigningCertificateId?: string | null;
+    signingCertificateGraceUntil?: string | null;
+    asynchronousMdnEndpoint?: string | null;
     mdnMode?: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
     signingRequired?: boolean;
     encryptionRequired?: boolean;

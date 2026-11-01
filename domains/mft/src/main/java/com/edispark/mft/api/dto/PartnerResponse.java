@@ -2,14 +2,17 @@ package com.edispark.mft.api.dto;
 
 import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.PartnerProfile;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
 
 public record PartnerResponse(UUID id, String name, String localAs2Id, String remoteAs2Id, URI endpoint,
                               UUID localCertificateId, UUID partnerSigningCertificateId,
-                              UUID partnerEncryptionCertificateId, UUID previousPartnerSigningCertificateId,
-                              Instant signingCertificateGraceUntil, URI asynchronousMdnEndpoint,
+                              UUID partnerEncryptionCertificateId,
+                              @Schema(nullable = true) UUID previousPartnerSigningCertificateId,
+                              @Schema(nullable = true) Instant signingCertificateGraceUntil,
+                              @Schema(nullable = true) URI asynchronousMdnEndpoint,
                               MdnMode mdnMode, boolean signingRequired, boolean encryptionRequired,
                               boolean compressionEnabled, boolean legacyCryptoEnabled,
                               com.edispark.mft.domain.model.PartnerStatus status, Instant createdAt) {

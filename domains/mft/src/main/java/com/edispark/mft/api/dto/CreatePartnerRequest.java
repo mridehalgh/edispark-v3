@@ -1,6 +1,7 @@
 package com.edispark.mft.api.dto;
 
 import com.edispark.mft.domain.model.MdnMode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -15,7 +16,7 @@ public record CreatePartnerRequest(
         @NotNull UUID localCertificateId,
         @NotNull UUID partnerSigningCertificateId,
         @NotNull UUID partnerEncryptionCertificateId,
-        URI asynchronousMdnEndpoint,
+        @Schema(nullable = true) URI asynchronousMdnEndpoint,
         @NotNull MdnMode mdnMode,
         boolean signingRequired,
         boolean encryptionRequired,

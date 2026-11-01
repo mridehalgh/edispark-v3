@@ -13,6 +13,8 @@ An EdiSpark KMS-native partnership requires:
 | MDN | Signed MDN with SHA-256 MIC |
 | TLS | HTTPS with modern TLS policy; independent from AS2 message certificates |
 
+The baseline profile does not present a partner-specific mutual-TLS client certificate and does not accept CMS compressed-data. A retailer that mandates outbound mTLS or compression is incompatible until that capability is implemented and separately qualified; neither requirement may be bypassed with a software private key or by weakening the activated profile.
+
 ## Hard limitation
 
 AWS KMS RSA decryption supports `RSAES_OAEP_SHA_1` and `RSAES_OAEP_SHA_256`. It does not support RSA PKCS#1 v1.5 decryption.

@@ -37,7 +37,9 @@ export type CreatePartnerRequest = {
     remoteAs2Id: string;
     endpoint: string;
     localCertificateId: string;
-    partnerCertificateId: string;
+    partnerSigningCertificateId: string;
+    partnerEncryptionCertificateId: string;
+    asynchronousMdnEndpoint?: string;
     mdnMode: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
     signingRequired?: boolean;
     encryptionRequired?: boolean;
@@ -52,13 +54,23 @@ export type PartnerResponse = {
     remoteAs2Id?: string;
     endpoint?: string;
     localCertificateId?: string;
-    partnerCertificateId?: string;
+    partnerSigningCertificateId?: string;
+    partnerEncryptionCertificateId?: string;
+    previousPartnerSigningCertificateId?: string;
+    signingCertificateGraceUntil?: string;
+    asynchronousMdnEndpoint?: string;
     mdnMode?: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
     signingRequired?: boolean;
     encryptionRequired?: boolean;
     compressionEnabled?: boolean;
     legacyCryptoEnabled?: boolean;
+    status?: 'DRAFT' | 'ACTIVE' | 'SUSPENDED';
     createdAt?: string;
+};
+
+export type RotatePartnerCertificatesRequest = {
+    partnerSigningCertificateId: string;
+    partnerEncryptionCertificateId: string;
 };
 
 export type CertificateResponse = {
@@ -73,6 +85,19 @@ export type CertificateResponse = {
     hasPrivateKey?: boolean;
     daysUntilExpiry?: number;
     validity?: string;
+};
+
+export type MdnDeliveryResponse = {
+    id?: string;
+    partnerId?: string;
+    callback?: string;
+    originalMessageId?: string;
+    status?: 'PENDING' | 'DELIVERED' | 'FAILED';
+    attempts?: number;
+    nextAttemptAt?: string;
+    lastFailure?: string;
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 export type As2ConnectionDetailsResponse = {
@@ -184,6 +209,60 @@ export type CreateMftPartnerResponses = {
 
 export type CreateMftPartnerResponse = CreateMftPartnerResponses[keyof CreateMftPartnerResponses];
 
+export type SuspendMftPartnerData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/suspend';
+};
+
+export type SuspendMftPartnerResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type SuspendMftPartnerResponse = SuspendMftPartnerResponses[keyof SuspendMftPartnerResponses];
+
+export type RotateMftPartnerCertificatesData = {
+    body: RotatePartnerCertificatesRequest;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/certificates';
+};
+
+export type RotateMftPartnerCertificatesResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type RotateMftPartnerCertificatesResponse = RotateMftPartnerCertificatesResponses[keyof RotateMftPartnerCertificatesResponses];
+
+export type ActivateMftPartnerData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/activate';
+};
+
+export type ActivateMftPartnerResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type ActivateMftPartnerResponse = ActivateMftPartnerResponses[keyof ActivateMftPartnerResponses];
+
 export type ListMftCertificatesData = {
     body?: never;
     path?: never;
@@ -257,6 +336,22 @@ export type DownloadMftTransferPayloadResponses = {
 };
 
 export type DownloadMftTransferPayloadResponse = DownloadMftTransferPayloadResponses[keyof DownloadMftTransferPayloadResponses];
+
+export type ListMftMdnDeliveriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/mft/mdn-deliveries';
+};
+
+export type ListMftMdnDeliveriesResponses = {
+    /**
+     * OK
+     */
+    200: Array<MdnDeliveryResponse>;
+};
+
+export type ListMftMdnDeliveriesResponse = ListMftMdnDeliveriesResponses[keyof ListMftMdnDeliveriesResponses];
 
 export type ListMftConnectionDetailsData = {
     body?: never;

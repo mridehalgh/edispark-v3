@@ -27,4 +27,10 @@ public class MftExceptionHandler {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(MftErrorResponse.of("MFT_STORAGE_UNAVAILABLE", "Transfer storage is unavailable"));
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<MftErrorResponse> invalidState(IllegalStateException exception) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(MftErrorResponse.of("MFT_STATE_CONFLICT", "The operation is not allowed in the current state"));
+    }
 }

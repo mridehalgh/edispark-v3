@@ -4,6 +4,7 @@ import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.CertificateKind;
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.PartnerStatus;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
 import com.edispark.mft.domain.repository.MftRepository;
@@ -19,6 +20,9 @@ import java.util.List;
 import java.util.UUID;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.HexFormat;
 
 public final class MftService {
@@ -26,16 +30,47 @@ public final class MftService {
     private final PayloadStore payloadStore;
     private final Clock clock;
     private final boolean legacyCryptoAllowed;
+    private final boolean productionPolicy;
+    private final long maximumPayloadBytes;
+    private final java.time.Duration certificateRolloverGrace;
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock) {
-        this(repository, payloadStore, clock, false);
+        this(repository, payloadStore, clock, false, false, 100L * 1024 * 1024,
+                java.time.Duration.ofDays(7));
     }
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock, boolean legacyCryptoAllowed) {
+        this(repository, payloadStore, clock, legacyCryptoAllowed, false, 100L * 1024 * 1024,
+                java.time.Duration.ofDays(7));
+    }
+
+    public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
+                      boolean legacyCryptoAllowed, boolean productionPolicy) {
+        this(repository, payloadStore, clock, legacyCryptoAllowed, productionPolicy, 100L * 1024 * 1024,
+                java.time.Duration.ofDays(7));
+    }
+
+    public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
+                      boolean legacyCryptoAllowed, boolean productionPolicy, long maximumPayloadBytes) {
+        this(repository, payloadStore, clock, legacyCryptoAllowed, productionPolicy, maximumPayloadBytes,
+                java.time.Duration.ofDays(7));
+    }
+
+    public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
+                      boolean legacyCryptoAllowed, boolean productionPolicy, long maximumPayloadBytes,
+                      java.time.Duration certificateRolloverGrace) {
+        if (maximumPayloadBytes < 1) throw new IllegalArgumentException("maximumPayloadBytes must be positive");
+        if (certificateRolloverGrace == null || certificateRolloverGrace.isNegative()
+                || certificateRolloverGrace.isZero()) {
+            throw new IllegalArgumentException("certificateRolloverGrace must be positive");
+        }
         this.repository = repository;
         this.payloadStore = payloadStore;
         this.clock = clock;
         this.legacyCryptoAllowed = legacyCryptoAllowed;
+        this.productionPolicy = productionPolicy;
+        this.maximumPayloadBytes = maximumPayloadBytes;
+        this.certificateRolloverGrace = certificateRolloverGrace;
     }
 
     public PartnerProfile createPartner(CreatePartner command) {
@@ -48,14 +83,38 @@ public final class MftService {
         }
         requireCertificate(tenantId, command.localCertificateId(), CertificateKind.LOCAL_IDENTITY,
                 "Organisation AS2 certificate");
-        requireCertificate(tenantId, command.partnerCertificateId(), CertificateKind.PARTNER_PUBLIC,
-                "Partner AS2 certificate");
+        requireCertificate(tenantId, command.partnerSigningCertificateId(), CertificateKind.PARTNER_PUBLIC,
+                "Partner signing certificate");
+        requireCertificate(tenantId, command.partnerEncryptionCertificateId(), CertificateKind.PARTNER_PUBLIC,
+                "Partner encryption certificate");
         PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), tenantId, command.name(),
                 command.localAs2Id(), command.remoteAs2Id(), command.endpoint(), command.localCertificateId(),
-                command.partnerCertificateId(), command.mdnMode(),
+                command.partnerSigningCertificateId(), command.partnerEncryptionCertificateId(),
+                null, null, command.asynchronousMdnEndpoint(), command.mdnMode(),
                 command.signingRequired(), command.encryptionRequired(), command.compressionEnabled(),
-                command.legacyCryptoEnabled(), clock.instant());
+                command.legacyCryptoEnabled(), productionPolicy ? PartnerStatus.DRAFT : PartnerStatus.ACTIVE,
+                clock.instant());
+        if (productionPolicy) validateForActivation(partner);
         return repository.savePartner(partner);
+    }
+
+    public PartnerProfile activatePartner(UUID partnerId) {
+        PartnerProfile partner = requirePartner(partnerId);
+        validateForActivation(partner);
+        return repository.updatePartner(partner.activate());
+    }
+
+    public PartnerProfile suspendPartner(UUID partnerId) {
+        return repository.updatePartner(requirePartner(partnerId).suspend());
+    }
+
+    public PartnerProfile rotatePartnerCertificates(UUID partnerId, UUID signingCertificateId,
+                                                     UUID encryptionCertificateId) {
+        PartnerProfile candidate = requirePartner(partnerId)
+                .withPartnerCertificates(signingCertificateId, encryptionCertificateId,
+                        clock.instant().plus(certificateRolloverGrace));
+        validateForActivation(candidate);
+        return repository.updatePartner(candidate);
     }
 
     public List<PartnerProfile> listPartners() {
@@ -64,14 +123,22 @@ public final class MftService {
 
     public Transfer submitOutbound(SubmitOutbound command) throws IOException {
         String tenantId = tenantId();
+        validateFilename(command.filename());
+        validateContentType(command.contentType());
+        if (command.idempotencyKey() == null || command.idempotencyKey().isBlank()
+                || command.idempotencyKey().length() > 200) {
+            throw new IllegalArgumentException("Idempotency key must contain 1-200 characters");
+        }
         Transfer existing = repository.findByIdempotencyKey(tenantId, command.idempotencyKey()).orElse(null);
         if (existing != null) return existing;
-        repository.findPartner(tenantId, command.partnerId())
+        PartnerProfile partner = repository.findPartner(tenantId, command.partnerId())
                 .orElseThrow(() -> new MftNotFoundException("Partner was not found"));
+        requireActive(partner);
         Instant now = clock.instant();
         Transfer transfer = Transfer.outbound(tenantId, command.partnerId(), command.filename(),
                 command.contentType(), messageId(), command.idempotencyKey(), command.resendOf(), now);
-        transfer.attachPayload(payloadStore.put(tenantId, transfer.id(), command.filename(), command.content()), now);
+        transfer.attachPayload(payloadStore.put(tenantId, transfer.id(), command.filename(),
+                new MaximumSizeInputStream(command.content(), maximumPayloadBytes)), now);
         return repository.saveOutboundIfAbsent(transfer);
     }
 
@@ -92,8 +159,13 @@ public final class MftService {
                                    String filename, String contentType, byte[] content) throws IOException {
         PartnerProfile partner = repository.findInboundPartner(localAs2Id, remoteAs2Id)
                 .orElseThrow(() -> new MftNotFoundException("Inbound AS2 partnership was not found"));
-        Transfer duplicate = repository.findInboundDuplicate(partner.tenantId(), messageId, sha256(content)).orElse(null);
-        if (duplicate != null) return duplicate;
+        requireActive(partner);
+        String contentSha256 = sha256(content);
+        Transfer prior = repository.findInboundByMessageId(partner.tenantId(), messageId).orElse(null);
+        if (prior != null) {
+            if (prior.payload() != null && prior.payload().sha256().equals(contentSha256)) return prior;
+            throw new As2ReplayConflictException();
+        }
         Instant now = clock.instant();
         Transfer transfer = Transfer.inbound(partner.tenantId(), partner.id(), filename, contentType, messageId, now);
         transfer.attachPayload(payloadStore.put(partner.tenantId(), transfer.id(), filename,
@@ -128,6 +200,72 @@ public final class MftService {
         return certificate;
     }
 
+    private PartnerProfile requirePartner(UUID partnerId) {
+        return repository.findPartner(tenantId(), partnerId)
+                .orElseThrow(() -> new MftNotFoundException("Partner was not found"));
+    }
+
+    private void requireActive(PartnerProfile partner) {
+        if (partner.status() != PartnerStatus.ACTIVE) {
+            throw new IllegalStateException("Partner is not active");
+        }
+    }
+
+    private void validateForActivation(PartnerProfile partner) {
+        CertificateRecord local = requireCertificate(partner.tenantId(), partner.localCertificateId(),
+                CertificateKind.LOCAL_IDENTITY, "Organisation AS2 certificate");
+        CertificateRecord signing = requireCertificate(partner.tenantId(), partner.partnerSigningCertificateId(),
+                CertificateKind.PARTNER_PUBLIC, "Partner signing certificate");
+        CertificateRecord encryption = requireCertificate(partner.tenantId(), partner.partnerEncryptionCertificateId(),
+                CertificateKind.PARTNER_PUBLIC, "Partner encryption certificate");
+        validateCertificate(local, CertificatePurpose.SIGNING);
+        validateCertificate(signing, CertificatePurpose.SIGNING);
+        validateCertificate(encryption, CertificatePurpose.ENCRYPTION);
+        if (!productionPolicy) return;
+        if (!"https".equalsIgnoreCase(partner.endpoint().getScheme())) {
+            throw new IllegalArgumentException("Production partner endpoint must use HTTPS");
+        }
+        if (!partner.signingRequired() || !partner.encryptionRequired()) {
+            throw new IllegalArgumentException("Production AS2 requires signing and encryption");
+        }
+        if (partner.compressionEnabled()) {
+            throw new IllegalArgumentException("CMS compression is not supported by the production profile");
+        }
+        if (partner.legacyCryptoEnabled()) {
+            throw new IllegalArgumentException("Legacy cryptography cannot be activated in production");
+        }
+        if (partner.mdnMode() == MdnMode.ASYNCHRONOUS) {
+            if (partner.asynchronousMdnEndpoint() == null
+                    || !"https".equalsIgnoreCase(partner.asynchronousMdnEndpoint().getScheme())) {
+                throw new IllegalArgumentException("Asynchronous MDN delivery requires an explicit HTTPS endpoint");
+            }
+        }
+    }
+
+    private void validateCertificate(CertificateRecord record, CertificatePurpose purpose) {
+        Instant now = clock.instant();
+        if (now.isBefore(record.notBefore()) || !now.isBefore(record.notAfter())) {
+            throw new IllegalArgumentException(record.name() + " is not currently valid");
+        }
+        try {
+            X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
+                    .generateCertificate(new ByteArrayInputStream(
+                            record.publicCertificatePem().getBytes(java.nio.charset.StandardCharsets.US_ASCII)));
+            if (!(certificate.getPublicKey() instanceof RSAPublicKey rsa) || rsa.getModulus().bitLength() < 2048) {
+                throw new IllegalArgumentException(record.name() + " must use an RSA key of at least 2048 bits");
+            }
+            boolean[] usage = certificate.getKeyUsage();
+            int requiredBit = purpose == CertificatePurpose.SIGNING ? 0 : 2;
+            if (usage != null && (usage.length <= requiredBit || !usage[requiredBit])) {
+                throw new IllegalArgumentException(record.name() + " does not permit " + purpose.label);
+            }
+        } catch (IllegalArgumentException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IllegalArgumentException(record.name() + " is not a valid X.509 certificate", exception);
+        }
+    }
+
     private String sha256(byte[] content) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
@@ -136,13 +274,76 @@ public final class MftService {
         }
     }
 
+    private void validateFilename(String filename) {
+        if (filename == null || filename.isBlank() || filename.length() > 255
+                || filename.contains("/") || filename.contains("\\")
+                || filename.chars().anyMatch(value -> value < 32 || value == 127)) {
+            throw new IllegalArgumentException("Filename must be a plain 1-255 character name");
+        }
+    }
+
+    private void validateContentType(String contentType) {
+        if (contentType == null || contentType.isBlank() || contentType.length() > 200
+                || contentType.indexOf('\r') >= 0 || contentType.indexOf('\n') >= 0) {
+            throw new IllegalArgumentException("Content type is invalid");
+        }
+    }
+
     public record CreatePartner(String name, String localAs2Id, String remoteAs2Id, URI endpoint,
-                                UUID localCertificateId, UUID partnerCertificateId,
+                                UUID localCertificateId, UUID partnerSigningCertificateId,
+                                UUID partnerEncryptionCertificateId, URI asynchronousMdnEndpoint,
                                 MdnMode mdnMode, boolean signingRequired, boolean encryptionRequired,
                                 boolean compressionEnabled, boolean legacyCryptoEnabled) {
+        public CreatePartner(String name, String localAs2Id, String remoteAs2Id, URI endpoint,
+                             UUID localCertificateId, UUID partnerCertificateId, MdnMode mdnMode,
+                             boolean signingRequired, boolean encryptionRequired,
+                             boolean compressionEnabled, boolean legacyCryptoEnabled) {
+            this(name, localAs2Id, remoteAs2Id, endpoint, localCertificateId, partnerCertificateId,
+                    partnerCertificateId, null, mdnMode, signingRequired, encryptionRequired,
+                    compressionEnabled, legacyCryptoEnabled);
+        }
     }
 
     public record SubmitOutbound(UUID partnerId, String idempotencyKey, String filename,
                                  String contentType, InputStream content, TransferId resendOf) {
+    }
+
+    private enum CertificatePurpose {
+        SIGNING("digital signatures"), ENCRYPTION("key encipherment");
+
+        private final String label;
+
+        CertificatePurpose(String label) {
+            this.label = label;
+        }
+    }
+
+    private static final class MaximumSizeInputStream extends java.io.FilterInputStream {
+        private final long maximumBytes;
+        private long bytesRead;
+
+        private MaximumSizeInputStream(InputStream input, long maximumBytes) {
+            super(input);
+            this.maximumBytes = maximumBytes;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = super.read();
+            if (value >= 0) account(1);
+            return value;
+        }
+
+        @Override
+        public int read(byte[] bytes, int offset, int length) throws IOException {
+            int read = super.read(bytes, offset, length);
+            if (read > 0) account(read);
+            return read;
+        }
+
+        private void account(int count) throws IOException {
+            bytesRead += count;
+            if (bytesRead > maximumBytes) throw new IOException("MFT payload exceeds the configured size limit");
+        }
     }
 }

@@ -151,6 +151,20 @@ class KmsAs2CryptoTest {
                 .hasMessageContaining("does not match its KMS key");
     }
 
+    @Test
+    void malformedCmsBodyIsRejectedWithoutReturningContent() throws Exception {
+        Security.addProvider(new BouncyCastleProvider());
+        KeyPair signing = keyPair();
+        KeyPair decryption = keyPair();
+        KmsCmsCodec codec = new KmsCmsCodec(kms(signing.getPrivate(), decryption.getPrivate()),
+                "signing", "decryption", certificate(signing, "CN=AS2 Signing"));
+
+        assertThatThrownBy(() -> codec.decrypt(codec.parse(
+                "application/pkcs7-mime; smime-type=enveloped-data", new byte[]{1, 2, 3, 4})))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unable to decrypt AS2 envelope");
+    }
+
     private KmsClient kms(PrivateKey signing, PrivateKey decryption) {
         return AwsClientFake.create(KmsClient.class, (proxy, method, arguments) -> {
             if (method.getName().equals("sign")) {

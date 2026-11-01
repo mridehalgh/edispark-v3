@@ -1,6 +1,7 @@
 package com.edispark.mft.domain.repository;
 
 import com.edispark.mft.domain.model.CertificateRecord;
+import com.edispark.mft.domain.model.MdnDelivery;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 public interface MftRepository {
     PartnerProfile savePartner(PartnerProfile partner);
+    PartnerProfile updatePartner(PartnerProfile partner);
     List<PartnerProfile> listPartners(String tenantId);
     Optional<PartnerProfile> findPartner(String tenantId, UUID partnerId);
     Optional<PartnerProfile> findInboundPartner(String localAs2Id, String remoteAs2Id);
@@ -23,6 +25,7 @@ public interface MftRepository {
     Optional<Transfer> findByIdempotencyKey(String tenantId, String idempotencyKey);
     Optional<Transfer> findOutboundByMessageId(String tenantId, String as2MessageId);
     Optional<Transfer> findInboundDuplicate(String tenantId, String as2MessageId, String sha256);
+    Optional<Transfer> findInboundByMessageId(String tenantId, String as2MessageId);
     List<Transfer> listTransfers(String tenantId);
     CertificateRecord saveCertificate(CertificateRecord certificate);
     List<CertificateRecord> listCertificates(String tenantId);
@@ -31,4 +34,11 @@ public interface MftRepository {
     boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
                                     Instant now, Instant expiresAt);
     void releaseDeliveryLease(String tenantId, TransferId transferId, String owner);
+    MdnDelivery saveMdnDelivery(MdnDelivery delivery);
+    boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts);
+    MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery);
+    List<MdnDelivery> listPendingMdnDeliveries(Instant dueAt, int limit);
+    List<MdnDelivery> listMdnDeliveries(String tenantId);
+    boolean tryAcquireMdnLease(String tenantId, UUID deliveryId, String owner, Instant now, Instant expiresAt);
+    void releaseMdnLease(String tenantId, UUID deliveryId, String owner);
 }

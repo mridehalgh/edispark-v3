@@ -34,6 +34,13 @@ mft:
     directory: ${MFT_SECRET_DIR:./.local/mft/secrets}
     master-key-file: ${MFT_MASTER_KEY_FILE:./.local/mft/master.key}
   as2:
+    max-message-bytes: ${MFT_AS2_MAX_MESSAGE_BYTES:26214400}
+    max-outbound-payload-bytes: ${MFT_AS2_MAX_OUTBOUND_PAYLOAD_BYTES:104857600}
+    certificate-rollover-grace-days: ${MFT_AS2_CERTIFICATE_ROLLOVER_GRACE_DAYS:7}
+    admission:
+      global-concurrency: ${MFT_AS2_GLOBAL_CONCURRENCY:64}
+      partner-concurrency: ${MFT_AS2_PARTNER_CONCURRENCY:8}
+      partner-requests-per-minute: ${MFT_AS2_PARTNER_REQUESTS_PER_MINUTE:600}
     allow-private-networks: ${MFT_ALLOW_PRIVATE_NETWORKS:false}
     allow-legacy-crypto: ${MFT_ALLOW_LEGACY_CRYPTO:false}
     async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8081/as2/mdn}

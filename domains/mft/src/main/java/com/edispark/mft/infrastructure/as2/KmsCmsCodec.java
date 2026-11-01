@@ -98,7 +98,10 @@ public final class KmsCmsCodec {
     public MimeBodyPart signedMdn(String originalMessageId, String disposition, byte[] mic) {
         try {
             MimeBodyPart explanation = new MimeBodyPart();
-            explanation.setText("The AS2 message was received and processed by EdiSpark.", StandardCharsets.UTF_8.name());
+            explanation.setText(disposition.startsWith("processed")
+                    ? "The AS2 message was received and processed by EdiSpark."
+                    : "The authenticated AS2 message could not be processed by EdiSpark.",
+                    StandardCharsets.UTF_8.name());
             String notification = "Original-Message-ID: " + originalMessageId + "\r\n"
                     + "Disposition: automatic-action/MDN-sent-automatically; " + disposition + "\r\n"
                     + "Received-content-MIC: " + Base64.getEncoder().encodeToString(mic) + ", sha-256\r\n";

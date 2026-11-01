@@ -7,13 +7,18 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record PartnerResponse(UUID id, String name, String localAs2Id, String remoteAs2Id, URI endpoint,
-                              UUID localCertificateId, UUID partnerCertificateId,
+                              UUID localCertificateId, UUID partnerSigningCertificateId,
+                              UUID partnerEncryptionCertificateId, UUID previousPartnerSigningCertificateId,
+                              Instant signingCertificateGraceUntil, URI asynchronousMdnEndpoint,
                               MdnMode mdnMode, boolean signingRequired, boolean encryptionRequired,
-                              boolean compressionEnabled, boolean legacyCryptoEnabled, Instant createdAt) {
+                              boolean compressionEnabled, boolean legacyCryptoEnabled,
+                              com.edispark.mft.domain.model.PartnerStatus status, Instant createdAt) {
     public static PartnerResponse from(PartnerProfile partner) {
         return new PartnerResponse(partner.id(), partner.name(), partner.localAs2Id(), partner.remoteAs2Id(),
-                partner.endpoint(), partner.localCertificateId(), partner.partnerCertificateId(), partner.mdnMode(),
+                partner.endpoint(), partner.localCertificateId(), partner.partnerSigningCertificateId(),
+                partner.partnerEncryptionCertificateId(), partner.previousPartnerSigningCertificateId(),
+                partner.signingCertificateGraceUntil(), partner.asynchronousMdnEndpoint(), partner.mdnMode(),
                 partner.signingRequired(), partner.encryptionRequired(),
-                partner.compressionEnabled(), partner.legacyCryptoEnabled(), partner.createdAt());
+                partner.compressionEnabled(), partner.legacyCryptoEnabled(), partner.status(), partner.createdAt());
     }
 }

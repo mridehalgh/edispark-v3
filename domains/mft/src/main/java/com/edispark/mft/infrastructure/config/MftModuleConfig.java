@@ -97,8 +97,11 @@ public class MftModuleConfig {
 
     @Bean
     MftService mftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
-            @Value("${mft.as2.allow-legacy-crypto:false}") boolean allowLegacyCrypto) {
-        return new MftService(repository, payloadStore, clock, allowLegacyCrypto);
+            @Value("${mft.as2.allow-legacy-crypto:false}") boolean allowLegacyCrypto,
+            @Value("${mft.as2.max-outbound-payload-bytes:104857600}") long maximumPayloadBytes,
+            @Value("${mft.as2.certificate-rollover-grace-days:7}") long rolloverGraceDays) {
+        return new MftService(repository, payloadStore, clock, allowLegacyCrypto, false, maximumPayloadBytes,
+                java.time.Duration.ofDays(rolloverGraceDays));
     }
 
     private List<String> commaSeparated(String value) {

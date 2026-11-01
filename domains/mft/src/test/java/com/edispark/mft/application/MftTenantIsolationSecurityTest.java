@@ -8,6 +8,7 @@ import com.edispark.mft.domain.model.CertificateKind;
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.PartnerStatus;
 import com.edispark.mft.domain.model.PayloadRef;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
@@ -47,7 +48,7 @@ class MftTenantIsolationSecurityTest {
         assertThatThrownBy(() -> inTenant(TENANT_A, () -> service.createPartner(command(local.id(), remote.id(),
                 "EDISPARK-A", "RETAILER-A"))))
                 .isInstanceOf(MftNotFoundException.class)
-                .hasMessage("Partner AS2 certificate was not found");
+                .hasMessage("Partner signing certificate was not found");
         assertThat(repository.listPartners(TENANT_A)).isEmpty();
     }
 
@@ -65,6 +66,27 @@ class MftTenantIsolationSecurityTest {
                 "EDISPARK-A", "RETAILER-A"))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Organisation AS2 certificate has the wrong purpose");
+    }
+
+    @Test
+    void cannotSelectAnotherOrganisationsCertificateDuringRollover() throws Exception {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        CertificateRecord local = certificate(TENANT_A, CertificateKind.LOCAL_IDENTITY);
+        CertificateRecord partnerCertificate = certificate(TENANT_A, CertificateKind.PARTNER_PUBLIC);
+        CertificateRecord foreign = certificate(TENANT_B, CertificateKind.PARTNER_PUBLIC);
+        repository.saveCertificate(local);
+        repository.saveCertificate(partnerCertificate);
+        repository.saveCertificate(foreign);
+        MftService service = new MftService(repository,
+                new FileSystemPayloadStore(Files.createTempDirectory("mft-rollover-isolation")),
+                CLOCK, false, false);
+        PartnerProfile partner = inTenantResult(TENANT_A, () -> service.createPartner(
+                command(local.id(), partnerCertificate.id(), "EDISPARK-A", "RETAILER-A")));
+
+        assertThatThrownBy(() -> inTenant(TENANT_A, () -> service.rotatePartnerCertificates(
+                partner.id(), foreign.id(), foreign.id())))
+                .isInstanceOf(MftNotFoundException.class)
+                .hasMessage("Partner signing certificate was not found");
     }
 
     @Test
@@ -156,6 +178,43 @@ class MftTenantIsolationSecurityTest {
         assertThat(repository.listTransfers(TENANT_A)).isEmpty();
     }
 
+    @Test
+    void reusingMessageIdWithDifferentContentIsRejectedWithoutStoringAnotherFile() throws Exception {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        FileSystemPayloadStore payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-replay"));
+        repository.savePartner(partner(TENANT_A, "EDISPARK-A", "RETAILER-A"));
+        MftService service = new MftService(repository, payloads, CLOCK);
+        service.receiveInbound("EDISPARK-A", "RETAILER-A", "<replay@example>",
+                "orders.edi", "application/edifact", new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> service.receiveInbound("EDISPARK-A", "RETAILER-A", "<replay@example>",
+                "orders.edi", "application/edifact", new byte[]{9, 8, 7}))
+                .isInstanceOf(As2ReplayConflictException.class);
+        assertThat(repository.listTransfers(TENANT_A)).hasSize(1);
+    }
+
+    @Test
+    void draftPartnerCannotSendOrReceiveFiles() throws Exception {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        PartnerProfile active = partner(TENANT_A, "EDISPARK-A", "RETAILER-A");
+        PartnerProfile draft = new PartnerProfile(active.id(), active.tenantId(), active.name(), active.localAs2Id(),
+                active.remoteAs2Id(), active.endpoint(), active.localCertificateId(),
+                active.partnerSigningCertificateId(), active.partnerEncryptionCertificateId(), null, null, null,
+                active.mdnMode(), true, true, false, false, PartnerStatus.DRAFT, NOW);
+        repository.savePartner(draft);
+        MftService service = new MftService(repository,
+                new FileSystemPayloadStore(Files.createTempDirectory("mft-inactive")), CLOCK);
+
+        assertThatThrownBy(() -> service.receiveInbound("EDISPARK-A", "RETAILER-A", "<draft@example>",
+                "orders.edi", "application/edifact", new byte[]{1}))
+                .isInstanceOf(IllegalStateException.class).hasMessage("Partner is not active");
+        assertThatThrownBy(() -> inTenant(TENANT_A, () -> service.submitOutbound(new MftService.SubmitOutbound(
+                draft.id(), "draft", "orders.edi", "application/edifact",
+                new ByteArrayInputStream(new byte[]{1}), null))))
+                .isInstanceOf(IllegalStateException.class).hasMessage("Partner is not active");
+        assertThat(repository.listTransfers(TENANT_A)).isEmpty();
+    }
+
     private MftService.CreatePartner command(UUID local, UUID remote, String localAs2, String remoteAs2) {
         return new MftService.CreatePartner("Retailer", localAs2, remoteAs2,
                 URI.create("https://retailer.example/as2"), local, remote, MdnMode.SYNCHRONOUS,
@@ -188,8 +247,17 @@ class MftTenantIsolationSecurityTest {
         if (failure.get() != null) throw new IllegalStateException(failure.get());
     }
 
+    private <T> T inTenantResult(String tenantId, ThrowingSupplier<T> action) {
+        AtomicReference<T> result = new AtomicReference<>();
+        inTenant(tenantId, () -> result.set(action.get()));
+        return result.get();
+    }
+
     @FunctionalInterface
     private interface ThrowingAction { void run() throws Exception; }
+
+    @FunctionalInterface
+    private interface ThrowingSupplier<T> { T get() throws Exception; }
 
     private static final class RecordingPayloadStore implements PayloadStore {
         private int putCalls;

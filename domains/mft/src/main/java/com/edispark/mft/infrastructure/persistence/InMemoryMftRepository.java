@@ -2,6 +2,8 @@ package com.edispark.mft.infrastructure.persistence;
 
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.MdnDelivery;
+import com.edispark.mft.domain.model.MdnDeliveryStatus;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
 import com.edispark.mft.domain.model.TransferStatus;
@@ -20,9 +22,11 @@ public final class InMemoryMftRepository implements MftRepository {
     private final ConcurrentHashMap<String, TransferStatus> persistedStatuses = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> idempotency = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> outboundMessages = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, TransferId> inboundDeduplication = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, TransferId> inboundMessages = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CertificateRecord> certificates = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, DeliveryLease> deliveryLeases = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, MdnDelivery> mdnDeliveries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, DeliveryLease> mdnLeases = new ConcurrentHashMap<>();
 
     @Override
     public synchronized PartnerProfile savePartner(PartnerProfile partner) {
@@ -33,6 +37,14 @@ public final class InMemoryMftRepository implements MftRepository {
             throw new IllegalArgumentException("The AS2 identity pair is already assigned to a workspace");
         }
         partners.put(partner.tenantId() + ":" + partner.id(), partner);
+        return partner;
+    }
+
+    @Override
+    public synchronized PartnerProfile updatePartner(PartnerProfile partner) {
+        String key = partner.tenantId() + ":" + partner.id();
+        if (!partners.containsKey(key)) throw new IllegalArgumentException("Partner does not exist");
+        partners.put(key, partner);
         return partner;
     }
 
@@ -83,9 +95,16 @@ public final class InMemoryMftRepository implements MftRepository {
 
     @Override
     public synchronized Transfer saveInboundIfAbsent(Transfer transfer) {
-        String key = inboundKey(transfer.tenantId(), transfer.as2MessageId(), transfer.payload().sha256());
-        TransferId existing = inboundDeduplication.putIfAbsent(key, transfer.id());
-        if (existing != null) return transfers.get(transfer.tenantId() + ":" + existing);
+        String key = inboundKey(transfer.tenantId(), transfer.as2MessageId());
+        TransferId existing = inboundMessages.putIfAbsent(key, transfer.id());
+        if (existing != null) {
+            Transfer original = transfers.get(transfer.tenantId() + ":" + existing);
+            if (original == null || original.payload() == null
+                    || !original.payload().sha256().equals(transfer.payload().sha256())) {
+                throw new com.edispark.mft.application.As2ReplayConflictException();
+            }
+            return original;
+        }
         transfers.put(transfer.tenantId() + ":" + transfer.id(), transfer);
         persistedStatuses.put(transfer.tenantId() + ":" + transfer.id(), transfer.status());
         return transfer;
@@ -110,11 +129,16 @@ public final class InMemoryMftRepository implements MftRepository {
 
     @Override
     public Optional<Transfer> findInboundDuplicate(String tenantId, String messageId, String sha256) {
-        TransferId id = inboundDeduplication.get(inboundKey(tenantId, messageId, sha256));
+        return findInboundByMessageId(tenantId, messageId)
+                .filter(item -> item.payload() != null && item.payload().sha256().equals(sha256));
+    }
+
+    @Override
+    public Optional<Transfer> findInboundByMessageId(String tenantId, String messageId) {
+        TransferId id = inboundMessages.get(inboundKey(tenantId, messageId));
         if (id != null) return findTransfer(tenantId, id);
         return transfers.values().stream().filter(item -> item.tenantId().equals(tenantId)
-                && item.direction().name().equals("INBOUND") && item.as2MessageId().equals(messageId)
-                && item.payload() != null && item.payload().sha256().equals(sha256)).findFirst();
+                && item.direction().name().equals("INBOUND") && item.as2MessageId().equals(messageId)).findFirst();
     }
 
     @Override
@@ -165,8 +189,58 @@ public final class InMemoryMftRepository implements MftRepository {
                 (key, lease) -> lease.owner().equals(owner) ? null : lease);
     }
 
-    private String inboundKey(String tenantId, String messageId, String sha256) {
-        return tenantId + ":" + messageId + ":" + sha256;
+    @Override
+    public MdnDelivery saveMdnDelivery(MdnDelivery delivery) {
+        mdnDeliveries.put(delivery.tenantId() + ":" + delivery.id(), delivery);
+        return delivery;
+    }
+
+    @Override
+    public synchronized boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts) {
+        String key = delivery.tenantId() + ":" + delivery.id();
+        MdnDelivery current = mdnDeliveries.get(key);
+        if (current == null || current.status() != MdnDeliveryStatus.PENDING
+                || current.attempts() != expectedAttempts) return false;
+        mdnDeliveries.put(key, delivery);
+        return true;
+    }
+
+    @Override
+    public MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery) {
+        return mdnDeliveries.computeIfAbsent(delivery.tenantId() + ":" + delivery.id(), ignored -> delivery);
+    }
+
+    @Override
+    public List<MdnDelivery> listPendingMdnDeliveries(Instant dueAt, int limit) {
+        return mdnDeliveries.values().stream()
+                .filter(item -> item.status() == MdnDeliveryStatus.PENDING && !item.nextAttemptAt().isAfter(dueAt))
+                .sorted(Comparator.comparing(MdnDelivery::nextAttemptAt)).limit(limit).toList();
+    }
+
+    @Override
+    public List<MdnDelivery> listMdnDeliveries(String tenantId) {
+        return mdnDeliveries.values().stream().filter(item -> item.tenantId().equals(tenantId))
+                .sorted(Comparator.comparing(MdnDelivery::createdAt).reversed()).toList();
+    }
+
+    @Override
+    public synchronized boolean tryAcquireMdnLease(String tenantId, UUID deliveryId, String owner,
+                                                    Instant now, Instant expiresAt) {
+        String key = tenantId + ":" + deliveryId;
+        DeliveryLease existing = mdnLeases.get(key);
+        if (existing != null && !existing.expiresAt().isBefore(now)) return false;
+        mdnLeases.put(key, new DeliveryLease(owner, expiresAt));
+        return true;
+    }
+
+    @Override
+    public synchronized void releaseMdnLease(String tenantId, UUID deliveryId, String owner) {
+        mdnLeases.computeIfPresent(tenantId + ":" + deliveryId,
+                (key, lease) -> lease.owner().equals(owner) ? null : lease);
+    }
+
+    private String inboundKey(String tenantId, String messageId) {
+        return tenantId + ":" + messageId;
     }
 
     private record DeliveryLease(String owner, Instant expiresAt) {}

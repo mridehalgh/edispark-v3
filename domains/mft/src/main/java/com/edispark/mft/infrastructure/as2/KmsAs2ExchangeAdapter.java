@@ -139,7 +139,7 @@ public final class KmsAs2ExchangeAdapter implements As2ExchangePort {
     }
 
     private X509Certificate partnerCertificate(PartnerProfile partner) throws Exception {
-        return certificate(certificates.load(partner.tenantId(), partner.partnerCertificateId()).bytes());
+        return certificate(certificates.load(partner.tenantId(), partner.partnerEncryptionCertificateId()).bytes());
     }
 
     private X509Certificate certificate(byte[] bytes) throws Exception {

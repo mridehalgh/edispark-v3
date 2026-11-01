@@ -2,6 +2,7 @@ package com.edispark.mft.infrastructure.persistence;
 
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.MdnDelivery;
 import com.edispark.mft.domain.model.PayloadRef;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferAttempt;
@@ -11,6 +12,7 @@ import com.edispark.mft.domain.model.TransferStatus;
 import com.edispark.mft.domain.repository.MftRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -66,6 +68,14 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
+    public PartnerProfile updatePartner(PartnerProfile partner) {
+        dynamoDb.putItem(PutItemRequest.builder().tableName(tableName)
+                .item(entity(partner.tenantId(), "PARTNER#" + partner.id(), partner))
+                .conditionExpression("attribute_exists(pk) AND attribute_exists(sk)").build());
+        return partner;
+    }
+
+    @Override
     public List<PartnerProfile> listPartners(String tenantId) {
         return queryPrefix(tenantId, "PARTNER#").stream().map(item -> read(item, PartnerProfile.class))
                 .sorted(Comparator.comparing(PartnerProfile::name)).toList();
@@ -110,10 +120,11 @@ public final class DynamoDbMftRepository implements MftRepository {
 
     @Override
     public Transfer saveInboundIfAbsent(Transfer transfer) {
-        String markerKey = inboundMarker(transfer.as2MessageId(), transfer.payload().sha256());
+        String markerKey = inboundMarker(transfer.as2MessageId());
         Map<String, AttributeValue> marker = Map.of(
                 "pk", string(tenantPk(transfer.tenantId())), "sk", string(markerKey),
-                "transferId", string(transfer.id().toString()));
+                "transferId", string(transfer.id().toString()),
+                "payloadSha256", string(transfer.payload().sha256()));
         try {
             dynamoDb.transactWriteItems(TransactWriteItemsRequest.builder().transactItems(
                     put(marker, "attribute_not_exists(pk) AND attribute_not_exists(sk)"),
@@ -121,8 +132,12 @@ public final class DynamoDbMftRepository implements MftRepository {
                     .build());
             return transfer;
         } catch (TransactionCanceledException exception) {
-            return findInboundDuplicate(transfer.tenantId(), transfer.as2MessageId(), transfer.payload().sha256())
+            Transfer original = findInboundByMessageId(transfer.tenantId(), transfer.as2MessageId())
                     .orElseThrow(() -> new IllegalStateException("Inbound deduplication transaction conflicted", exception));
+            if (original.payload() == null || !original.payload().sha256().equals(transfer.payload().sha256())) {
+                throw new com.edispark.mft.application.As2ReplayConflictException();
+            }
+            return original;
         }
     }
 
@@ -164,7 +179,13 @@ public final class DynamoDbMftRepository implements MftRepository {
 
     @Override
     public Optional<Transfer> findInboundDuplicate(String tenantId, String as2MessageId, String sha256) {
-        return markerTransfer(tenantId, inboundMarker(as2MessageId, sha256));
+        return findInboundByMessageId(tenantId, as2MessageId)
+                .filter(item -> item.payload() != null && item.payload().sha256().equals(sha256));
+    }
+
+    @Override
+    public Optional<Transfer> findInboundByMessageId(String tenantId, String as2MessageId) {
+        return markerTransfer(tenantId, inboundMarker(as2MessageId));
     }
 
     @Override
@@ -203,12 +224,17 @@ public final class DynamoDbMftRepository implements MftRepository {
     @Override
     public boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
                                            Instant now, Instant expiresAt) {
+        return tryAcquireLease("DELIVERY", tenantId, transferId.toString(), owner, now, expiresAt);
+    }
+
+    private boolean tryAcquireLease(String purpose, String tenantId, String resourceId, String owner,
+                                    Instant now, Instant expiresAt) {
         if (!expiresAt.isAfter(now)) throw new IllegalArgumentException("lease expiry must be after now");
         Map<String, AttributeValue> lease = Map.of(
-                "pk", string("LEASE#" + tenantId + "#" + transferId),
-                "sk", string("DELIVERY"),
+                "pk", string("LEASE#" + tenantId + "#" + resourceId),
+                "sk", string(purpose),
                 "tenantId", string(tenantId),
-                "transferId", string(transferId.toString()),
+                "resourceId", string(resourceId),
                 "leaseOwner", string(owner),
                 "leaseUntil", number(expiresAt.toEpochMilli()),
                 "expiresAt", AttributeValue.builder().n(Long.toString(expiresAt.getEpochSecond())).build());
@@ -225,15 +251,92 @@ public final class DynamoDbMftRepository implements MftRepository {
 
     @Override
     public void releaseDeliveryLease(String tenantId, TransferId transferId, String owner) {
+        releaseLease("DELIVERY", tenantId, transferId.toString(), owner);
+    }
+
+    private void releaseLease(String purpose, String tenantId, String resourceId, String owner) {
         try {
             dynamoDb.deleteItem(DeleteItemRequest.builder().tableName(tableName)
-                    .key(key("LEASE#" + tenantId + "#" + transferId, "DELIVERY"))
+                    .key(key("LEASE#" + tenantId + "#" + resourceId, purpose))
                     .conditionExpression("leaseOwner = :owner")
                     .expressionAttributeValues(Map.of(":owner", string(owner)))
                     .build());
         } catch (ConditionalCheckFailedException ignored) {
             // An expired lease may already belong to another worker; never delete that worker's lease.
         }
+    }
+
+    @Override
+    public MdnDelivery saveMdnDelivery(MdnDelivery delivery) {
+        dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(mdnDeliveryEntity(delivery)).build());
+        return delivery;
+    }
+
+    @Override
+    public boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts) {
+        try {
+            dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(mdnDeliveryEntity(delivery))
+                    .conditionExpression("#status = :pending AND attempts = :expected")
+                    .expressionAttributeNames(Map.of("#status", "status"))
+                    .expressionAttributeValues(Map.of(":pending", string("PENDING"),
+                            ":expected", number(expectedAttempts))).build());
+            return true;
+        } catch (ConditionalCheckFailedException exception) {
+            return false;
+        }
+    }
+
+    @Override
+    public MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery) {
+        try {
+            dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(mdnDeliveryEntity(delivery))
+                    .conditionExpression("attribute_not_exists(pk) AND attribute_not_exists(sk)").build());
+            return delivery;
+        } catch (ConditionalCheckFailedException exception) {
+            return get(delivery.tenantId(), "MDN_DELIVERY#" + delivery.id())
+                    .map(item -> read(item, MdnDelivery.class))
+                    .orElseThrow(() -> new IllegalStateException("MDN outbox transaction conflicted", exception));
+        }
+    }
+
+    private Map<String, AttributeValue> mdnDeliveryEntity(MdnDelivery delivery) {
+        Map<String, AttributeValue> item = new java.util.HashMap<>(entity(delivery.tenantId(),
+                "MDN_DELIVERY#" + delivery.id(), delivery));
+        item.put("status", string(delivery.status().name()));
+        item.put("attempts", number(delivery.attempts()));
+        if (delivery.status() == com.edispark.mft.domain.model.MdnDeliveryStatus.PENDING) {
+            item.put("workPk", string("MDN#PENDING"));
+            item.put("workSk", string(delivery.nextAttemptAt() + "#" + delivery.id()));
+        }
+        return Map.copyOf(item);
+    }
+
+    @Override
+    public List<MdnDelivery> listPendingMdnDeliveries(Instant dueAt, int limit) {
+        if (limit < 1) return List.of();
+        return dynamoDb.query(QueryRequest.builder().tableName(tableName).indexName(WORK_INDEX)
+                .keyConditionExpression("workPk = :status AND workSk <= :due")
+                .expressionAttributeValues(Map.of(":status", string("MDN#PENDING"),
+                        ":due", string(dueAt + "#~"))).limit(limit).build()).items().stream()
+                .map(item -> read(item, MdnDelivery.class)).toList();
+    }
+
+    @Override
+    public List<MdnDelivery> listMdnDeliveries(String tenantId) {
+        return queryPrefix(tenantId, "MDN_DELIVERY#").stream()
+                .map(item -> read(item, MdnDelivery.class))
+                .sorted(Comparator.comparing(MdnDelivery::createdAt).reversed()).toList();
+    }
+
+    @Override
+    public boolean tryAcquireMdnLease(String tenantId, UUID deliveryId, String owner,
+                                      Instant now, Instant expiresAt) {
+        return tryAcquireLease("MDN", tenantId, deliveryId.toString(), owner, now, expiresAt);
+    }
+
+    @Override
+    public void releaseMdnLease(String tenantId, UUID deliveryId, String owner) {
+        releaseLease("MDN", tenantId, deliveryId.toString(), owner);
     }
 
     private List<Transfer> queryWork(TransferStatus status, Instant dueAt, int limit) {
@@ -285,10 +388,27 @@ public final class DynamoDbMftRepository implements MftRepository {
 
     private <T> T read(Map<String, AttributeValue> item, Class<T> type) {
         try {
-            return json.readValue(item.get("data").s(), type);
+            String data = item.get("data").s();
+            if (type == PartnerProfile.class) {
+                ObjectNode partner = (ObjectNode) json.readTree(data);
+                migrateLegacyPartner(partner);
+                return json.treeToValue(partner, type);
+            }
+            return json.readValue(data, type);
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Stored MFT metadata is invalid", exception);
         }
+    }
+
+    static void migrateLegacyPartner(ObjectNode partner) {
+        if (!partner.hasNonNull("partnerSigningCertificateId") && partner.hasNonNull("partnerCertificateId")) {
+            partner.set("partnerSigningCertificateId", partner.get("partnerCertificateId"));
+        }
+        if (!partner.hasNonNull("partnerEncryptionCertificateId") && partner.hasNonNull("partnerCertificateId")) {
+            partner.set("partnerEncryptionCertificateId", partner.get("partnerCertificateId"));
+        }
+        partner.remove("partnerCertificateId");
+        if (!partner.hasNonNull("status")) partner.put("status", "ACTIVE");
     }
 
     private String write(Object value) {
@@ -324,8 +444,8 @@ public final class DynamoDbMftRepository implements MftRepository {
         return "AS2PAIR#" + sha256(localAs2Id.length() + ":" + localAs2Id + remoteAs2Id);
     }
 
-    private String inboundMarker(String messageId, String payloadSha256) {
-        return "INBOUND#" + sha256(messageId + "\u0000" + payloadSha256);
+    private String inboundMarker(String messageId) {
+        return "INBOUND_MESSAGE#" + sha256(messageId);
     }
 
     private String sha256(String value) {

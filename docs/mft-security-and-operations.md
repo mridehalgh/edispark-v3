@@ -50,7 +50,7 @@ Trading partner <-> AS2 data plane + managed crypto -> immutable payload/evidenc
 1. The AS2 endpoint performs an exact, case-sensitive lookup of `(AS2-To, AS2-From)` in the global inbound identity registry.
 2. The configured partner public signing certificate is used to verify the message. The managed local decryption key decrypts it.
 3. The service binds the request to the resolved tenant before writing any metadata or payload.
-4. `(tenant ID, AS2 Message-ID, payload SHA-256)` prevents duplicate storage.
+4. `(tenant ID, AS2 Message-ID)` owns the replay slot and records the payload SHA-256. Exact retries return the original transfer; different content under the same Message-ID is rejected.
 5. The payload and evidence are stored under the tenant boundary and a signed MDN is returned or scheduled.
 
 Do not infer a tenant from a filename, URL parameter, unverified certificate subject, or caller-supplied tenant header.
@@ -120,4 +120,6 @@ Provisioning roles are separate from transfer-processing roles. Certificate rota
 
 The local vertical slice uses `phase2`, in-memory metadata, and a local KMS test double for encrypted payload/PKCS#12 storage. Production uses DynamoDB, S3 ciphertext, the Hierarchical keyring, owner-conditional worker leases, separate KMS signing/decryption keys, and production-only AS2/MDN endpoints. Production startup validates both public certificates against their KMS keys and fails closed.
 
-Production activation still requires certificate rotation/revocation automation, CloudTrail alert wiring, restore exercises, per-tenant admission controls, and real-partner interoperability tests covering both MDN modes, rollover, malformed messages, maximum sizes, and tenant-boundary attempts. Terraform deployment resources are defined but have not been applied.
+Production partner creation is fail-closed: a draft must pass endpoint, certificate ownership/purpose/validity/RSA-strength, signed-and-encrypted profile, compression, and legacy-policy checks before it becomes active. Certificate replacement selects new immutable signing and encryption records only after the same validation. Raw ingress is bounded, Message-ID conflicts are rejected, per-partnership process admission is enforced, and asynchronous MDNs are persisted to encrypted storage plus a leased retry outbox before acknowledgement.
+
+Operational activation still requires automated external revocation-feed handling, CloudTrail alert wiring, restore exercises, deployment-wide edge quotas, and real-partner interoperability tests covering both MDN modes, rollover, malformed messages, maximum sizes, and tenant-boundary attempts. Terraform deployment resources are defined but have not been applied.

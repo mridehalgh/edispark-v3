@@ -122,4 +122,4 @@ Current evidence:
 - The MFT API requires bearer authentication for `/api/mft/connection-details`.
 - The BFF retains the access token server-side and returns `Cache-Control: private, no-store`.
 
-Remaining activation work is per-tenant rate/concurrency limits, immutable certificate-version rollover, access/download audit events, and authorization tests with two real organisation tokens against deployed infrastructure.
+The runtime now has per-partnership process rate/concurrency limits and immutable certificate-selection rollover. Remaining operational evidence is access/download audit export, deployment-wide edge quotas, automated revocation feeds, and authorization tests with two real organisation tokens against deployed infrastructure.

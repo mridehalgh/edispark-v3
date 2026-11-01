@@ -1,6 +1,6 @@
 import "server-only"
 
-import { createMftClient } from "@edispark/mft-client"
+import { MftClientError, createMftClient } from "@edispark/mft-client"
 
 import { auth } from "@/lib/auth"
 
@@ -35,6 +35,10 @@ export function mftErrorResponse(error: unknown) {
   if (error instanceof MftBffError) {
     return Response.json({ error: { code: error.code, message: error.message } }, { status: error.status })
   }
+  if (error instanceof MftClientError) {
+    const status = [400, 401, 403, 404, 409, 413, 429, 503].includes(error.status) ? error.status : 502
+    return Response.json({ error: { code: error.code, message: error.message } }, { status })
+  }
   console.error("MFT API request failed", error)
   const message = process.env.NODE_ENV === "development"
     ? "The MFT API is not reachable. Start it with `pnpm dev:mft-api`, or run the complete stack with `pnpm dev`."
@@ -43,4 +47,8 @@ export function mftErrorResponse(error: unknown) {
     { error: { code: "MFT_API_UNAVAILABLE", message } },
     { status: 502 },
   )
+}
+
+export function isMftResourceId(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }

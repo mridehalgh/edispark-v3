@@ -5,6 +5,7 @@ import com.edispark.mft.application.ConnectionDetailsService;
 import com.edispark.mft.application.MftService;
 import com.edispark.mft.application.As2ExchangePort;
 import com.edispark.mft.application.As2EncryptionCertificateProvider;
+import com.edispark.mft.application.AsyncMdnOutboxService;
 import com.edispark.mft.application.MdnService;
 import com.edispark.mft.application.MftDeliveryService;
 import com.edispark.mft.domain.repository.MftRepository;
@@ -18,6 +19,8 @@ import com.edispark.mft.infrastructure.storage.S3EncryptedSecretStore;
 import com.edispark.mft.infrastructure.storage.TenantBranchKeyResolver;
 import com.edispark.mft.infrastructure.storage.TenantCipher;
 import com.edispark.mft.infrastructure.as2.As2EndpointPolicy;
+import com.edispark.mft.infrastructure.as2.As2AdmissionController;
+import com.edispark.mft.infrastructure.as2.AsyncMdnDeliveryWorker;
 import com.edispark.mft.infrastructure.as2.KmsAs2ExchangeAdapter;
 import com.edispark.mft.infrastructure.as2.KmsAs2Identity;
 import com.edispark.mft.infrastructure.as2.KmsAs2InboundService;
@@ -124,8 +127,11 @@ public class ProductionMftModuleConfig {
 
     @Bean
     MftService mftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
-            @Value("${mft.as2.allow-legacy-crypto:false}") boolean allowLegacyCrypto) {
-        return new MftService(repository, payloadStore, clock, allowLegacyCrypto);
+            @Value("${mft.as2.allow-legacy-crypto:false}") boolean allowLegacyCrypto,
+            @Value("${mft.as2.max-outbound-payload-bytes:104857600}") long maximumPayloadBytes,
+            @Value("${mft.as2.certificate-rollover-grace-days:7}") long rolloverGraceDays) {
+        return new MftService(repository, payloadStore, clock, allowLegacyCrypto, true, maximumPayloadBytes,
+                java.time.Duration.ofDays(rolloverGraceDays));
     }
 
     @Bean
@@ -169,8 +175,29 @@ public class ProductionMftModuleConfig {
     @Bean
     KmsAs2InboundService mftKmsAs2InboundService(MftRepository repository,
             CertificateService certificates, MftService transfers, MdnService mdns,
-            KmsCmsCodec cms, As2EndpointPolicy endpoints) {
-        return new KmsAs2InboundService(repository, certificates, transfers, mdns, cms, endpoints);
+            KmsCmsCodec cms, As2EndpointPolicy endpoints, As2AdmissionController admission,
+            AsyncMdnOutboxService mdnOutbox, Clock clock) {
+        return new KmsAs2InboundService(repository, certificates, transfers, mdns, cms, endpoints,
+                admission, mdnOutbox, clock);
+    }
+
+    @Bean
+    As2AdmissionController mftAs2AdmissionController(Clock clock,
+            @Value("${mft.as2.admission.global-concurrency:64}") int globalConcurrency,
+            @Value("${mft.as2.admission.partner-concurrency:8}") int partnerConcurrency,
+            @Value("${mft.as2.admission.partner-requests-per-minute:600}") int requestsPerMinute) {
+        return new As2AdmissionController(globalConcurrency, partnerConcurrency, requestsPerMinute, clock);
+    }
+
+    @Bean
+    AsyncMdnOutboxService mftAsyncMdnOutboxService(MftRepository repository, PayloadStore payloads, Clock clock) {
+        return new AsyncMdnOutboxService(repository, payloads, clock);
+    }
+
+    @Bean
+    AsyncMdnDeliveryWorker mftAsyncMdnDeliveryWorker(MftRepository repository, PayloadStore payloads,
+                                                      As2EndpointPolicy endpoints, Clock clock) {
+        return new AsyncMdnDeliveryWorker(repository, payloads, endpoints, clock);
     }
 
     @Bean

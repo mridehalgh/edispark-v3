@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Clock;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 
 public final class CertificateService {
+    private static final int MAX_CERTIFICATE_BYTES = 1024 * 1024;
     private final MftRepository repository;
     private final SecretStore secretStore;
     private final Clock clock;
@@ -52,6 +54,12 @@ public final class CertificateService {
     }
 
     public CertificateRecord upload(String name, CertificateKind kind, byte[] bytes, char[] password) throws IOException {
+        if (name == null || name.isBlank() || name.length() > 120) {
+            throw new IllegalArgumentException("Certificate name must contain 1-120 characters");
+        }
+        if (bytes == null || bytes.length == 0 || bytes.length > MAX_CERTIFICATE_BYTES) {
+            throw new IllegalArgumentException("Certificate file must be no larger than 1 MiB");
+        }
         if (kind == CertificateKind.LOCAL_IDENTITY && !privateKeyUploadAllowed && password.length > 0) {
             throw new IllegalArgumentException("Private-key upload is disabled; register an AWS KMS identity instead");
         }
@@ -65,11 +73,10 @@ public final class CertificateService {
         if (kind == CertificateKind.LOCAL_IDENTITY && privateKeyUploadAllowed && !parsed.hasPrivateKey()) {
             throw new IllegalArgumentException("Local identity must contain a private key");
         }
-        try {
-            parsed.certificate().checkValidity(java.util.Date.from(clock.instant()));
-        } catch (java.security.cert.CertificateException exception) {
-            throw new IllegalArgumentException("Certificate is not currently valid", exception);
+        if (!clock.instant().isBefore(parsed.certificate().getNotAfter().toInstant())) {
+            throw new IllegalArgumentException("Certificate has expired");
         }
+        validateCryptography(parsed.certificate());
         String tenantId = TenantContext.getCurrentTenant().asString();
         String secretRef = secretStore.put(tenantId, name, encodeMaterial(bytes, new String(password), parsed.alias()));
         X509Certificate certificate = parsed.certificate();
@@ -153,6 +160,16 @@ public final class CertificateService {
             return new ParsedCertificate((X509Certificate) factory.generateCertificate(new ByteArrayInputStream(bytes)), false, "");
         } catch (Exception exception) {
             throw new IllegalArgumentException("Certificate file is invalid", exception);
+        }
+    }
+
+    private void validateCryptography(X509Certificate certificate) {
+        if (!(certificate.getPublicKey() instanceof RSAPublicKey rsa) || rsa.getModulus().bitLength() < 2048) {
+            throw new IllegalArgumentException("AS2 certificate must use an RSA key of at least 2048 bits");
+        }
+        String signature = certificate.getSigAlgName().toUpperCase(java.util.Locale.ROOT);
+        if (signature.contains("MD5") || signature.contains("SHA1") || signature.contains("SHA-1")) {
+            throw new IllegalArgumentException("AS2 certificate uses a legacy signature algorithm");
         }
     }
 

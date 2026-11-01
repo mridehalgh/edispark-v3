@@ -8,7 +8,19 @@ The control plane uses OIDC and tenant context. The AS2 data plane is public and
 
 ## Consistency and retries
 
-Outbound idempotency is guarded atomically by `(tenantId, idempotencyKey)`. Inbound deduplication uses `(tenantId, messageId, payload SHA-256)`. The local worker polls due transfers and applies bounded retries with jitter. A production metadata adapter must add distributed conditional leases before horizontally scaling workers.
+Outbound idempotency is guarded atomically by `(tenantId, idempotencyKey)`. Inbound replay ownership is guarded by `(tenantId, messageId)`, with the payload SHA-256 stored on that marker: an exact retry returns the original transfer while the same Message-ID with different bytes is rejected as a protocol conflict. Delivery and asynchronous-MDN workers poll due records, acquire bounded leases, and apply bounded retries with jitter.
+
+## Partner activation
+
+New partner profiles are drafts and cannot participate in the data plane. Activation is an explicit, tenant-authorized operation that validates the complete production profile at one point in time: HTTPS delivery and asynchronous-MDN endpoints, distinct purpose-selected certificate records owned by the tenant, current certificate validity, RSA keys of at least 2048 bits, signing/encryption key usage, signed and encrypted exchange, RSA-OAEP compatibility, and disabled compression/legacy algorithms. Suspending a partner immediately removes it from inbound resolution and blocks new outbound submissions.
+
+Partner signing and encryption certificates are separate references. They may point to the same public certificate only when its key usage permits both purposes. Rotation selects immutable replacement records after activation validation, switches outbound encryption immediately, and permits the retiring signing certificate only for a bounded verification grace window. Existing evidence retains certificate fingerprints rather than following mutable certificate aliases.
+
+## Public data-plane admission
+
+Raw `/as2` and `/as2/mdn` bodies are read through a bounded stream; declared and actual sizes are both enforced before protocol parsing. A bounded global concurrency permit provides load shedding, while a per-partnership token bucket and concurrency permit limit one partner from consuming the service. Unknown partnerships receive only generic errors and do not create unbounded limiter state.
+
+Asynchronous MDNs are signed and written to tenant-encrypted payload storage with an outbox record before the inbound request is acknowledged. A leased worker delivers the exact stored MDN, records attempts, retries transient failures, and leaves exhausted deliveries visible for operations. This closes the crash window between storing an inbound payload and sending its receipt.
 
 ## Storage
 

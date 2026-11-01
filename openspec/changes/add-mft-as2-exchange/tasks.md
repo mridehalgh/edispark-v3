@@ -17,8 +17,15 @@
 - [x] 2.3 Implement outbound preparation, delivery worker, timeouts, and retries
 - [x] 2.4 Implement certificate validation and secure/legacy policy gates
 - [x] 2.5 Implement the production AWS managed-crypto adapter and remove private-key upload from the production API
-- [ ] 2.6 Add certificate rollover, expiry alarms, and managed-key lifecycle operations
+- [x] 2.6 Add purpose-separated certificate rollover with a bounded verification grace window
 - [x] 2.7 Add cell-shared signing/decryption key configuration, separated IAM policies, and RSA-OAEP activation gate
+- [x] 2.8 Add a fail-closed partner lifecycle with production activation and suspension
+- [x] 2.9 Separate partner signing and encryption certificates and validate their purpose at activation
+- [x] 2.10 Bound raw AS2 request bodies and outbound payloads before allocation or storage
+- [x] 2.11 Reject Message-ID replay conflicts while returning the original result for exact retries
+- [x] 2.12 Persist asynchronous MDNs to a leased retry outbox before acknowledging inbound delivery
+- [x] 2.13 Add global and per-partnership AS2 admission controls
+- [ ] 2.14 Wire certificate-expiry and managed-key lifecycle alarms to the deployed operations stack
 
 ## 3. API contract and UI
 
@@ -44,3 +51,5 @@
 - [ ] 5.6 Add protocol, security, API, and frontend scenario tests
 - [x] 5.7 Run module tests, contract export/generation, typecheck, build, and diff checks
 - [x] 5.8 Document key custody, tenant isolation, sensitive data, compatibility, recovery, and production readiness under `docs/mft/`
+- [x] 5.9 Verify inactive partners cannot send or receive and cross-tenant certificate IDs cannot activate a route
+- [x] 5.10 Verify malformed CMS, oversized bodies, replay conflicts, certificate rollover, and durable MDN retries

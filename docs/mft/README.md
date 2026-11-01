@@ -19,7 +19,7 @@ These repository documents are written for EdiSpark engineering, security, and p
 
 The default symmetric strategy uses the AWS Encryption SDK Hierarchical keyring. Each bounded deployment cell has one symmetric KMS root and one DynamoDB key store; every tenant has a distinct branch key. The SDK derives unique wrapping and data keys per encryption operation and caches branch materials, avoiding a billable KMS key and KMS call for every tenant payload. A tenant gets a dedicated KMS key only when an operator explicitly selects that policy.
 
-This is not equivalent to independent physical KMS isolation. Root-key, key-store, cache, quota, or policy failures can affect the cell. Cell boundaries, trusted branch selection, DynamoDB recovery controls, short bounded cache TTLs, per-tenant admission controls, and an opt-in dedicated-key tier contain that tradeoff.
+This is not equivalent to independent physical KMS isolation. Root-key, key-store, cache, quota, or policy failures can affect the cell. Cell boundaries, trusted branch selection, DynamoDB recovery controls, short bounded cache TTLs, per-partnership process admission plus deployment-wide quotas, and an opt-in dedicated-key tier contain that tradeoff.
 
 AS2 requires asymmetric keys. AWS KMS cannot use one RSA key for both signing and decryption, so the cost-conscious AS2 unit is a shared **two-key cell identity**, not one key. Asymmetric operations do not support KMS encryption context, which is why the AS2 keys are contained by cells and dedicated IAM roles rather than presented as tenant-cryptographic isolation.
 
@@ -40,7 +40,7 @@ AS2 requires asymmetric keys. AWS KMS cannot use one RSA key for both signing an
 
 The local vertical slice continues to use `phase2`, disposable PKCS#12 identities, in-memory metadata, and tenant/resource-bound encrypted files. Production has DynamoDB metadata, atomic AS2-pair and replay ownership, S3 ciphertext storage, the AWS Encryption SDK Hierarchical keyring, distributed worker leases, KMS-native CMS signing/RSA-OAEP decryption, signed synchronous and asynchronous MDNs, and production-only `/as2` plus `/as2/mdn` routes. Private-key upload is not accepted.
 
-Terraform defines storage, KMS, IAM, alarms, and optional ECS/Fargate, ALB, TLS-listener, logging, and autoscaling resources. It has not been applied or deployed. Certificate rollover/revocation automation, per-tenant admission limits, and real-partner interoperability evidence remain production activation gates. There is no production software-key fallback.
+Terraform defines storage, KMS, IAM, alarms, and optional ECS/Fargate, ALB, TLS-listener, logging, and autoscaling resources. It has not been applied or deployed. The application now enforces draft/active/suspended partner state, purpose-separated immutable partner certificates, validated rollover, exact Message-ID replay ownership, bounded ingress, per-partnership admission, and a durable leased asynchronous-MDN outbox. Automated revocation feeds, deployment-wide edge quotas, and real-partner interoperability evidence remain operational activation gates. There is no production software-key fallback.
 
 ## AWS references
 

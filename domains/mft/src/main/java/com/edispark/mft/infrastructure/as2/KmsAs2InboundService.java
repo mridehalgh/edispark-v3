@@ -11,6 +11,7 @@ import com.edispark.mft.domain.repository.MftRepository;
 import jakarta.mail.internet.ContentType;
 import jakarta.mail.internet.MimeBodyPart;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -62,6 +63,9 @@ public final class KmsAs2InboundService {
                 current = verified.content();
                 mic = verified.mic();
             }
+            if (isCompressed(current.getContentType())) {
+                throw new IllegalArgumentException("CMS compression is not supported by the KMS-native profile");
+            }
             String filename = safeFilename(current.getFileName());
             String payloadType = current.getContentType();
             transfers.receiveInbound(partner.localAs2Id(), partner.remoteAs2Id(), messageId,
@@ -81,6 +85,11 @@ public final class KmsAs2InboundService {
             return new InboundResponse(encoded.contentType(), encoded.bytes(), messageId());
         } catch (As2TransportException exception) {
             throw exception;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new As2TransportException("AS2 MDN delivery was interrupted", exception, true);
+        } catch (IOException exception) {
+            throw new As2TransportException("AS2 storage or MDN delivery was unavailable", exception, true);
         } catch (RuntimeException exception) {
             throw exception;
         } catch (Exception exception) {
@@ -95,7 +104,8 @@ public final class KmsAs2InboundService {
         mdns.record(partner, receipt.originalMessageId(), receipt.disposition(), receipt.receivedContentMic());
     }
 
-    private void sendAsyncMdn(PartnerProfile partner, URI callback, MimeBodyPart mdn) throws Exception {
+    private void sendAsyncMdn(PartnerProfile partner, URI callback, MimeBodyPart mdn)
+            throws IOException, InterruptedException {
         endpoints.requireSameOrigin(partner.endpoint(), callback);
         KmsCmsCodec.EncodedBody encoded = cms.encode(mdn);
         HttpRequest request = HttpRequest.newBuilder(callback).timeout(Duration.ofSeconds(30))
@@ -137,6 +147,18 @@ public final class KmsAs2InboundService {
             return (base.equalsIgnoreCase("application/pkcs7-mime")
                     || base.equalsIgnoreCase("application/x-pkcs7-mime"))
                     && "enveloped-data".equalsIgnoreCase(parsed.getParameter("smime-type"));
+        } catch (Exception exception) {
+            throw new IllegalArgumentException("AS2 Content-Type is invalid", exception);
+        }
+    }
+
+    private boolean isCompressed(String contentType) {
+        try {
+            ContentType parsed = new ContentType(contentType);
+            String base = parsed.getBaseType();
+            return (base.equalsIgnoreCase("application/pkcs7-mime")
+                    || base.equalsIgnoreCase("application/x-pkcs7-mime"))
+                    && "compressed-data".equalsIgnoreCase(parsed.getParameter("smime-type"));
         } catch (Exception exception) {
             throw new IllegalArgumentException("AS2 Content-Type is invalid", exception);
         }

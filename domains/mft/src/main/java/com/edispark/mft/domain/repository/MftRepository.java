@@ -4,10 +4,11 @@ import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
+import com.edispark.mft.domain.model.TransferStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.time.Instant;
 
 public interface MftRepository {
     PartnerProfile savePartner(PartnerProfile partner);
@@ -17,6 +18,7 @@ public interface MftRepository {
     Transfer saveOutboundIfAbsent(Transfer transfer);
     Transfer saveInboundIfAbsent(Transfer transfer);
     Transfer save(Transfer transfer);
+    boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus);
     Optional<Transfer> findTransfer(String tenantId, TransferId id);
     Optional<Transfer> findByIdempotencyKey(String tenantId, String idempotencyKey);
     Optional<Transfer> findOutboundByMessageId(String tenantId, String as2MessageId);

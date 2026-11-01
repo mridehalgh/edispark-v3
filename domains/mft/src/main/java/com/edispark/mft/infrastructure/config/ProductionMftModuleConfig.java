@@ -156,7 +156,7 @@ public class ProductionMftModuleConfig {
 
     @Bean
     As2ExchangePort mftAs2ExchangePort(CertificateService certificates, KmsAs2Identity identity,
-            KmsCmsCodec cms, As2EndpointPolicy endpoints,
+            KmsCmsCodec cms, As2EndpointPolicy endpoints, MftRepository repository,
             @Value("${mft.as2.public-async-mdn-url}") URI asynchronousMdnUrl, Clock clock) {
         return new KmsAs2ExchangeAdapter(certificates, identity, cms, endpoints, asynchronousMdnUrl, clock, repository);
     }

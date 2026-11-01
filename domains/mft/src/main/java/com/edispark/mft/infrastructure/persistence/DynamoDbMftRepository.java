@@ -133,6 +133,21 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
+    public boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus) {
+        try {
+            dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(transferEntity(transfer))
+                    .conditionExpression("#status = :expectedStatus")
+                    .expressionAttributeNames(Map.of("#status", "status"))
+                    .expressionAttributeValues(Map.of(
+                            ":expectedStatus", string(expectedStatus.name())))
+                    .build());
+            return true;
+        } catch (ConditionalCheckFailedException exception) {
+            return false;
+        }
+    }
+
+    @Override
     public Optional<Transfer> findTransfer(String tenantId, TransferId id) {
         return get(tenantId, "TRANSFER#" + id).map(this::readTransfer);
     }
@@ -179,8 +194,9 @@ public final class DynamoDbMftRepository implements MftRepository {
     @Override
     public List<Transfer> listPendingTransfers(Instant dueAt, int limit) {
         List<Transfer> result = new ArrayList<>();
-        result.addAll(queryWork(TransferStatus.QUEUED, dueAt, limit));
+        result.addAll(queryWork(TransferStatus.PROCESSING, dueAt, limit));
         if (result.size() < limit) result.addAll(queryWork(TransferStatus.RETRY_SCHEDULED, dueAt, limit - result.size()));
+        if (result.size() < limit) result.addAll(queryWork(TransferStatus.QUEUED, dueAt, limit - result.size()));
         return result.stream().sorted(Comparator.comparing(Transfer::nextAttemptAt)).limit(limit).toList();
     }
 
@@ -254,7 +270,9 @@ public final class DynamoDbMftRepository implements MftRepository {
     private Map<String, AttributeValue> transferEntity(Transfer transfer) {
         Map<String, AttributeValue> item = new java.util.HashMap<>(entity(transfer.tenantId(),
                 "TRANSFER#" + transfer.id(), TransferSnapshot.from(transfer)));
-        if (transfer.status() == TransferStatus.QUEUED || transfer.status() == TransferStatus.RETRY_SCHEDULED) {
+        item.put("status", string(transfer.status().name()));
+        if (transfer.status() == TransferStatus.QUEUED || transfer.status() == TransferStatus.RETRY_SCHEDULED
+                || transfer.status() == TransferStatus.PROCESSING) {
             item.put("workPk", string("STATUS#" + transfer.status()));
             item.put("workSk", string(transfer.nextAttemptAt() + "#" + transfer.id()));
         }

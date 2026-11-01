@@ -4,18 +4,20 @@ import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
+import com.edispark.mft.domain.model.TransferStatus;
 import com.edispark.mft.domain.repository.MftRepository;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class InMemoryMftRepository implements MftRepository {
     private final ConcurrentHashMap<String, PartnerProfile> partners = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> inboundOwners = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Transfer> transfers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, TransferStatus> persistedStatuses = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> idempotency = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> outboundMessages = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, TransferId> inboundDeduplication = new ConcurrentHashMap<>();
@@ -57,14 +59,26 @@ public final class InMemoryMftRepository implements MftRepository {
         TransferId existing = idempotency.putIfAbsent(key, transfer.id());
         if (existing != null) return transfers.get(transfer.tenantId() + ":" + existing);
         transfers.put(transfer.tenantId() + ":" + transfer.id(), transfer);
+        persistedStatuses.put(transfer.tenantId() + ":" + transfer.id(), transfer.status());
         outboundMessages.put(transfer.tenantId() + ":" + transfer.as2MessageId(), transfer.id());
         return transfer;
     }
 
     @Override
-    public Transfer save(Transfer transfer) {
-        transfers.put(transfer.tenantId() + ":" + transfer.id(), transfer);
+    public synchronized Transfer save(Transfer transfer) {
+        String key = transfer.tenantId() + ":" + transfer.id();
+        transfers.put(key, transfer);
+        persistedStatuses.put(key, transfer.status());
         return transfer;
+    }
+
+    @Override
+    public synchronized boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus) {
+        String key = transfer.tenantId() + ":" + transfer.id();
+        if (persistedStatuses.get(key) != expectedStatus) return false;
+        transfers.put(key, transfer);
+        persistedStatuses.put(key, transfer.status());
+        return true;
     }
 
     @Override
@@ -73,6 +87,7 @@ public final class InMemoryMftRepository implements MftRepository {
         TransferId existing = inboundDeduplication.putIfAbsent(key, transfer.id());
         if (existing != null) return transfers.get(transfer.tenantId() + ":" + existing);
         transfers.put(transfer.tenantId() + ":" + transfer.id(), transfer);
+        persistedStatuses.put(transfer.tenantId() + ":" + transfer.id(), transfer.status());
         return transfer;
     }
 
@@ -128,7 +143,8 @@ public final class InMemoryMftRepository implements MftRepository {
     @Override
     public List<Transfer> listPendingTransfers(Instant dueAt, int limit) {
         return transfers.values().stream()
-                .filter(item -> (item.status().name().equals("QUEUED") || item.status().name().equals("RETRY_SCHEDULED"))
+                .filter(item -> (item.status().name().equals("QUEUED") || item.status().name().equals("RETRY_SCHEDULED")
+                        || item.status().name().equals("PROCESSING"))
                         && !item.nextAttemptAt().isAfter(dueAt))
                 .sorted(Comparator.comparing(Transfer::nextAttemptAt)).limit(limit).toList();
     }

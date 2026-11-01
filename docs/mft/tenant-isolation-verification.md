@@ -22,7 +22,7 @@ The metadata table needs partition key `pk`, sort key `sk`, and a `work-index` G
 
 ## Adversarial tests
 
-The suite rejects cross-tenant certificate IDs, wrong certificate purposes, duplicate AS2-pair ownership, inbound misrouting, unknown-pair fallback, another tenant's outbound partner, shared idempotency keys, foreign payload/secret references, absent branch mappings, non-tenant DynamoDB reads, filtered tenant lists, non-atomic pair ownership, wrong-partner asynchronous MDNs, MIC substitution, callback-origin redirection, and legacy PKCS#1 v1.5 key transport. Property tests repeatedly exercise isolation, replay deduplication, idempotency, leases, integrity, and terminal states.
+The suite rejects cross-tenant certificate IDs, wrong certificate purposes, duplicate AS2-pair ownership, inbound misrouting, unknown-pair fallback, another tenant's outbound partner, shared idempotency keys, foreign payload/secret references, absent branch mappings, non-tenant DynamoDB reads, filtered tenant lists, non-atomic pair ownership, wrong-partner asynchronous MDNs, MIC substitution, callback-origin redirection, and legacy PKCS#1 v1.5 key transport. It also verifies status-conditional DynamoDB writes so a callback cannot be overwritten by a sender transition. Property tests repeatedly exercise isolation, replay deduplication, idempotency, leases, integrity, and terminal states.
 
 Run it with:
 

@@ -19,6 +19,17 @@ public final class MdnService {
                            String receivedContentMic) {
         Transfer transfer = repository.findOutboundByMessageId(partner.tenantId(), originalMessageId)
                 .orElseThrow(() -> new MftNotFoundException("The MDN does not match an outbound transfer"));
+        for (int attempt = 0; attempt < 3; attempt++) {
+            Transfer completed = complete(partner, transfer, disposition, receivedContentMic);
+            if (completed != null) return completed;
+            transfer = repository.findTransfer(partner.tenantId(), transfer.id())
+                    .orElseThrow(() -> new MftNotFoundException("The MDN transfer no longer exists"));
+        }
+        throw new IllegalStateException("The MDN transfer changed repeatedly while it was being completed");
+    }
+
+    private Transfer complete(PartnerProfile partner, Transfer transfer, String disposition,
+                              String receivedContentMic) {
         if (!transfer.partnerId().equals(partner.id())) {
             throw new IllegalArgumentException("The MDN was signed by the wrong trading partner");
         }
@@ -26,13 +37,20 @@ public final class MdnService {
         if (transfer.status() == TransferStatus.DELIVERED && disposition.equals(transfer.mdnDisposition())) {
             return transfer;
         }
-        if (transfer.status() != TransferStatus.AWAITING_MDN) {
+        if (transfer.status() == TransferStatus.NEEDS_REVIEW && disposition.equals(transfer.failureReason())) {
+            return transfer;
+        }
+        TransferStatus expectedStatus = transfer.status();
+        if (expectedStatus != TransferStatus.PROCESSING
+                && expectedStatus != TransferStatus.AWAITING_MDN
+                && expectedStatus != TransferStatus.RETRY_SCHEDULED) {
             throw new IllegalStateException("The transfer is not awaiting an asynchronous MDN");
         }
         As2DeliveryResult result = new As2DeliveryResult(false, disposition, null);
         if (result.processed()) transfer.deliver(disposition, clock.instant());
         else transfer.requireReview(disposition, clock.instant());
-        return repository.save(transfer);
+        if (repository.saveIfStatus(transfer, expectedStatus)) return transfer;
+        return null;
     }
 
     private void requireMatchingMic(String expected, String received) {

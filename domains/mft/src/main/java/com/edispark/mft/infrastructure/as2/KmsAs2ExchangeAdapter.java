@@ -7,6 +7,7 @@ import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.Transfer;
+import com.edispark.mft.domain.model.TransferStatus;
 import com.edispark.mft.domain.repository.MftRepository;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
@@ -16,8 +17,8 @@ import java.net.http.HttpResponse;
 import java.security.MessageDigest;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Base64;
 
 public final class KmsAs2ExchangeAdapter implements As2ExchangePort {
@@ -48,15 +49,22 @@ public final class KmsAs2ExchangeAdapter implements As2ExchangePort {
     public As2DeliveryResult send(PartnerProfile partner, Transfer transfer, byte[] payload) {
         endpoints.validate(partner.endpoint());
         try {
+            if (partner.compressionEnabled()) {
+                throw new IllegalArgumentException("CMS compression is not supported by the KMS-native profile");
+            }
             requireConfiguredIdentity(partner);
             X509Certificate partnerCertificate = partnerCertificate(partner);
             KmsCmsCodec.SignedContent signed = cms.signWithMic(
                     cms.payload(payload, transfer.contentType(), transfer.filename()));
-            transfer.recordSentContentMic(Base64.getEncoder().encodeToString(signed.mic()) + ", sha-256",
-                    clock.instant());
-            if (partner.mdnMode() == MdnMode.ASYNCHRONOUS) {
-                transfer.awaitMdn(clock.instant());
-                repository.save(transfer);
+            String contentMic = Base64.getEncoder().encodeToString(signed.mic()) + ", sha-256";
+            if (partner.mdnMode() == MdnMode.ASYNCHRONOUS
+                    && transfer.status() == TransferStatus.PROCESSING) {
+                transfer.recordSentContentMic(contentMic, clock.instant());
+                if (!repository.saveIfStatus(transfer, TransferStatus.PROCESSING)) {
+                    throw new As2TransportException("Transfer completed while preparing AS2 delivery", null, false);
+                }
+            } else if (partner.mdnMode() == MdnMode.ASYNCHRONOUS) {
+                requireMatchingMic(transfer.sentContentMic(), signed.mic());
             }
             var wirePart = partner.encryptionRequired()
                     ? cms.encrypt(signed.content(), partnerCertificate) : signed.content();

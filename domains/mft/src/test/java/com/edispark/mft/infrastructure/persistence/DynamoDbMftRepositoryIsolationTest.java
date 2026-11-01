@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.edispark.mft.testutil.AwsClientFake;
 import com.edispark.mft.domain.model.MdnMode;
 import com.edispark.mft.domain.model.PartnerProfile;
+import com.edispark.mft.domain.model.Transfer;
+import com.edispark.mft.domain.model.TransferStatus;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -22,6 +24,29 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemResponse;
 
 class DynamoDbMftRepositoryIsolationTest {
+    @Test
+    void transferTransitionsUseAStatusConditionSoCallbacksCannotBeOverwritten() {
+        AtomicReference<PutItemRequest> captured = new AtomicReference<>();
+        DynamoDbClient dynamoDb = AwsClientFake.create(DynamoDbClient.class, (proxy, method, arguments) -> {
+            captured.set((PutItemRequest) arguments[0]);
+            return PutItemResponse.builder().build();
+        });
+        Instant now = Instant.parse("2026-10-30T12:00:00Z");
+        Transfer transfer = Transfer.outbound("tenant-a", UUID.randomUUID(), "order.edi", "application/edifact",
+                "<message@example.test>", UUID.randomUUID().toString(), null, now);
+        transfer.startAttempt(now);
+        transfer.awaitMdn(now.plusSeconds(1));
+
+        assertThat(new DynamoDbMftRepository(dynamoDb, "mft")
+                .saveIfStatus(transfer, TransferStatus.PROCESSING)).isTrue();
+
+        assertThat(captured.get().conditionExpression()).isEqualTo("#status = :expectedStatus");
+        assertThat(captured.get().expressionAttributeNames()).containsEntry("#status", "status");
+        assertThat(captured.get().expressionAttributeValues().get(":expectedStatus").s())
+                .isEqualTo("PROCESSING");
+        assertThat(captured.get().item().get("status").s()).isEqualTo("AWAITING_MDN");
+    }
+
     @Test
     void deliveryLeaseUsesNumericEpochTimeForUnambiguousConditionalOrdering() {
         AtomicReference<PutItemRequest> captured = new AtomicReference<>();

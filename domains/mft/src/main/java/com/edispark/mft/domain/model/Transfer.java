@@ -1,5 +1,6 @@
 package com.edispark.mft.domain.model;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,7 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Accessors(fluent = true)
 public final class Transfer {
+    public static final Duration PROCESSING_RECOVERY_TIMEOUT = Duration.ofMinutes(2);
     @EqualsAndHashCode.Include
     private final TransferId id;
     private final String tenantId;
@@ -94,6 +96,7 @@ public final class Transfer {
         status = TransferStatus.PROCESSING;
         attempts.add(new TransferAttempt(attempts.size() + 1, now, null, null, "STARTED", null));
         updatedAt = now;
+        nextAttemptAt = now.plus(PROCESSING_RECOVERY_TIMEOUT);
     }
 
     public void awaitMdn(Instant now) {
@@ -109,7 +112,8 @@ public final class Transfer {
     }
 
     public void deliver(String disposition, Instant now) {
-        requireStatus(TransferStatus.PROCESSING, TransferStatus.AWAITING_MDN, TransferStatus.RECEIVED);
+        requireStatus(TransferStatus.PROCESSING, TransferStatus.AWAITING_MDN,
+                TransferStatus.RETRY_SCHEDULED, TransferStatus.RECEIVED);
         status = TransferStatus.DELIVERED;
         mdnDisposition = requireText(disposition, "disposition");
         updatedAt = now;

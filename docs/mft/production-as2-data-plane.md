@@ -22,15 +22,17 @@ Unknown pairs, missing security layers, malformed MIME, certificate mismatch, MI
 ## Outbound delivery and `/as2/mdn`
 
 1. The authenticated control plane stores the payload once and creates a tenant-scoped queued transfer with an idempotency marker.
-2. A worker acquires a DynamoDB conditional lease. Lease release is owner-conditional, so an old worker cannot delete a reclaimed lease.
+2. A worker acquires a DynamoDB conditional lease. Lease release is owner-conditional, so an old worker cannot delete a reclaimed lease. A `PROCESSING` record carries the same recovery deadline as the lease and becomes eligible for replay if the process dies mid-exchange. `AWAITING_MDN` is not continuously replayed while a legitimate asynchronous receipt is pending.
 3. The adapter loads the partner certificate inside the transfer tenant and proves the profile's selected local certificate matches the configured KMS signing identity.
 4. It hashes CMS signed attributes locally and calls `KMS Sign` with `MessageType=DIGEST`; plaintext EDI is not sent to KMS.
 5. The signed entity uses AES-256-CBC content encryption and RSA-OAEP-SHA256 key transport to the partner certificate.
 6. HTTP has a 10-second connect timeout and 30-second request deadline, does not follow redirects, and rejects private/link-local destinations unless the local-only override is enabled.
 7. A synchronous signed MDN is verified against the exact partner certificate, original Message-ID, disposition, SHA-256 algorithm, and constant-time MIC comparison.
-8. For asynchronous mode, the expected MIC is stored with the transfer. `/as2/mdn` resolves the same AS2 pair, verifies the partner signature, looks up the original Message-ID only inside that tenant, proves the partner ID and MIC, and performs an idempotent terminal transition.
+8. For asynchronous mode, the expected MIC is durably stored before the HTTP request is sent. `/as2/mdn` resolves the same AS2 pair, verifies the partner signature, looks up the original Message-ID only inside that tenant, proves the partner ID and MIC, and performs an idempotent terminal transition. Sender and callback state changes use a DynamoDB status condition, so a fast callback cannot be overwritten by a later `AWAITING_MDN`, retry, or review update.
 
 Transport failures retry with bounded jitter. Protocol, identity, algorithm, signature, and MIC failures move the transfer to review.
+
+CMS compression is deliberately rejected by the KMS-native path rather than being silently ignored. Keep `compressionEnabled=false` for production partners until compressed-data interoperability is implemented and qualified. The local Phase2 simulator can still exercise compressed legacy profiles.
 
 ## Tenant isolation
 

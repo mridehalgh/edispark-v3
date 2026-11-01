@@ -11,8 +11,23 @@ import java.time.Instant;
 import java.util.UUID;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
+import org.junit.jupiter.api.Test;
 
 class MftRepositoryPropertyTest {
+    @Test
+    void processingTransferBecomesRecoverableAfterItsWorkerDeadline() {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        Instant now = Instant.parse("2026-01-01T00:00:00Z");
+        Transfer transfer = Transfer.outbound("tenant", UUID.randomUUID(), "order.edi", "application/edi-x12",
+                "<message@example.test>", UUID.randomUUID().toString(), null, now);
+        transfer.startAttempt(now);
+        repository.save(transfer);
+
+        assertThat(repository.listPendingTransfers(now.plusSeconds(119), 10)).isEmpty();
+        assertThat(repository.listPendingTransfers(now.plusSeconds(120), 10)).containsExactly(transfer);
+
+    }
+
     /** Feature: mft-as2, Property 1: repeated outbound submissions are idempotent. */
     @Property(tries = 100)
     void outboundIdempotencyReturnsOneTransfer(@ForAll String generatedKey) {

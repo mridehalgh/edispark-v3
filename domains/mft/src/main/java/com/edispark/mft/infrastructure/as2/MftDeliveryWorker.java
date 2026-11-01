@@ -3,6 +3,7 @@ package com.edispark.mft.infrastructure.as2;
 import com.edispark.identifiers.tenant.TenantId;
 import com.edispark.mft.application.MftDeliveryService;
 import com.edispark.mft.domain.repository.MftRepository;
+import com.edispark.mft.domain.model.Transfer;
 import io.cottn.core.tenancy.TenantContext;
 import io.cottn.core.tenancy.TenantContextHolder;
 import java.time.Clock;
@@ -20,7 +21,8 @@ public class MftDeliveryWorker {
     private final Duration leaseDuration;
 
     public MftDeliveryWorker(MftRepository repository, MftDeliveryService deliveryService, Clock clock) {
-        this(repository, deliveryService, clock, UUID.randomUUID().toString(), Duration.ofMinutes(2));
+        this(repository, deliveryService, clock, UUID.randomUUID().toString(),
+                Transfer.PROCESSING_RECOVERY_TIMEOUT);
     }
 
     MftDeliveryWorker(MftRepository repository, MftDeliveryService deliveryService, Clock clock,

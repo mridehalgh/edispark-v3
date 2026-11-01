@@ -1,6 +1,7 @@
 package com.edispark.documents.infrastructure.persistence;
 
 import com.edispark.pagination.Page;
+import com.edispark.pagination.NewestFirstPagination;
 import com.edispark.pagination.PaginatedResult;
 import com.edispark.documents.domain.model.ContentHash;
 import com.edispark.documents.domain.model.Derivative;
@@ -21,8 +22,10 @@ import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -89,12 +92,13 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
                 .keyConditionExpression("#gsi1pk = :gsi1pk")
                 .expressionAttributeNames(Map.of("#gsi1pk", GSI1_PK))
                 .expressionAttributeValues(Map.of(":gsi1pk", AttributeValue.builder().s(gsi1Pk).build()))
+                .scanIndexForward(false)
                 .build();
         
         QueryResponse response = client.query(request);
         
         // Extract document set IDs from the GSI results
-        Set<DocumentSetId> documentSetIds = new HashSet<>();
+        Set<DocumentSetId> documentSetIds = new LinkedHashSet<>();
         for (Map<String, AttributeValue> item : response.items()) {
             if (item.containsKey("documentSetId")) {
                 documentSetIds.add(DocumentSetId.fromString(item.get("documentSetId").s()));
@@ -107,10 +111,11 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
             findById(docSetId).ifPresent(result::add);
         }
         
-        return result;
+        return mostRecentFirst(result);
     }
 
     @Override
+    @NewestFirstPagination
     public PaginatedResult<DocumentSet> findAll(Page page) {
         // Decode continuation token if present
         Map<String, AttributeValue> exclusiveStartKey = page.continuationToken()
@@ -126,6 +131,7 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
                 .keyConditionExpression("#gsi1pk = :gsi1pk")
                 .expressionAttributeNames(Map.of("#gsi1pk", GSI1_PK))
                 .expressionAttributeValues(Map.of(":gsi1pk", AttributeValue.builder().s(gsi1Pk).build()))
+                .scanIndexForward(false)
                 .limit(page.limit());
         
         // Add exclusive start key if continuing from previous page
@@ -145,7 +151,7 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
     }
     
     private List<DocumentSet> extractDocumentSets(List<Map<String, AttributeValue>> items) {
-        Set<DocumentSetId> documentSetIds = new HashSet<>();
+        Set<DocumentSetId> documentSetIds = new LinkedHashSet<>();
         for (Map<String, AttributeValue> item : items) {
             if (item.containsKey("documentSetId")) {
                 documentSetIds.add(DocumentSetId.fromString(item.get("documentSetId").s()));
@@ -156,7 +162,15 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
         for (DocumentSetId docSetId : documentSetIds) {
             findById(docSetId).ifPresent(documentSets::add);
         }
-        return documentSets;
+        return mostRecentFirst(documentSets);
+    }
+
+    private List<DocumentSet> mostRecentFirst(List<DocumentSet> documentSets) {
+        return documentSets.stream()
+                .sorted(Comparator.comparing(DocumentSet::createdAt)
+                        .thenComparing(documentSet -> documentSet.id().toString())
+                        .reversed())
+                .toList();
     }
     
     /**

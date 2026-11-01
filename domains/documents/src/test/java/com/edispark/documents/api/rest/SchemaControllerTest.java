@@ -1,5 +1,7 @@
 package com.edispark.documents.api.rest;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -34,6 +36,7 @@ import com.edispark.documents.domain.model.Schema;
 import com.edispark.documents.domain.model.SchemaFormat;
 import com.edispark.documents.domain.model.SchemaId;
 import com.edispark.documents.domain.model.SchemaVersion;
+import com.edispark.documents.domain.model.SchemaVersionId;
 import com.edispark.documents.domain.model.VersionIdentifier;
 import com.edispark.documents.domain.repository.SchemaRepository;
 
@@ -335,6 +338,29 @@ class SchemaControllerTest {
             // Then
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().versions()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should return schema versions from most recently created to oldest")
+        void responseSortsVersionsMostRecentFirst() {
+            Content definition = Content.of("schema definition".getBytes(), Format.XML);
+            ContentRef definitionRef = ContentRef.of(definition.hash());
+            SchemaVersion older = SchemaVersion.reconstitute(
+                    SchemaVersionId.generate(), VersionIdentifier.of("1.0.0"), definitionRef,
+                    Instant.parse("2026-01-01T00:00:00Z"), false);
+            SchemaVersion newer = SchemaVersion.reconstitute(
+                    SchemaVersionId.generate(), VersionIdentifier.of("2.0.0"), definitionRef,
+                    Instant.parse("2026-02-01T00:00:00Z"), false);
+            Schema schema = Schema.reconstitute(
+                    SchemaId.generate(), "Test Schema", SchemaFormat.XSD, List.of(older, newer));
+            when(repository.findById(any(SchemaId.class))).thenReturn(Optional.of(schema));
+
+            ResponseEntity<SchemaResponse> response = controller.getSchema(schema.id().value());
+
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().versions())
+                    .extracting(SchemaResponse.SchemaVersionSummary::id)
+                    .containsExactly(newer.id().value(), older.id().value());
         }
 
         @Test

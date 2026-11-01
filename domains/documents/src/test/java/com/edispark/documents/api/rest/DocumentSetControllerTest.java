@@ -2,6 +2,7 @@ package com.edispark.documents.api.rest;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -190,6 +191,27 @@ class DocumentSetControllerTest {
             DocumentSetResponse.DocumentSummary summary = response.getBody().documents().get(0);
             assertThat(summary.type()).isEqualTo(request.documentType());
             assertThat(summary.versionCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("should return document summaries from most recently versioned to oldest")
+        void responseSortsDocumentSummariesMostRecentFirst() {
+            Document older = documentAt("2026-01-01T00:00:00Z", DocumentType.ORDER, "older");
+            Document newer = documentAt("2026-02-01T00:00:00Z", DocumentType.INVOICE, "newer");
+            DocumentSet documentSet = DocumentSet.reconstitute(
+                    DocumentSetId.generate(),
+                    Map.of(older.id(), older, newer.id(), newer),
+                    Instant.parse("2026-01-01T00:00:00Z"),
+                    "[name]",
+                    Map.of());
+            when(repository.findById(any(DocumentSetId.class))).thenReturn(Optional.of(documentSet));
+
+            ResponseEntity<DocumentSetResponse> response = controller.getDocumentSet(documentSet.id().value());
+
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().documents())
+                    .extracting(DocumentSetResponse.DocumentSummary::id)
+                    .containsExactly(newer.id().value(), older.id().value());
         }
 
         @Test
@@ -1437,6 +1459,35 @@ class DocumentSetControllerTest {
         }
 
         @Test
+        @DisplayName("should return derivatives from most recently created to oldest")
+        void returnsDerivativesMostRecentFirst() {
+            DocumentSet source = createTestDocumentSetWithDefaults();
+            Document sourceDocument = source.getAllDocuments().getFirst();
+            DocumentVersion version = sourceDocument.getCurrentVersion();
+            ContentHash olderHash = Content.computeHash("older derivative".getBytes());
+            ContentHash newerHash = Content.computeHash("newer derivative".getBytes());
+            Derivative older = Derivative.reconstitute(
+                    DerivativeId.generate(), version.id(), Format.PDF, ContentRef.of(olderHash), olderHash,
+                    TransformationMethod.PROGRAMMATIC, Instant.parse("2026-01-01T00:00:00Z"));
+            Derivative newer = Derivative.reconstitute(
+                    DerivativeId.generate(), version.id(), Format.JSON, ContentRef.of(newerHash), newerHash,
+                    TransformationMethod.PROGRAMMATIC, Instant.parse("2026-02-01T00:00:00Z"));
+            Document document = Document.reconstitute(
+                    sourceDocument.id(), sourceDocument.type(), sourceDocument.schemaRef(), List.of(version),
+                    List.of(older, newer), null);
+            DocumentSet documentSet = DocumentSet.reconstitute(
+                    source.id(), Map.of(document.id(), document), source.createdAt(), source.createdBy(), Map.of());
+            when(repository.findById(any(DocumentSetId.class))).thenReturn(Optional.of(documentSet));
+
+            ResponseEntity<List<DerivativeResponse>> response = controller.getDerivatives(
+                    documentSet.id().value(), document.id().value());
+
+            assertThat(response.getBody())
+                    .extracting(DerivativeResponse::id)
+                    .containsExactly(newer.id().value(), older.id().value());
+        }
+
+        @Test
         @DisplayName("should return derivatives with correct target formats")
         void returnsDerivativesWithCorrectTargetFormats() {
             // Given
@@ -1987,6 +2038,16 @@ class DocumentSetControllerTest {
             "user@example.com",
             metadata
         );
+    }
+
+    private Document documentAt(String createdAt, DocumentType type, String content) {
+        ContentHash hash = Content.computeHash(content.getBytes());
+        ContentRef contentRef = ContentRef.of(hash);
+        SchemaVersionRef schemaRef = SchemaVersionRef.of(SchemaId.generate(), VersionIdentifier.of("1.0.0"));
+        DocumentVersion version = DocumentVersion.reconstitute(
+                DocumentVersionId.generate(), 1, contentRef, hash, Format.JSON, Instant.parse(createdAt),
+                "[name]", null, null, null, List.of());
+        return Document.reconstitute(DocumentId.generate(), type, schemaRef, List.of(version), List.of(), null);
     }
 
     /**

@@ -68,7 +68,7 @@ domains/
 1. Client sends `GET /api/document-sets?limit=20&nextToken=xyz`
 2. Controller validates parameters and decodes nextToken
 3. Application layer calls repository with decoded key
-4. Repository executes DynamoDB Query on GSI1
+4. Repository executes DynamoDB Query on GSI1 in descending sort-key order
 5. Repository returns items + LastEvaluatedKey
 6. Application layer encodes LastEvaluatedKey to nextToken
 7. Controller returns paginated response with encoded token
@@ -545,6 +545,7 @@ public PaginatedResult<DocumentSet> findAll(Page page) {
         .indexName(GSI1_NAME)
         .keyConditionExpression("#gsi1pk = :gsi1pk")
         .expressionAttributeNames(Map.of("#gsi1pk", GSI1_PK))
+        .scanIndexForward(false)
         .expressionAttributeValues(Map.of(":gsi1pk", AttributeValue.builder().s(gsi1Pk).build()))
         .limit(page.limit());
     

@@ -96,7 +96,9 @@
 - [x] Decode continuation token using PaginationTokenCodec
 - [x] Build QueryRequest with GSI1, limit, and exclusiveStartKey
 - [x] Execute Query operation (NOT Scan)
+- [x] Query GSI1 in descending sort-key order so pagination is globally most recent first
 - [x] Extract document set IDs from GSI results
+- [x] Preserve GSI result order while hydrating complete document sets
 - [x] Batch fetch full document sets using existing findById
 - [x] Encode LastEvaluatedKey using PaginationTokenCodec
 - [x] Return PaginatedResult with items and encoded token
@@ -106,7 +108,7 @@
 
 **Details**:
 - Add pagination-specific tests to DynamoDbDocumentSetRepositoryIntegrationTest
-- Test multiple pages, last page without token, empty results
+- Test multiple pages, most-recent-first ordering across page boundaries, last page without token, empty results
 
 ## 5. Update API Layer
 

@@ -27,6 +27,7 @@ This document specifies the requirements for implementing REST API controllers f
 3. WHEN a client sends a GET request to `/api/document-sets/{id}`, THE Document_Controller SHALL return the document set if found
 4. WHEN a client sends a GET request for a non-existent document set, THE Document_Controller SHALL return 404 Not Found
 5. THE Response_DTO SHALL include document set ID, creation timestamp, created by, metadata, and list of documents
+6. THE Document_Controller SHALL order document summaries by their current version creation timestamp descending
 
 ### Requirement 2: Document Operations within Document Sets
 
@@ -64,6 +65,7 @@ This document specifies the requirements for implementing REST API controllers f
 3. WHEN a client sends a POST request that would create a duplicate derivative, THE Document_Controller SHALL return 409 Conflict
 4. WHEN a client sends a GET request to `/api/document-sets/{setId}/documents/{docId}/derivatives`, THE Document_Controller SHALL return all derivatives for the document
 5. THE Response_DTO SHALL include derivative ID, source version ID, target format, content hash, and transformation method
+6. THE Document_Controller SHALL return derivatives by creation timestamp descending
 
 ### Requirement 5: Document Validation Operations
 
@@ -88,6 +90,7 @@ This document specifies the requirements for implementing REST API controllers f
 3. WHEN a client sends a GET request to `/api/schemas/{id}`, THE Schema_Controller SHALL return the schema if found
 4. WHEN a client sends a GET request for a non-existent schema, THE Schema_Controller SHALL return 404 Not Found
 5. THE Response_DTO SHALL include schema ID, name, format, and list of versions
+6. THE Schema_Controller SHALL order version summaries by creation timestamp descending
 
 ### Requirement 7: Schema Version Operations
 

@@ -1,6 +1,7 @@
 package com.edispark.documents.api.rest;
 
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +32,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.edispark.pagination.api.PaginatedResponse;
+import com.edispark.pagination.NewestFirstPagination;
 import com.edispark.pagination.PaginatedResult;
 import com.edispark.documents.api.dto.AddDocumentRequest;
 import com.edispark.documents.api.dto.AddVersionRequest;
@@ -121,11 +123,12 @@ public class DocumentSetController {
      */
     @GetMapping
     @Operation(operationId = "listDocumentSets", summary = "List document sets",
-               description = "Retrieves document sets with pagination. Use nextToken or nextUrl from response to fetch subsequent pages.")
+               description = "Retrieves document sets from most recently created to oldest. Use nextToken or nextUrl from response to fetch subsequent pages.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Document sets retrieved successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid limit or pagination token")
     })
+    @NewestFirstPagination
     public ResponseEntity<PaginatedResponse<DocumentSetResponse>> listDocumentSets(
             @Parameter(description = "Page size (1-100, default 20)") 
             @org.springframework.web.bind.annotation.RequestParam(name = "limit", required = false) Integer limit,
@@ -530,7 +533,8 @@ public class DocumentSetController {
      * <p>Requirements: 4.4</p>
      */
     @GetMapping("/{setId}/documents/{docId}/derivatives")
-    @Operation(operationId = "listDerivatives", summary = "Get all derivatives", description = "Retrieves all derivatives for a document")
+    @Operation(operationId = "listDerivatives", summary = "Get all derivatives",
+               description = "Retrieves all derivatives for a document from most recently created to oldest")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Derivatives retrieved successfully"),
         @ApiResponse(responseCode = "404", description = "Document set or document not found")
@@ -552,6 +556,9 @@ public class DocumentSetController {
         
         // Map derivatives to response
         var derivativeResponses = document.derivatives().stream()
+                .sorted(Comparator.comparing(Derivative::createdAt)
+                        .thenComparing(derivative -> derivative.id().toString())
+                        .reversed())
                 .map(this::mapToDerivativeResponse)
                 .toList();
         
@@ -663,6 +670,9 @@ public class DocumentSetController {
      */
     private DocumentSetResponse mapToResponse(DocumentSet documentSet) {
         var documentSummaries = documentSet.getAllDocuments().stream()
+                .sorted(Comparator.comparing((Document document) -> document.getCurrentVersion().createdAt())
+                        .thenComparing(document -> document.id().toString())
+                        .reversed())
                 .map(doc -> new DocumentSetResponse.DocumentSummary(
                         doc.id().value(),
                         doc.type(),
@@ -708,6 +718,9 @@ public class DocumentSetController {
         
         // Map derivatives
         var derivativeResponses = document.derivatives().stream()
+                .sorted(Comparator.comparing(Derivative::createdAt)
+                        .thenComparing(derivative -> derivative.id().toString())
+                        .reversed())
                 .map(derivative -> new DerivativeResponse(
                         derivative.id().value(),
                         derivative.sourceVersionId().value(),

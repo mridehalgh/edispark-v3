@@ -1,5 +1,6 @@
 package com.edispark.documents.api.rest;
 
+import java.util.Comparator;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -95,14 +96,15 @@ public class SchemaController {
      * @throws SchemaNotFoundException if the schema does not exist
      */
     @GetMapping("/{id}")
-    @Operation(operationId = "getSchema", summary = "Get a schema", description = "Retrieves a schema by its unique identifier")
+    @Operation(operationId = "getSchema", summary = "Get a schema",
+               description = "Retrieves a schema by its unique identifier with versions ordered from most recently created to oldest")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Schema found",
                      content = @io.swagger.v3.oas.annotations.media.Content(schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SchemaResponse.class))),
         @ApiResponse(responseCode = "404", description = "Schema not found")
     })
     public ResponseEntity<SchemaResponse> getSchema(
-            @Parameter(description = "Schema UUID") @PathVariable UUID id) {
+            @Parameter(description = "Schema UUID") @PathVariable("id") UUID id) {
         SchemaId schemaId = new SchemaId(id);
         
         Schema schema = repository.findById(schemaId)
@@ -131,7 +133,7 @@ public class SchemaController {
         @ApiResponse(responseCode = "404", description = "Schema not found")
     })
     public ResponseEntity<SchemaVersionResponse> addVersion(
-            @Parameter(description = "Schema UUID") @PathVariable UUID schemaId,
+            @Parameter(description = "Schema UUID") @PathVariable("schemaId") UUID schemaId,
             @Valid @RequestBody AddSchemaVersionRequest request) {
         
         // Decode Base64 content
@@ -173,8 +175,9 @@ public class SchemaController {
         @ApiResponse(responseCode = "404", description = "Schema or schema version not found")
     })
     public ResponseEntity<SchemaVersionResponse> getVersion(
-            @Parameter(description = "Schema UUID") @PathVariable UUID schemaId,
-            @Parameter(description = "Version identifier (e.g., '1.0', '2.1')") @PathVariable String versionId) {
+            @Parameter(description = "Schema UUID") @PathVariable("schemaId") UUID schemaId,
+            @Parameter(description = "Version identifier (e.g., '1.0', '2.1')")
+            @PathVariable("versionId") String versionId) {
         
         SchemaId schemaIdObj = new SchemaId(schemaId);
         
@@ -202,6 +205,9 @@ public class SchemaController {
      */
     private SchemaResponse mapToResponse(Schema schema) {
         var versionSummaries = schema.versions().stream()
+                .sorted(Comparator.comparing(SchemaVersion::createdAt)
+                        .thenComparing(version -> version.id().toString())
+                        .reversed())
                 .map(version -> new SchemaResponse.SchemaVersionSummary(
                         version.id().value(),
                         version.versionIdentifier().value(),

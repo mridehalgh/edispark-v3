@@ -24,6 +24,7 @@
         <module>standards/edifact</module>
         <module>standards/ubl</module>
         <module>domains/documents</module>
+        <module>tooling/architecture-tests</module>
         <module>tooling/local-runtime</module>
         <module>apps/documents-api</module>
         <module>apps/mft-api</module>

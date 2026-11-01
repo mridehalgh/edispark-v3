@@ -1,6 +1,7 @@
 package com.edispark.documents.infrastructure.persistence;
 
 import com.edispark.pagination.Page;
+import com.edispark.pagination.NewestFirstPagination;
 import com.edispark.pagination.PaginatedResult;
 import com.edispark.documents.domain.model.ContentHash;
 import com.edispark.documents.domain.model.DocumentSet;
@@ -33,6 +34,7 @@ public final class TenantScopedDocumentSetRepository implements DocumentSetRepos
     }
 
     @Override
+    @NewestFirstPagination
     public PaginatedResult<DocumentSet> findAll(Page page) {
         return delegate().findAll(page);
     }

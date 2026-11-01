@@ -33,9 +33,9 @@ class HeyApiClient {
 
 class HeyApiRegistry<T> {
     private readonly defaultKey = 'default';
-    
+
     private readonly instances: Map<string, T> = new Map();
-    
+
     get(key?: string): T {
         const instance = this.instances.get(key ?? this.defaultKey);
         if (!instance) {
@@ -43,7 +43,7 @@ class HeyApiRegistry<T> {
         }
         return instance;
     }
-    
+
     set(value: T, key?: string): void {
         this.instances.set(key ?? this.defaultKey, value);
     }
@@ -109,7 +109,7 @@ export class DocumentsClient extends HeyApiClient {
     /**
      * List document sets
      *
-     * Retrieves document sets with pagination. Use nextToken or nextUrl from response to fetch subsequent pages.
+     * Retrieves document sets from most recently created to oldest. Use nextToken or nextUrl from response to fetch subsequent pages.
      */
     public listDocumentSets<ThrowOnError extends boolean = false>(options?: Options<ListDocumentSetsData, ThrowOnError>): RequestResult<ListDocumentSetsResponses, ListDocumentSetsErrors, ThrowOnError> {
         return (options?.client ?? this.client).get<ListDocumentSetsResponses, ListDocumentSetsErrors, ThrowOnError>({
@@ -238,7 +238,7 @@ export class DocumentsClient extends HeyApiClient {
     /**
      * Get all derivatives
      *
-     * Retrieves all derivatives for a document
+     * Retrieves all derivatives for a document from most recently created to oldest
      */
     public listDerivatives<ThrowOnError extends boolean = false>(options: Options<ListDerivativesData, ThrowOnError>): RequestResult<ListDerivativesResponses, ListDerivativesErrors, ThrowOnError> {
         return (options.client ?? this.client).get<ListDerivativesResponses, ListDerivativesErrors, ThrowOnError>({
@@ -299,7 +299,7 @@ export class DocumentsClient extends HeyApiClient {
     /**
      * Get a schema
      *
-     * Retrieves a schema by its unique identifier
+     * Retrieves a schema by its unique identifier with versions ordered from most recently created to oldest
      */
     public getSchema<ThrowOnError extends boolean = false>(options: Options<GetSchemaData, ThrowOnError>): RequestResult<GetSchemaResponses, GetSchemaErrors, ThrowOnError> {
         return (options.client ?? this.client).get<GetSchemaResponses, GetSchemaErrors, ThrowOnError>({

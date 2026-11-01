@@ -14,6 +14,7 @@ So that I can efficiently process large collections without overwhelming memory 
 - API accepts an optional `nextToken` query parameter for continuation
 - Response includes a `nextToken` field when more results are available
 - Response omits `nextToken` when no more results exist
+- Results are ordered by creation timestamp descending, with the most recently created document set first across every page
 
 ### 2.2 As an API client, I want pagination tokens to be opaque
 So that I don't need to understand DynamoDB internals and the implementation can change without breaking my code.
@@ -193,7 +194,7 @@ After seeding:
 ## 7. Out of Scope
 
 - Filtering document sets by criteria (name, date range, etc.)
-- Sorting options (always sorted by creation order)
+- Client-selectable sorting options (the API always returns most recent first)
 - Cursor-based pagination (using DynamoDB's native pagination only)
 - Caching of pagination results
 - Pagination for nested collections (documents within a set)

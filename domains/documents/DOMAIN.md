@@ -20,6 +20,8 @@ The Documents domain integrates with other domains by publishing events when doc
 
 When a business needs to store a document, they create a DocumentSet to group related documents together. A DocumentSet might contain an invoice along with its associated credit notes, or an order with its responses. Each document within the set has a specific type and must conform to a schema version.
 
+When clients browse document data, the API presents time-based collections from most recent to oldest. This ordering applies across document-set pagination and to nested document summaries, derivatives, and schema-version summaries, giving operators a consistent view of the latest activity first.
+
 When a user adds a document to a set, the system first validates it against the referenced schema. If validation passes, the system computes a content hash and stores the content separately from the metadata. This content-addressable approach means identical documents are stored only once, regardless of how many times they appear across different document sets.
 
 Documents are never modified in place. When changes are needed, a new version is created. Each version has a sequential number starting from 1, and maintains a reference to its predecessor. This creates an immutable audit trail. The system always knows which version is current and can retrieve any historical version on demand, including the raw bytes of preserved source payloads such as inbound EDI evidence.

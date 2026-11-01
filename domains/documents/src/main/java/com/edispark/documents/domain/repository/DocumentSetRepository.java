@@ -1,6 +1,7 @@
 package com.edispark.documents.domain.repository;
 
 import com.edispark.pagination.Page;
+import com.edispark.pagination.NewestFirstPagination;
 import com.edispark.pagination.PaginatedResult;
 import com.edispark.documents.domain.model.ContentHash;
 import com.edispark.documents.domain.model.DocumentSet;
@@ -47,6 +48,7 @@ public interface DocumentSetRepository {
      * @param page pagination parameters (limit and continuation token)
      * @return paginated result with items and next token
      */
+    @NewestFirstPagination
     PaginatedResult<DocumentSet> findAll(Page page);
 
     /**

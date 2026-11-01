@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,6 +120,42 @@ class DynamoDbDocumentSetRepositoryIntegrationTest {
         assertThat(all).hasSize(2);
         assertThat(all).extracting(DocumentSet::id)
                 .containsExactlyInAnyOrder(docSet1.id(), docSet2.id());
+    }
+
+    @Test
+    void shouldListMostRecentDocumentSetsFirstAcrossPages() {
+        DocumentSet oldest = documentSetAt("2026-01-01T00:00:00Z", "oldest");
+        DocumentSet newest = documentSetAt("2026-03-01T00:00:00Z", "newest");
+        DocumentSet middle = documentSetAt("2026-02-01T00:00:00Z", "middle");
+        repository.save(oldest);
+        repository.save(newest);
+        repository.save(middle);
+
+        assertThat(repository.findAll())
+                .extracting(DocumentSet::id)
+                .containsExactly(newest.id(), middle.id(), oldest.id());
+
+        PaginatedResult<DocumentSet> firstPage = repository.findAll(Page.first(2));
+        assertThat(firstPage.items())
+                .extracting(DocumentSet::id)
+                .containsExactly(newest.id(), middle.id());
+        assertThat(firstPage.continuationToken()).isPresent();
+
+        PaginatedResult<DocumentSet> secondPage = repository.findAll(
+                Page.next(2, firstPage.continuationToken().orElseThrow()));
+        assertThat(secondPage.items())
+                .extracting(DocumentSet::id)
+                .containsExactly(oldest.id());
+    }
+
+    private DocumentSet documentSetAt(String createdAt, String label) {
+        ContentHash hash = ContentHash.sha256(label);
+        SchemaVersionRef schemaRef = SchemaVersionRef.of(SchemaId.generate(), VersionIdentifier.of("1.0.0"));
+        DocumentSet source = DocumentSet.createWithDocument(
+                DocumentType.INVOICE, schemaRef, ContentRef.of(hash), hash, "[name]", Map.of());
+        var document = source.getAllDocuments().getFirst();
+        return DocumentSet.reconstitute(
+                source.id(), Map.of(document.id(), document), Instant.parse(createdAt), "[name]", Map.of());
     }
 
     @Test

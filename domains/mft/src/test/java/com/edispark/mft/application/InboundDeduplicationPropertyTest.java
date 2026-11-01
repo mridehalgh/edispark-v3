@@ -13,6 +13,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import java.util.ArrayList;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.NotBlank;
@@ -29,8 +30,10 @@ class InboundDeduplicationPropertyTest {
         repository.savePartner(new PartnerProfile(partnerId, "tenant-a", "Partner", "EDISPARK", "SIMULATOR",
                 URI.create("http://localhost:8082/as2"), UUID.randomUUID(), UUID.randomUUID(),
                 MdnMode.SYNCHRONOUS, true, true, true, false, Instant.EPOCH));
+        var events = new ArrayList<InboundPayloadReceived>();
         MftService service = new MftService(repository, payloadStore,
-                Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+                Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC), false, false,
+                100L * 1024 * 1024, java.time.Duration.ofDays(7), events::add);
         String messageId = "<" + partnerId + "@simulator.local>";
 
         Transfer first = service.receiveInbound("EDISPARK", "SIMULATOR", messageId,
@@ -40,5 +43,8 @@ class InboundDeduplicationPropertyTest {
 
         assertThat(replay.id()).isEqualTo(first.id());
         assertThat(repository.listTransfers("tenant-a")).hasSize(1);
+        assertThat(events).hasSize(2);
+        assertThat(events).extracting(InboundPayloadReceived::eventId).containsOnly(events.getFirst().eventId());
+        assertThat(events.getFirst().transferId()).isEqualTo(first.id().value());
     }
 }

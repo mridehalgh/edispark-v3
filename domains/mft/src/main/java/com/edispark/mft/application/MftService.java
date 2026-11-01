@@ -33,32 +33,40 @@ public final class MftService {
     private final boolean productionPolicy;
     private final long maximumPayloadBytes;
     private final java.time.Duration certificateRolloverGrace;
+    private final InboundPayloadEventPublisher inboundEvents;
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock) {
         this(repository, payloadStore, clock, false, false, 100L * 1024 * 1024,
-                java.time.Duration.ofDays(7));
+                java.time.Duration.ofDays(7), InboundPayloadEventPublisher.noOp());
     }
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock, boolean legacyCryptoAllowed) {
         this(repository, payloadStore, clock, legacyCryptoAllowed, false, 100L * 1024 * 1024,
-                java.time.Duration.ofDays(7));
+                java.time.Duration.ofDays(7), InboundPayloadEventPublisher.noOp());
     }
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
                       boolean legacyCryptoAllowed, boolean productionPolicy) {
         this(repository, payloadStore, clock, legacyCryptoAllowed, productionPolicy, 100L * 1024 * 1024,
-                java.time.Duration.ofDays(7));
+                java.time.Duration.ofDays(7), InboundPayloadEventPublisher.noOp());
     }
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
                       boolean legacyCryptoAllowed, boolean productionPolicy, long maximumPayloadBytes) {
         this(repository, payloadStore, clock, legacyCryptoAllowed, productionPolicy, maximumPayloadBytes,
-                java.time.Duration.ofDays(7));
+                java.time.Duration.ofDays(7), InboundPayloadEventPublisher.noOp());
     }
 
     public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
                       boolean legacyCryptoAllowed, boolean productionPolicy, long maximumPayloadBytes,
                       java.time.Duration certificateRolloverGrace) {
+        this(repository, payloadStore, clock, legacyCryptoAllowed, productionPolicy, maximumPayloadBytes,
+                certificateRolloverGrace, InboundPayloadEventPublisher.noOp());
+    }
+
+    public MftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
+                      boolean legacyCryptoAllowed, boolean productionPolicy, long maximumPayloadBytes,
+                      java.time.Duration certificateRolloverGrace, InboundPayloadEventPublisher inboundEvents) {
         if (maximumPayloadBytes < 1) throw new IllegalArgumentException("maximumPayloadBytes must be positive");
         if (certificateRolloverGrace == null || certificateRolloverGrace.isNegative()
                 || certificateRolloverGrace.isZero()) {
@@ -71,6 +79,7 @@ public final class MftService {
         this.productionPolicy = productionPolicy;
         this.maximumPayloadBytes = maximumPayloadBytes;
         this.certificateRolloverGrace = certificateRolloverGrace;
+        this.inboundEvents = java.util.Objects.requireNonNull(inboundEvents);
     }
 
     public PartnerProfile createPartner(CreatePartner command) {
@@ -163,7 +172,10 @@ public final class MftService {
         String contentSha256 = sha256(content);
         Transfer prior = repository.findInboundByMessageId(partner.tenantId(), messageId).orElse(null);
         if (prior != null) {
-            if (prior.payload() != null && prior.payload().sha256().equals(contentSha256)) return prior;
+            if (prior.payload() != null && prior.payload().sha256().equals(contentSha256)) {
+                publishInbound(prior);
+                return prior;
+            }
             throw new As2ReplayConflictException();
         }
         Instant now = clock.instant();
@@ -171,7 +183,17 @@ public final class MftService {
         transfer.attachPayload(payloadStore.put(partner.tenantId(), transfer.id(), filename,
                 new ByteArrayInputStream(content)), now);
         transfer.deliver("automatic-action/MDN-sent-automatically; processed", now);
-        return repository.saveInboundIfAbsent(transfer);
+        Transfer saved = repository.saveInboundIfAbsent(transfer);
+        publishInbound(saved);
+        return saved;
+    }
+
+    private void publishInbound(Transfer transfer) {
+        UUID eventId = UUID.nameUUIDFromBytes((transfer.tenantId() + ":inbound:" + transfer.id())
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        inboundEvents.publish(new InboundPayloadReceived(eventId, transfer.tenantId(), transfer.id().value(),
+                transfer.partnerId(), transfer.as2MessageId(), transfer.filename(), transfer.contentType(),
+                transfer.payload().sha256(), transfer.payload().size(), transfer.createdAt()));
     }
 
     public Transfer getTransfer(TransferId id) {

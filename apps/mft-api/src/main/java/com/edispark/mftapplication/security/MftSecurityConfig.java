@@ -15,7 +15,8 @@ public class MftSecurityConfig {
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api-docs", "/swagger-ui/**", "/actuator/health", "/as2/**").permitAll()
+                        .requestMatchers("/api-docs", "/swagger-ui/**", "/actuator/health", "/as2/**",
+                                "/internal/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))

@@ -29,6 +29,11 @@ integration:
     enabled: ${INTEGRATION_LOCAL_DEMO_SEED_ENABLED:true}
     tenant-id: ${LOCAL_SEED_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
     mft-partner-id-file: ${MFT_LOCAL_DEMO_PARTNER_ID_FILE:../../.local/mft-demo-partner-id}
+  inbound:
+    queue-url: ${INTEGRATION_INBOUND_MFT_QUEUE_URL:}
+edispark:
+  internal:
+    token: ${EDISPARK_INTERNAL_TOKEN:}
 springdoc:
   api-docs:
     path: /api-docs

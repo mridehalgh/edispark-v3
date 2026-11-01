@@ -28,6 +28,8 @@ mft:
     key-store-logical-name: ${MFT_KEY_STORE_LOGICAL_NAME:}
     root-kms-key-arn: ${MFT_ROOT_KMS_KEY_ARN:}
     branch-key-cache-ttl-seconds: ${MFT_BRANCH_KEY_CACHE_TTL_SECONDS:600}
+  events:
+    bus-name: ${INTEGRATION_EVENT_BUS:}
   payload:
     directory: ${MFT_PAYLOAD_DIR:./.local/mft/payloads}
   secrets:
@@ -74,6 +76,9 @@ management:
     web:
       exposure:
         include: health,info
+edispark:
+  internal:
+    token: ${EDISPARK_INTERNAL_TOKEN:}
 logging:
   level:
     com.edispark.mft: INFO

@@ -14,7 +14,7 @@
 - [x] 2.3 Compose Documents, Mapping, Partnership, and MFT ACL adapters in Integration API
 - [x] 2.4 Add DynamoDB production repositories with transactional idempotency claims
 - [x] 2.5 Add EventBridge-to-SQS agreement snapshot infrastructure with DLQ
-- [ ] 2.6 Consume inbound MFT payload events and route them into canonical Documents
+- [x] 2.6 Consume inbound MFT payload events and route them into canonical Documents
 
 ## 3. API, UI, and local workspace
 

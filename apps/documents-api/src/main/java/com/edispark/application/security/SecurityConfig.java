@@ -19,9 +19,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api-docs", "/swagger-ui/**", "/actuator/health").permitAll()
+                        .requestMatchers("/api-docs", "/swagger-ui/**", "/actuator/health", "/internal/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll())
+                        .anyRequest().denyAll())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .addFilterAfter(new TenantContextFilter(), AnonymousAuthenticationFilter.class)
                 .build();

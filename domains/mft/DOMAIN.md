@@ -8,6 +8,8 @@ Managed File Transfer gives every AS2 exchange a verifiable, tenant-isolated cha
 
 The domain owns local AS2 identities, trading-partner transport profiles, certificate metadata, transfers, attempts, MDNs, payload references, and resend lineage. It does not parse EDI business documents or deliver files through SFTP or object-storage routes.
 
+After an inbound payload is durably retained, MFT publishes a metadata-only `MftInboundPayloadReceived` event. Payload bytes remain behind the tenant-scoped MFT boundary and are available to the trusted Integration consumer through an authenticated internal content route.
+
 ## Narrative
 
 An integration analyst registers the workspace AS2 identity and a partner's endpoint and purpose-separated signing/encryption certificates. A new production profile is a draft until activation proves its secure policy; suspension removes it from both directions. The organisation administrator can then share the tenant-scoped AS2 identifier, public receiving URLs, supported algorithms, certificate fingerprints, and public certificates with that partner. Private key material is never part of the onboarding pack. When an operations user submits a file, the service records one idempotent transfer, stores immutable bytes, prepares an AS2 message, and waits for verifiable receipt evidence. Incoming messages are matched by the exact AS2 identities, authenticated, stored once, and acknowledged. An exact Message-ID replay returns the original result, while different bytes under the same Message-ID are rejected. Asynchronous signed receipts enter a durable, leased retry outbox before acknowledgement. A manual resend is a new, linked exchange so the original evidence never changes.

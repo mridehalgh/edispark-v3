@@ -50,6 +50,18 @@ public final class EdiExchange {
         return exchange;
     }
 
+    public static EdiExchange inbound(String tenantId, UUID partnerId, UUID agreementId, int agreementRevision,
+            UUID capabilityId, UUID mftTransferId, DocumentReference retainedSource,
+            DocumentReference canonicalDocument, Instant now) {
+        EdiExchange exchange = new EdiExchange(UUID.randomUUID(), tenantId, ExchangeDirection.INBOUND, partnerId,
+                agreementId, agreementRevision, capabilityId, "mft:" + mftTransferId, now);
+        exchange.sourceDocument = Objects.requireNonNull(retainedSource);
+        exchange.generatedDocument = Objects.requireNonNull(canonicalDocument);
+        exchange.mftTransferId = Objects.requireNonNull(mftTransferId);
+        exchange.advance(ExchangeStatus.DELIVERED, "Inbound payload stored as a canonical document", now);
+        return exchange;
+    }
+
     public static EdiExchange restore(UUID id, String tenantId, ExchangeDirection direction, UUID partnerId,
             UUID agreementId, int agreementRevision, UUID capabilityId, String idempotencyKey,
             DocumentReference sourceDocument, DocumentReference generatedDocument, UUID mftTransferId,

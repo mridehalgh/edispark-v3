@@ -3,6 +3,7 @@ package com.edispark.mft.infrastructure.config;
 import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.application.ConnectionDetailsService;
 import com.edispark.mft.application.MftService;
+import com.edispark.mft.application.InboundPayloadEventPublisher;
 import com.edispark.mft.application.As2ExchangePort;
 import com.edispark.mft.application.As2EncryptionCertificateProvider;
 import com.edispark.mft.application.AsyncMdnOutboxService;
@@ -127,11 +128,12 @@ public class ProductionMftModuleConfig {
 
     @Bean
     MftService mftService(MftRepository repository, PayloadStore payloadStore, Clock clock,
+            InboundPayloadEventPublisher inboundEvents,
             @Value("${mft.as2.allow-legacy-crypto:false}") boolean allowLegacyCrypto,
             @Value("${mft.as2.max-outbound-payload-bytes:104857600}") long maximumPayloadBytes,
             @Value("${mft.as2.certificate-rollover-grace-days:7}") long rolloverGraceDays) {
         return new MftService(repository, payloadStore, clock, allowLegacyCrypto, true, maximumPayloadBytes,
-                java.time.Duration.ofDays(rolloverGraceDays));
+                java.time.Duration.ofDays(rolloverGraceDays), inboundEvents);
     }
 
     @Bean

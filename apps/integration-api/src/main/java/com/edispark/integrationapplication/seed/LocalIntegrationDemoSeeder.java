@@ -54,6 +54,10 @@ public final class LocalIntegrationDemoSeeder {
     private static final UUID EDIFACT_INVOICE_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac21");
     private static final UUID TRADACOMS_ORDER_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac22");
     private static final UUID TRADACOMS_INVOICE_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac23");
+    private static final UUID EDIFACT_ORDER_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac24");
+    private static final UUID EDIFACT_INVOICE_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac25");
+    private static final UUID TRADACOMS_ORDER_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac26");
+    private static final UUID TRADACOMS_INVOICE_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac27");
     private static final String HASH = "8c22a4dd5b19426c04f0cfb8f6ac69e22375b87ef4a78717dc31de72fa941f11";
 
     private final PartnershipRepository partnerships;
@@ -93,7 +97,15 @@ public final class LocalIntegrationDemoSeeder {
                 mapping(TRADACOMS_ORDER_MAPPING, "UBL order → TRADACOMS ORDERS", ORDER_SOURCE_SCHEMA,
                         TRADACOMS_ORDER_SCHEMA, orderNodes(), targetTenantId, now),
                 mapping(TRADACOMS_INVOICE_MAPPING, "UBL invoice → TRADACOMS INVOIC", INVOICE_SOURCE_SCHEMA,
-                        TRADACOMS_INVOICE_SCHEMA, invoiceNodes(), targetTenantId, now));
+                        TRADACOMS_INVOICE_SCHEMA, invoiceNodes(), targetTenantId, now),
+                mapping(EDIFACT_ORDER_INBOUND_MAPPING, "EDIFACT ORDERS D96A → canonical order", EDIFACT_ORDER_SCHEMA,
+                        ORDER_SOURCE_SCHEMA, inboundOrderNodes(), targetTenantId, now),
+                mapping(EDIFACT_INVOICE_INBOUND_MAPPING, "EDIFACT INVOIC D96A → canonical invoice", EDIFACT_INVOICE_SCHEMA,
+                        INVOICE_SOURCE_SCHEMA, inboundInvoiceNodes(), targetTenantId, now),
+                mapping(TRADACOMS_ORDER_INBOUND_MAPPING, "TRADACOMS ORDERS → canonical order", TRADACOMS_ORDER_SCHEMA,
+                        ORDER_SOURCE_SCHEMA, inboundOrderNodes(), targetTenantId, now),
+                mapping(TRADACOMS_INVOICE_INBOUND_MAPPING, "TRADACOMS INVOIC → canonical invoice", TRADACOMS_INVOICE_SCHEMA,
+                        INVOICE_SOURCE_SCHEMA, inboundInvoiceNodes(), targetTenantId, now));
     }
 
     private MappingRevision mapping(UUID id, String name, UUID source, UUID target, List<MappingNode> nodes,
@@ -112,6 +124,23 @@ public final class LocalIntegrationDemoSeeder {
         return nodes("/Invoice/0/ID/0/_", "/Invoice/0/IssueDate/0/_",
                 "/Invoice/0/AccountingSupplierParty/0/Party/0/EndpointID/0/_",
                 "/Invoice/0/AccountingCustomerParty/0/Party/0/EndpointID/0/_");
+    }
+
+    private List<MappingNode> inboundOrderNodes() {
+        return reverseNodes("/Order/0/ID/0/_", "/Order/0/IssueDate/0/_",
+                "/Order/0/BuyerCustomerParty/0/Party/0/EndpointID/0/_",
+                "/Order/0/SellerSupplierParty/0/Party/0/EndpointID/0/_");
+    }
+
+    private List<MappingNode> inboundInvoiceNodes() {
+        return reverseNodes("/Invoice/0/ID/0/_", "/Invoice/0/IssueDate/0/_",
+                "/Invoice/0/AccountingCustomerParty/0/Party/0/EndpointID/0/_",
+                "/Invoice/0/AccountingSupplierParty/0/Party/0/EndpointID/0/_");
+    }
+
+    private List<MappingNode> reverseNodes(String id, String issueDate, String buyer, String supplier) {
+        return List.of(copy("/document/id", id), copy("/document/issueDate", issueDate),
+                copy("/parties/receiver", buyer), copy("/parties/sender", supplier));
     }
 
     private List<MappingNode> nodes(String id, String issueDate, String sender, String receiver) {
@@ -137,7 +166,15 @@ public final class LocalIntegrationDemoSeeder {
                 capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER, EdiStandard.TRADACOMS, "9",
                         "ORDERS", ORDER_SOURCE_SCHEMA, TRADACOMS_ORDER_SCHEMA, TRADACOMS_ORDER_MAPPING, as2ConnectionId),
                 capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.INVOICE, EdiStandard.TRADACOMS, "9",
-                        "INVOIC", INVOICE_SOURCE_SCHEMA, TRADACOMS_INVOICE_SCHEMA, TRADACOMS_INVOICE_MAPPING, as2ConnectionId));
+                        "INVOIC", INVOICE_SOURCE_SCHEMA, TRADACOMS_INVOICE_SCHEMA, TRADACOMS_INVOICE_MAPPING, as2ConnectionId),
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.ORDER, EdiStandard.EDIFACT, "D96A",
+                        "ORDERS", EDIFACT_ORDER_SCHEMA, ORDER_SOURCE_SCHEMA, EDIFACT_ORDER_INBOUND_MAPPING, as2ConnectionId),
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.INVOICE, EdiStandard.EDIFACT, "D96A",
+                        "INVOIC", EDIFACT_INVOICE_SCHEMA, INVOICE_SOURCE_SCHEMA, EDIFACT_INVOICE_INBOUND_MAPPING, as2ConnectionId),
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.ORDER, EdiStandard.TRADACOMS, "9",
+                        "ORDERS", TRADACOMS_ORDER_SCHEMA, ORDER_SOURCE_SCHEMA, TRADACOMS_ORDER_INBOUND_MAPPING, as2ConnectionId),
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.INVOICE, EdiStandard.TRADACOMS, "9",
+                        "INVOIC", TRADACOMS_INVOICE_SCHEMA, INVOICE_SOURCE_SCHEMA, TRADACOMS_INVOICE_INBOUND_MAPPING, as2ConnectionId));
         List<String> checks = capabilities.stream().flatMap(item -> List.of(
                 "Published mapping " + item.mappingRevisionId(), "Active AS2 connection " + as2ConnectionId).stream()).toList();
         return new TradingAgreement(AGREEMENT_ID, targetTenantId, PARTNER_ID, 1, "Northstar retail documents",

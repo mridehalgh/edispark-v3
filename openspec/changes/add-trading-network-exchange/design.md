@@ -28,4 +28,4 @@ The Integration API emits one structured completion event per request with corre
 
 ## Local workspace
 
-The complete runner starts Documents, MFT, Integration, the AS2 simulator, and web in dependency order. MFT writes the reconciled demo connection ID to a local-only handoff file; Integration uses it to seed one partner, one active agreement, and four published mappings for Order/Invoice × EDIFACT/TRADACOMS.
+The complete runner starts Documents, MFT, Integration, the AS2 simulator, and web in dependency order. MFT writes the reconciled demo connection ID to a local-only handoff file; Integration uses it to seed one partner, one active agreement, and eight published mappings for inbound and outbound Order/Invoice × EDIFACT/TRADACOMS. A local polling adapter reconciles retained inbound transfers with the same idempotent processor used by production SQS delivery.

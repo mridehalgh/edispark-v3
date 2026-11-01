@@ -13,6 +13,7 @@ export async function localEnvironment() {
   return {
     ...process.env,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? settings.betterAuthSecret,
+    EDISPARK_INTERNAL_TOKEN: process.env.EDISPARK_INTERNAL_TOKEN ?? settings.internalServiceToken,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
     BETTER_AUTH_DATABASE_PATH: process.env.BETTER_AUTH_DATABASE_PATH ?? resolve(localDirectory, "auth.db"),
     BETTER_AUTH_AUTO_MIGRATE: process.env.BETTER_AUTH_AUTO_MIGRATE ?? "true",
@@ -39,10 +40,17 @@ export function workspaceDirectory() {
 
 async function readSettings() {
   try {
-    return JSON.parse(await readFile(settingsPath, "utf8"))
+    const settings = JSON.parse(await readFile(settingsPath, "utf8"))
+    if (settings.internalServiceToken) return settings
+    const updated = { ...settings, internalServiceToken: randomBytes(48).toString("base64url") }
+    await writeFile(settingsPath, `${JSON.stringify(updated, null, 2)}\n`, { mode: 0o600 })
+    return updated
   } catch (error) {
     if (error.code !== "ENOENT") throw error
-    const settings = { betterAuthSecret: randomBytes(48).toString("base64url") }
+    const settings = {
+      betterAuthSecret: randomBytes(48).toString("base64url"),
+      internalServiceToken: randomBytes(48).toString("base64url"),
+    }
     await writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, { mode: 0o600 })
     return settings
   }

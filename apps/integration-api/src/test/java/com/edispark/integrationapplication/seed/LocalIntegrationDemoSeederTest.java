@@ -30,7 +30,10 @@ final class LocalIntegrationDemoSeederTest {
 
         assertThat(partnerships.listPartners(TENANT_ID)).hasSize(1);
         assertThat(partnerships.listAgreements(TENANT_ID)).hasSize(1);
-        assertThat(mappings.list(TENANT_ID)).hasSize(4);
+        assertThat(mappings.list(TENANT_ID)).hasSize(8);
+        assertThat(firstAgreement.capabilities()).extracting(capability -> capability.direction().name())
+                .containsExactlyInAnyOrder("OUTBOUND", "OUTBOUND", "OUTBOUND", "OUTBOUND",
+                        "INBOUND", "INBOUND", "INBOUND", "INBOUND");
         assertThat(partnerships.listAgreements(TENANT_ID).getFirst().capabilities())
                 .extracting(capability -> capability.id())
                 .containsExactlyElementsOf(firstAgreement.capabilities().stream().map(capability -> capability.id()).toList());

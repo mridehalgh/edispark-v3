@@ -6,6 +6,7 @@ import com.edispark.documents.application.query.DocumentContentQueryService;
 import com.edispark.documents.application.query.DocumentSetQueryHandler;
 import com.edispark.documents.application.tradacoms.InboundTradacomsIngestionService;
 import com.edispark.documents.application.tradacoms.TradacomsMessageParser;
+import com.edispark.documents.application.inbound.InboundCanonicalDocumentService;
 import com.edispark.documents.domain.repository.ContentStore;
 import com.edispark.documents.domain.repository.DocumentSetRepository;
 import com.edispark.documents.domain.repository.SchemaRepository;
@@ -50,6 +51,12 @@ import java.util.List;
  */
 @Configuration
 public class DocumentsModuleConfig {
+
+    @Bean
+    public InboundCanonicalDocumentService inboundCanonicalDocumentService(
+            DocumentSetRepository repository, ContentStore contentStore) {
+        return new InboundCanonicalDocumentService(repository, contentStore);
+    }
 
     // =============================================================================
     // AWS Client Configuration

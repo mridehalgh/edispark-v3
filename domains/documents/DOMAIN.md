@@ -74,4 +74,5 @@ When significant events occur, the domain publishes events. A new document set t
 |-----------|--------|-----------|
 | Publishes to | Any subscriber | Domain events via event bus |
 | Consumes from | External schema providers | Schema definitions via ContentStore |
+| Consumes from | EDI Exchange | Idempotent inbound source and canonical representation command keyed by MFT transfer ID |
 | Provides to | Downstream systems | Document metadata and version content via Documents API |

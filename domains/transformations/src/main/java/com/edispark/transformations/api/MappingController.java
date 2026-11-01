@@ -15,6 +15,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -54,8 +55,21 @@ public final class MappingController {
     @PostMapping("/{mappingId}/publish") @Operation(operationId = "publishMapping", summary = "Publish an immutable mapping revision")
     public MappingRevision publish(@PathVariable UUID mappingId, @Valid @RequestBody PublishMappingRequest request) {
         return service.publish(mappingId, request.fixtures().stream()
-                .map(item -> new MappingService.Fixture(item.name(), bytes(item.input()), bytes(item.expected()))).toList());
+                .map(item -> new MappingService.Fixture(item.name(), bytes(item.input()), bytes(item.expected()))).toList(),
+                request.effectiveAt());
     }
+
+    @PostMapping("/{mappingId}/archive")
+    @Operation(operationId = "archiveMappingRevision", summary = "Archive a retained mapping revision")
+    public MappingRevision archive(@PathVariable UUID mappingId) { return service.archive(mappingId); }
+
+    @GetMapping("/{mappingId}/usage")
+    @Operation(operationId = "getMappingUsage", summary = "Explain mapping deletion dependencies")
+    public MappingService.Usage usage(@PathVariable UUID mappingId) { return service.usage(mappingId); }
+
+    @DeleteMapping("/{mappingId}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deleteMappingDraft", summary = "Permanently delete an unused mapping draft")
+    public void delete(@PathVariable UUID mappingId) { service.deleteDraft(mappingId); }
 
     @PostMapping("/{mappingId}/revisions") @ResponseStatus(HttpStatus.CREATED)
     @Operation(operationId = "createMappingRevision", summary = "Create an editable revision from a published mapping")
@@ -67,5 +81,6 @@ public final class MappingController {
                                        @NotNull UUID targetSchemaId, @NotEmpty List<@Valid MappingNode> nodes) { }
     public record UpdateMappingRequest(@NotEmpty List<@Valid MappingNode> nodes) { }
     public record MappingFixtureRequest(@NotBlank String name, @NotBlank String input, String expected) { }
-    public record PublishMappingRequest(@NotEmpty List<@Valid MappingFixtureRequest> fixtures) { }
+    public record PublishMappingRequest(@NotEmpty List<@Valid MappingFixtureRequest> fixtures,
+                                        java.time.Instant effectiveAt) { }
 }

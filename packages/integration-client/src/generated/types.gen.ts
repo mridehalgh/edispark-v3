@@ -4,33 +4,6 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:18083' | (string & {});
 };
 
-export type MappingNode = {
-    id?: string;
-    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE';
-    sourcePointers?: Array<string>;
-    targetPointer?: string;
-    constant?: string;
-    separator?: string;
-};
-
-export type UpdateMappingRequest = {
-    nodes: Array<MappingNode>;
-};
-
-export type MappingRevision = {
-    id?: string;
-    tenantId?: string;
-    name?: string;
-    revision?: number;
-    sourceSchemaId?: string;
-    targetSchemaId?: string;
-    status?: 'DRAFT' | 'PUBLISHED' | 'RETIRED';
-    nodes?: Array<MappingNode>;
-    contentHash?: string;
-    createdAt?: string;
-    publishedAt?: string;
-};
-
 export type BusinessIdentity = {
     scheme?: string;
     value?: string;
@@ -46,13 +19,28 @@ export type TradingPartner = {
     tenantId?: string;
     displayName?: string;
     identities?: Array<BusinessIdentity>;
-    status?: 'ACTIVE' | 'SUSPENDED';
+    status?: 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'SUPERSEDED' | 'SUSPENDED' | 'ARCHIVED';
     createdAt?: string;
     updatedAt?: string;
+    familyId?: string;
+    revision?: number;
+    scheduledAt?: string;
+    archivedAt?: string;
+    version?: number;
 };
 
-export type CreateAgreementRequest = {
-    name: string;
+export type CapabilityRequest = {
+    direction: 'INBOUND' | 'OUTBOUND';
+    documentType: 'ORDER' | 'INVOICE';
+    standard: 'TRADACOMS' | 'EDIFACT';
+    release: string;
+    messageType: string;
+    sourceSchemaId: string;
+    targetSchemaId: string;
+    mappingRevisionId: string;
+    as2ConnectionId: string;
+    acknowledgementPolicy: 'TRANSPORT_ONLY' | 'FUNCTIONAL';
+    batchingPolicy: 'INDIVIDUAL' | 'PRESERVE_INBOUND_BATCH' | 'GROUP_OUTBOUND';
 };
 
 export type ExchangeCapability = {
@@ -83,27 +71,69 @@ export type TradingAgreement = {
     partnerId?: string;
     revision?: number;
     name?: string;
-    status?: 'DRAFT' | 'QUALIFYING' | 'ACTIVE' | 'SUSPENDED' | 'RETIRED';
+    status?: 'DRAFT' | 'QUALIFYING' | 'SCHEDULED' | 'ACTIVE' | 'SUPERSEDED' | 'SUSPENDED' | 'RETIRED' | 'ARCHIVED';
     effectiveFrom?: string;
     effectiveUntil?: string;
     capabilities?: Array<ExchangeCapability>;
     qualification?: QualificationReport;
     createdAt?: string;
     updatedAt?: string;
+    familyId?: string;
+    scheduledAt?: string;
+    archivedAt?: string;
+    version?: number;
 };
 
-export type CapabilityRequest = {
-    direction: 'INBOUND' | 'OUTBOUND';
-    documentType: 'ORDER' | 'INVOICE';
-    standard: 'TRADACOMS' | 'EDIFACT';
-    release: string;
-    messageType: string;
-    sourceSchemaId: string;
-    targetSchemaId: string;
-    mappingRevisionId: string;
-    as2ConnectionId: string;
-    acknowledgementPolicy: 'TRANSPORT_ONLY' | 'FUNCTIONAL';
-    batchingPolicy: 'INDIVIDUAL' | 'PRESERVE_INBOUND_BATCH' | 'GROUP_OUTBOUND';
+export type MappingNode = {
+    id?: string;
+    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE';
+    sourcePointers?: Array<string>;
+    targetPointer?: string;
+    constant?: string;
+    separator?: string;
+};
+
+export type UpdateMappingRequest = {
+    nodes: Array<MappingNode>;
+};
+
+export type MappingRevision = {
+    id?: string;
+    tenantId?: string;
+    name?: string;
+    revision?: number;
+    sourceSchemaId?: string;
+    targetSchemaId?: string;
+    status?: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'RETIRED' | 'ARCHIVED';
+    nodes?: Array<MappingNode>;
+    contentHash?: string;
+    createdAt?: string;
+    publishedAt?: string;
+    familyId?: string;
+    scheduledAt?: string;
+    archivedAt?: string;
+    version?: number;
+    scope?: 'GLOBAL' | 'TENANT';
+    vendor?: string;
+    sample?: MappingSample;
+    derivedFromMappingId?: string;
+};
+
+export type MappingSample = {
+    sourceFormat?: string;
+    sourceDocument?: string;
+    sourceRaw?: string;
+    targetFormat?: string;
+    targetDocument?: string;
+    targetRaw?: string;
+};
+
+export type CreateAgreementRequest = {
+    name: string;
+};
+
+export type ActivationRequest = {
+    effectiveAt?: string;
 };
 
 export type CreateMappingRequest = {
@@ -127,6 +157,7 @@ export type TestResult = {
 
 export type PublishMappingRequest = {
     fixtures: Array<MappingFixtureRequest>;
+    effectiveAt?: string;
 };
 
 export type SubmitExchangeRequest = {
@@ -166,6 +197,17 @@ export type ExchangeStage = {
     detail?: string;
 };
 
+export type Dependency = {
+    type?: string;
+    id?: string;
+    label?: string;
+};
+
+export type Usage = {
+    deletable?: boolean;
+    dependencies?: Array<Dependency>;
+};
+
 export type EligibleRoute = {
     agreementId?: string;
     agreementRevision?: number;
@@ -173,6 +215,62 @@ export type EligibleRoute = {
     agreementName?: string;
     capability?: ExchangeCapability;
 };
+
+export type UpdateTradingPartnerDraftData = {
+    body: CreatePartnerRequest;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}/draft';
+};
+
+export type UpdateTradingPartnerDraftResponses = {
+    /**
+     * OK
+     */
+    200: TradingPartner;
+};
+
+export type UpdateTradingPartnerDraftResponse = UpdateTradingPartnerDraftResponses[keyof UpdateTradingPartnerDraftResponses];
+
+export type RemoveExchangeCapabilityData = {
+    body?: never;
+    path: {
+        agreementId: string;
+        capabilityId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/agreements/{agreementId}/capabilities/{capabilityId}';
+};
+
+export type RemoveExchangeCapabilityResponses = {
+    /**
+     * OK
+     */
+    200: TradingAgreement;
+};
+
+export type RemoveExchangeCapabilityResponse = RemoveExchangeCapabilityResponses[keyof RemoveExchangeCapabilityResponses];
+
+export type ReplaceExchangeCapabilityData = {
+    body: CapabilityRequest;
+    path: {
+        agreementId: string;
+        capabilityId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/agreements/{agreementId}/capabilities/{capabilityId}';
+};
+
+export type ReplaceExchangeCapabilityResponses = {
+    /**
+     * OK
+     */
+    200: TradingAgreement;
+};
+
+export type ReplaceExchangeCapabilityResponse = ReplaceExchangeCapabilityResponses[keyof ReplaceExchangeCapabilityResponses];
 
 export type UpdateMappingDraftData = {
     body: UpdateMappingRequest;
@@ -224,6 +322,42 @@ export type CreateTradingPartnerResponses = {
 
 export type CreateTradingPartnerResponse = CreateTradingPartnerResponses[keyof CreateTradingPartnerResponses];
 
+export type CreateTradingPartnerRevisionData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}/revisions';
+};
+
+export type CreateTradingPartnerRevisionResponses = {
+    /**
+     * Created
+     */
+    201: TradingPartner;
+};
+
+export type CreateTradingPartnerRevisionResponse = CreateTradingPartnerRevisionResponses[keyof CreateTradingPartnerRevisionResponses];
+
+export type ArchiveTradingPartnerRevisionData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}/archive';
+};
+
+export type ArchiveTradingPartnerRevisionResponses = {
+    /**
+     * OK
+     */
+    200: TradingPartner;
+};
+
+export type ArchiveTradingPartnerRevisionResponse = ArchiveTradingPartnerRevisionResponses[keyof ArchiveTradingPartnerRevisionResponses];
+
 export type CreateTradingAgreementData = {
     body: CreateAgreementRequest;
     path: {
@@ -241,6 +375,24 @@ export type CreateTradingAgreementResponses = {
 };
 
 export type CreateTradingAgreementResponse = CreateTradingAgreementResponses[keyof CreateTradingAgreementResponses];
+
+export type ActivateTradingPartnerRevisionData = {
+    body?: ActivationRequest;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}/activate';
+};
+
+export type ActivateTradingPartnerRevisionResponses = {
+    /**
+     * OK
+     */
+    200: TradingPartner;
+};
+
+export type ActivateTradingPartnerRevisionResponse = ActivateTradingPartnerRevisionResponses[keyof ActivateTradingPartnerRevisionResponses];
 
 export type SuspendTradingAgreementData = {
     body?: never;
@@ -314,8 +466,26 @@ export type AddExchangeCapabilityResponses = {
 
 export type AddExchangeCapabilityResponse = AddExchangeCapabilityResponses[keyof AddExchangeCapabilityResponses];
 
-export type ActivateTradingAgreementData = {
+export type ArchiveTradingAgreementRevisionData = {
     body?: never;
+    path: {
+        agreementId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/agreements/{agreementId}/archive';
+};
+
+export type ArchiveTradingAgreementRevisionResponses = {
+    /**
+     * OK
+     */
+    200: TradingAgreement;
+};
+
+export type ArchiveTradingAgreementRevisionResponse = ArchiveTradingAgreementRevisionResponses[keyof ArchiveTradingAgreementRevisionResponses];
+
+export type ActivateTradingAgreementData = {
+    body?: ActivationRequest;
     path: {
         agreementId: string;
     };
@@ -418,6 +588,24 @@ export type PublishMappingResponses = {
 
 export type PublishMappingResponse = PublishMappingResponses[keyof PublishMappingResponses];
 
+export type ArchiveMappingRevisionData = {
+    body?: never;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}/archive';
+};
+
+export type ArchiveMappingRevisionResponses = {
+    /**
+     * OK
+     */
+    200: MappingRevision;
+};
+
+export type ArchiveMappingRevisionResponse = ArchiveMappingRevisionResponses[keyof ArchiveMappingRevisionResponses];
+
 export type ListExchangesData = {
     body?: never;
     path?: never;
@@ -450,6 +638,42 @@ export type SubmitOutboundExchangeResponses = {
 
 export type SubmitOutboundExchangeResponse = SubmitOutboundExchangeResponses[keyof SubmitOutboundExchangeResponses];
 
+export type DeleteTradingPartnerDraftData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}';
+};
+
+export type DeleteTradingPartnerDraftResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteTradingPartnerDraftResponse = DeleteTradingPartnerDraftResponses[keyof DeleteTradingPartnerDraftResponses];
+
+export type GetTradingPartnerData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}';
+};
+
+export type GetTradingPartnerResponses = {
+    /**
+     * OK
+     */
+    200: TradingPartner;
+};
+
+export type GetTradingPartnerResponse = GetTradingPartnerResponses[keyof GetTradingPartnerResponses];
+
 export type ListTradingAgreementsData = {
     body?: never;
     path?: never;
@@ -465,6 +689,24 @@ export type ListTradingAgreementsResponses = {
 };
 
 export type ListTradingAgreementsResponse = ListTradingAgreementsResponses[keyof ListTradingAgreementsResponses];
+
+export type DeleteTradingAgreementDraftData = {
+    body?: never;
+    path: {
+        agreementId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/agreements/{agreementId}';
+};
+
+export type DeleteTradingAgreementDraftResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteTradingAgreementDraftResponse = DeleteTradingAgreementDraftResponses[keyof DeleteTradingAgreementDraftResponses];
 
 export type GetTradingAgreementData = {
     body?: never;
@@ -484,6 +726,42 @@ export type GetTradingAgreementResponses = {
 
 export type GetTradingAgreementResponse = GetTradingAgreementResponses[keyof GetTradingAgreementResponses];
 
+export type GetTradingAgreementUsageData = {
+    body?: never;
+    path: {
+        agreementId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/agreements/{agreementId}/usage';
+};
+
+export type GetTradingAgreementUsageResponses = {
+    /**
+     * OK
+     */
+    200: Usage;
+};
+
+export type GetTradingAgreementUsageResponse = GetTradingAgreementUsageResponses[keyof GetTradingAgreementUsageResponses];
+
+export type DeleteMappingDraftData = {
+    body?: never;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}';
+};
+
+export type DeleteMappingDraftResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteMappingDraftResponse = DeleteMappingDraftResponses[keyof DeleteMappingDraftResponses];
+
 export type GetMappingData = {
     body?: never;
     path: {
@@ -501,6 +779,24 @@ export type GetMappingResponses = {
 };
 
 export type GetMappingResponse = GetMappingResponses[keyof GetMappingResponses];
+
+export type GetMappingUsageData = {
+    body?: never;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}/usage';
+};
+
+export type GetMappingUsageResponses = {
+    /**
+     * OK
+     */
+    200: Usage;
+};
+
+export type GetMappingUsageResponse = GetMappingUsageResponses[keyof GetMappingUsageResponses];
 
 export type GetExchangeData = {
     body?: never;

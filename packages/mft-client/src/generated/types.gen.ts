@@ -4,6 +4,49 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:18081' | (string & {});
 };
 
+export type CreatePartnerRequest = {
+    name: string;
+    localAs2Id: string;
+    remoteAs2Id: string;
+    endpoint: string;
+    localCertificateId: string;
+    partnerSigningCertificateId: string;
+    partnerEncryptionCertificateId: string;
+    asynchronousMdnEndpoint?: string | null;
+    mdnMode: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
+    signingRequired?: boolean;
+    encryptionRequired?: boolean;
+    compressionEnabled?: boolean;
+    legacyCryptoEnabled?: boolean;
+};
+
+export type PartnerResponse = {
+    id?: string;
+    name?: string;
+    localAs2Id?: string;
+    remoteAs2Id?: string;
+    endpoint?: string;
+    localCertificateId?: string;
+    partnerSigningCertificateId?: string;
+    partnerEncryptionCertificateId?: string;
+    previousPartnerSigningCertificateId?: string | null;
+    signingCertificateGraceUntil?: string | null;
+    asynchronousMdnEndpoint?: string | null;
+    mdnMode?: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
+    signingRequired?: boolean;
+    encryptionRequired?: boolean;
+    compressionEnabled?: boolean;
+    legacyCryptoEnabled?: boolean;
+    status?: 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'SUPERSEDED' | 'SUSPENDED' | 'ARCHIVED';
+    createdAt?: string;
+    familyId?: string;
+    revision?: number;
+    scheduledAt?: string | null;
+    archivedAt?: string | null;
+    updatedAt?: string;
+    version?: number;
+};
+
 export type TransferAttempt = {
     number?: number;
     startedAt?: string;
@@ -42,41 +85,8 @@ export type TransferResponse = {
     attempts?: Array<TransferAttempt>;
 };
 
-export type CreatePartnerRequest = {
-    name: string;
-    localAs2Id: string;
-    remoteAs2Id: string;
-    endpoint: string;
-    localCertificateId: string;
-    partnerSigningCertificateId: string;
-    partnerEncryptionCertificateId: string;
-    asynchronousMdnEndpoint?: string | null;
-    mdnMode: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
-    signingRequired?: boolean;
-    encryptionRequired?: boolean;
-    compressionEnabled?: boolean;
-    legacyCryptoEnabled?: boolean;
-};
-
-export type PartnerResponse = {
-    id?: string;
-    name?: string;
-    localAs2Id?: string;
-    remoteAs2Id?: string;
-    endpoint?: string;
-    localCertificateId?: string;
-    partnerSigningCertificateId?: string;
-    partnerEncryptionCertificateId?: string;
-    previousPartnerSigningCertificateId?: string | null;
-    signingCertificateGraceUntil?: string | null;
-    asynchronousMdnEndpoint?: string | null;
-    mdnMode?: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
-    signingRequired?: boolean;
-    encryptionRequired?: boolean;
-    compressionEnabled?: boolean;
-    legacyCryptoEnabled?: boolean;
-    status?: 'DRAFT' | 'ACTIVE' | 'SUSPENDED';
-    createdAt?: string;
+export type ActivationRequest = {
+    effectiveAt?: string;
 };
 
 export type RotatePartnerCertificatesRequest = {
@@ -96,6 +106,15 @@ export type CertificateResponse = {
     hasPrivateKey?: boolean;
     daysUntilExpiry?: number;
     validity?: string;
+};
+
+export type TransferId = {
+    value?: string;
+};
+
+export type Usage = {
+    deletable?: boolean;
+    transferIds?: Array<TransferId>;
 };
 
 export type MdnDeliveryResponse = {
@@ -130,6 +149,24 @@ export type As2ConnectionDetailsResponse = {
     encryptionCertificateNotAfter?: string;
     encryptionPublicCertificatePem?: string;
 };
+
+export type UpdateMftPartnerDraftData = {
+    body: CreatePartnerRequest;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/draft';
+};
+
+export type UpdateMftPartnerDraftResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type UpdateMftPartnerDraftResponse = UpdateMftPartnerDraftResponses[keyof UpdateMftPartnerDraftResponses];
 
 export type ListMftTransfersData = {
     body?: never;
@@ -245,6 +282,42 @@ export type SuspendMftPartnerResponses = {
 
 export type SuspendMftPartnerResponse = SuspendMftPartnerResponses[keyof SuspendMftPartnerResponses];
 
+export type ScheduleMftPartnerActivationData = {
+    body: ActivationRequest;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/schedule';
+};
+
+export type ScheduleMftPartnerActivationResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type ScheduleMftPartnerActivationResponse = ScheduleMftPartnerActivationResponses[keyof ScheduleMftPartnerActivationResponses];
+
+export type CreateMftPartnerRevisionData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/revisions';
+};
+
+export type CreateMftPartnerRevisionResponses = {
+    /**
+     * Created
+     */
+    201: PartnerResponse;
+};
+
+export type CreateMftPartnerRevisionResponse = CreateMftPartnerRevisionResponses[keyof CreateMftPartnerRevisionResponses];
+
 export type RotateMftPartnerCertificatesData = {
     body: RotatePartnerCertificatesRequest;
     path: {
@@ -262,6 +335,24 @@ export type RotateMftPartnerCertificatesResponses = {
 };
 
 export type RotateMftPartnerCertificatesResponse = RotateMftPartnerCertificatesResponses[keyof RotateMftPartnerCertificatesResponses];
+
+export type ArchiveMftPartnerRevisionData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/archive';
+};
+
+export type ArchiveMftPartnerRevisionResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type ArchiveMftPartnerRevisionResponse = ArchiveMftPartnerRevisionResponses[keyof ArchiveMftPartnerRevisionResponses];
 
 export type ActivateMftPartnerData = {
     body?: never;
@@ -355,6 +446,60 @@ export type DownloadMftTransferPayloadResponses = {
 
 export type DownloadMftTransferPayloadResponse = DownloadMftTransferPayloadResponses[keyof DownloadMftTransferPayloadResponses];
 
+export type DeleteMftPartnerDraftData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}';
+};
+
+export type DeleteMftPartnerDraftResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteMftPartnerDraftResponse = DeleteMftPartnerDraftResponses[keyof DeleteMftPartnerDraftResponses];
+
+export type GetMftPartnerData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}';
+};
+
+export type GetMftPartnerResponses = {
+    /**
+     * OK
+     */
+    200: PartnerResponse;
+};
+
+export type GetMftPartnerResponse = GetMftPartnerResponses[keyof GetMftPartnerResponses];
+
+export type GetMftPartnerUsageData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/mft/partners/{partnerId}/usage';
+};
+
+export type GetMftPartnerUsageResponses = {
+    /**
+     * OK
+     */
+    200: Usage;
+};
+
+export type GetMftPartnerUsageResponse = GetMftPartnerUsageResponses[keyof GetMftPartnerUsageResponses];
+
 export type ListMftMdnDeliveriesData = {
     body?: never;
     path?: never;
@@ -386,3 +531,39 @@ export type ListMftConnectionDetailsResponses = {
 };
 
 export type ListMftConnectionDetailsResponse = ListMftConnectionDetailsResponses[keyof ListMftConnectionDetailsResponses];
+
+export type GetMftCertificateUsageData = {
+    body?: never;
+    path: {
+        certificateId: string;
+    };
+    query?: never;
+    url: '/api/mft/certificates/{certificateId}/usage';
+};
+
+export type GetMftCertificateUsageResponses = {
+    /**
+     * OK
+     */
+    200: Usage;
+};
+
+export type GetMftCertificateUsageResponse = GetMftCertificateUsageResponses[keyof GetMftCertificateUsageResponses];
+
+export type DeleteUnusedMftCertificateData = {
+    body?: never;
+    path: {
+        certificateId: string;
+    };
+    query?: never;
+    url: '/api/mft/certificates/{certificateId}';
+};
+
+export type DeleteUnusedMftCertificateResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteUnusedMftCertificateResponse = DeleteUnusedMftCertificateResponses[keyof DeleteUnusedMftCertificateResponses];

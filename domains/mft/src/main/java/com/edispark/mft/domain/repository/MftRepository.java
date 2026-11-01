@@ -17,6 +17,7 @@ public interface MftRepository {
     List<PartnerProfile> listPartners(String tenantId);
     Optional<PartnerProfile> findPartner(String tenantId, UUID partnerId);
     Optional<PartnerProfile> findInboundPartner(String localAs2Id, String remoteAs2Id);
+    void deletePartner(String tenantId, UUID partnerId);
     Transfer saveOutboundIfAbsent(Transfer transfer);
     Transfer saveInboundIfAbsent(Transfer transfer);
     Transfer save(Transfer transfer);
@@ -30,6 +31,7 @@ public interface MftRepository {
     CertificateRecord saveCertificate(CertificateRecord certificate);
     List<CertificateRecord> listCertificates(String tenantId);
     Optional<CertificateRecord> findCertificate(String tenantId, UUID certificateId);
+    void deleteCertificate(String tenantId, UUID certificateId);
     List<Transfer> listPendingTransfers(Instant dueAt, int limit);
     boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
                                     Instant now, Instant expiresAt);

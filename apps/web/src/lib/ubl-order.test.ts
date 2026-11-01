@@ -47,7 +47,7 @@ describe("parseUblOrder", () => {
       quantity: { value: 48, unit: "EA" },
       price: { value: 2.25, currency: "GBP" },
     })
-    expect(result.order.totals?.payable).toEqual({ value: 558, currency: "GBP" })
+    expect(result.order.totals?.payable).toEqual({ value: 662.9, currency: "GBP" })
   })
 
   it("maps the official OASIS UBL 2.1 Order example", () => {

@@ -16,6 +16,7 @@ import io.cottn.core.tenancy.TenantContext;
 import io.cottn.core.tenancy.TenantContextHolder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public final class LocalMftDemoSeeder {
+    private static final java.util.UUID DRAFT_PARTNER_ID = java.util.UUID.fromString("850ca900-3f1e-4f98-b5e2-f17f557cc9e1");
     private static final String CONTENT_TYPE = "application/edifact";
     static final String INBOUND_MESSAGE_ID = "<local-inbound@northstar.test>";
     static final String DELIVERED_KEY = "demo-delivered";
@@ -79,6 +81,7 @@ public final class LocalMftDemoSeeder {
             if (partner == null) {
                 partner = createPartner();
             }
+            reconcilePartnerRevision(partner);
             writePartnerId(partner);
             reconcileTransfers(partner);
             log.info("MFT demo ready for tenant {}; workspace totals: {} partner(s), {} certificate(s), {} transfer(s)",
@@ -88,6 +91,20 @@ public final class LocalMftDemoSeeder {
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to seed the local MFT demo", exception);
         }
+    }
+
+    void reconcilePartnerRevision(PartnerProfile active) {
+        boolean exists = repository.listPartners(active.tenantId()).stream()
+                .anyMatch(item -> item.id().equals(DRAFT_PARTNER_ID));
+        if (exists) return;
+        repository.savePartner(new PartnerProfile(DRAFT_PARTNER_ID, active.tenantId(), active.name(),
+                active.localAs2Id(), active.remoteAs2Id(), active.endpoint(), active.localCertificateId(),
+                active.partnerSigningCertificateId(), active.partnerEncryptionCertificateId(),
+                active.previousPartnerSigningCertificateId(), active.signingCertificateGraceUntil(),
+                active.asynchronousMdnEndpoint(), active.mdnMode(), active.signingRequired(),
+                active.encryptionRequired(), active.compressionEnabled(), active.legacyCryptoEnabled(),
+                com.edispark.mft.domain.model.PartnerStatus.DRAFT, clock.instant(), active.familyId(),
+                active.revision() + 1, null, null, clock.instant(), 1));
     }
 
     private void writePartnerId(PartnerProfile partner) throws IOException {
@@ -100,6 +117,7 @@ public final class LocalMftDemoSeeder {
         return repository.listPartners(tenantId).stream()
                 .filter(partner -> partner.localAs2Id().equals("EDISPARK"))
                 .filter(partner -> partner.remoteAs2Id().equals("SIMULATOR"))
+                .filter(partner -> partner.status() == com.edispark.mft.domain.model.PartnerStatus.ACTIVE)
                 .findFirst()
                 .orElse(null);
     }
@@ -152,6 +170,7 @@ public final class LocalMftDemoSeeder {
             review.requireReview("Partner certificate rollover requires confirmation", now.minusSeconds(59));
             repository.save(review);
         }
+        reconcileFixturePayloads(partner.tenantId());
     }
 
     private boolean hasInbound(List<Transfer> transfers) {
@@ -172,7 +191,7 @@ public final class LocalMftDemoSeeder {
             throws IOException {
         Transfer transfer = Transfer.inbound(partner.tenantId(), partner.id(), filename, CONTENT_TYPE, messageId,
                 createdAt);
-        attachPayload(transfer, filename, samplePayload("ORDERS", "PO-45001235"));
+        attachPayload(transfer, filename, samplePayload(filename));
         return transfer;
     }
 
@@ -180,7 +199,7 @@ public final class LocalMftDemoSeeder {
             throws IOException {
         Transfer transfer = Transfer.outbound(partner.tenantId(), partner.id(), filename, CONTENT_TYPE,
                 "<" + idempotencyKey + "@as2.edispark.local>", idempotencyKey, null, createdAt);
-        attachPayload(transfer, filename, samplePayload("INVOIC", idempotencyKey));
+        attachPayload(transfer, filename, samplePayload(filename));
         return transfer;
     }
 
@@ -189,9 +208,43 @@ public final class LocalMftDemoSeeder {
                 new ByteArrayInputStream(content)), transfer.createdAt());
     }
 
-    private byte[] samplePayload(String type, String reference) {
-        String payload = "UNH+1+" + type + ":D:96A:UN'BGM+220+" + reference
-                + "+9'NAD+BY+[buyer_id]++[name]+[address]'UNT+4+1'";
-        return payload.getBytes(StandardCharsets.UTF_8);
+    private void reconcileFixturePayloads(String targetTenantId) throws IOException {
+        for (Transfer transfer : repository.listTransfers(targetTenantId)) {
+            if (!isDemoFilename(transfer.filename())) continue;
+            byte[] expected = samplePayload(transfer.filename());
+            byte[] current = transfer.payload() == null ? new byte[0]
+                    : payloadStore.get(targetTenantId, transfer.payload()).readAllBytes();
+            if (Arrays.equals(current, expected)) continue;
+            var payload = payloadStore.put(targetTenantId, transfer.id(), transfer.filename(),
+                    new ByteArrayInputStream(expected));
+            repository.save(Transfer.restore(transfer.id(), transfer.tenantId(), transfer.partnerId(),
+                    transfer.direction(), transfer.filename(), transfer.contentType(), transfer.as2MessageId(),
+                    transfer.idempotencyKey(), transfer.resendOf(), transfer.provenance(), transfer.status(),
+                    transfer.createdAt(), transfer.updatedAt(), transfer.nextAttemptAt(), payload,
+                    transfer.mdnDisposition(), transfer.failureReason(), transfer.sentContentMic(), transfer.attempts()));
+        }
+    }
+
+    private boolean isDemoFilename(String filename) {
+        return filename.equals("PO_45001235.edi") || filename.equals("invoice_77891.edi")
+                || filename.equals("ASN_9921.edi") || filename.equals("inventory_20261030.edi")
+                || filename.equals("remittance_1042.edi");
+    }
+
+    private byte[] samplePayload(String filename) {
+        String resourceName = switch (filename) {
+            case "PO_45001235.edi" -> "edifact-orders-d96a.edi";
+            case "invoice_77891.edi" -> "edifact-invoic-d96a.edi";
+            case "ASN_9921.edi" -> "edifact-desadv-d96a.edi";
+            case "inventory_20261030.edi" -> "edifact-invrpt-d96a.edi";
+            case "remittance_1042.edi" -> "edifact-remadv-d96a.edi";
+            default -> throw new IllegalArgumentException("No local MFT sample for " + filename);
+        };
+        try (InputStream input = LocalMftDemoSeeder.class.getResourceAsStream("/seed/mft/" + resourceName)) {
+            if (input == null) throw new IllegalStateException("MFT sample resource is missing: " + resourceName);
+            return input.readAllBytes();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not read MFT sample resource: " + resourceName, exception);
+        }
     }
 }

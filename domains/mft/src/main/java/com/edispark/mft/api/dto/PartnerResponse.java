@@ -15,13 +15,17 @@ public record PartnerResponse(UUID id, String name, String localAs2Id, String re
                               @Schema(nullable = true) URI asynchronousMdnEndpoint,
                               MdnMode mdnMode, boolean signingRequired, boolean encryptionRequired,
                               boolean compressionEnabled, boolean legacyCryptoEnabled,
-                              com.edispark.mft.domain.model.PartnerStatus status, Instant createdAt) {
+                              com.edispark.mft.domain.model.PartnerStatus status, Instant createdAt,
+                              UUID familyId, int revision, @Schema(nullable = true) Instant scheduledAt,
+                              @Schema(nullable = true) Instant archivedAt, Instant updatedAt, long version) {
     public static PartnerResponse from(PartnerProfile partner) {
         return new PartnerResponse(partner.id(), partner.name(), partner.localAs2Id(), partner.remoteAs2Id(),
                 partner.endpoint(), partner.localCertificateId(), partner.partnerSigningCertificateId(),
                 partner.partnerEncryptionCertificateId(), partner.previousPartnerSigningCertificateId(),
                 partner.signingCertificateGraceUntil(), partner.asynchronousMdnEndpoint(), partner.mdnMode(),
                 partner.signingRequired(), partner.encryptionRequired(),
-                partner.compressionEnabled(), partner.legacyCryptoEnabled(), partner.status(), partner.createdAt());
+                partner.compressionEnabled(), partner.legacyCryptoEnabled(), partner.status(), partner.createdAt(),
+                partner.familyId(), partner.revision(), partner.scheduledAt(), partner.archivedAt(),
+                partner.updatedAt(), partner.version());
     }
 }

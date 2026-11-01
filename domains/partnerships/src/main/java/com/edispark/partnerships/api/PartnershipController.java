@@ -21,6 +21,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,6 +45,33 @@ public final class PartnershipController {
         return service.createPartner(request.displayName(), request.identities());
     }
 
+    @GetMapping("/{partnerId}") @Operation(operationId = "getTradingPartner", summary = "Get a partner revision")
+    public TradingPartner getPartner(@PathVariable UUID partnerId) { return service.getPartner(partnerId); }
+
+    @PostMapping("/{partnerId}/revisions") @ResponseStatus(HttpStatus.CREATED)
+    @Operation(operationId = "createTradingPartnerRevision", summary = "Create an editable partner revision")
+    public TradingPartner revisePartner(@PathVariable UUID partnerId) { return service.createPartnerRevision(partnerId); }
+
+    @PutMapping("/{partnerId}/draft")
+    @Operation(operationId = "updateTradingPartnerDraft", summary = "Update a draft partner revision")
+    public TradingPartner updatePartner(@PathVariable UUID partnerId, @Valid @RequestBody CreatePartnerRequest request) {
+        return service.updatePartner(partnerId, request.displayName(), request.identities());
+    }
+
+    @PostMapping("/{partnerId}/activate")
+    @Operation(operationId = "activateTradingPartnerRevision", summary = "Activate a partner revision now or later")
+    public TradingPartner activatePartner(@PathVariable UUID partnerId, @RequestBody(required = false) ActivationRequest request) {
+        return service.activatePartner(partnerId, request == null ? null : request.effectiveAt());
+    }
+
+    @PostMapping("/{partnerId}/archive")
+    @Operation(operationId = "archiveTradingPartnerRevision", summary = "Archive a partner revision")
+    public TradingPartner archivePartner(@PathVariable UUID partnerId) { return service.archivePartner(partnerId); }
+
+    @DeleteMapping("/{partnerId}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deleteTradingPartnerDraft", summary = "Delete an unused partner draft")
+    public void deletePartner(@PathVariable UUID partnerId) { service.deletePartnerDraft(partnerId); }
+
     @GetMapping("/agreements") @Operation(operationId = "listTradingAgreements", summary = "List trading agreements")
     public List<TradingAgreement> listAgreements() { return service.listAgreements(); }
 
@@ -61,13 +90,28 @@ public final class PartnershipController {
         return service.addCapability(agreementId, request.toDomain());
     }
 
+    @PutMapping("/agreements/{agreementId}/capabilities/{capabilityId}")
+    @Operation(operationId = "replaceExchangeCapability", summary = "Replace a draft agreement capability")
+    public TradingAgreement replaceCapability(@PathVariable UUID agreementId, @PathVariable UUID capabilityId,
+                                              @Valid @RequestBody CapabilityRequest request) {
+        return service.replaceCapability(agreementId, capabilityId, request.toDomain(capabilityId));
+    }
+
+    @DeleteMapping("/agreements/{agreementId}/capabilities/{capabilityId}")
+    @Operation(operationId = "removeExchangeCapability", summary = "Remove a draft agreement capability")
+    public TradingAgreement removeCapability(@PathVariable UUID agreementId, @PathVariable UUID capabilityId) {
+        return service.removeCapability(agreementId, capabilityId);
+    }
+
     @PostMapping("/agreements/{agreementId}/qualify")
     @Operation(operationId = "qualifyTradingAgreement", summary = "Run strict agreement qualification")
     public TradingAgreement qualify(@PathVariable UUID agreementId) { return service.qualify(agreementId); }
 
     @PostMapping("/agreements/{agreementId}/activate")
     @Operation(operationId = "activateTradingAgreement", summary = "Activate a qualified agreement revision")
-    public TradingAgreement activate(@PathVariable UUID agreementId) { return service.activate(agreementId); }
+    public TradingAgreement activate(@PathVariable UUID agreementId, @RequestBody(required = false) ActivationRequest request) {
+        return service.activate(agreementId, request == null ? null : request.effectiveAt());
+    }
 
     @PostMapping("/agreements/{agreementId}/suspend")
     @Operation(operationId = "suspendTradingAgreement", summary = "Suspend an active agreement")
@@ -77,6 +121,18 @@ public final class PartnershipController {
     @Operation(operationId = "createTradingAgreementRevision", summary = "Create an editable revision from an active agreement")
     public TradingAgreement revise(@PathVariable UUID agreementId) { return service.createRevision(agreementId); }
 
+    @PostMapping("/agreements/{agreementId}/archive")
+    @Operation(operationId = "archiveTradingAgreementRevision", summary = "Archive an agreement revision")
+    public TradingAgreement archiveAgreement(@PathVariable UUID agreementId) { return service.archiveAgreement(agreementId); }
+
+    @GetMapping("/agreements/{agreementId}/usage")
+    @Operation(operationId = "getTradingAgreementUsage", summary = "Explain agreement deletion dependencies")
+    public PartnershipService.Usage agreementUsage(@PathVariable UUID agreementId) { return service.agreementUsage(agreementId); }
+
+    @DeleteMapping("/agreements/{agreementId}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deleteTradingAgreementDraft", summary = "Delete an unused agreement draft")
+    public void deleteAgreement(@PathVariable UUID agreementId) { service.deleteAgreementDraft(agreementId); }
+
     public record CreatePartnerRequest(@NotBlank @Size(max = 120) String displayName,
                                        @NotEmpty List<@Valid BusinessIdentity> identities) { }
     public record CreateAgreementRequest(@NotBlank @Size(max = 120) String name) { }
@@ -85,9 +141,11 @@ public final class PartnershipController {
             @NotNull UUID sourceSchemaId, @NotNull UUID targetSchemaId, @NotNull UUID mappingRevisionId,
             @NotNull UUID as2ConnectionId, @NotNull AcknowledgementPolicy acknowledgementPolicy,
             @NotNull BatchingPolicy batchingPolicy) {
-        ExchangeCapability toDomain() {
-            return new ExchangeCapability(UUID.randomUUID(), direction, documentType, standard, release, messageType,
+        ExchangeCapability toDomain() { return toDomain(UUID.randomUUID()); }
+        ExchangeCapability toDomain(UUID id) {
+            return new ExchangeCapability(id, direction, documentType, standard, release, messageType,
                     sourceSchemaId, targetSchemaId, mappingRevisionId, as2ConnectionId, acknowledgementPolicy, batchingPolicy);
         }
     }
+    public record ActivationRequest(java.time.Instant effectiveAt) { }
 }

@@ -2,8 +2,8 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateMftPartnerData, ActivateMftPartnerResponses, CreateMftPartnerData, CreateMftPartnerResponses, DownloadMftTransferPayloadData, DownloadMftTransferPayloadResponses, GetMftTransferData, GetMftTransferResponses, ListMftCertificatesData, ListMftCertificatesResponses, ListMftConnectionDetailsData, ListMftConnectionDetailsResponses, ListMftMdnDeliveriesData, ListMftMdnDeliveriesResponses, ListMftPartnersData, ListMftPartnersResponses, ListMftTransfersData, ListMftTransfersResponses, ResendMftTransferData, ResendMftTransferResponses, RotateMftPartnerCertificatesData, RotateMftPartnerCertificatesResponses, SubmitMftTransferData, SubmitMftTransferResponses, SuspendMftPartnerData, SuspendMftPartnerResponses, UploadMftCertificateData, UploadMftCertificateResponses } from './types.gen';
-import { zActivateMftPartnerResponse, zCreateMftPartnerResponse, zDownloadMftTransferPayloadResponse, zGetMftTransferResponse, zListMftCertificatesResponse, zListMftConnectionDetailsResponse, zListMftMdnDeliveriesResponse, zListMftPartnersResponse, zListMftTransfersResponse, zResendMftTransferResponse, zRotateMftPartnerCertificatesResponse, zSubmitMftTransferResponse, zSuspendMftPartnerResponse, zUploadMftCertificateResponse } from './zod.gen';
+import type { ActivateMftPartnerData, ActivateMftPartnerResponses, ArchiveMftPartnerRevisionData, ArchiveMftPartnerRevisionResponses, CreateMftPartnerData, CreateMftPartnerResponses, CreateMftPartnerRevisionData, CreateMftPartnerRevisionResponses, DeleteMftPartnerDraftData, DeleteMftPartnerDraftResponses, DeleteUnusedMftCertificateData, DeleteUnusedMftCertificateResponses, DownloadMftTransferPayloadData, DownloadMftTransferPayloadResponses, GetMftCertificateUsageData, GetMftCertificateUsageResponses, GetMftPartnerData, GetMftPartnerResponses, GetMftPartnerUsageData, GetMftPartnerUsageResponses, GetMftTransferData, GetMftTransferResponses, ListMftCertificatesData, ListMftCertificatesResponses, ListMftConnectionDetailsData, ListMftConnectionDetailsResponses, ListMftMdnDeliveriesData, ListMftMdnDeliveriesResponses, ListMftPartnersData, ListMftPartnersResponses, ListMftTransfersData, ListMftTransfersResponses, ResendMftTransferData, ResendMftTransferResponses, RotateMftPartnerCertificatesData, RotateMftPartnerCertificatesResponses, ScheduleMftPartnerActivationData, ScheduleMftPartnerActivationResponses, SubmitMftTransferData, SubmitMftTransferResponses, SuspendMftPartnerData, SuspendMftPartnerResponses, UpdateMftPartnerDraftData, UpdateMftPartnerDraftResponses, UploadMftCertificateData, UploadMftCertificateResponses } from './types.gen';
+import { zActivateMftPartnerResponse, zArchiveMftPartnerRevisionResponse, zCreateMftPartnerResponse, zCreateMftPartnerRevisionResponse, zDeleteMftPartnerDraftResponse, zDeleteUnusedMftCertificateResponse, zDownloadMftTransferPayloadResponse, zGetMftCertificateUsageResponse, zGetMftPartnerResponse, zGetMftPartnerUsageResponse, zGetMftTransferResponse, zListMftCertificatesResponse, zListMftConnectionDetailsResponse, zListMftMdnDeliveriesResponse, zListMftPartnersResponse, zListMftTransfersResponse, zResendMftTransferResponse, zRotateMftPartnerCertificatesResponse, zScheduleMftPartnerActivationResponse, zSubmitMftTransferResponse, zSuspendMftPartnerResponse, zUpdateMftPartnerDraftResponse, zUploadMftCertificateResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -56,6 +56,22 @@ export class MftClient extends HeyApiClient {
     }) {
         super(args);
         MftClient.__registry.set(this, args?.key);
+    }
+
+    /**
+     * Update a draft AS2 partner revision
+     */
+    public updateMftPartnerDraft<ThrowOnError extends boolean = false>(options: Options<UpdateMftPartnerDraftData, ThrowOnError>): RequestResult<UpdateMftPartnerDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).put<UpdateMftPartnerDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zUpdateMftPartnerDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}/draft',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
     }
 
     /**
@@ -140,6 +156,34 @@ export class MftClient extends HeyApiClient {
     }
 
     /**
+     * Schedule AS2 partner activation
+     */
+    public scheduleMftPartnerActivation<ThrowOnError extends boolean = false>(options: Options<ScheduleMftPartnerActivationData, ThrowOnError>): RequestResult<ScheduleMftPartnerActivationResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ScheduleMftPartnerActivationResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zScheduleMftPartnerActivationResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}/schedule',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Create an editable AS2 partner revision
+     */
+    public createMftPartnerRevision<ThrowOnError extends boolean = false>(options: Options<CreateMftPartnerRevisionData, ThrowOnError>): RequestResult<CreateMftPartnerRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateMftPartnerRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zCreateMftPartnerRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}/revisions',
+            ...options
+        });
+    }
+
+    /**
      * Select replacement partner certificates
      */
     public rotateMftPartnerCertificates<ThrowOnError extends boolean = false>(options: Options<RotateMftPartnerCertificatesData, ThrowOnError>): RequestResult<RotateMftPartnerCertificatesResponses, unknown, ThrowOnError> {
@@ -152,6 +196,18 @@ export class MftClient extends HeyApiClient {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+
+    /**
+     * Archive an AS2 partner revision
+     */
+    public archiveMftPartnerRevision<ThrowOnError extends boolean = false>(options: Options<ArchiveMftPartnerRevisionData, ThrowOnError>): RequestResult<ArchiveMftPartnerRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ArchiveMftPartnerRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zArchiveMftPartnerRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}/archive',
+            ...options
         });
     }
 
@@ -221,6 +277,42 @@ export class MftClient extends HeyApiClient {
     }
 
     /**
+     * Delete an unused AS2 partner draft
+     */
+    public deleteMftPartnerDraft<ThrowOnError extends boolean = false>(options: Options<DeleteMftPartnerDraftData, ThrowOnError>): RequestResult<DeleteMftPartnerDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<DeleteMftPartnerDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zDeleteMftPartnerDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}',
+            ...options
+        });
+    }
+
+    /**
+     * Get an AS2 partner revision
+     */
+    public getMftPartner<ThrowOnError extends boolean = false>(options: Options<GetMftPartnerData, ThrowOnError>): RequestResult<GetMftPartnerResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetMftPartnerResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetMftPartnerResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}',
+            ...options
+        });
+    }
+
+    /**
+     * Explain AS2 profile dependencies
+     */
+    public getMftPartnerUsage<ThrowOnError extends boolean = false>(options: Options<GetMftPartnerUsageData, ThrowOnError>): RequestResult<GetMftPartnerUsageResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetMftPartnerUsageResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetMftPartnerUsageResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/partners/{partnerId}/usage',
+            ...options
+        });
+    }
+
+    /**
      * List asynchronous receipt delivery evidence
      */
     public listMftMdnDeliveries<ThrowOnError extends boolean = false>(options?: Options<ListMftMdnDeliveriesData, ThrowOnError>): RequestResult<ListMftMdnDeliveriesResponses, unknown, ThrowOnError> {
@@ -240,6 +332,30 @@ export class MftClient extends HeyApiClient {
             responseValidator: async (data) => await zListMftConnectionDetailsResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/mft/connection-details',
+            ...options
+        });
+    }
+
+    /**
+     * Explain certificate assignments
+     */
+    public getMftCertificateUsage<ThrowOnError extends boolean = false>(options: Options<GetMftCertificateUsageData, ThrowOnError>): RequestResult<GetMftCertificateUsageResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetMftCertificateUsageResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetMftCertificateUsageResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/certificates/{certificateId}/usage',
+            ...options
+        });
+    }
+
+    /**
+     * Delete an unused certificate and its material
+     */
+    public deleteUnusedMftCertificate<ThrowOnError extends boolean = false>(options: Options<DeleteUnusedMftCertificateData, ThrowOnError>): RequestResult<DeleteUnusedMftCertificateResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<DeleteUnusedMftCertificateResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zDeleteUnusedMftCertificateResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mft/certificates/{certificateId}',
             ...options
         });
     }

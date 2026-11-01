@@ -1,0 +1,8 @@
+{
+  "document": {"id": "PO-2026-0042", "salesOrderId": "SO-2026-0042", "issueDate": "2026-11-01", "issueTime": "09:30:00Z", "typeCode": "220", "currency": "GBP", "customerReference": "BUYER-REF-42", "note": "Comprehensive privacy-safe EdiSpark order sample"},
+  "parties": {"sender": "[tenant_identifier]", "receiver": "[partner_identifier]", "buyerId": "BUYER-001", "buyerName": "[name]", "supplierId": "SUPPLIER-001", "supplierName": "[name]", "buyerTaxId": "[tax_identifier]", "supplierTaxId": "[tax_identifier]"},
+  "delivery": {"id": "DELIVERY-42", "requestedDate": "2026-11-05", "latestDate": "2026-11-07", "locationId": "STORE-042", "country": "GB", "terms": "DAP"},
+  "payment": {"termsId": "NET30", "dueDate": "2026-12-01"},
+  "totals": {"lineExtension": 100.00, "allowance": 5.00, "taxExclusive": 95.00, "taxInclusive": 114.00, "payable": 114.00},
+  "lines": [{"id": "1", "quantity": 10, "unitCode": "EA", "lineExtension": 100.00, "buyerItemId": "BUY-SKU-001", "sellerItemId": "SELL-SKU-001", "gtin": "05012345000017", "description": "Comprehensive sample retail item", "name": "Sample item", "price": 10.00, "taxCategory": "S", "taxPercent": 20}]
+}

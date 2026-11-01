@@ -72,6 +72,29 @@ class PartnershipServiceTest {
         });
     }
 
+    @Test
+    void revisesPartnersAndGuardsRetainedAgreementDeletion() {
+        var repository = new InMemoryPartnershipRepository();
+        var qualification = new QualificationProbe();
+        qualification.ready = true;
+        var service = new PartnershipService(repository, qualification, ignored -> { }, CLOCK);
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var partner = service.createPartner("Example Retailer", List.of(new BusinessIdentity("GLN", "[partner_identifier]")));
+            var draft = service.createPartnerRevision(partner.id());
+            var revised = service.updatePartner(draft.id(), "Example Retailer UK",
+                    List.of(new BusinessIdentity("GLN", "[partner_identifier]")));
+
+            assertThat(revised.familyId()).isEqualTo(partner.id());
+            assertThat(revised.revision()).isEqualTo(2);
+            assertThat(service.activatePartner(revised.id(), CLOCK.instant().plusSeconds(60)).status())
+                    .isEqualTo(com.edispark.partnerships.domain.model.PartnerStatus.SCHEDULED);
+
+            var agreement = service.createAgreement(partner.id(), "Retail orders");
+            service.deleteAgreementDraft(agreement.id());
+            assertThat(repository.findAgreement(TENANT, agreement.id())).isEmpty();
+        });
+    }
+
     private ExchangeCapability capability() {
         return new ExchangeCapability(UUID.randomUUID(), ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER,
                 EdiStandard.EDIFACT, "D96A", "ORDERS", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),

@@ -18,6 +18,10 @@ describe("local MFT simulator contract", () => {
   it("provides deterministic, non-PII EDI samples", () => {
     expect(localMftSample("INBOUND")).toMatchObject({ filename: "local-inbound-order.edi" })
     expect(localMftSample("OUTBOUND")).toMatchObject({ filename: "local-outbound-invoice.edi" })
+    expect(localMftSample("INBOUND").content.split("\n")).toHaveLength(33)
+    expect(localMftSample("OUTBOUND").content.split("\n")).toHaveLength(36)
+    expect(localMftSample("INBOUND").content).toContain("UNH+1+ORDERS:D:96A:UN'")
+    expect(localMftSample("OUTBOUND").content).toContain("UNH+1+INVOIC:D:96A:UN'")
     expect(localMftSample("INBOUND").content).toContain("[name]")
   })
 })

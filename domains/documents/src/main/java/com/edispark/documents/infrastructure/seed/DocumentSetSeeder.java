@@ -52,6 +52,7 @@ import java.util.Set;
 public class DocumentSetSeeder {
 
     private static final String CREATED_BY = "local-seeder";
+    private static final String FIXTURE_VERSION = "comprehensive-v2";
     private static final String RESOURCE_ROOT = "/seed/documents/";
     private static final VersionIdentifier INITIAL_VERSION = VersionIdentifier.of("2.1");
     private static final List<DocumentType> SEEDED_TYPES = List.of(
@@ -83,6 +84,7 @@ public class DocumentSetSeeder {
         }
 
         log.info("Repairing document demo catalogue; missing types: {}", missingTypes);
+        removeStaleFixtures(missingTypes);
         createSchemas(missingTypes);
         createDocumentSets(missingTypes);
         log.info("Document demo catalogue is complete");
@@ -90,8 +92,8 @@ public class DocumentSetSeeder {
 
     private Set<DocumentType> missingSeedTypes() {
         Set<String> existingNumbers = documentSetRepository.findAll().stream()
-                .map(DocumentSet::metadata)
-                .map(metadata -> metadata.get("businessDocumentNumber"))
+                .filter(set -> FIXTURE_VERSION.equals(set.metadata().get("fixtureVersion")))
+                .map(set -> set.metadata().get("businessDocumentNumber"))
                 .collect(java.util.stream.Collectors.toSet());
         Set<DocumentType> missingTypes = EnumSet.noneOf(DocumentType.class);
         for (DocumentType type : SEEDED_TYPES) {
@@ -100,6 +102,18 @@ public class DocumentSetSeeder {
             }
         }
         return missingTypes;
+    }
+
+    private void removeStaleFixtures(Set<DocumentType> missingTypes) {
+        Set<String> staleNumbers = missingTypes.stream().map(this::businessDocumentNumber)
+                .collect(java.util.stream.Collectors.toSet());
+        documentSetRepository.findAll().stream()
+                .filter(set -> CREATED_BY.equals(set.createdBy()))
+                .filter(set -> staleNumbers.contains(set.metadata().get("businessDocumentNumber")))
+                .filter(set -> !FIXTURE_VERSION.equals(set.metadata().get("fixtureVersion")))
+                .map(DocumentSet::id)
+                .toList()
+                .forEach(documentSetRepository::delete);
     }
 
     private void createSchemas(Set<DocumentType> missingTypes) {
@@ -165,6 +179,7 @@ public class DocumentSetSeeder {
                 "sourceStandard", "TRADACOMS",
                 "sourceFileName", "supplier-po-2026-0042.edi",
                 "businessDocumentNumber", "PO-2026-0042",
+                "fixtureVersion", FIXTURE_VERSION,
                 "senderId", "5012345678901",
                 "receiverId", "5098765432109");
 
@@ -202,6 +217,7 @@ public class DocumentSetSeeder {
                 "direction", "INBOUND",
                 "standard", "UBL",
                 "ublVersion", "2.1",
+                "fixtureVersion", FIXTURE_VERSION,
                 "businessDocumentNumber", businessDocumentNumber);
 
         documentSetCommandHandler.handle(new CreateDocumentSetCommand(

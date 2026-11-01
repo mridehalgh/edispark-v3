@@ -48,6 +48,15 @@ public final class LocalEncryptedSecretStore implements SecretStore {
         return crypt(Cipher.DECRYPT_MODE, nonce, ciphertext, context(tenantId, reference));
     }
 
+    @Override
+    public void delete(String tenantId, String reference) throws IOException {
+        Path target = root.resolve(reference).normalize();
+        if (!target.startsWith(root.resolve(tenantId).normalize())) {
+            throw new SecurityException("secret is outside the tenant boundary");
+        }
+        Files.deleteIfExists(target);
+    }
+
     private byte[] crypt(int mode, byte[] nonce, byte[] input, LocalKms.Context context) throws IOException {
         try {
             return kms.cipher(mode, nonce, context).doFinal(input);

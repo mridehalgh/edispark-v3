@@ -50,6 +50,12 @@ public final class DynamoDbMftRepository implements MftRepository {
 
     @Override
     public PartnerProfile savePartner(PartnerProfile partner) {
+        if (partner.revision() > 1) {
+            dynamoDb.putItem(PutItemRequest.builder().tableName(tableName)
+                    .item(entity(partner.tenantId(), "PARTNER#" + partner.id(), partner))
+                    .conditionExpression("attribute_not_exists(pk) AND attribute_not_exists(sk)").build());
+            return partner;
+        }
         Map<String, AttributeValue> partnerItem = entity(partner.tenantId(), "PARTNER#" + partner.id(), partner);
         Map<String, AttributeValue> owner = Map.of(
                 "pk", string(inboundOwnerPk(partner.localAs2Id(), partner.remoteAs2Id())),
@@ -72,6 +78,12 @@ public final class DynamoDbMftRepository implements MftRepository {
         dynamoDb.putItem(PutItemRequest.builder().tableName(tableName)
                 .item(entity(partner.tenantId(), "PARTNER#" + partner.id(), partner))
                 .conditionExpression("attribute_exists(pk) AND attribute_exists(sk)").build());
+        if (partner.status() == com.edispark.mft.domain.model.PartnerStatus.ACTIVE) {
+            dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(Map.of(
+                    "pk", string(inboundOwnerPk(partner.localAs2Id(), partner.remoteAs2Id())),
+                    "sk", string("OWNER"), "tenantId", string(partner.tenantId()),
+                    "partnerId", string(partner.id().toString()))).build());
+        }
         return partner;
     }
 
@@ -92,6 +104,12 @@ public final class DynamoDbMftRepository implements MftRepository {
                 .consistentRead(true).key(key(inboundOwnerPk(localAs2Id, remoteAs2Id), "OWNER")).build()).item();
         if (owner.isEmpty()) return Optional.empty();
         return findPartner(owner.get("tenantId").s(), UUID.fromString(owner.get("partnerId").s()));
+    }
+
+    @Override
+    public void deletePartner(String tenantId, UUID partnerId) {
+        dynamoDb.deleteItem(DeleteItemRequest.builder().tableName(tableName)
+                .key(key(tenantPk(tenantId), "PARTNER#" + partnerId)).build());
     }
 
     @Override
@@ -210,6 +228,12 @@ public final class DynamoDbMftRepository implements MftRepository {
     @Override
     public Optional<CertificateRecord> findCertificate(String tenantId, UUID certificateId) {
         return get(tenantId, "CERTIFICATE#" + certificateId).map(item -> read(item, CertificateRecord.class));
+    }
+
+    @Override
+    public void deleteCertificate(String tenantId, UUID certificateId) {
+        dynamoDb.deleteItem(DeleteItemRequest.builder().tableName(tableName)
+                .key(key(tenantPk(tenantId), "CERTIFICATE#" + certificateId)).build());
     }
 
     @Override
@@ -409,6 +433,10 @@ public final class DynamoDbMftRepository implements MftRepository {
         }
         partner.remove("partnerCertificateId");
         if (!partner.hasNonNull("status")) partner.put("status", "ACTIVE");
+        if (!partner.hasNonNull("familyId") && partner.hasNonNull("id")) partner.set("familyId", partner.get("id"));
+        if (!partner.hasNonNull("revision")) partner.put("revision", 1);
+        if (!partner.hasNonNull("version")) partner.put("version", 1);
+        if (!partner.hasNonNull("updatedAt") && partner.hasNonNull("createdAt")) partner.set("updatedAt", partner.get("createdAt"));
     }
 
     private String write(Object value) {

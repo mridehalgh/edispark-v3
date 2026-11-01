@@ -17,6 +17,8 @@ import { JwtDebugPage } from "@/app/debug/jwt"
 import { MftPage } from "@/app/mft/mft"
 import { MftDocsPage } from "@/app/mft/docs"
 import { TradingNetworkPage } from "@/app/trading-network/trading-network"
+import { MappingsPage } from "@/app/mappings/mappings"
+import { MappingWorkspacePage } from "@/app/mappings/mapping-workspace"
 
 const AppLayout = () => (
     <div className="min-h-screen bg-background">
@@ -73,6 +75,14 @@ function ReactRouterComponent() {
           {
             path: "/trading-network",
             element: <AuthGate><TradingNetworkPage /></AuthGate>,
+          },
+          {
+            path: "/mappings",
+            element: <AuthGate><MappingsPage /></AuthGate>,
+          },
+          {
+            path: "/mappings/:mappingId",
+            element: <AuthGate><MappingWorkspacePage /></AuthGate>,
           },
           {
             path: "/documents/:setId/:documentId",

@@ -28,9 +28,13 @@ final class LocalIntegrationDemoSeederTest {
 
         seeder.reconcile(TENANT_ID, AS2_CONNECTION_ID);
 
-        assertThat(partnerships.listPartners(TENANT_ID)).hasSize(1);
-        assertThat(partnerships.listAgreements(TENANT_ID)).hasSize(1);
-        assertThat(mappings.list(TENANT_ID)).hasSize(8);
+        assertThat(partnerships.listPartners(TENANT_ID)).hasSize(2);
+        assertThat(partnerships.listAgreements(TENANT_ID)).hasSize(2);
+        assertThat(mappings.list(TENANT_ID)).hasSize(2);
+        assertThat(partnerships.listPartners(TENANT_ID)).extracting(item -> item.status().name())
+                .containsExactlyInAnyOrder("ACTIVE", "DRAFT");
+        assertThat(mappings.list(TENANT_ID)).extracting(item -> item.status().name())
+                .containsExactlyInAnyOrder("DRAFT", "SCHEDULED");
         assertThat(firstAgreement.capabilities()).extracting(capability -> capability.direction().name())
                 .containsExactlyInAnyOrder("OUTBOUND", "OUTBOUND", "OUTBOUND", "OUTBOUND",
                         "INBOUND", "INBOUND", "INBOUND", "INBOUND");

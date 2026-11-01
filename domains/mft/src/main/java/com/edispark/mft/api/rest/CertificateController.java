@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,4 +40,12 @@ public class CertificateController {
                                       @RequestParam MultipartFile file) throws IOException {
         return CertificateResponse.from(service.upload(name, kind, file.getBytes(), password.toCharArray()));
     }
+
+    @GetMapping("/{certificateId}/usage")
+    @Operation(operationId = "getMftCertificateUsage", summary = "Explain certificate assignments")
+    public CertificateService.Usage usage(@PathVariable java.util.UUID certificateId) { return service.usage(certificateId); }
+
+    @DeleteMapping("/{certificateId}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deleteUnusedMftCertificate", summary = "Delete an unused certificate and its material")
+    public void delete(@PathVariable java.util.UUID certificateId) throws IOException { service.deleteUnused(certificateId); }
 }

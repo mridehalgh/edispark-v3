@@ -17,4 +17,5 @@ public final class InMemoryMappingRepository implements MappingRepository {
     @Override public MappingRevision save(MappingRevision mapping) { mappings.put(mapping.id(), mapping); return mapping; }
     @Override public Optional<MappingRevision> find(String tenantId, UUID id) { return Optional.ofNullable(mappings.get(id)).filter(item -> item.tenantId().equals(tenantId)); }
     @Override public List<MappingRevision> list(String tenantId) { return mappings.values().stream().filter(item -> item.tenantId().equals(tenantId)).toList(); }
+    @Override public void delete(String tenantId, UUID id) { mappings.computeIfPresent(id, (key, value) -> value.tenantId().equals(tenantId) ? null : value); }
 }

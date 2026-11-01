@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateTradingAgreementData, ActivateTradingAgreementResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetTradingAgreementData, GetTradingAgreementResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, PublishMappingData, PublishMappingResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, UpdateMappingDraftData, UpdateMappingDraftResponses } from './types.gen';
-import { zActivateTradingAgreementResponse, zAddExchangeCapabilityResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zGetExchangeResponse, zGetMappingResponse, zGetTradingAgreementResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zPublishMappingResponse, zQualifyTradingAgreementResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zUpdateMappingDraftResponse } from './zod.gen';
+import type { ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, PublishMappingData, PublishMappingResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
+import { zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zArchiveMappingRevisionResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zGetExchangeResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zPublishMappingResponse, zQualifyTradingAgreementResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zUpdateMappingDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -59,6 +59,50 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * Update a draft partner revision
+     */
+    public updateTradingPartnerDraft<ThrowOnError extends boolean = false>(options: Options<UpdateTradingPartnerDraftData, ThrowOnError>): RequestResult<UpdateTradingPartnerDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).put<UpdateTradingPartnerDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zUpdateTradingPartnerDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}/draft',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Remove a draft agreement capability
+     */
+    public removeExchangeCapability<ThrowOnError extends boolean = false>(options: Options<RemoveExchangeCapabilityData, ThrowOnError>): RequestResult<RemoveExchangeCapabilityResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<RemoveExchangeCapabilityResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zRemoveExchangeCapabilityResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/agreements/{agreementId}/capabilities/{capabilityId}',
+            ...options
+        });
+    }
+
+    /**
+     * Replace a draft agreement capability
+     */
+    public replaceExchangeCapability<ThrowOnError extends boolean = false>(options: Options<ReplaceExchangeCapabilityData, ThrowOnError>): RequestResult<ReplaceExchangeCapabilityResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).put<ReplaceExchangeCapabilityResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zReplaceExchangeCapabilityResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/agreements/{agreementId}/capabilities/{capabilityId}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
      * Replace a draft mapping graph
      */
     public updateMappingDraft<ThrowOnError extends boolean = false>(options: Options<UpdateMappingDraftData, ThrowOnError>): RequestResult<UpdateMappingDraftResponses, unknown, ThrowOnError> {
@@ -103,6 +147,30 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * Create an editable partner revision
+     */
+    public createTradingPartnerRevision<ThrowOnError extends boolean = false>(options: Options<CreateTradingPartnerRevisionData, ThrowOnError>): RequestResult<CreateTradingPartnerRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateTradingPartnerRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zCreateTradingPartnerRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}/revisions',
+            ...options
+        });
+    }
+
+    /**
+     * Archive a partner revision
+     */
+    public archiveTradingPartnerRevision<ThrowOnError extends boolean = false>(options: Options<ArchiveTradingPartnerRevisionData, ThrowOnError>): RequestResult<ArchiveTradingPartnerRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ArchiveTradingPartnerRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zArchiveTradingPartnerRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}/archive',
+            ...options
+        });
+    }
+
+    /**
      * Create a draft trading agreement
      */
     public createTradingAgreement<ThrowOnError extends boolean = false>(options: Options<CreateTradingAgreementData, ThrowOnError>): RequestResult<CreateTradingAgreementResponses, unknown, ThrowOnError> {
@@ -110,6 +178,22 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zCreateTradingAgreementResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/trading-partners/{partnerId}/agreements',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Activate a partner revision now or later
+     */
+    public activateTradingPartnerRevision<ThrowOnError extends boolean = false>(options: Options<ActivateTradingPartnerRevisionData, ThrowOnError>): RequestResult<ActivateTradingPartnerRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ActivateTradingPartnerRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zActivateTradingPartnerRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}/activate',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -171,6 +255,18 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * Archive an agreement revision
+     */
+    public archiveTradingAgreementRevision<ThrowOnError extends boolean = false>(options: Options<ArchiveTradingAgreementRevisionData, ThrowOnError>): RequestResult<ArchiveTradingAgreementRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ArchiveTradingAgreementRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zArchiveTradingAgreementRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/agreements/{agreementId}/archive',
+            ...options
+        });
+    }
+
+    /**
      * Activate a qualified agreement revision
      */
     public activateTradingAgreement<ThrowOnError extends boolean = false>(options: Options<ActivateTradingAgreementData, ThrowOnError>): RequestResult<ActivateTradingAgreementResponses, unknown, ThrowOnError> {
@@ -178,7 +274,11 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zActivateTradingAgreementResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/trading-partners/agreements/{agreementId}/activate',
-            ...options
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 
@@ -255,6 +355,18 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * Archive a retained mapping revision
+     */
+    public archiveMappingRevision<ThrowOnError extends boolean = false>(options: Options<ArchiveMappingRevisionData, ThrowOnError>): RequestResult<ArchiveMappingRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ArchiveMappingRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zArchiveMappingRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/{mappingId}/archive',
+            ...options
+        });
+    }
+
+    /**
      * List EDI exchanges
      */
     public listExchanges<ThrowOnError extends boolean = false>(options?: Options<ListExchangesData, ThrowOnError>): RequestResult<ListExchangesResponses, unknown, ThrowOnError> {
@@ -283,6 +395,30 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * Delete an unused partner draft
+     */
+    public deleteTradingPartnerDraft<ThrowOnError extends boolean = false>(options: Options<DeleteTradingPartnerDraftData, ThrowOnError>): RequestResult<DeleteTradingPartnerDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<DeleteTradingPartnerDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zDeleteTradingPartnerDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}',
+            ...options
+        });
+    }
+
+    /**
+     * Get a partner revision
+     */
+    public getTradingPartner<ThrowOnError extends boolean = false>(options: Options<GetTradingPartnerData, ThrowOnError>): RequestResult<GetTradingPartnerResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetTradingPartnerResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetTradingPartnerResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}',
+            ...options
+        });
+    }
+
+    /**
      * List trading agreements
      */
     public listTradingAgreements<ThrowOnError extends boolean = false>(options?: Options<ListTradingAgreementsData, ThrowOnError>): RequestResult<ListTradingAgreementsResponses, unknown, ThrowOnError> {
@@ -290,6 +426,18 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zListTradingAgreementsResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/trading-partners/agreements',
+            ...options
+        });
+    }
+
+    /**
+     * Delete an unused agreement draft
+     */
+    public deleteTradingAgreementDraft<ThrowOnError extends boolean = false>(options: Options<DeleteTradingAgreementDraftData, ThrowOnError>): RequestResult<DeleteTradingAgreementDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<DeleteTradingAgreementDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zDeleteTradingAgreementDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/agreements/{agreementId}',
             ...options
         });
     }
@@ -307,6 +455,30 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * Explain agreement deletion dependencies
+     */
+    public getTradingAgreementUsage<ThrowOnError extends boolean = false>(options: Options<GetTradingAgreementUsageData, ThrowOnError>): RequestResult<GetTradingAgreementUsageResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetTradingAgreementUsageResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetTradingAgreementUsageResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/agreements/{agreementId}/usage',
+            ...options
+        });
+    }
+
+    /**
+     * Permanently delete an unused mapping draft
+     */
+    public deleteMappingDraft<ThrowOnError extends boolean = false>(options: Options<DeleteMappingDraftData, ThrowOnError>): RequestResult<DeleteMappingDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<DeleteMappingDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zDeleteMappingDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/{mappingId}',
+            ...options
+        });
+    }
+
+    /**
      * Get a mapping revision
      */
     public getMapping<ThrowOnError extends boolean = false>(options: Options<GetMappingData, ThrowOnError>): RequestResult<GetMappingResponses, unknown, ThrowOnError> {
@@ -314,6 +486,18 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zGetMappingResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/mappings/{mappingId}',
+            ...options
+        });
+    }
+
+    /**
+     * Explain mapping deletion dependencies
+     */
+    public getMappingUsage<ThrowOnError extends boolean = false>(options: Options<GetMappingUsageData, ThrowOnError>): RequestResult<GetMappingUsageResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetMappingUsageResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetMappingUsageResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/{mappingId}/usage',
             ...options
         });
     }

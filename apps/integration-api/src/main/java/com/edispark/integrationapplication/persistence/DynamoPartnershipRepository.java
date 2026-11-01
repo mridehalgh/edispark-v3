@@ -26,6 +26,7 @@ final class DynamoPartnershipRepository implements PartnershipRepository {
     @Override public List<TradingPartner> listPartners(String tenantId) {
         return store.list(tenantId, "PARTNER#").stream().map(value -> read(value, TradingPartner.class)).toList();
     }
+    @Override public void deletePartner(String tenantId, UUID id) { store.delete(tenantId, "PARTNER#" + id); }
     @Override public TradingAgreement saveAgreement(TradingAgreement agreement) {
         store.put(agreement.tenantId(), "AGREEMENT#" + agreement.id(), "AGREEMENT", write(agreement)); return agreement;
     }
@@ -35,6 +36,7 @@ final class DynamoPartnershipRepository implements PartnershipRepository {
     @Override public List<TradingAgreement> listAgreements(String tenantId) {
         return store.list(tenantId, "AGREEMENT#").stream().map(value -> read(value, TradingAgreement.class)).toList();
     }
+    @Override public void deleteAgreement(String tenantId, UUID id) { store.delete(tenantId, "AGREEMENT#" + id); }
     private String write(Object value) { try { return json.writeValueAsString(value); } catch (Exception e) { throw new IllegalStateException("Could not serialize partnership", e); } }
     private <T> T read(String value, Class<T> type) { try { return json.readValue(value, type); } catch (Exception e) { throw new IllegalStateException("Could not read partnership", e); } }
 }

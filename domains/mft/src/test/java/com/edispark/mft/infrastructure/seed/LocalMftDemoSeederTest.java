@@ -34,8 +34,11 @@ class LocalMftDemoSeederTest {
 
         seeder.reconcileTransfers(partner);
         seeder.reconcileTransfers(partner);
+        seeder.reconcilePartnerRevision(partner);
+        seeder.reconcilePartnerRevision(partner);
 
         assertThat(repository.listTransfers(TENANT_ID)).hasSize(5);
+        assertThat(repository.listPartners(TENANT_ID)).hasSize(2);
         assertThat(repository.listTransfers(TENANT_ID))
                 .extracting(Transfer::status)
                 .containsExactlyInAnyOrder(
@@ -44,6 +47,16 @@ class LocalMftDemoSeederTest {
                         TransferStatus.AWAITING_MDN,
                         TransferStatus.RETRY_SCHEDULED,
                         TransferStatus.NEEDS_REVIEW);
+        assertThat(repository.listTransfers(TENANT_ID)).allSatisfy(transfer -> {
+            try {
+                String edi = new String(payloadStore.get(TENANT_ID, transfer.payload()).readAllBytes(),
+                        StandardCharsets.UTF_8);
+                assertThat(edi).startsWith("UNB+").contains("UNH+1+").contains("UNT+").contains("UNZ+1+");
+                assertThat(edi.lines()).hasSizeGreaterThanOrEqualTo(18);
+            } catch (Exception exception) {
+                throw new AssertionError(exception);
+            }
+        });
     }
 
     private Transfer existingInbound(PartnerProfile partner, FileSystemPayloadStore payloadStore) throws Exception {

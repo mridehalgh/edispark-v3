@@ -8,6 +8,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 public final class S3EncryptedSecretStore implements SecretStore {
     private final S3Client s3;
@@ -42,6 +43,18 @@ public final class S3EncryptedSecretStore implements SecretStore {
             return cipher.decrypt(tenantId, ciphertext, context(key));
         } catch (RuntimeException exception) {
             throw new IOException("Certificate material could not be read", exception);
+        }
+    }
+
+    @Override
+    public void delete(String tenantId, String reference) throws IOException {
+        String prefix = "s3://" + bucket + "/" + tenantId + "/";
+        if (!reference.startsWith(prefix)) throw new SecurityException("Secret does not belong to the tenant");
+        String key = reference.substring(("s3://" + bucket + "/").length());
+        try {
+            s3.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
+        } catch (RuntimeException exception) {
+            throw new IOException("Certificate material could not be deleted", exception);
         }
     }
 

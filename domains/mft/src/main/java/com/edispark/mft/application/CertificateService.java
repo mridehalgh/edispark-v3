@@ -94,6 +94,31 @@ public final class CertificateService {
         return repository.listCertificates(tenantId);
     }
 
+    public Usage usage(UUID certificateId) {
+        String tenantId = TenantContext.getCurrentTenant().asString();
+        requireRecord(tenantId, certificateId);
+        List<UUID> partners = repository.listPartners(tenantId).stream()
+                .filter(item -> item.localCertificateId().equals(certificateId)
+                        || item.partnerSigningCertificateId().equals(certificateId)
+                        || item.partnerEncryptionCertificateId().equals(certificateId)
+                        || certificateId.equals(item.previousPartnerSigningCertificateId()))
+                .map(com.edispark.mft.domain.model.PartnerProfile::id).toList();
+        return new Usage(partners.isEmpty(), partners);
+    }
+
+    public void deleteUnused(UUID certificateId) throws IOException {
+        String tenantId = TenantContext.getCurrentTenant().asString();
+        CertificateRecord record = requireRecord(tenantId, certificateId);
+        if (!usage(certificateId).deletable()) throw new IllegalStateException("Certificate is assigned to an AS2 profile");
+        if (!record.secretRef().startsWith("public:")) secretStore.delete(tenantId, record.secretRef());
+        repository.deleteCertificate(tenantId, certificateId);
+    }
+
+    private CertificateRecord requireRecord(String tenantId, UUID certificateId) {
+        return repository.findCertificate(tenantId, certificateId)
+                .orElseThrow(() -> new MftNotFoundException("Certificate was not found"));
+    }
+
     public CertificateMaterial load(UUID certificateId) throws IOException {
         return load(TenantContext.getCurrentTenant().asString(), certificateId);
     }
@@ -204,4 +229,5 @@ public final class CertificateService {
     }
 
     private record ParsedCertificate(X509Certificate certificate, boolean hasPrivateKey, String alias) {}
+    public record Usage(boolean deletable, List<UUID> partnerRevisionIds) { }
 }

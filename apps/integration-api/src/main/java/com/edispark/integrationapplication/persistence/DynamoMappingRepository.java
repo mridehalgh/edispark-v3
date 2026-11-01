@@ -24,6 +24,7 @@ final class DynamoMappingRepository implements MappingRepository {
     @Override public List<MappingRevision> list(String tenantId) {
         return store.list(tenantId, "MAPPING#").stream().map(this::read).toList();
     }
+    @Override public void delete(String tenantId, UUID id) { store.delete(tenantId, "MAPPING#" + id); }
     private String write(MappingRevision value) { try { return json.writeValueAsString(value); } catch (Exception e) { throw new IllegalStateException("Could not serialize mapping", e); } }
     private MappingRevision read(String value) { try { return json.readValue(value, MappingRevision.class); } catch (Exception e) { throw new IllegalStateException("Could not read mapping", e); } }
 }

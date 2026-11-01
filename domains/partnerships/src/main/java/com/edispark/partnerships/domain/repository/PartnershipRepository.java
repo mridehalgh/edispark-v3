@@ -10,7 +10,9 @@ public interface PartnershipRepository {
     TradingPartner savePartner(TradingPartner partner);
     Optional<TradingPartner> findPartner(String tenantId, UUID id);
     List<TradingPartner> listPartners(String tenantId);
+    void deletePartner(String tenantId, UUID id);
     TradingAgreement saveAgreement(TradingAgreement agreement);
     Optional<TradingAgreement> findAgreement(String tenantId, UUID id);
     List<TradingAgreement> listAgreements(String tenantId);
+    void deleteAgreement(String tenantId, UUID id);
 }

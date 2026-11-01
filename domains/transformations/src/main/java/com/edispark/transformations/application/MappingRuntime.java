@@ -6,6 +6,8 @@ import com.edispark.transformations.domain.MappingRevision;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -59,17 +61,41 @@ public final class MappingRuntime {
 
     private void write(ObjectNode root, String pointer, JsonNode value) {
         String[] parts = pointer.substring(1).split("/");
-        ObjectNode cursor = root;
+        JsonNode cursor = root;
         for (int index = 0; index < parts.length - 1; index++) {
             String part = unescape(parts[index]);
-            JsonNode child = cursor.get(part);
-            ObjectNode object;
-            if (child instanceof ObjectNode existing) object = existing;
-            else { object = mapper.createObjectNode(); cursor.set(part, object); }
-            cursor = object;
+            boolean arrayNext = numeric(parts[index + 1]);
+            JsonNode child = child(cursor, part);
+            if (child == null || child.isNull()) {
+                child = arrayNext ? mapper.createArrayNode() : mapper.createObjectNode();
+                set(cursor, part, child);
+            }
+            cursor = child;
         }
-        cursor.set(unescape(parts[parts.length - 1]), value);
+        set(cursor, unescape(parts[parts.length - 1]), value);
     }
+
+    private JsonNode child(JsonNode parent, String part) {
+        if (parent instanceof ObjectNode object) return object.get(part);
+        if (parent instanceof ArrayNode array && numeric(part)) {
+            int index = Integer.parseInt(part);
+            return index < array.size() ? array.get(index) : null;
+        }
+        throw new IllegalArgumentException("Mapping target path crosses an incompatible JSON container");
+    }
+
+    private void set(JsonNode parent, String part, JsonNode value) {
+        if (parent instanceof ObjectNode object) { object.set(part, value); return; }
+        if (parent instanceof ArrayNode array && numeric(part)) {
+            int index = Integer.parseInt(part);
+            while (array.size() <= index) array.add(NullNode.getInstance());
+            array.set(index, value);
+            return;
+        }
+        throw new IllegalArgumentException("Mapping target path crosses an incompatible JSON container");
+    }
+
+    private boolean numeric(String value) { return value.chars().allMatch(Character::isDigit); }
 
     private String unescape(String value) { return value.replace("~1", "/").replace("~0", "~"); }
 }

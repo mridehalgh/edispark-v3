@@ -90,6 +90,27 @@ class DocumentSetSeederTest {
     }
 
     @Test
+    @DisplayName("replaces an older named local fixture with the comprehensive sample")
+    void upgradesStaleFixtureShape() {
+        documentSets.save(DocumentSet.create("local-seeder", Map.of(
+                "businessDocumentNumber", "PO-2026-0042", "name", "Older sample")));
+
+        seeder.seedTenantData();
+        seeder.seedTenantData();
+
+        assertThat(documentSets.findAll()).hasSize(3);
+        DocumentSet order = documentSets.findAll().stream()
+                .filter(set -> "PO-2026-0042".equals(set.metadata().get("businessDocumentNumber")))
+                .findFirst().orElseThrow();
+        assertThat(order.metadata()).containsEntry("fixtureVersion", "comprehensive-v2");
+        Document source = order.getAllDocuments().getFirst();
+        assertThat(asString(source)).contains("BUY-WATER-750", "OTC=GBP");
+        assertThat(source.derivatives()).hasSize(1);
+        assertThat(asString(source.derivatives().getFirst()))
+                .contains("CommodityClassification", "PaymentTerms", "AllowanceCharge");
+    }
+
+    @Test
     @DisplayName("stores the parsed UBL JSON order as a derivative of the TRADACOMS source version")
     void storesParsedOrderAsDerivative() {
         seeder.seedTenantData();

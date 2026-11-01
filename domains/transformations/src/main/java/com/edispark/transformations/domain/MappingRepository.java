@@ -8,4 +8,5 @@ public interface MappingRepository {
     MappingRevision save(MappingRevision mapping);
     Optional<MappingRevision> find(String tenantId, UUID id);
     List<MappingRevision> list(String tenantId);
+    void delete(String tenantId, UUID id);
 }

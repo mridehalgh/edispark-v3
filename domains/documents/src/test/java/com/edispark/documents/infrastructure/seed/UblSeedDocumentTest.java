@@ -34,8 +34,12 @@ class UblSeedDocumentTest {
         assertThat(order.getBuyerCustomerParty()).hasSize(1);
         assertThat(order.getSellerSupplierParty()).hasSize(1);
         assertThat(order.getOrderLine()).hasSize(2);
+        assertThat(order.getPaymentTerms()).hasSize(1);
+        assertThat(order.getAllowanceCharge()).hasSize(1);
+        assertThat(order.getOrderLine().getFirst().getLineItem().getFirst().getItem().getFirst()
+                .getCommodityClassification()).hasSize(1);
         assertThat(order.getAnticipatedMonetaryTotal().getFirst().getPayableAmount().getFirst().get__())
-                .isEqualByComparingTo(new BigDecimal("558"));
+                .isEqualByComparingTo(new BigDecimal("662.90"));
     }
 
     @Test
@@ -48,8 +52,11 @@ class UblSeedDocumentTest {
         assertThat(invoice.getAccountingSupplierParty()).hasSize(1);
         assertThat(invoice.getAccountingCustomerParty()).hasSize(1);
         assertThat(invoice.getInvoiceLine()).hasSize(2);
+        assertThat(invoice.getPaymentTerms()).hasSize(1);
+        assertThat(invoice.getAllowanceCharge()).hasSize(1);
+        assertThat(invoice.getInvoiceLine().getFirst().getItem().getFirst().getCommodityClassification()).hasSize(1);
         assertThat(invoice.getLegalMonetaryTotal().getFirst().getPayableAmount().getFirst().get__())
-                .isEqualByComparingTo(new BigDecimal("669.6"));
+                .isEqualByComparingTo(new BigDecimal("662.90"));
     }
 
     @Test
@@ -62,6 +69,10 @@ class UblSeedDocumentTest {
         assertThat(creditNote.getAccountingSupplierParty()).hasSize(1);
         assertThat(creditNote.getAccountingCustomerParty()).hasSize(1);
         assertThat(creditNote.getCreditNoteLine()).hasSize(1);
+        assertThat(creditNote.getPaymentMeans()).hasSize(1);
+        assertThat(creditNote.getAllowanceCharge()).hasSize(1);
+        assertThat(creditNote.getCreditNoteLine().getFirst().getItem().getFirst().getCommodityClassification())
+                .hasSize(1);
         assertThat(creditNote.getLegalMonetaryTotal().getFirst().getPayableAmount().getFirst().get__())
                 .isEqualByComparingTo(new BigDecimal("90"));
     }

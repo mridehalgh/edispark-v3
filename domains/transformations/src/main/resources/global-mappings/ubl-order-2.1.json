@@ -1,0 +1,50 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:Order-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "Order": [{
+    "UBLVersionID": [{"_": "2.1"}],
+    "CustomizationID": [{"_": "urn:edispark:ubl:order:comprehensive:1"}],
+    "ProfileID": [{"_": "urn:edispark:profile:retail-order:1"}],
+    "ID": [{"_": "PO-2026-0042"}],
+    "SalesOrderID": [{"_": "SO-2026-0042"}],
+    "IssueDate": [{"_": "2026-11-01"}],
+    "IssueTime": [{"_": "09:30:00Z"}],
+    "OrderTypeCode": [{"_": "220"}],
+    "Note": [{"_": "Comprehensive privacy-safe EdiSpark order sample"}],
+    "DocumentCurrencyCode": [{"_": "GBP"}],
+    "CustomerReference": [{"_": "BUYER-REF-42"}],
+    "AccountingCostCode": [{"_": "CC-100"}],
+    "ValidityPeriod": [{"StartDate": [{"_": "2026-11-01"}], "EndDate": [{"_": "2026-11-30"}]}],
+    "QuotationDocumentReference": [{"ID": [{"_": "QUOTE-42"}]}],
+    "Contract": [{"ID": [{"_": "CONTRACT-42"}], "ContractType": [{"_": "Framework"}]}],
+    "BuyerCustomerParty": [{"Party": [{
+      "EndpointID": [{"_": "[partner_identifier]", "schemeID": "GLN"}],
+      "PartyIdentification": [{"ID": [{"_": "BUYER-001"}]}],
+      "PartyName": [{"Name": [{"_": "[name]"}]}],
+      "PostalAddress": [{"StreetName": [{"_": "[address]"}], "CityName": [{"_": "[address]"}], "PostalZone": [{"_": "[address]"}], "CountrySubentity": [{"_": "[address]"}], "Country": [{"IdentificationCode": [{"_": "GB"}]}]}],
+      "PartyTaxScheme": [{"CompanyID": [{"_": "[tax_identifier]"}], "TaxScheme": [{"ID": [{"_": "VAT"}]}]}],
+      "PartyLegalEntity": [{"RegistrationName": [{"_": "[name]"}], "CompanyID": [{"_": "[company_identifier]"}]}],
+      "Contact": [{"Name": [{"_": "[name]"}], "Telephone": [{"_": "[phone_number]"}], "ElectronicMail": [{"_": "[email]"}]}]
+    }]}],
+    "SellerSupplierParty": [{"Party": [{
+      "EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}],
+      "PartyIdentification": [{"ID": [{"_": "SUPPLIER-001"}]}],
+      "PartyName": [{"Name": [{"_": "[name]"}]}],
+      "PostalAddress": [{"StreetName": [{"_": "[address]"}], "CityName": [{"_": "[address]"}], "PostalZone": [{"_": "[address]"}], "Country": [{"IdentificationCode": [{"_": "GB"}]}]}],
+      "PartyTaxScheme": [{"CompanyID": [{"_": "[tax_identifier]"}], "TaxScheme": [{"ID": [{"_": "VAT"}]}]}]
+    }]}],
+    "Delivery": [{"ID": [{"_": "DELIVERY-42"}], "ActualDeliveryDate": [{"_": "2026-11-05"}], "LatestDeliveryDate": [{"_": "2026-11-07"}], "DeliveryLocation": [{"ID": [{"_": "STORE-042"}], "Address": [{"StreetName": [{"_": "[address]"}], "CityName": [{"_": "[address]"}], "PostalZone": [{"_": "[address]"}], "Country": [{"IdentificationCode": [{"_": "GB"}]}]}]}]}],
+    "DeliveryTerms": [{"ID": [{"_": "DAP"}], "SpecialTerms": [{"_": "Deliver during receiving hours"}]}],
+    "PaymentTerms": [{"ID": [{"_": "NET30"}], "PaymentDueDate": [{"_": "2026-12-01"}], "Note": [{"_": "Net 30 days"}]}],
+    "AllowanceCharge": [{"ChargeIndicator": [{"_": false}], "AllowanceChargeReasonCode": [{"_": "95"}], "Amount": [{"_": 5.00, "currencyID": "GBP"}]}],
+    "AnticipatedMonetaryTotal": [{"LineExtensionAmount": [{"_": 100.00, "currencyID": "GBP"}], "AllowanceTotalAmount": [{"_": 5.00, "currencyID": "GBP"}], "TaxExclusiveAmount": [{"_": 95.00, "currencyID": "GBP"}], "TaxInclusiveAmount": [{"_": 114.00, "currencyID": "GBP"}], "PayableAmount": [{"_": 114.00, "currencyID": "GBP"}]}],
+    "OrderLine": [{"LineItem": [{
+      "ID": [{"_": "1"}], "Quantity": [{"_": 10, "unitCode": "EA"}], "LineExtensionAmount": [{"_": 100.00, "currencyID": "GBP"}],
+      "PartialDeliveryIndicator": [{"_": false}], "AccountingCostCode": [{"_": "CC-100"}],
+      "Delivery": [{"RequestedDeliveryPeriod": [{"StartDate": [{"_": "2026-11-05"}], "EndDate": [{"_": "2026-11-07"}]}]}],
+      "Price": [{"PriceAmount": [{"_": 10.00, "currencyID": "GBP"}], "BaseQuantity": [{"_": 1, "unitCode": "EA"}]}],
+      "Item": [{"Description": [{"_": "Comprehensive sample retail item"}], "Name": [{"_": "Sample item"}], "BuyersItemIdentification": [{"ID": [{"_": "BUY-SKU-001"}]}], "SellersItemIdentification": [{"ID": [{"_": "SELL-SKU-001"}]}], "StandardItemIdentification": [{"ID": [{"_": "05012345000017", "schemeID": "GTIN"}]}], "CommodityClassification": [{"ItemClassificationCode": [{"_": "12345678", "listID": "UNSPSC"}]}], "ClassifiedTaxCategory": [{"ID": [{"_": "S"}], "Percent": [{"_": 20}], "TaxScheme": [{"ID": [{"_": "VAT"}]}]}], "AdditionalItemProperty": [{"Name": [{"_": "Colour"}], "Value": [{"_": "Blue"}]}]}]
+    }]}]
+  }]
+}

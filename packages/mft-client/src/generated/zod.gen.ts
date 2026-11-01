@@ -2,6 +2,56 @@
 
 import * as z from 'zod';
 
+export const zCreatePartnerRequest = z.object({
+    name: z.string().min(0).max(120),
+    localAs2Id: z.string().min(0).max(128),
+    remoteAs2Id: z.string().min(0).max(128),
+    endpoint: z.url(),
+    localCertificateId: z.uuid(),
+    partnerSigningCertificateId: z.uuid(),
+    partnerEncryptionCertificateId: z.uuid(),
+    asynchronousMdnEndpoint: z.url().nullish(),
+    mdnMode: z.enum(['SYNCHRONOUS', 'ASYNCHRONOUS']),
+    signingRequired: z.boolean().optional(),
+    encryptionRequired: z.boolean().optional(),
+    compressionEnabled: z.boolean().optional(),
+    legacyCryptoEnabled: z.boolean().optional()
+});
+
+export const zPartnerResponse = z.object({
+    id: z.uuid().optional(),
+    name: z.string().optional(),
+    localAs2Id: z.string().optional(),
+    remoteAs2Id: z.string().optional(),
+    endpoint: z.url().optional(),
+    localCertificateId: z.uuid().optional(),
+    partnerSigningCertificateId: z.uuid().optional(),
+    partnerEncryptionCertificateId: z.uuid().optional(),
+    previousPartnerSigningCertificateId: z.uuid().nullish(),
+    signingCertificateGraceUntil: z.iso.datetime().nullish(),
+    asynchronousMdnEndpoint: z.url().nullish(),
+    mdnMode: z.enum(['SYNCHRONOUS', 'ASYNCHRONOUS']).optional(),
+    signingRequired: z.boolean().optional(),
+    encryptionRequired: z.boolean().optional(),
+    compressionEnabled: z.boolean().optional(),
+    legacyCryptoEnabled: z.boolean().optional(),
+    status: z.enum([
+        'DRAFT',
+        'SCHEDULED',
+        'ACTIVE',
+        'SUPERSEDED',
+        'SUSPENDED',
+        'ARCHIVED'
+    ]).optional(),
+    createdAt: z.iso.datetime().optional(),
+    familyId: z.uuid().optional(),
+    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    scheduledAt: z.iso.datetime().nullish(),
+    archivedAt: z.iso.datetime().nullish(),
+    updatedAt: z.iso.datetime().optional(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional()
+});
+
 export const zTransferAttempt = z.object({
     number: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
     startedAt: z.iso.datetime().optional(),
@@ -49,45 +99,8 @@ export const zTransferResponse = z.object({
     attempts: z.array(zTransferAttempt).optional()
 });
 
-export const zCreatePartnerRequest = z.object({
-    name: z.string().min(0).max(120),
-    localAs2Id: z.string().min(0).max(128),
-    remoteAs2Id: z.string().min(0).max(128),
-    endpoint: z.url(),
-    localCertificateId: z.uuid(),
-    partnerSigningCertificateId: z.uuid(),
-    partnerEncryptionCertificateId: z.uuid(),
-    asynchronousMdnEndpoint: z.url().nullish(),
-    mdnMode: z.enum(['SYNCHRONOUS', 'ASYNCHRONOUS']),
-    signingRequired: z.boolean().optional(),
-    encryptionRequired: z.boolean().optional(),
-    compressionEnabled: z.boolean().optional(),
-    legacyCryptoEnabled: z.boolean().optional()
-});
-
-export const zPartnerResponse = z.object({
-    id: z.uuid().optional(),
-    name: z.string().optional(),
-    localAs2Id: z.string().optional(),
-    remoteAs2Id: z.string().optional(),
-    endpoint: z.url().optional(),
-    localCertificateId: z.uuid().optional(),
-    partnerSigningCertificateId: z.uuid().optional(),
-    partnerEncryptionCertificateId: z.uuid().optional(),
-    previousPartnerSigningCertificateId: z.uuid().nullish(),
-    signingCertificateGraceUntil: z.iso.datetime().nullish(),
-    asynchronousMdnEndpoint: z.url().nullish(),
-    mdnMode: z.enum(['SYNCHRONOUS', 'ASYNCHRONOUS']).optional(),
-    signingRequired: z.boolean().optional(),
-    encryptionRequired: z.boolean().optional(),
-    compressionEnabled: z.boolean().optional(),
-    legacyCryptoEnabled: z.boolean().optional(),
-    status: z.enum([
-        'DRAFT',
-        'ACTIVE',
-        'SUSPENDED'
-    ]).optional(),
-    createdAt: z.iso.datetime().optional()
+export const zActivationRequest = z.object({
+    effectiveAt: z.iso.datetime().optional()
 });
 
 export const zRotatePartnerCertificatesRequest = z.object({
@@ -107,6 +120,15 @@ export const zCertificateResponse = z.object({
     hasPrivateKey: z.boolean().optional(),
     daysUntilExpiry: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
     validity: z.string().optional()
+});
+
+export const zTransferId = z.object({
+    value: z.uuid().optional()
+});
+
+export const zUsage = z.object({
+    deletable: z.boolean().optional(),
+    transferIds: z.array(zTransferId).optional()
 });
 
 export const zMdnDeliveryResponse = z.object({
@@ -145,6 +167,17 @@ export const zAs2ConnectionDetailsResponse = z.object({
     encryptionCertificateNotAfter: z.iso.datetime().optional(),
     encryptionPublicCertificatePem: z.string().optional()
 });
+
+export const zUpdateMftPartnerDraftBody = zCreatePartnerRequest;
+
+export const zUpdateMftPartnerDraftPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zUpdateMftPartnerDraftResponse = zPartnerResponse;
 
 /**
  * OK
@@ -205,6 +238,26 @@ export const zSuspendMftPartnerPath = z.object({
  */
 export const zSuspendMftPartnerResponse = zPartnerResponse;
 
+export const zScheduleMftPartnerActivationBody = zActivationRequest;
+
+export const zScheduleMftPartnerActivationPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zScheduleMftPartnerActivationResponse = zPartnerResponse;
+
+export const zCreateMftPartnerRevisionPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * Created
+ */
+export const zCreateMftPartnerRevisionResponse = zPartnerResponse;
+
 export const zRotateMftPartnerCertificatesBody = zRotatePartnerCertificatesRequest;
 
 export const zRotateMftPartnerCertificatesPath = z.object({
@@ -215,6 +268,15 @@ export const zRotateMftPartnerCertificatesPath = z.object({
  * OK
  */
 export const zRotateMftPartnerCertificatesResponse = zPartnerResponse;
+
+export const zArchiveMftPartnerRevisionPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zArchiveMftPartnerRevisionResponse = zPartnerResponse;
 
 export const zActivateMftPartnerPath = z.object({
     partnerId: z.uuid()
@@ -263,6 +325,33 @@ export const zDownloadMftTransferPayloadPath = z.object({
  */
 export const zDownloadMftTransferPayloadResponse = z.string();
 
+export const zDeleteMftPartnerDraftPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * No Content
+ */
+export const zDeleteMftPartnerDraftResponse = z.void();
+
+export const zGetMftPartnerPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetMftPartnerResponse = zPartnerResponse;
+
+export const zGetMftPartnerUsagePath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetMftPartnerUsageResponse = zUsage;
+
 /**
  * OK
  */
@@ -272,3 +361,21 @@ export const zListMftMdnDeliveriesResponse = z.array(zMdnDeliveryResponse);
  * OK
  */
 export const zListMftConnectionDetailsResponse = z.array(zAs2ConnectionDetailsResponse);
+
+export const zGetMftCertificateUsagePath = z.object({
+    certificateId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetMftCertificateUsageResponse = zUsage;
+
+export const zDeleteUnusedMftCertificatePath = z.object({
+    certificateId: z.uuid()
+});
+
+/**
+ * No Content
+ */
+export const zDeleteUnusedMftCertificateResponse = z.void();

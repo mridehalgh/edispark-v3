@@ -110,7 +110,20 @@ public final class MftService {
     public PartnerProfile activatePartner(UUID partnerId) {
         PartnerProfile partner = requirePartner(partnerId);
         validateForActivation(partner);
-        return repository.updatePartner(partner.activate());
+        Instant now = clock.instant();
+        repository.listPartners(tenantId()).stream()
+                .filter(item -> item.familyId().equals(partner.familyId()) && !item.id().equals(partner.id()))
+                .map(item -> item.supersede(now)).filter(item -> item.status() == PartnerStatus.SUPERSEDED)
+                .forEach(repository::updatePartner);
+        return repository.updatePartner(partner.activate(now));
+    }
+
+    public PartnerProfile activatePartner(UUID partnerId, Instant effectiveAt) {
+        PartnerProfile partner = requirePartner(partnerId);
+        validateForActivation(partner);
+        Instant now = clock.instant();
+        return effectiveAt != null && effectiveAt.isAfter(now)
+                ? repository.updatePartner(partner.schedule(effectiveAt, now)) : activatePartner(partnerId);
     }
 
     public PartnerProfile suspendPartner(UUID partnerId) {
@@ -127,7 +140,53 @@ public final class MftService {
     }
 
     public List<PartnerProfile> listPartners() {
-        return repository.listPartners(tenantId());
+        String tenant = tenantId();
+        Instant now = clock.instant();
+        repository.listPartners(tenant).stream().map(item -> item.activateDue(now))
+                .filter(item -> item.status() == PartnerStatus.ACTIVE)
+                .forEach(item -> {
+                    PartnerProfile current = repository.findPartner(tenant, item.id()).orElseThrow();
+                    if (current.status() != item.status()) activatePartner(item.id());
+                });
+        return repository.listPartners(tenant);
+    }
+
+    public PartnerProfile createPartnerRevision(UUID partnerId) {
+        return repository.savePartner(requirePartner(partnerId).newDraft(clock.instant()));
+    }
+
+    public PartnerProfile updatePartnerDraft(UUID partnerId, CreatePartner command) {
+        PartnerProfile partner = requirePartner(partnerId);
+        if (!partner.localAs2Id().equals(command.localAs2Id()) || !partner.remoteAs2Id().equals(command.remoteAs2Id())
+                || !partner.localCertificateId().equals(command.localCertificateId())) {
+            throw new IllegalArgumentException("AS2 identities and the local identity certificate are fixed for a revision family");
+        }
+        PartnerProfile revised = partner.revise(command.name(), command.endpoint(), command.asynchronousMdnEndpoint(),
+                command.mdnMode(), command.signingRequired(), command.encryptionRequired(), command.compressionEnabled(),
+                command.legacyCryptoEnabled(), clock.instant())
+                .withPartnerCertificates(command.partnerSigningCertificateId(), command.partnerEncryptionCertificateId());
+        return repository.updatePartner(revised);
+    }
+
+    public PartnerProfile archivePartner(UUID partnerId) {
+        return repository.updatePartner(requirePartner(partnerId).archive(clock.instant()));
+    }
+
+    public void deletePartnerDraft(UUID partnerId) {
+        PartnerProfile partner = requirePartner(partnerId);
+        if (partner.status() != PartnerStatus.DRAFT) {
+            throw new IllegalStateException("Only an unused draft AS2 revision can be permanently deleted");
+        }
+        boolean used = repository.listTransfers(tenantId()).stream().anyMatch(item -> item.partnerId().equals(partnerId));
+        if (used) throw new IllegalStateException("AS2 profile revision is referenced by transfer evidence");
+        repository.deletePartner(tenantId(), partnerId);
+    }
+
+    public Usage partnerUsage(UUID partnerId) {
+        requirePartner(partnerId);
+        List<TransferId> transfers = repository.listTransfers(tenantId()).stream()
+                .filter(item -> item.partnerId().equals(partnerId)).map(Transfer::id).toList();
+        return new Usage(transfers.isEmpty() && requirePartner(partnerId).status() == PartnerStatus.DRAFT, transfers);
     }
 
     public Transfer submitOutbound(SubmitOutbound command) throws IOException {
@@ -334,6 +393,8 @@ public final class MftService {
             this(partnerId, idempotencyKey, filename, contentType, content, resendOf, null);
         }
     }
+
+    public record Usage(boolean deletable, List<TransferId> transferIds) { }
 
     private enum CertificatePurpose {
         SIGNING("digital signatures"), ENCRYPTION("key encipherment");

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
+import { MftConfigurationControls } from "@/components/mft/mft-configuration-controls"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -145,6 +146,63 @@ export function MftPage() {
     } finally { setBusy(false) }
   }
 
+  async function revisePartner(partner: PartnerResponse) {
+    setBusy(true); setError(undefined); setNotice(undefined)
+    try {
+      await readApi(`/api/mft/partners/${partner.id}/revisions`, { method: "POST" })
+      setNotice(`Revision ${(partner.revision ?? 1) + 1} created for ${partner.name}.`)
+      await refresh()
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The AS2 revision could not be created.") }
+    finally { setBusy(false) }
+  }
+
+  async function deleteDraftPartner(partner: PartnerResponse) {
+    setBusy(true); setError(undefined); setNotice(undefined)
+    try {
+      await readApi(`/api/mft/partners/${partner.id}`, { method: "DELETE" })
+      setNotice(`Unused draft revision for ${partner.name} deleted.`)
+      await refresh()
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The AS2 draft could not be deleted.") }
+    finally { setBusy(false) }
+  }
+
+  async function deleteCertificate(certificate: CertificateResponse) {
+    setBusy(true); setError(undefined); setNotice(undefined)
+    try {
+      await readApi(`/api/mft/certificates/${certificate.id}`, { method: "DELETE" })
+      setNotice(`${certificate.name} and its unused material were deleted.`)
+      await refresh()
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The certificate is still assigned and cannot be deleted.") }
+    finally { setBusy(false) }
+  }
+
+  async function updatePartnerDraft(partner: PartnerResponse, form: FormData) {
+    setBusy(true); setError(undefined); setNotice(undefined)
+    try {
+      await readApi(`/api/mft/partners/${partner.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        name: form.get("name"), localAs2Id: partner.localAs2Id, remoteAs2Id: partner.remoteAs2Id,
+        endpoint: form.get("endpoint"), localCertificateId: partner.localCertificateId,
+        partnerSigningCertificateId: partner.partnerSigningCertificateId,
+        partnerEncryptionCertificateId: partner.partnerEncryptionCertificateId,
+        asynchronousMdnEndpoint: partner.asynchronousMdnEndpoint || undefined, mdnMode: partner.mdnMode,
+        signingRequired: partner.signingRequired, encryptionRequired: partner.encryptionRequired,
+        compressionEnabled: partner.compressionEnabled, legacyCryptoEnabled: partner.legacyCryptoEnabled,
+      }) })
+      setNotice(`Draft revision for ${partner.name} saved.`); await refresh()
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The AS2 draft could not be saved.") }
+    finally { setBusy(false) }
+  }
+
+  async function activatePartnerDraft(partner: PartnerResponse, effectiveAt?: string) {
+    setBusy(true); setError(undefined); setNotice(undefined)
+    try {
+      const path = effectiveAt ? "schedule" : "activate"
+      await readApi(`/api/mft/partners/${partner.id}/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: effectiveAt ? JSON.stringify({ effectiveAt: new Date(effectiveAt).toISOString() }) : undefined })
+      setNotice(effectiveAt ? `${partner.name} revision scheduled.` : `${partner.name} revision activated.`); await refresh()
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "The AS2 revision could not be activated.") }
+    finally { setBusy(false) }
+  }
+
   function openSendForm() { setSection("activity"); setShowSendForm(true) }
 
   async function copyConnectionDetails(details: As2ConnectionDetailsResponse) {
@@ -196,6 +254,8 @@ export function MftPage() {
 
     <Tabs value={section} onValueChange={(value) => setSection(value as MftSection)} className="space-y-4">
       <TabsList aria-label="File exchange sections"><TabsTrigger value="activity">Activity</TabsTrigger><TabsTrigger value="partners">Trading partners</TabsTrigger><TabsTrigger value="certificates">Certificates</TabsTrigger></TabsList>
+
+      <MftConfigurationControls section={section} partners={state.partners} certificates={state.certificates} busy={busy} onRevise={(partner) => void revisePartner(partner)} onDeleteDraft={(partner) => void deleteDraftPartner(partner)} onUpdateDraft={(partner, form) => void updatePartnerDraft(partner, form)} onActivateDraft={(partner, effectiveAt) => void activatePartnerDraft(partner, effectiveAt)} onDeleteCertificate={(certificate) => void deleteCertificate(certificate)} />
 
       <TabsContent value="activity" className="space-y-4">
         {showSendForm && <section className="rounded-lg border bg-card" aria-labelledby="send-file-title"><div className="flex items-start justify-between gap-4 border-b px-4 py-3"><div><h2 id="send-file-title" className="text-sm font-semibold">Send a file</h2><p className="mt-0.5 text-xs text-muted-foreground">Choose an active partner that should receive this file.</p></div><Button variant="ghost" size="icon" onClick={() => setShowSendForm(false)} aria-label="Close send file form"><X className="h-4 w-4" /></Button></div><form onSubmit={submitTransfer} className="grid gap-4 p-4 lg:grid-cols-[minmax(14rem,1fr)_minmax(18rem,2fr)_auto] lg:items-end"><label className="grid gap-1.5 text-sm font-medium">Trading partner<select name="partnerId" required className="h-10 rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">Choose a partner…</option>{activePartners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}</option>)}</select></label><label className="grid gap-1.5 text-sm font-medium">File<Input name="file" type="file" required accept=".edi,.x12,.dat,.txt,.xml,application/edi-x12,application/edifact" className="cursor-pointer file:mr-3 file:border-0 file:bg-transparent file:text-sm file:font-medium" /></label><Button type="submit" disabled={busy} className="gap-2"><FileUp className="h-4 w-4" />{busy ? "Queuing…" : "Send securely"}</Button></form></section>}

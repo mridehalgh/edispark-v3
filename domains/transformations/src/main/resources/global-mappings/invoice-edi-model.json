@@ -1,0 +1,9 @@
+{
+  "document": {"id": "INV-2026-0042", "issueDate": "2026-11-01", "dueDate": "2026-12-01", "typeCode": "380", "currency": "GBP", "taxCurrency": "GBP", "orderReference": "PO-2026-0042", "note": "Comprehensive privacy-safe EdiSpark invoice sample"},
+  "parties": {"sender": "[tenant_identifier]", "receiver": "[partner_identifier]", "buyerId": "BUYER-001", "buyerName": "[name]", "supplierId": "SUPPLIER-001", "supplierName": "[name]", "buyerTaxId": "[tax_identifier]", "supplierTaxId": "[tax_identifier]"},
+  "delivery": {"actualDate": "2026-10-31", "locationId": "STORE-042", "country": "GB"},
+  "payment": {"meansCode": "30", "dueDate": "2026-12-01", "reference": "INV-2026-0042", "termsId": "NET30"},
+  "tax": {"amount": 19.00, "taxableAmount": 95.00, "category": "S", "percent": 20, "scheme": "VAT"},
+  "totals": {"lineExtension": 100.00, "allowance": 5.00, "taxExclusive": 95.00, "taxInclusive": 114.00, "payable": 114.00},
+  "lines": [{"id": "1", "quantity": 10, "unitCode": "EA", "lineExtension": 100.00, "orderLineId": "1", "buyerItemId": "BUY-SKU-001", "sellerItemId": "SELL-SKU-001", "gtin": "05012345000017", "description": "Comprehensive sample retail item", "name": "Sample item", "price": 10.00, "taxCategory": "S", "taxPercent": 20}]
+}

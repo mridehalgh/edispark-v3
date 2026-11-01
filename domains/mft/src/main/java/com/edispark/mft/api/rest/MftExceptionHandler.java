@@ -30,7 +30,10 @@ public class MftExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<MftErrorResponse> invalidState(IllegalStateException exception) {
+        String message = exception.getMessage() == null ? "The operation is not allowed in the current state" : exception.getMessage();
+        String code = message.contains("assigned") || message.contains("referenced") || message.contains("unused draft")
+                ? "MFT_CONFIGURATION_IN_USE" : "MFT_STATE_CONFLICT";
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(MftErrorResponse.of("MFT_STATE_CONFLICT", "The operation is not allowed in the current state"));
+                .body(MftErrorResponse.of(code, message));
     }
 }

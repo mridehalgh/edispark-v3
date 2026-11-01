@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,10 +44,35 @@ public class PartnerController {
                 request.legacyCryptoEnabled())));
     }
 
+    @GetMapping("/{partnerId}")
+    @Operation(operationId = "getMftPartner", summary = "Get an AS2 partner revision")
+    public PartnerResponse get(@PathVariable java.util.UUID partnerId) {
+        return PartnerResponse.from(service.listPartners().stream().filter(item -> item.id().equals(partnerId))
+                .findFirst().orElseThrow(() -> new com.edispark.mft.application.MftNotFoundException("Partner was not found")));
+    }
+
+    @PostMapping("/{partnerId}/revisions") @ResponseStatus(HttpStatus.CREATED)
+    @Operation(operationId = "createMftPartnerRevision", summary = "Create an editable AS2 partner revision")
+    public PartnerResponse revise(@PathVariable java.util.UUID partnerId) {
+        return PartnerResponse.from(service.createPartnerRevision(partnerId));
+    }
+
+    @PutMapping("/{partnerId}/draft")
+    @Operation(operationId = "updateMftPartnerDraft", summary = "Update a draft AS2 partner revision")
+    public PartnerResponse update(@PathVariable java.util.UUID partnerId, @Valid @RequestBody CreatePartnerRequest request) {
+        return PartnerResponse.from(service.updatePartnerDraft(partnerId, command(request)));
+    }
+
     @PostMapping("/{partnerId}/activate")
     @Operation(operationId = "activateMftPartner", summary = "Activate an AS2 partner")
     public PartnerResponse activate(@PathVariable java.util.UUID partnerId) {
         return PartnerResponse.from(service.activatePartner(partnerId));
+    }
+
+    @PostMapping("/{partnerId}/schedule")
+    @Operation(operationId = "scheduleMftPartnerActivation", summary = "Schedule AS2 partner activation")
+    public PartnerResponse schedule(@PathVariable java.util.UUID partnerId, @RequestBody ActivationRequest request) {
+        return PartnerResponse.from(service.activatePartner(partnerId, request.effectiveAt()));
     }
 
     @PostMapping("/{partnerId}/suspend")
@@ -60,4 +88,28 @@ public class PartnerController {
         return PartnerResponse.from(service.rotatePartnerCertificates(partnerId,
                 request.partnerSigningCertificateId(), request.partnerEncryptionCertificateId()));
     }
+
+    @GetMapping("/{partnerId}/usage")
+    @Operation(operationId = "getMftPartnerUsage", summary = "Explain AS2 profile dependencies")
+    public MftService.Usage usage(@PathVariable java.util.UUID partnerId) { return service.partnerUsage(partnerId); }
+
+    @PostMapping("/{partnerId}/archive")
+    @Operation(operationId = "archiveMftPartnerRevision", summary = "Archive an AS2 partner revision")
+    public PartnerResponse archive(@PathVariable java.util.UUID partnerId) {
+        return PartnerResponse.from(service.archivePartner(partnerId));
+    }
+
+    @DeleteMapping("/{partnerId}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deleteMftPartnerDraft", summary = "Delete an unused AS2 partner draft")
+    public void delete(@PathVariable java.util.UUID partnerId) { service.deletePartnerDraft(partnerId); }
+
+    private MftService.CreatePartner command(CreatePartnerRequest request) {
+        return new MftService.CreatePartner(request.name(), request.localAs2Id(), request.remoteAs2Id(),
+                request.endpoint(), request.localCertificateId(), request.partnerSigningCertificateId(),
+                request.partnerEncryptionCertificateId(), request.asynchronousMdnEndpoint(), request.mdnMode(),
+                request.signingRequired(), request.encryptionRequired(), request.compressionEnabled(),
+                request.legacyCryptoEnabled());
+    }
+
+    public record ActivationRequest(java.time.Instant effectiveAt) { }
 }

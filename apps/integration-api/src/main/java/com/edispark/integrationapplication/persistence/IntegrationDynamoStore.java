@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -53,6 +54,11 @@ final class IntegrationDynamoStore {
         var response = dynamo.getItem(GetItemRequest.builder().tableName(table).consistentRead(true)
                 .key(Map.of("pk", text(pk(tenantId)), "sk", text(sortKey))).build());
         return Optional.ofNullable(response.item().get("data")).map(AttributeValue::s);
+    }
+
+    void delete(String tenantId, String sortKey) {
+        dynamo.deleteItem(DeleteItemRequest.builder().tableName(table)
+                .key(Map.of("pk", text(pk(tenantId)), "sk", text(sortKey))).build());
     }
 
     List<String> list(String tenantId, String prefix) {

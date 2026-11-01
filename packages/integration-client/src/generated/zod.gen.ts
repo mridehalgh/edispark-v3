@@ -2,44 +2,6 @@
 
 import * as z from 'zod';
 
-export const zMappingNode = z.object({
-    id: z.uuid().optional(),
-    operation: z.enum([
-        'COPY',
-        'CONSTANT',
-        'CONCAT',
-        'COALESCE',
-        'UPPERCASE',
-        'LOWERCASE'
-    ]).optional(),
-    sourcePointers: z.array(z.string()).optional(),
-    targetPointer: z.string().optional(),
-    constant: z.string().optional(),
-    separator: z.string().optional()
-});
-
-export const zUpdateMappingRequest = z.object({
-    nodes: z.array(zMappingNode).min(1)
-});
-
-export const zMappingRevision = z.object({
-    id: z.uuid().optional(),
-    tenantId: z.string().optional(),
-    name: z.string().optional(),
-    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    sourceSchemaId: z.uuid().optional(),
-    targetSchemaId: z.uuid().optional(),
-    status: z.enum([
-        'DRAFT',
-        'PUBLISHED',
-        'RETIRED'
-    ]).optional(),
-    nodes: z.array(zMappingNode).optional(),
-    contentHash: z.string().optional(),
-    createdAt: z.iso.datetime().optional(),
-    publishedAt: z.iso.datetime().optional()
-});
-
 export const zBusinessIdentity = z.object({
     scheme: z.string().optional(),
     value: z.string().optional()
@@ -55,13 +17,39 @@ export const zTradingPartner = z.object({
     tenantId: z.string().optional(),
     displayName: z.string().optional(),
     identities: z.array(zBusinessIdentity).optional(),
-    status: z.enum(['ACTIVE', 'SUSPENDED']).optional(),
+    status: z.enum([
+        'DRAFT',
+        'SCHEDULED',
+        'ACTIVE',
+        'SUPERSEDED',
+        'SUSPENDED',
+        'ARCHIVED'
+    ]).optional(),
     createdAt: z.iso.datetime().optional(),
-    updatedAt: z.iso.datetime().optional()
+    updatedAt: z.iso.datetime().optional(),
+    familyId: z.uuid().optional(),
+    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    scheduledAt: z.iso.datetime().optional(),
+    archivedAt: z.iso.datetime().optional(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional()
 });
 
-export const zCreateAgreementRequest = z.object({
-    name: z.string().min(0).max(120)
+export const zCapabilityRequest = z.object({
+    direction: z.enum(['INBOUND', 'OUTBOUND']),
+    documentType: z.enum(['ORDER', 'INVOICE']),
+    standard: z.enum(['TRADACOMS', 'EDIFACT']),
+    release: z.string().min(1),
+    messageType: z.string().min(1),
+    sourceSchemaId: z.uuid(),
+    targetSchemaId: z.uuid(),
+    mappingRevisionId: z.uuid(),
+    as2ConnectionId: z.uuid(),
+    acknowledgementPolicy: z.enum(['TRANSPORT_ONLY', 'FUNCTIONAL']),
+    batchingPolicy: z.enum([
+        'INDIVIDUAL',
+        'PRESERVE_INBOUND_BATCH',
+        'GROUP_OUTBOUND'
+    ])
 });
 
 export const zExchangeCapability = z.object({
@@ -99,34 +87,88 @@ export const zTradingAgreement = z.object({
     status: z.enum([
         'DRAFT',
         'QUALIFYING',
+        'SCHEDULED',
         'ACTIVE',
+        'SUPERSEDED',
         'SUSPENDED',
-        'RETIRED'
+        'RETIRED',
+        'ARCHIVED'
     ]).optional(),
     effectiveFrom: z.iso.datetime().optional(),
     effectiveUntil: z.iso.datetime().optional(),
     capabilities: z.array(zExchangeCapability).optional(),
     qualification: zQualificationReport.optional(),
     createdAt: z.iso.datetime().optional(),
-    updatedAt: z.iso.datetime().optional()
+    updatedAt: z.iso.datetime().optional(),
+    familyId: z.uuid().optional(),
+    scheduledAt: z.iso.datetime().optional(),
+    archivedAt: z.iso.datetime().optional(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional()
 });
 
-export const zCapabilityRequest = z.object({
-    direction: z.enum(['INBOUND', 'OUTBOUND']),
-    documentType: z.enum(['ORDER', 'INVOICE']),
-    standard: z.enum(['TRADACOMS', 'EDIFACT']),
-    release: z.string().min(1),
-    messageType: z.string().min(1),
-    sourceSchemaId: z.uuid(),
-    targetSchemaId: z.uuid(),
-    mappingRevisionId: z.uuid(),
-    as2ConnectionId: z.uuid(),
-    acknowledgementPolicy: z.enum(['TRANSPORT_ONLY', 'FUNCTIONAL']),
-    batchingPolicy: z.enum([
-        'INDIVIDUAL',
-        'PRESERVE_INBOUND_BATCH',
-        'GROUP_OUTBOUND'
-    ])
+export const zMappingNode = z.object({
+    id: z.uuid().optional(),
+    operation: z.enum([
+        'COPY',
+        'CONSTANT',
+        'CONCAT',
+        'COALESCE',
+        'UPPERCASE',
+        'LOWERCASE'
+    ]).optional(),
+    sourcePointers: z.array(z.string()).optional(),
+    targetPointer: z.string().optional(),
+    constant: z.string().optional(),
+    separator: z.string().optional()
+});
+
+export const zUpdateMappingRequest = z.object({
+    nodes: z.array(zMappingNode).min(1)
+});
+
+export const zMappingSample = z.object({
+    sourceFormat: z.string().optional(),
+    sourceDocument: z.string().optional(),
+    sourceRaw: z.string().optional(),
+    targetFormat: z.string().optional(),
+    targetDocument: z.string().optional(),
+    targetRaw: z.string().optional()
+});
+
+export const zMappingRevision = z.object({
+    id: z.uuid().optional(),
+    tenantId: z.string().optional(),
+    name: z.string().optional(),
+    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    sourceSchemaId: z.uuid().optional(),
+    targetSchemaId: z.uuid().optional(),
+    status: z.enum([
+        'DRAFT',
+        'SCHEDULED',
+        'PUBLISHED',
+        'RETIRED',
+        'ARCHIVED'
+    ]).optional(),
+    nodes: z.array(zMappingNode).optional(),
+    contentHash: z.string().optional(),
+    createdAt: z.iso.datetime().optional(),
+    publishedAt: z.iso.datetime().optional(),
+    familyId: z.uuid().optional(),
+    scheduledAt: z.iso.datetime().optional(),
+    archivedAt: z.iso.datetime().optional(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    scope: z.enum(['GLOBAL', 'TENANT']).optional(),
+    vendor: z.string().optional(),
+    sample: zMappingSample.optional(),
+    derivedFromMappingId: z.uuid().optional()
+});
+
+export const zCreateAgreementRequest = z.object({
+    name: z.string().min(0).max(120)
+});
+
+export const zActivationRequest = z.object({
+    effectiveAt: z.iso.datetime().optional()
 });
 
 export const zCreateMappingRequest = z.object({
@@ -149,7 +191,8 @@ export const zTestResult = z.object({
 });
 
 export const zPublishMappingRequest = z.object({
-    fixtures: z.array(zMappingFixtureRequest).min(1)
+    fixtures: z.array(zMappingFixtureRequest).min(1),
+    effectiveAt: z.iso.datetime().optional()
 });
 
 export const zSubmitExchangeRequest = z.object({
@@ -213,6 +256,17 @@ export const zExchangeResponse = z.object({
     stages: z.array(zExchangeStage).optional()
 });
 
+export const zDependency = z.object({
+    type: z.string().optional(),
+    id: z.uuid().optional(),
+    label: z.string().optional()
+});
+
+export const zUsage = z.object({
+    deletable: z.boolean().optional(),
+    dependencies: z.array(zDependency).optional()
+});
+
 export const zEligibleRoute = z.object({
     agreementId: z.uuid().optional(),
     agreementRevision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
@@ -220,6 +274,39 @@ export const zEligibleRoute = z.object({
     agreementName: z.string().optional(),
     capability: zExchangeCapability.optional()
 });
+
+export const zUpdateTradingPartnerDraftBody = zCreatePartnerRequest;
+
+export const zUpdateTradingPartnerDraftPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zUpdateTradingPartnerDraftResponse = zTradingPartner;
+
+export const zRemoveExchangeCapabilityPath = z.object({
+    agreementId: z.uuid(),
+    capabilityId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zRemoveExchangeCapabilityResponse = zTradingAgreement;
+
+export const zReplaceExchangeCapabilityBody = zCapabilityRequest;
+
+export const zReplaceExchangeCapabilityPath = z.object({
+    agreementId: z.uuid(),
+    capabilityId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zReplaceExchangeCapabilityResponse = zTradingAgreement;
 
 export const zUpdateMappingDraftBody = zUpdateMappingRequest;
 
@@ -244,6 +331,24 @@ export const zCreateTradingPartnerBody = zCreatePartnerRequest;
  */
 export const zCreateTradingPartnerResponse = zTradingPartner;
 
+export const zCreateTradingPartnerRevisionPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * Created
+ */
+export const zCreateTradingPartnerRevisionResponse = zTradingPartner;
+
+export const zArchiveTradingPartnerRevisionPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zArchiveTradingPartnerRevisionResponse = zTradingPartner;
+
 export const zCreateTradingAgreementBody = zCreateAgreementRequest;
 
 export const zCreateTradingAgreementPath = z.object({
@@ -254,6 +359,17 @@ export const zCreateTradingAgreementPath = z.object({
  * Created
  */
 export const zCreateTradingAgreementResponse = zTradingAgreement;
+
+export const zActivateTradingPartnerRevisionBody = zActivationRequest;
+
+export const zActivateTradingPartnerRevisionPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zActivateTradingPartnerRevisionResponse = zTradingPartner;
 
 export const zSuspendTradingAgreementPath = z.object({
     agreementId: z.uuid()
@@ -292,6 +408,17 @@ export const zAddExchangeCapabilityPath = z.object({
  * OK
  */
 export const zAddExchangeCapabilityResponse = zTradingAgreement;
+
+export const zArchiveTradingAgreementRevisionPath = z.object({
+    agreementId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zArchiveTradingAgreementRevisionResponse = zTradingAgreement;
+
+export const zActivateTradingAgreementBody = zActivationRequest;
 
 export const zActivateTradingAgreementPath = z.object({
     agreementId: z.uuid()
@@ -345,6 +472,15 @@ export const zPublishMappingPath = z.object({
  */
 export const zPublishMappingResponse = zMappingRevision;
 
+export const zArchiveMappingRevisionPath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zArchiveMappingRevisionResponse = zMappingRevision;
+
 /**
  * OK
  */
@@ -357,10 +493,37 @@ export const zSubmitOutboundExchangeBody = zSubmitExchangeRequest;
  */
 export const zSubmitOutboundExchangeResponse = zExchangeResponse;
 
+export const zDeleteTradingPartnerDraftPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * No Content
+ */
+export const zDeleteTradingPartnerDraftResponse = z.void();
+
+export const zGetTradingPartnerPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetTradingPartnerResponse = zTradingPartner;
+
 /**
  * OK
  */
 export const zListTradingAgreementsResponse = z.array(zTradingAgreement);
+
+export const zDeleteTradingAgreementDraftPath = z.object({
+    agreementId: z.uuid()
+});
+
+/**
+ * No Content
+ */
+export const zDeleteTradingAgreementDraftResponse = z.void();
 
 export const zGetTradingAgreementPath = z.object({
     agreementId: z.uuid()
@@ -371,6 +534,24 @@ export const zGetTradingAgreementPath = z.object({
  */
 export const zGetTradingAgreementResponse = zTradingAgreement;
 
+export const zGetTradingAgreementUsagePath = z.object({
+    agreementId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetTradingAgreementUsageResponse = zUsage;
+
+export const zDeleteMappingDraftPath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * No Content
+ */
+export const zDeleteMappingDraftResponse = z.void();
+
 export const zGetMappingPath = z.object({
     mappingId: z.uuid()
 });
@@ -379,6 +560,15 @@ export const zGetMappingPath = z.object({
  * OK
  */
 export const zGetMappingResponse = zMappingRevision;
+
+export const zGetMappingUsagePath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetMappingUsageResponse = zUsage;
 
 export const zGetExchangePath = z.object({
     exchangeId: z.uuid()

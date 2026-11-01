@@ -30,6 +30,10 @@ public final class InMemoryMftRepository implements MftRepository {
 
     @Override
     public synchronized PartnerProfile savePartner(PartnerProfile partner) {
+        if (partner.revision() > 1) {
+            partners.put(partner.tenantId() + ":" + partner.id(), partner);
+            return partner;
+        }
         String pair = partner.localAs2Id() + "\u0000" + partner.remoteAs2Id();
         String owner = partner.tenantId() + ":" + partner.id();
         String existing = inboundOwners.putIfAbsent(pair, owner);
@@ -62,8 +66,12 @@ public final class InMemoryMftRepository implements MftRepository {
     @Override
     public Optional<PartnerProfile> findInboundPartner(String localAs2Id, String remoteAs2Id) {
         return partners.values().stream().filter(item -> item.localAs2Id().equals(localAs2Id)
-                && item.remoteAs2Id().equals(remoteAs2Id)).findFirst();
+                && item.remoteAs2Id().equals(remoteAs2Id))
+                .sorted(Comparator.comparing(item -> item.status() == com.edispark.mft.domain.model.PartnerStatus.ACTIVE ? 0 : 1))
+                .findFirst();
     }
+
+    @Override public void deletePartner(String tenantId, UUID partnerId) { partners.remove(tenantId + ":" + partnerId); }
 
     @Override
     public synchronized Transfer saveOutboundIfAbsent(Transfer transfer) {
@@ -162,6 +170,10 @@ public final class InMemoryMftRepository implements MftRepository {
     @Override
     public Optional<CertificateRecord> findCertificate(String tenantId, UUID certificateId) {
         return Optional.ofNullable(certificates.get(tenantId + ":" + certificateId));
+    }
+
+    @Override public void deleteCertificate(String tenantId, UUID certificateId) {
+        certificates.remove(tenantId + ":" + certificateId);
     }
 
     @Override

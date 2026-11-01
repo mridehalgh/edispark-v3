@@ -13,6 +13,16 @@ export type TransferAttempt = {
     detail?: string | null;
 };
 
+export type TransferProvenance = {
+    exchangeId?: string;
+    agreementId?: string;
+    agreementRevision?: number;
+    capabilityId?: string;
+    documentSetId?: string;
+    documentId?: string;
+    mappingRevisionId?: string;
+};
+
 export type TransferResponse = {
     id?: string;
     partnerId?: string;
@@ -26,6 +36,7 @@ export type TransferResponse = {
     mdnDisposition?: string | null;
     failureReason?: string | null;
     resendOf?: string | null;
+    provenance?: TransferProvenance;
     createdAt?: string;
     updatedAt?: string;
     attempts?: Array<TransferAttempt>;
@@ -146,6 +157,13 @@ export type SubmitMftTransferData = {
     path?: never;
     query: {
         partnerId: string;
+        exchangeId?: string;
+        agreementId?: string;
+        agreementRevision?: number;
+        capabilityId?: string;
+        documentSetId?: string;
+        documentId?: string;
+        mappingRevisionId?: string;
     };
     url: '/api/mft/transfers';
 };

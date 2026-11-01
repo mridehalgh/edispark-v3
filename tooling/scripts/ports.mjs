@@ -26,6 +26,7 @@ export function localServices(env) {
     { name: "documents API", port: new URL(env.DOCUMENTS_API_URL).port || 8080 },
     { name: "MFT API", port: new URL(env.MFT_API_URL).port || 8081 },
     { name: "AS2 simulator", port: new URL(env.AS2_SIMULATOR_URL).port || 8082 },
+    { name: "integration API", port: new URL(env.INTEGRATION_API_URL).port || 8083 },
   ]
 }
 

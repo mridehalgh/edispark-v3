@@ -136,7 +136,7 @@ public final class MftService {
         requireActive(partner);
         Instant now = clock.instant();
         Transfer transfer = Transfer.outbound(tenantId, command.partnerId(), command.filename(),
-                command.contentType(), messageId(), command.idempotencyKey(), command.resendOf(), now);
+                command.contentType(), messageId(), command.idempotencyKey(), command.resendOf(), command.provenance(), now);
         transfer.attachPayload(payloadStore.put(tenantId, transfer.id(), command.filename(),
                 new MaximumSizeInputStream(command.content(), maximumPayloadBytes)), now);
         return repository.saveOutboundIfAbsent(transfer);
@@ -148,7 +148,7 @@ public final class MftService {
         InputStream content = payloadStore.get(tenantId, original.payload());
         String key = "resend:" + original.id() + ":" + UUID.randomUUID();
         return submitOutbound(new SubmitOutbound(original.partnerId(), key, original.filename(),
-                original.contentType(), content, original.id()));
+                original.contentType(), content, original.id(), original.provenance()));
     }
 
     public List<Transfer> listTransfers() {
@@ -305,7 +305,12 @@ public final class MftService {
     }
 
     public record SubmitOutbound(UUID partnerId, String idempotencyKey, String filename,
-                                 String contentType, InputStream content, TransferId resendOf) {
+                                 String contentType, InputStream content, TransferId resendOf,
+                                 com.edispark.mft.domain.model.TransferProvenance provenance) {
+        public SubmitOutbound(UUID partnerId, String idempotencyKey, String filename, String contentType,
+                              InputStream content, TransferId resendOf) {
+            this(partnerId, idempotencyKey, filename, contentType, content, resendOf, null);
+        }
     }
 
     private enum CertificatePurpose {

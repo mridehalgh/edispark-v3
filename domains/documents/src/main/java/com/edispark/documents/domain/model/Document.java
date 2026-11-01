@@ -159,6 +159,16 @@ public final class Document {
             ContentRef contentRef,
             ContentHash contentHash,
             TransformationMethod method) {
+        return addDerivative(sourceVersionId, targetFormat, contentRef, contentHash, method, "default");
+    }
+
+    public Derivative addDerivative(
+            DocumentVersionId sourceVersionId,
+            Format targetFormat,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            TransformationMethod method,
+            String variantKey) {
         
         // Validate source version exists
         if (getVersionById(sourceVersionId).isEmpty()) {
@@ -166,11 +176,11 @@ public final class Document {
         }
         
         // Check for duplicate derivative
-        if (hasDerivative(sourceVersionId, targetFormat)) {
+        if (hasDerivative(sourceVersionId, targetFormat, variantKey)) {
             throw new DuplicateDerivativeException(sourceVersionId, targetFormat);
         }
         
-        Derivative derivative = Derivative.create(sourceVersionId, targetFormat, contentRef, contentHash, method);
+        Derivative derivative = Derivative.create(sourceVersionId, targetFormat, contentRef, contentHash, method, variantKey);
         derivatives.add(derivative);
         return derivative;
     }
@@ -238,6 +248,10 @@ public final class Document {
     public boolean hasDerivative(DocumentVersionId sourceVersionId, Format targetFormat) {
         return derivatives.stream()
                 .anyMatch(d -> d.matches(sourceVersionId, targetFormat));
+    }
+
+    public boolean hasDerivative(DocumentVersionId sourceVersionId, Format targetFormat, String variantKey) {
+        return derivatives.stream().anyMatch(d -> d.matches(sourceVersionId, targetFormat, variantKey));
     }
 
     /**

@@ -271,6 +271,12 @@ This plan implements the Documents bounded context as a new Maven module followi
 - [ ] 20. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
+- [x] 21. Retain externally generated partner-specific derivatives
+  - [x] 21.1 Add variant-aware derivative identity and persistence migration defaults
+  - [x] 21.2 Add the authenticated external-derivative command and multipart API
+  - [x] 21.3 Export the API contract and regenerate the Documents client
+  - _Requirements: 5.1, 5.2, 5.4, 5.7, 7.5_
+
 ## Notes
 
 - All tasks are required for comprehensive implementation

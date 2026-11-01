@@ -459,20 +459,21 @@ public final class DynamoDbMftRepository implements MftRepository {
 
     private record TransferSnapshot(TransferId id, String tenantId, UUID partnerId,
             TransferDirection direction, String filename, String contentType, String as2MessageId,
-            String idempotencyKey, TransferId resendOf, TransferStatus status, Instant createdAt,
+            String idempotencyKey, TransferId resendOf, com.edispark.mft.domain.model.TransferProvenance provenance,
+            TransferStatus status, Instant createdAt,
             Instant updatedAt, Instant nextAttemptAt, PayloadRef payload, String mdnDisposition,
             String failureReason, String sentContentMic, List<TransferAttempt> attempts) {
         static TransferSnapshot from(Transfer transfer) {
             return new TransferSnapshot(transfer.id(), transfer.tenantId(), transfer.partnerId(), transfer.direction(),
                     transfer.filename(), transfer.contentType(), transfer.as2MessageId(), transfer.idempotencyKey(),
-                    transfer.resendOf(), transfer.status(), transfer.createdAt(), transfer.updatedAt(),
+                    transfer.resendOf(), transfer.provenance(), transfer.status(), transfer.createdAt(), transfer.updatedAt(),
                     transfer.nextAttemptAt(), transfer.payload(), transfer.mdnDisposition(), transfer.failureReason(),
                     transfer.sentContentMic(), transfer.attempts());
         }
 
         Transfer toTransfer() {
             return Transfer.restore(id, tenantId, partnerId, direction, filename, contentType, as2MessageId,
-                    idempotencyKey, resendOf, status, createdAt, updatedAt, nextAttemptAt, payload,
+                    idempotencyKey, resendOf, provenance, status, createdAt, updatedAt, nextAttemptAt, payload,
                     mdnDisposition, failureReason, sentContentMic, attempts);
         }
     }

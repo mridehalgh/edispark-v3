@@ -51,10 +51,19 @@ public class TransferController {
     @Operation(operationId = "submitMftTransfer", summary = "Submit an outbound AS2 transfer")
     public TransferResponse submit(@RequestHeader("Idempotency-Key") @NotBlank String idempotencyKey,
                                    @RequestParam UUID partnerId,
-                                   @RequestParam MultipartFile file) throws IOException {
+                                   @RequestParam MultipartFile file,
+                                   @RequestParam(required = false) UUID exchangeId,
+                                   @RequestParam(required = false) UUID agreementId,
+                                   @RequestParam(required = false) Integer agreementRevision,
+                                   @RequestParam(required = false) UUID capabilityId,
+                                   @RequestParam(required = false) UUID documentSetId,
+                                   @RequestParam(required = false) UUID documentId,
+                                   @RequestParam(required = false) UUID mappingRevisionId) throws IOException {
         String contentType = file.getContentType() == null ? MediaType.APPLICATION_OCTET_STREAM_VALUE : file.getContentType();
+        var provenance = provenance(exchangeId, agreementId, agreementRevision, capabilityId, documentSetId,
+                documentId, mappingRevisionId);
         Transfer transfer = service.submitOutbound(new MftService.SubmitOutbound(partnerId, idempotencyKey,
-                safeFilename(file), contentType, file.getInputStream(), null));
+                safeFilename(file), contentType, file.getInputStream(), null, provenance));
         return TransferResponse.from(transfer);
     }
 
@@ -79,5 +88,16 @@ public class TransferController {
     private String safeFilename(MultipartFile file) {
         String original = file.getOriginalFilename();
         return original == null || original.isBlank() ? "payload.edi" : original;
+    }
+
+    private com.edispark.mft.domain.model.TransferProvenance provenance(UUID exchangeId, UUID agreementId,
+            Integer agreementRevision, UUID capabilityId, UUID documentSetId, UUID documentId,
+            UUID mappingRevisionId) {
+        int present = java.util.stream.Stream.of(exchangeId, agreementId, agreementRevision, capabilityId,
+                documentSetId, documentId, mappingRevisionId).mapToInt(value -> value == null ? 0 : 1).sum();
+        if (present == 0) return null;
+        if (present != 7) throw new IllegalArgumentException("All transfer provenance fields must be supplied together");
+        return new com.edispark.mft.domain.model.TransferProvenance(exchangeId, agreementId, agreementRevision,
+                capabilityId, documentSetId, documentId, mappingRevisionId);
     }
 }

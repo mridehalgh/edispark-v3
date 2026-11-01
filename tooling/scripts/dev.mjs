@@ -28,6 +28,14 @@ try {
     timeout: API_READY_TIMEOUT_MS,
     url: new URL("/actuator/health", env.MFT_API_URL).toString(),
   })
+  const integrationApi = start("pnpm", ["dev:integration-api"], { cwd, env: childEnvironment })
+  coordinator.add(integrationApi)
+  await waitForEndpoint({
+    child: integrationApi,
+    label: "Integration API",
+    timeout: API_READY_TIMEOUT_MS,
+    url: new URL("/actuator/health", env.INTEGRATION_API_URL).toString(),
+  })
   const simulator = start("pnpm", ["dev:as2-simulator"], { cwd, env: childEnvironment })
   coordinator.add(simulator)
   await waitForEndpoint({

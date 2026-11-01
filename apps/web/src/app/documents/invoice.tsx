@@ -14,6 +14,7 @@ import {
 import { Link, useParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
+import { SendDocument } from "@/components/documents/send-document"
 import { Button } from "@/components/ui/button"
 import {
   getDerivativeContent,
@@ -273,6 +274,7 @@ export function InvoiceDocumentPage() {
           {invoice.dueDate && (
             <p className="mt-1 text-xs text-muted-foreground">Due {formatDate(invoice.dueDate)}</p>
           )}
+          {setId && documentId && <SendDocument documentSetId={setId} documentId={documentId} />}
         </div>
       </header>
 

@@ -21,5 +21,6 @@ public record DerivativeResponse(
     Format targetFormat,
     String contentHash,
     String transformationMethod,
+    String variantKey,
     Instant createdAt
 ) {}

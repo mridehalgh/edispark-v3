@@ -16,6 +16,7 @@ import {
 import { Link, useParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
+import { SendDocument } from "@/components/documents/send-document"
 import { Button } from "@/components/ui/button"
 import {
   getDerivativeContent,
@@ -266,14 +267,15 @@ export function OrderDocumentPage() {
             Issued {formatDate(order.issueDate)}{order.issueTime ? ` at ${order.issueTime}` : ""}
           </p>
         </div>
-        {totals?.payable && (
-          <div className="sm:text-right">
+        <div className="sm:text-right">
+          {totals?.payable && <>
             <p className="text-xs font-medium text-muted-foreground">Order total</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
               {formatMoney(totals.payable, order.currency)}
             </p>
-          </div>
-        )}
+          </>}
+          {setId && documentId && <SendDocument documentSetId={setId} documentId={documentId} />}
+        </div>
       </header>
 
       <dl className="grid gap-x-8 gap-y-5 border-b py-5 sm:grid-cols-2 lg:grid-cols-4">

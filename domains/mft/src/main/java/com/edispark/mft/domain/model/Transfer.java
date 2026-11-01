@@ -27,6 +27,7 @@ public final class Transfer {
     private final String as2MessageId;
     private final String idempotencyKey;
     private final TransferId resendOf;
+    private final TransferProvenance provenance;
     private final Instant createdAt;
     private final List<TransferAttempt> attempts = new ArrayList<>();
     private TransferStatus status;
@@ -39,7 +40,7 @@ public final class Transfer {
 
     private Transfer(TransferId id, String tenantId, UUID partnerId, TransferDirection direction,
                      String filename, String contentType, String as2MessageId, String idempotencyKey,
-                     TransferId resendOf, TransferStatus status, Instant now) {
+                     TransferId resendOf, TransferProvenance provenance, TransferStatus status, Instant now) {
         this.id = Objects.requireNonNull(id);
         this.tenantId = requireText(tenantId, "tenantId");
         this.partnerId = Objects.requireNonNull(partnerId);
@@ -49,6 +50,7 @@ public final class Transfer {
         this.as2MessageId = requireText(as2MessageId, "as2MessageId");
         this.idempotencyKey = idempotencyKey;
         this.resendOf = resendOf;
+        this.provenance = provenance;
         this.status = status;
         this.createdAt = now;
         this.updatedAt = now;
@@ -57,15 +59,21 @@ public final class Transfer {
 
     public static Transfer outbound(String tenantId, UUID partnerId, String filename, String contentType,
                                     String as2MessageId, String idempotencyKey, TransferId resendOf, Instant now) {
+        return outbound(tenantId, partnerId, filename, contentType, as2MessageId, idempotencyKey, resendOf, null, now);
+    }
+
+    public static Transfer outbound(String tenantId, UUID partnerId, String filename, String contentType,
+                                    String as2MessageId, String idempotencyKey, TransferId resendOf,
+                                    TransferProvenance provenance, Instant now) {
         requireText(idempotencyKey, "idempotencyKey");
         return new Transfer(TransferId.generate(), tenantId, partnerId, TransferDirection.OUTBOUND,
-                filename, contentType, as2MessageId, idempotencyKey, resendOf, TransferStatus.QUEUED, now);
+                filename, contentType, as2MessageId, idempotencyKey, resendOf, provenance, TransferStatus.QUEUED, now);
     }
 
     public static Transfer inbound(String tenantId, UUID partnerId, String filename, String contentType,
                                    String as2MessageId, Instant now) {
         return new Transfer(TransferId.generate(), tenantId, partnerId, TransferDirection.INBOUND,
-                filename, contentType, as2MessageId, null, null, TransferStatus.RECEIVED, now);
+                filename, contentType, as2MessageId, null, null, null, TransferStatus.RECEIVED, now);
     }
 
     public static Transfer restore(TransferId id, String tenantId, UUID partnerId, TransferDirection direction,
@@ -73,8 +81,19 @@ public final class Transfer {
                                    TransferId resendOf, TransferStatus status, Instant createdAt, Instant updatedAt,
                                    Instant nextAttemptAt, PayloadRef payload, String mdnDisposition,
                                    String failureReason, String sentContentMic, List<TransferAttempt> attempts) {
+        return restore(id, tenantId, partnerId, direction, filename, contentType, as2MessageId, idempotencyKey,
+                resendOf, null, status, createdAt, updatedAt, nextAttemptAt, payload, mdnDisposition,
+                failureReason, sentContentMic, attempts);
+    }
+
+    public static Transfer restore(TransferId id, String tenantId, UUID partnerId, TransferDirection direction,
+                                   String filename, String contentType, String as2MessageId, String idempotencyKey,
+                                   TransferId resendOf, TransferProvenance provenance, TransferStatus status,
+                                   Instant createdAt, Instant updatedAt, Instant nextAttemptAt, PayloadRef payload,
+                                   String mdnDisposition, String failureReason, String sentContentMic,
+                                   List<TransferAttempt> attempts) {
         Transfer transfer = new Transfer(id, tenantId, partnerId, direction, filename, contentType, as2MessageId,
-                idempotencyKey, resendOf, status, createdAt);
+                idempotencyKey, resendOf, provenance, status, createdAt);
         transfer.updatedAt = Objects.requireNonNull(updatedAt);
         transfer.nextAttemptAt = Objects.requireNonNull(nextAttemptAt);
         transfer.payload = payload;

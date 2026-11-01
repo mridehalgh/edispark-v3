@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Menu,
   Network,
+  Share2,
   Search,
   Settings,
 } from "lucide-react"
@@ -39,6 +40,7 @@ import { UserNav } from "./user-nav"
 const navigation = [
   { label: "Overview", href: "/", icon: LayoutDashboard },
   { label: "Documents", href: "/documents", icon: FileText },
+  { label: "Trading network", href: "/trading-network", icon: Share2 },
   { label: "Managed transfer", href: "/mft", icon: Network },
   { label: "Files", href: "/file", icon: Files },
   { label: "Workspaces", href: "/organization", icon: Settings },

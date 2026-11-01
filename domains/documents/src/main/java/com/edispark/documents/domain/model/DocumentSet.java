@@ -256,6 +256,20 @@ public final class DocumentSet {
         return derivative;
     }
 
+    public Derivative createDerivative(
+            DocumentId documentId,
+            DocumentVersionId sourceVersionId,
+            Format targetFormat,
+            ContentRef contentRef,
+            ContentHash contentHash,
+            TransformationMethod method,
+            String variantKey) {
+        Document document = getDocumentOrThrow(documentId);
+        Derivative derivative = document.addDerivative(sourceVersionId, targetFormat, contentRef, contentHash, method, variantKey);
+        registerEvent(DerivativeCreated.now(this.id, documentId, derivative.id(), sourceVersionId, targetFormat));
+        return derivative;
+    }
+
     /**
      * Returns a document by its ID.
      */

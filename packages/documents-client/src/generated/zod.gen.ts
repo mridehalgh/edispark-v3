@@ -120,6 +120,7 @@ export const zDerivativeResponse = z.object({
     ]).optional(),
     contentHash: z.string().optional(),
     transformationMethod: z.string().optional(),
+    variantKey: z.string().optional(),
     createdAt: z.iso.datetime().optional()
 });
 
@@ -283,6 +284,31 @@ export const zValidateDocumentVersionPath = z.object({
  * Document is valid
  */
 export const zValidateDocumentVersionResponse = zValidationResultResponse;
+
+export const zStoreExternalDerivativeBody = z.object({
+    file: z.string()
+});
+
+export const zStoreExternalDerivativePath = z.object({
+    setId: z.uuid(),
+    docId: z.uuid()
+});
+
+export const zStoreExternalDerivativeQuery = z.object({
+    sourceVersionNumber: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    format: z.enum([
+        'XML',
+        'JSON',
+        'PDF',
+        'EDI'
+    ]),
+    variantKey: z.string()
+});
+
+/**
+ * OK
+ */
+export const zStoreExternalDerivativeResponse = zDerivativeResponse;
 
 export const zListDerivativesPath = z.object({
     setId: z.uuid(),

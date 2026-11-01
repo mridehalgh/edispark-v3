@@ -16,6 +16,7 @@ import { InvitePage } from "@/components/auth/invite-page"
 import { JwtDebugPage } from "@/app/debug/jwt"
 import { MftPage } from "@/app/mft/mft"
 import { MftDocsPage } from "@/app/mft/docs"
+import { TradingNetworkPage } from "@/app/trading-network/trading-network"
 
 const AppLayout = () => (
     <div className="min-h-screen bg-background">
@@ -68,6 +69,10 @@ function ReactRouterComponent() {
           {
             path: "/mft/docs",
             element: <AuthGate><MftDocsPage /></AuthGate>,
+          },
+          {
+            path: "/trading-network",
+            element: <AuthGate><TradingNetworkPage /></AuthGate>,
           },
           {
             path: "/documents/:setId/:documentId",

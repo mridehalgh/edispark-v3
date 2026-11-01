@@ -42,6 +42,8 @@
 
 3.6 Manual resend SHALL create a new transfer linked to the original.
 
+3.7 An outbound transfer submitted by the Exchange domain SHALL retain immutable provenance for the exchange, agreement and revision, capability, source document, and mapping revision.
+
 ## 4. Evidence and operations
 
 4.1 Each transfer SHALL expose direction, status, partner, filename, size, hash, AS2 Message-ID, attempts, MDN result, certificate fingerprints, algorithms, and timestamps.

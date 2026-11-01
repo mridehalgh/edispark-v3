@@ -11,6 +11,16 @@ export const zTransferAttempt = z.object({
     detail: z.string().nullish()
 });
 
+export const zTransferProvenance = z.object({
+    exchangeId: z.uuid().optional(),
+    agreementId: z.uuid().optional(),
+    agreementRevision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    capabilityId: z.uuid().optional(),
+    documentSetId: z.uuid().optional(),
+    documentId: z.uuid().optional(),
+    mappingRevisionId: z.uuid().optional()
+});
+
 export const zTransferResponse = z.object({
     id: z.uuid().optional(),
     partnerId: z.uuid().optional(),
@@ -33,6 +43,7 @@ export const zTransferResponse = z.object({
     mdnDisposition: z.string().nullish(),
     failureReason: z.string().nullish(),
     resendOf: z.uuid().nullish(),
+    provenance: zTransferProvenance.optional(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
     attempts: z.array(zTransferAttempt).optional()
@@ -149,7 +160,14 @@ export const zSubmitMftTransferHeaders = z.object({
 });
 
 export const zSubmitMftTransferQuery = z.object({
-    partnerId: z.uuid()
+    partnerId: z.uuid(),
+    exchangeId: z.uuid().optional(),
+    agreementId: z.uuid().optional(),
+    agreementRevision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    capabilityId: z.uuid().optional(),
+    documentSetId: z.uuid().optional(),
+    documentId: z.uuid().optional(),
+    mappingRevisionId: z.uuid().optional()
 });
 
 /**

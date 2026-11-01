@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@edispark/documents-client": "workspace:*",
+    "@edispark/integration-client": "workspace:*",
     "@edispark/mft-client": "workspace:*",
     "@aws-sdk/client-kms": "^3.1094.0",
     "@better-auth/passkey": "1.6.23",

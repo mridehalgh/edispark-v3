@@ -111,7 +111,7 @@ This document defines the requirements for the Documents bounded context, a doma
 2. THE DocumentSet SHALL allow documents of different Document_Types within the same set.
 3. THE DocumentSet SHALL provide access to all documents and their current (latest) versions.
 4. WHEN adding a new version to a document, THE DocumentSet SHALL validate version number sequencing for that document.
-5. THE DocumentSet SHALL prevent duplicate derivatives (same source version and target format).
+5. THE DocumentSet SHALL prevent duplicate derivatives with the same source version, target format, and variant key while allowing partner- or mapping-specific variants of the same format.
 6. THE DocumentSet SHALL emit domain events when significant changes occur (document added, version added, derivative created).
 7. THE DocumentSet SHALL support adding new documents to an existing set.
 8. THE DocumentSet SHALL maintain relationships between documents (e.g., credit note references invoice).

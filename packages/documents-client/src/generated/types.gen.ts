@@ -77,6 +77,7 @@ export type DerivativeResponse = {
     targetFormat?: 'XML' | 'JSON' | 'PDF' | 'EDI';
     contentHash?: string;
     transformationMethod?: string;
+    variantKey?: string;
     createdAt?: string;
 };
 
@@ -389,6 +390,31 @@ export type ValidateDocumentVersionResponses = {
 };
 
 export type ValidateDocumentVersionResponse = ValidateDocumentVersionResponses[keyof ValidateDocumentVersionResponses];
+
+export type StoreExternalDerivativeData = {
+    body?: {
+        file: Blob | File;
+    };
+    path: {
+        setId: string;
+        docId: string;
+    };
+    query: {
+        sourceVersionNumber: number;
+        format: 'XML' | 'JSON' | 'PDF' | 'EDI';
+        variantKey: string;
+    };
+    url: '/api/document-sets/{setId}/documents/{docId}/external-derivatives';
+};
+
+export type StoreExternalDerivativeResponses = {
+    /**
+     * OK
+     */
+    200: DerivativeResponse;
+};
+
+export type StoreExternalDerivativeResponse = StoreExternalDerivativeResponses[keyof StoreExternalDerivativeResponses];
 
 export type ListDerivativesData = {
     body?: never;

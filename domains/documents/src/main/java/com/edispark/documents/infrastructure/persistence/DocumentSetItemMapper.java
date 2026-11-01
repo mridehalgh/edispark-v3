@@ -251,6 +251,7 @@ public final class DocumentSetItemMapper {
         item.put("contentHashAlgorithm", AttributeValue.builder().s(derivative.contentHash().algorithm()).build());
         item.put("contentHashValue", AttributeValue.builder().s(derivative.contentHash().hash()).build());
         item.put("transformationMethod", AttributeValue.builder().s(derivative.method().name()).build());
+        item.put("variantKey", AttributeValue.builder().s(derivative.variantKey()).build());
         item.put("createdAt", AttributeValue.builder().s(derivative.createdAt().toString()).build());
         
         item.put("entityType", AttributeValue.builder().s("DERIVATIVE").build());
@@ -274,7 +275,8 @@ public final class DocumentSetItemMapper {
         TransformationMethod method = TransformationMethod.valueOf(item.get("transformationMethod").s());
         Instant createdAt = Instant.parse(item.get("createdAt").s());
         
-        return Derivative.reconstitute(id, sourceVersionId, targetFormat, contentRef, contentHash, method, createdAt);
+        String variantKey = item.containsKey("variantKey") ? item.get("variantKey").s() : "default";
+        return Derivative.reconstitute(id, sourceVersionId, targetFormat, contentRef, contentHash, method, variantKey, createdAt);
     }
 
     // ========== Aggregate Reconstruction ==========

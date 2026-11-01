@@ -8,6 +8,7 @@
 - [x] 1.4 Add production DynamoDB metadata persistence and distributed worker leases
 - [ ] 1.5 Add S3 payload/evidence storage with tenant-bound SSE-KMS policy and retention
 - [x] 1.6 Add atomic global ownership for inbound AS2 identity pairs
+- [x] 1.8 Retain agreement, document, mapping, and exchange provenance on orchestrated transfers
 - [ ] 1.7 Add the central tenant-key registry, exact alias authorization, required encryption context, and tenant offboarding lifecycle
 
 ## 2. AS2 service

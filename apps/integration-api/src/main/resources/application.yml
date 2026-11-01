@@ -1,0 +1,39 @@
+server:
+  port: ${INTEGRATION_SERVER_PORT:8083}
+  error:
+    include-message: never
+spring:
+  application:
+    name: integration-api
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER:http://localhost:3000}
+          jwk-set-uri: ${AUTH_JWKS_URI:http://localhost:3000/api/auth/jwks}
+          jws-algorithms:
+            - ${AUTH_JWS_ALGORITHM:ES256}
+          audiences:
+            - ${AUTH_AUDIENCE:http://localhost:3000}
+integration:
+  aws:
+    region: ${AWS_REGION:eu-west-2}
+    metadata-table: ${INTEGRATION_METADATA_TABLE:}
+    event-bus: ${INTEGRATION_EVENT_BUS:}
+  documents-url: ${DOCUMENTS_API_URL:http://localhost:8080}
+  mft-url: ${MFT_API_URL:http://localhost:8081}
+  dependency-timeout: ${INTEGRATION_DEPENDENCY_TIMEOUT:30s}
+  local-demo:
+    enabled: ${INTEGRATION_LOCAL_DEMO_SEED_ENABLED:true}
+    tenant-id: ${LOCAL_SEED_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
+    mft-partner-id-file: ${MFT_LOCAL_DEMO_PARTNER_ID_FILE:../../.local/mft-demo-partner-id}
+springdoc:
+  api-docs:
+    path: /api-docs
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

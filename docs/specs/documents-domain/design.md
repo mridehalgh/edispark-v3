@@ -60,6 +60,7 @@ The module follows hexagonal architecture with clear separation between domain, 
 5. **Pluggable Validators**: Format-specific validators (XML/XSD, JSON/JSON Schema) injected at runtime.
 6. **Event-Driven**: Domain events emitted for all significant state changes.
 7. **DynamoDB Local for Development**: Uses DynamoDB Local JAR for local development and testing (no TestContainers).
+8. **Variant-aware derivatives**: Externally generated EDI representations include a bounded variant key (normally the immutable mapping revision) so one canonical document can retain distinct retailer-specific representations without collision.
 
 ## Components and Interfaces
 

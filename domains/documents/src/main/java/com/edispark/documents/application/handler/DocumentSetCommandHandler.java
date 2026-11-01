@@ -6,6 +6,7 @@ import com.edispark.documents.application.command.CreateDerivativeCommand;
 import com.edispark.documents.application.command.CreateDocumentSetCommand;
 import com.edispark.documents.application.command.StoreSourceDocumentCommand;
 import com.edispark.documents.application.command.ValidateDocumentCommand;
+import com.edispark.documents.application.command.StoreExternalDerivativeCommand;
 import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.ContentRef;
 import com.edispark.documents.domain.model.Derivative;
@@ -254,6 +255,21 @@ public class DocumentSetCommandHandler {
         // Persist
         documentSetRepository.save(documentSet);
 
+        return derivative;
+    }
+
+    public Derivative handle(StoreExternalDerivativeCommand command) {
+        DocumentSet documentSet = documentSetRepository.findById(command.documentSetId())
+                .orElseThrow(() -> new DocumentSetNotFoundException(command.documentSetId()));
+        Document document = documentSet.getDocument(command.documentId())
+                .orElseThrow(() -> new DocumentNotFoundException(command.documentSetId(), command.documentId()));
+        DocumentVersion sourceVersion = document.getVersion(command.sourceVersionNumber())
+                .orElseThrow(() -> new VersionNotFoundException(command.documentId(), command.sourceVersionNumber()));
+        contentStore.store(command.content());
+        Derivative derivative = documentSet.createDerivative(command.documentId(), sourceVersion.id(),
+                command.content().format(), ContentRef.of(command.content().hash()), command.content().hash(),
+                TransformationMethod.EXTERNAL_SERVICE, command.variantKey());
+        documentSetRepository.save(documentSet);
         return derivative;
     }
 

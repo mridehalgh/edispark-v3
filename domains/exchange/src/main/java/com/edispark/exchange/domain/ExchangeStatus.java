@@ -1,0 +1,6 @@
+package com.edispark.exchange.domain;
+
+public enum ExchangeStatus {
+    RECEIVED, RESOLVING, VALIDATING, SPLITTING, TRANSFORMING, STORING,
+    QUEUING_TRANSPORT, AWAITING_RECEIPT, DELIVERED, NEEDS_REVIEW, FAILED
+}

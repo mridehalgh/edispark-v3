@@ -64,6 +64,8 @@ public final class LocalMftDemoSeeder {
     private Path passwordFile;
     @Value("${mft.local-demo.partner-endpoint}")
     private URI partnerEndpoint;
+    @Value("${mft.local-demo.partner-id-file}")
+    private Path partnerIdFile;
 
     @EventListener(ApplicationReadyEvent.class)
     @Order(20)
@@ -77,6 +79,7 @@ public final class LocalMftDemoSeeder {
             if (partner == null) {
                 partner = createPartner();
             }
+            writePartnerId(partner);
             reconcileTransfers(partner);
             log.info("MFT demo ready for tenant {}; workspace totals: {} partner(s), {} certificate(s), {} transfer(s)",
                     tenantId,
@@ -85,6 +88,12 @@ public final class LocalMftDemoSeeder {
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to seed the local MFT demo", exception);
         }
+    }
+
+    private void writePartnerId(PartnerProfile partner) throws IOException {
+        Path parent = partnerIdFile.toAbsolutePath().getParent();
+        if (parent != null) Files.createDirectories(parent);
+        Files.writeString(partnerIdFile, partner.id().toString(), StandardCharsets.US_ASCII);
     }
 
     private PartnerProfile findDemoPartner() {

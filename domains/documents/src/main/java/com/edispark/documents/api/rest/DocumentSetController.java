@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -45,6 +47,7 @@ import com.edispark.documents.application.command.AddVersionCommand;
 import com.edispark.documents.application.command.CreateDerivativeCommand;
 import com.edispark.documents.application.command.CreateDocumentSetCommand;
 import com.edispark.documents.application.command.ValidateDocumentCommand;
+import com.edispark.documents.application.command.StoreExternalDerivativeCommand;
 import com.edispark.documents.application.handler.DocumentSetCommandHandler;
 import com.edispark.documents.application.handler.DocumentNotFoundException;
 import com.edispark.documents.application.handler.DocumentSetNotFoundException;
@@ -212,7 +215,7 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set not found")
     })
     public ResponseEntity<DocumentSetResponse> getDocumentSet(
-            @Parameter(description = "Document set UUID") @PathVariable UUID id) {
+            @Parameter(description = "Document set UUID") @PathVariable("id") UUID id) {
         DocumentSetId documentSetId = new DocumentSetId(id);
         
         DocumentSet documentSet = repository.findById(documentSetId)
@@ -243,7 +246,7 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set or schema not found")
     })
     public ResponseEntity<DocumentResponse> addDocument(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
             @Valid @RequestBody AddDocumentRequest request) {
         
         // Decode Base64 content
@@ -301,8 +304,8 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set or document not found")
     })
     public ResponseEntity<DocumentResponse> getDocument(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId) {
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId) {
         
         DocumentSetId documentSetId = new DocumentSetId(setId);
         DocumentId documentId = new DocumentId(docId);
@@ -343,8 +346,8 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set or document not found")
     })
     public ResponseEntity<DocumentVersionResponse> addVersion(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId,
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId,
             @Valid @RequestBody AddVersionRequest request) {
         
         // Decode Base64 content
@@ -391,9 +394,9 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set, document, or version not found")
     })
     public ResponseEntity<DocumentVersionResponse> getVersion(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId,
-            @Parameter(description = "Version number (1-based)") @PathVariable int versionNumber) {
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId,
+            @Parameter(description = "Version number (1-based)") @PathVariable("versionNumber") int versionNumber) {
         
         DocumentSetId documentSetId = new DocumentSetId(setId);
         DocumentId documentId = new DocumentId(docId);
@@ -435,9 +438,9 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set, document, version, or content not found")
     })
     public ResponseEntity<byte[]> getVersionContent(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId,
-            @Parameter(description = "Version number (1-based)") @PathVariable int versionNumber) {
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId,
+            @Parameter(description = "Version number (1-based)") @PathVariable("versionNumber") int versionNumber) {
 
         RetrievedContent content = documentContentQueryService.getVersionContent(
                 new DocumentSetId(setId),
@@ -479,8 +482,8 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set, document, or version not found")
     })
     public ResponseEntity<DerivativeResponse> createDerivative(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId,
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId,
             @Valid @RequestBody CreateDerivativeRequest request) {
         
         // Build command
@@ -498,6 +501,21 @@ public class DocumentSetController {
         DerivativeResponse response = mapToDerivativeResponse(derivative);
         
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping(path = "/{setId}/documents/{docId}/external-derivatives", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(operationId = "storeExternalDerivative", summary = "Retain an externally generated derivative")
+    public ResponseEntity<DerivativeResponse> storeExternalDerivative(
+            @PathVariable("setId") UUID setId,
+            @PathVariable("docId") UUID docId,
+            @RequestParam("sourceVersionNumber") int sourceVersionNumber,
+            @RequestParam("format") Format format,
+            @RequestParam("variantKey") String variantKey,
+            @RequestParam("file") MultipartFile file) throws java.io.IOException {
+        Content content = Content.of(file.getInputStream().readAllBytes(), format);
+        Derivative derivative = commandHandler.handle(new StoreExternalDerivativeCommand(
+                new DocumentSetId(setId), new DocumentId(docId), sourceVersionNumber, content, variantKey));
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToDerivativeResponse(derivative));
     }
 
     /**
@@ -518,8 +536,8 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set or document not found")
     })
     public ResponseEntity<List<DerivativeResponse>> getDerivatives(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId) {
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId) {
         
         DocumentSetId documentSetId = new DocumentSetId(setId);
         DocumentId documentId = new DocumentId(docId);
@@ -559,9 +577,9 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set, document, derivative, or content not found")
     })
     public ResponseEntity<byte[]> getDerivativeContent(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId,
-            @Parameter(description = "Derivative UUID") @PathVariable UUID derivativeId) {
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId,
+            @Parameter(description = "Derivative UUID") @PathVariable("derivativeId") UUID derivativeId) {
 
         RetrievedContent content = documentContentQueryService.getDerivativeContent(
                 new DocumentSetId(setId),
@@ -612,9 +630,9 @@ public class DocumentSetController {
         @ApiResponse(responseCode = "404", description = "Document set, document, or version not found")
     })
     public ResponseEntity<ValidationResultResponse> validateDocument(
-            @Parameter(description = "Document set UUID") @PathVariable UUID setId,
-            @Parameter(description = "Document UUID") @PathVariable UUID docId,
-            @Parameter(description = "Version number (1-based)") @PathVariable int versionNumber) {
+            @Parameter(description = "Document set UUID") @PathVariable("setId") UUID setId,
+            @Parameter(description = "Document UUID") @PathVariable("docId") UUID docId,
+            @Parameter(description = "Version number (1-based)") @PathVariable("versionNumber") int versionNumber) {
         
         // Build command
         ValidateDocumentCommand command = ValidateDocumentCommand.of(
@@ -696,6 +714,7 @@ public class DocumentSetController {
                         derivative.targetFormat(),
                         derivative.contentHash().toFullString(),
                         derivative.method().name(),
+                        derivative.variantKey(),
                         derivative.createdAt()
                 ))
                 .toList();
@@ -743,6 +762,7 @@ public class DocumentSetController {
                 derivative.targetFormat(),
                 derivative.contentHash().toFullString(),
                 derivative.method().name(),
+                derivative.variantKey(),
                 derivative.createdAt()
         );
     }

@@ -22,11 +22,13 @@ export async function localEnvironment() {
     LOCAL_TEST_USER_NAME: process.env.LOCAL_TEST_USER_NAME ?? "Local Tester",
     DOCUMENTS_API_URL: process.env.DOCUMENTS_API_URL ?? "http://localhost:8080",
     MFT_API_URL: process.env.MFT_API_URL ?? "http://localhost:8081",
+    INTEGRATION_API_URL: process.env.INTEGRATION_API_URL ?? "http://localhost:8083",
     AS2_SIMULATOR_URL: process.env.AS2_SIMULATOR_URL ?? "http://localhost:8082",
     MFT_ALLOW_PRIVATE_NETWORKS: process.env.MFT_ALLOW_PRIVATE_NETWORKS ?? "true",
     LOCAL_SEED_TENANT_ID: process.env.LOCAL_SEED_TENANT_ID ?? seedTenantId,
     DYNAMODB_LOCAL_DATA_DIR: process.env.DYNAMODB_LOCAL_DATA_DIR ?? resolve(localDirectory, "dynamodb"),
     DYNAMODB_LOCAL_EMBEDDED: process.env.DYNAMODB_LOCAL_EMBEDDED ?? "true",
+    MFT_LOCAL_DEMO_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-partner-id"),
     SPRING_PROFILES_ACTIVE: process.env.SPRING_PROFILES_ACTIVE ?? "local",
   }
 }

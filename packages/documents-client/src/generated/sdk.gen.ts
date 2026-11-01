@@ -2,10 +2,10 @@
 
 import * as z from 'zod';
 
-import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
+import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
-import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
+import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, StoreExternalDerivativeData, StoreExternalDerivativeResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
+import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zStoreExternalDerivativeBody, zStoreExternalDerivativePath, zStoreExternalDerivativeQuery, zStoreExternalDerivativeResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 class HeyApiClient {
     protected client: Client;
-    
+
     constructor(args?: {
         client?: Client;
     }) {
@@ -213,6 +213,28 @@ export class DocumentsClient extends HeyApiClient {
         });
     }
     
+    /**
+     * Retain an externally generated derivative
+     */
+    public storeExternalDerivative<ThrowOnError extends boolean = false>(options: Options<StoreExternalDerivativeData, ThrowOnError>): RequestResult<StoreExternalDerivativeResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<StoreExternalDerivativeResponses, unknown, ThrowOnError>({
+            ...formDataBodySerializer,
+            requestValidator: async (data) => await z.object({
+                body: zStoreExternalDerivativeBody.optional(),
+                path: zStoreExternalDerivativePath,
+                query: zStoreExternalDerivativeQuery
+            }).parseAsync(data),
+            responseValidator: async (data) => await zStoreExternalDerivativeResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/document-sets/{setId}/documents/{docId}/external-derivatives',
+            ...options,
+            headers: {
+                'Content-Type': null,
+                ...options.headers
+            }
+        });
+    }
+
     /**
      * Get all derivatives
      *

@@ -22,6 +22,7 @@ public record TransferResponse(
         @Schema(nullable = true) String mdnDisposition,
         @Schema(nullable = true) String failureReason,
         @Schema(nullable = true) UUID resendOf,
+        @Schema(nullable = true) com.edispark.mft.domain.model.TransferProvenance provenance,
         Instant createdAt,
         Instant updatedAt,
         List<TransferAttempt> attempts) {
@@ -31,7 +32,7 @@ public record TransferResponse(
                 transfer.filename(), transfer.contentType(), transfer.payload() == null ? 0 : transfer.payload().size(),
                 transfer.payload() == null ? null : transfer.payload().sha256(), transfer.as2MessageId(),
                 transfer.mdnDisposition(), transfer.failureReason(),
-                transfer.resendOf() == null ? null : transfer.resendOf().value(), transfer.createdAt(),
+                transfer.resendOf() == null ? null : transfer.resendOf().value(), transfer.provenance(), transfer.createdAt(),
                 transfer.updatedAt(), transfer.attempts());
     }
 }

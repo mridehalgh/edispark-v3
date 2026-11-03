@@ -129,6 +129,8 @@ The local runner supplies safe defaults; copying an environment file is not requ
 | `LOCAL_TEST_USER_BOOTSTRAP` | `true` from the local runner | Provisions the documented local test account |
 | `LOCAL_TEST_USER_EMAIL` | `local@edispark.test` | Local test-account email |
 | `LOCAL_TEST_USER_PASSWORD` | `EdiSpark-Local-2026!` | Local-only predictable test password |
+| `LOCAL_MEMBER_USER_EMAIL` | `operations@edispark.test` | Local operations persona |
+| `LOCAL_MEMBER_USER_PASSWORD` | `EdiSpark-Member-2026!` | Local-only operations password |
 | `DOCUMENTS_API_URL` | `http://localhost:8080` | Server-only API URL used by Next.js |
 | `MFT_API_URL` | `http://localhost:8081` | Server-only MFT API URL used by Next.js |
 | `AS2_SIMULATOR_URL` | `http://localhost:8082` | Server-only local simulator URL used by the development BFF |

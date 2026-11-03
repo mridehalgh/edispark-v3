@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     return Response.json({ error: { code: 'INVALID_DOCUMENT_ID', message: 'The document identifiers are invalid.' } }, { status: 400 })
   }
   try {
-    const client = await createAuthenticatedIntegrationClient(request)
+    const client = await createAuthenticatedIntegrationClient(request, 'member')
     const { data } = await client.listEligibleExchangeRoutes({
       query: { documentSetId, documentId },
       throwOnError: true,

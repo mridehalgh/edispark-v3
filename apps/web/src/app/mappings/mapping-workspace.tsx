@@ -128,7 +128,7 @@ export function MappingWorkspacePage() {
     try {
       setBusy(true)
       const revision = await readApi<MappingRevision>(`/api/integration/mappings/${mappingId}/revisions`, { method: 'POST' })
-      navigate(`/mappings/${revision.id}`)
+      navigate(`/settings/mappings/${revision.id}`)
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'A new revision could not be created.') } finally { setBusy(false) }
   }
 
@@ -137,7 +137,7 @@ export function MappingWorkspacePage() {
   return <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-muted/20">
     <header className="sticky top-16 z-10 border-b bg-background">
       <div className="flex min-h-16 flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        <Button asChild variant="ghost" size="icon"><Link to="/mappings" aria-label="Back to mappings"><ArrowLeft className="h-4 w-4" /></Link></Button>
+        <Button asChild variant="ghost" size="icon"><Link to="/settings/mappings" aria-label="Back to mappings"><ArrowLeft className="h-4 w-4" /></Link></Button>
         <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h1 className="truncate text-lg font-semibold">{mapping?.name ?? 'Mapping unavailable'}</h1><Badge variant="secondary">r{mapping?.revision ?? 1}</Badge><Badge className={cn('border-0', mapping?.status === 'PUBLISHED' ? 'bg-success/30 text-success-foreground' : 'bg-muted text-foreground')}>{mapping?.status?.toLowerCase()}</Badge>{mapping?.scope === 'GLOBAL' && <Badge variant="outline" className="gap-1 border-primary/30 text-primary"><Globe2 className="h-3 w-3" />{mapping.vendor} default</Badge>}</div><p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{mapping?.sourceSchemaId} <span aria-hidden="true">→</span> {mapping?.targetSchemaId}</p></div>
         <div className="flex flex-wrap items-center justify-end gap-2">{mapping?.sample && <Button variant="outline" size="sm" onClick={() => { setSampleOpen((value) => !value); setTestOpen(false) }} className="gap-2"><BookOpen className="h-4 w-4" />Samples</Button>}<Button variant="outline" size="sm" onClick={() => { setTestOpen((value) => !value); setSampleOpen(false) }} className="gap-2"><Beaker className="h-4 w-4" />Test</Button>{editable ? <><span className="hidden text-xs text-muted-foreground sm:inline" role="status">{dirty ? 'Unsaved changes' : 'Draft saved'}</span><Button size="sm" onClick={() => void save()} disabled={busy || !dirty || nodes.length === 0} className="gap-2"><Save className="h-4 w-4" />Save draft</Button></> : <Button size="sm" onClick={() => void revise()} disabled={busy} className="gap-2"><History className="h-4 w-4" />{mapping?.scope === 'GLOBAL' ? 'Use as starting point' : 'Create new revision'}</Button>}</div>
       </div>

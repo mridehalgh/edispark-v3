@@ -44,10 +44,6 @@ function StatusBadge({ status }: { status?: TransferResponse["status"] }) {
   return <Badge className={cn("gap-1.5 border-0 font-medium", needsAttention && "bg-destructive/10 text-destructive", delivered && "bg-success/30 text-success-foreground", waiting && "bg-warning/25 text-warning-foreground", !needsAttention && !delivered && !waiting && "bg-primary/10 text-primary")}><Icon className="h-3 w-3" aria-hidden="true" />{status ? STATUS_LABELS[status] : "Unknown"}</Badge>
 }
 
-function SummaryItem({ label, value, note, warning = false }: { label: string; value: number; note: string; warning?: boolean }) {
-  return <div className="min-w-0 border-b px-4 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0"><div className="flex items-baseline justify-between gap-4"><span className="text-sm font-medium text-muted-foreground">{label}</span>{warning && value > 0 && <CircleAlert className="h-4 w-4 text-destructive" aria-label="Action required" />}</div><p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</p><p className="mt-0.5 text-xs text-muted-foreground">{note}</p></div>
-}
-
 function EmptyState({ title, children }: { title: string; children: React.ReactNode }) {
   return <div className="px-6 py-12 text-center"><h3 className="text-sm font-semibold">{title}</h3><p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted-foreground">{children}</p></div>
 }
@@ -85,14 +81,9 @@ export function MftPage() {
     return () => window.removeEventListener(LOCAL_MFT_SIMULATOR_EVENT, handleSimulatorUpdate)
   }, [refresh])
 
-  const metrics = useMemo(() => ({
-    total: state.transfers.length,
-    delivered: state.transfers.filter(({ status }) => status === "DELIVERED").length,
-    review: state.transfers.filter(({ status }) => status === "NEEDS_REVIEW" || status === "FAILED").length
-      + state.mdnDeliveries.filter(({ status }) => status === "FAILED").length,
-    pending: state.transfers.filter(({ status }) => status === "AWAITING_MDN" || status === "PROCESSING" || status === "QUEUED").length,
-  }), [state.transfers, state.mdnDeliveries])
   const partnerNames = useMemo(() => new Map(state.partners.map((partner) => [partner.id, partner.name])), [state.partners])
+  const attentionCount = state.transfers.filter(({ status }) => status === "NEEDS_REVIEW" || status === "FAILED").length
+    + state.mdnDeliveries.filter(({ status }) => status === "FAILED").length
   const identityCertificates = state.certificates.filter((item) => item.kind === "LOCAL_IDENTITY")
   const partnerCertificates = state.certificates.filter((item) => item.kind === "PARTNER_PUBLIC")
   const activePartners = state.partners.filter((item) => item.status === "ACTIVE" || item.status === undefined)
@@ -242,15 +233,13 @@ export function MftPage() {
 
   return <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
     <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><h1 className="text-2xl font-semibold tracking-tight">File exchange</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Send files and monitor secure exchanges with your trading partners.</p></div>
-      <div className="flex flex-wrap gap-2 self-start"><Button asChild variant="outline" className="gap-2"><Link to="/mft/docs"><BookOpen className="h-4 w-4" aria-hidden="true" />Setup guide</Link></Button><Button variant="outline" size="icon" onClick={() => void refresh()} disabled={loading} aria-label="Refresh file exchange data"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button><Button className="gap-2" onClick={openSendForm} disabled={activePartners.length === 0}><FileUp className="h-4 w-4" aria-hidden="true" />Send file</Button></div>
+      <h1 className="text-2xl font-semibold tracking-tight">Transport</h1>
+      <div className="flex flex-wrap gap-2 self-start"><Button asChild variant="outline" className="gap-2"><Link to="/settings/connections/guide"><BookOpen className="h-4 w-4" aria-hidden="true" />Guide</Link></Button><Button variant="outline" size="icon" onClick={() => void refresh()} disabled={loading} aria-label="Refresh transport"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button><Button className="gap-2" onClick={openSendForm} disabled={activePartners.length === 0}><FileUp className="h-4 w-4" aria-hidden="true" />Test file</Button></div>
     </header>
 
     {error && <div role="alert" className="mb-4 flex gap-3 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>{error}</span></div>}
     {notice && <div role="status" className="mb-4 flex gap-3 rounded-md bg-success/25 px-4 py-3 text-sm text-success-foreground"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span>{notice}</span></div>}
-    {metrics.review > 0 && <div className="mb-4 flex flex-col justify-between gap-3 rounded-md border border-destructive/25 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center" role="status"><div className="flex gap-3"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" /><div><p className="text-sm font-medium">{metrics.review} {metrics.review === 1 ? "delivery needs" : "deliveries need"} attention</p><p className="mt-0.5 text-xs text-muted-foreground">Open the activity list to review failed files or receipts before trying again.</p></div></div><Button variant="outline" size="sm" onClick={() => setSection("activity")}>Review activity</Button></div>}
-
-    <section aria-label="Exchange summary" className="mb-6 grid overflow-hidden rounded-lg border bg-card sm:grid-cols-4"><SummaryItem label="All exchanges" value={metrics.total} note="In this workspace" /><SummaryItem label="Delivered" value={metrics.delivered} note="Receipt confirmed" /><SummaryItem label="Needs attention" value={metrics.review} note="Action may be required" warning /><SummaryItem label="In progress" value={metrics.pending} note="Sending or awaiting receipt" /></section>
+    {attentionCount > 0 && <div className="mb-4 flex flex-col justify-between gap-3 rounded-md border border-destructive/25 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center" role="status"><div className="flex items-center gap-3"><AlertTriangle className="h-4 w-4 shrink-0 text-destructive" aria-hidden="true" /><p className="text-sm font-medium">{attentionCount} {attentionCount === 1 ? "delivery needs" : "deliveries need"} attention</p></div><Button variant="outline" size="sm" onClick={() => setSection("activity")}>Review activity</Button></div>}
 
     <Tabs value={section} onValueChange={(value) => setSection(value as MftSection)} className="space-y-4">
       <TabsList aria-label="File exchange sections"><TabsTrigger value="activity">Activity</TabsTrigger><TabsTrigger value="partners">Trading partners</TabsTrigger><TabsTrigger value="certificates">Certificates</TabsTrigger></TabsList>

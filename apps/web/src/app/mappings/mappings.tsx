@@ -60,7 +60,7 @@ export function MappingsPage() {
           nodes: [{ id: crypto.randomUUID(), operation: 'COPY', sourcePointers: ['/document/id'], targetPointer: '/document/id' }],
         }),
       })
-      navigate(`/mappings/${mapping.id}`)
+      navigate(`/settings/mappings/${mapping.id}`)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'The mapping could not be created.')
     } finally {
@@ -70,14 +70,14 @@ export function MappingsPage() {
 
   return <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
     <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><h1 className="text-2xl font-semibold tracking-tight">Mappings</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">Transform canonical business documents into each partner’s required shape, test with representative data, and publish immutable revisions.</p></div>
+      <h1 className="text-2xl font-semibold tracking-tight">Mappings</h1>
       <Button onClick={() => setCreating((value) => !value)} className="gap-2"><Plus className="h-4 w-4" />New mapping</Button>
     </header>
 
     {error && <div role="alert" className="mb-4 flex gap-3 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive"><CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />{error}</div>}
 
     {creating && <section className="mb-5 border-y bg-muted/25 py-5" aria-labelledby="new-mapping-title">
-      <div className="mb-4"><h2 id="new-mapping-title" className="text-base font-semibold">Create a mapping draft</h2><p className="mt-0.5 text-sm text-muted-foreground">Start with the source and target schemas. You will define fields in the mapping workspace.</p></div>
+      <h2 id="new-mapping-title" className="mb-4 text-base font-semibold">New mapping</h2>
       <form onSubmit={createMapping} className="grid gap-4 lg:grid-cols-[1.5fr_1fr_1fr_auto]">
         <label className="grid gap-1.5 text-sm font-medium">Mapping name<Input name="name" required placeholder="UBL order to retailer order" autoFocus /></label>
         <label className="grid gap-1.5 text-sm font-medium">Source schema<select name="sourceSchemaId" required className="h-10 rounded-md border bg-background px-3 font-mono text-xs"><option value="">Choose schema…</option>{schemaCatalog.map((id) => <option key={id} value={id}>{id}</option>)}</select></label>
@@ -88,7 +88,7 @@ export function MappingsPage() {
 
     <section className="overflow-hidden rounded-lg border bg-card" aria-labelledby="mapping-list-title">
       <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div><h2 id="mapping-list-title" className="text-base font-semibold">Mapping library</h2><p className="mt-0.5 text-xs text-muted-foreground">Start with an EdiSpark global mapping or manage a tenant-specific revision. Published revisions remain available for historical exchanges.</p></div>
+        <h2 id="mapping-list-title" className="text-base font-semibold">All mappings</h2>
         <label className="relative sm:w-64"><span className="sr-only">Search mappings</span><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search mappings…" className="h-9 pl-9" /></label>
       </div>
       <div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[52rem] text-left text-sm"><thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr><th className="px-4 py-2.5 font-medium">Mapping</th><th className="px-4 py-2.5 font-medium">Revision</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium">Operations</th><th className="px-4 py-2.5 font-medium">Published</th><th className="px-4 py-2.5"><span className="sr-only">Open</span></th></tr></thead><tbody className="divide-y">{visible.map((mapping) => <tr key={mapping.id} className="hover:bg-muted/35"><td className="px-4 py-3"><div className="flex flex-wrap items-center gap-2"><FileCode2 className="h-4 w-4 text-primary" /><span className="font-medium">{mapping.name}</span>{mapping.scope === 'GLOBAL' && <Badge variant="outline" className="gap-1 border-primary/30 text-primary"><Globe2 className="h-3 w-3" />{mapping.vendor} default</Badge>}</div><p className="mt-1 font-mono text-xs text-muted-foreground">{mapping.sourceSchemaId?.slice(0, 8)}… → {mapping.targetSchemaId?.slice(0, 8)}…</p></td><td className="px-4 py-3 tabular-nums">r{mapping.revision ?? 1}</td><td className="px-4 py-3"><MappingStatus status={mapping.status} /></td><td className="px-4 py-3 tabular-nums">{mapping.nodes?.length ?? 0}</td><td className="px-4 py-3 text-xs text-muted-foreground">{mapping.publishedAt ? new Date(mapping.publishedAt).toLocaleDateString('en-GB') : 'Not published'}</td><td className="px-4 py-3 text-right"><Button asChild size="sm" variant="ghost"><Link to={`/mappings/${mapping.id}`}>{mapping.status === 'DRAFT' ? 'Continue editing' : 'View mapping'}<ArrowRight className="ml-2 h-4 w-4" /></Link></Button></td></tr>)}</tbody></table></div>

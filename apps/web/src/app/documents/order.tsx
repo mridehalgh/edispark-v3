@@ -4,10 +4,8 @@ import { useEffect, useState } from "react"
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowRight,
   Building2,
   CalendarDays,
-  FileCode2,
   MapPin,
   PackageOpen,
   RefreshCw,
@@ -17,6 +15,7 @@ import { Link, useParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
 import { SendDocument } from "@/components/documents/send-document"
+import { DocumentTechnicalDetails } from "@/components/documents/document-technical-details"
 import { Button } from "@/components/ui/button"
 import {
   getDerivativeContent,
@@ -260,7 +259,6 @@ export function OrderDocumentPage() {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-primary">Purchase order</span>
-            {representation && <span className="text-xs text-muted-foreground">{representation}</span>}
           </div>
           <h1 className="mt-3 text-2xl font-semibold tracking-tight">{order.id}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -449,21 +447,7 @@ export function OrderDocumentPage() {
         )}
       </div>
 
-      <footer className="flex flex-col gap-3 border-t py-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <FileCode2 className="h-4 w-4" aria-hidden="true" />
-          <span>
-            UBL {order.ublVersion ?? "version not supplied"}
-            {order.profileId ? ` · ${order.profileId}` : ""}
-          </span>
-        </div>
-        {setId && (
-          <Link to={`/file/${setId}`} className="inline-flex min-h-11 items-center gap-1.5 font-medium text-primary hover:underline">
-            Inspect source file
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        )}
-      </footer>
+      <DocumentTechnicalDetails setId={setId} ublVersion={order.ublVersion} profileId={order.profileId} representation={representation} />
     </LayoutBody>
   )
 }

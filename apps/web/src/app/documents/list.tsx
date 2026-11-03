@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { ArrowRight, FileText, RefreshCw, Search } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import type { ExchangeResponse } from "@edispark/integration-client"
+import { ArrowRight, CheckCircle2, CircleAlert, Clock3, FileText, RefreshCw, Search } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
@@ -20,6 +21,7 @@ interface BusinessDocumentSummary {
   direction?: string
   standard?: string
   createdAt?: string
+  status?: string
 }
 
 const supportedDocumentTypes = new Set<SupportedDocumentType>(["ORDER", "INVOICE"])
@@ -29,8 +31,7 @@ function documentLabel(type: SupportedDocumentType) {
 }
 
 function documentHref(document: BusinessDocumentSummary) {
-  const suffix = document.type === "INVOICE" ? "/invoice" : ""
-  return `/documents/${document.setId}/${document.documentId}${suffix}`
+  return `/documents/${document.setId}/${document.documentId}`
 }
 
 function formatDate(value?: string) {
@@ -44,6 +45,7 @@ function formatDate(value?: string) {
 export function DocumentsList() {
   const [searchParams] = useSearchParams()
   const [query, setQuery] = useState(searchParams.get("q") ?? "")
+  const [exchanges, setExchanges] = useState<ExchangeResponse[]>([])
   const {
     documentSets,
     error,
@@ -53,6 +55,27 @@ export function DocumentsList() {
     loadNextPage,
     reload,
   } = useDocumentSets()
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void fetch("/api/integration/exchanges", { cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() as Promise<ExchangeResponse[]> : [])
+      .then(setExchanges)
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [])
+
+  const exchangeByDocument = useMemo(() => {
+    const index = new Map<string, ExchangeResponse>()
+    exchanges.forEach((exchange) => {
+      const source = exchange.sourceDocument
+      if (!source?.documentSetId || !source.documentId) return
+      const key = `${source.documentSetId}:${source.documentId}`
+      const current = index.get(key)
+      if (!current || (exchange.updatedAt ?? "") > (current.updatedAt ?? "")) index.set(key, exchange)
+    })
+    return index
+  }, [exchanges])
 
   const documents = useMemo(() => documentSets.flatMap((documentSet): BusinessDocumentSummary[] => {
     if (!documentSet.id) return []
@@ -69,9 +92,10 @@ export function DocumentsList() {
         direction: metadata.direction,
         standard: metadata.standard ?? metadata.sourceStandard,
         createdAt: documentSet.createdAt,
+        status: exchangeByDocument.get(`${documentSet.id}:${document.id}`)?.status,
       }]
     })
-  }), [documentSets])
+  }), [documentSets, exchangeByDocument])
 
   const visibleDocuments = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -82,16 +106,14 @@ export function DocumentsList() {
       document.name,
       document.direction,
       document.standard,
+      document.status,
     ].some((value) => value?.toLowerCase().includes(normalized)))
   }, [documents, query])
 
   return (
     <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-      <header className="mb-7">
+      <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Review business documents in the same familiar form used by your operations team.
-        </p>
       </header>
 
       <label className="relative mb-4 block w-full sm:max-w-lg">
@@ -103,7 +125,7 @@ export function DocumentsList() {
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search reference, document type, name, or standard…"
+          placeholder="Search documents"
           className="pl-9"
         />
       </label>
@@ -120,10 +142,7 @@ export function DocumentsList() {
 
       <section aria-labelledby="documents-title" className="overflow-hidden rounded-lg border bg-card">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <div>
-            <h2 id="documents-title" className="text-sm font-semibold">Business documents</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Orders and invoices rendered from their UBL representation.</p>
-          </div>
+          <h2 id="documents-title" className="text-sm font-semibold">All documents</h2>
           <span className="text-xs tabular-nums text-muted-foreground">{visibleDocuments.length} shown</span>
         </div>
 
@@ -147,7 +166,7 @@ export function DocumentsList() {
                     <th scope="col" className="px-4 py-2.5 font-medium">Document</th>
                     <th scope="col" className="px-4 py-2.5 font-medium">Type</th>
                     <th scope="col" className="px-4 py-2.5 font-medium">Direction</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Source</th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">Status</th>
                     <th scope="col" className="px-4 py-2.5 font-medium">Received</th>
                     <th scope="col" className="px-4 py-2.5"><span className="sr-only">Action</span></th>
                   </tr>
@@ -163,7 +182,7 @@ export function DocumentsList() {
                       <td className="px-4 py-3 text-muted-foreground">
                         {document.direction ? document.direction.toLowerCase().replace(/^./, (letter) => letter.toUpperCase()) : "Not recorded"}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{document.standard ?? "Not recorded"}</td>
+                      <td className="px-4 py-3"><DocumentExchangeStatus status={document.status} /></td>
                       <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDate(document.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
                         <Link
@@ -192,8 +211,9 @@ export function DocumentsList() {
                     <span className="block truncate text-sm font-medium">{document.name}</span>
                     <span className="mt-1 block text-xs font-medium text-primary">{documentLabel(document.type)}</span>
                     <span className="mt-1 block font-mono text-xs text-muted-foreground">{document.reference}</span>
-                    <span className="mt-2 block text-xs text-muted-foreground">
-                      {document.direction ?? "Direction not recorded"} · {document.standard ?? "Standard not recorded"}
+                    <span className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      <span>{document.direction ?? "Direction not recorded"}</span>
+                      <DocumentExchangeStatus status={document.status} />
                     </span>
                     <span className="mt-1 block text-xs text-muted-foreground">{formatDate(document.createdAt)}</span>
                   </span>
@@ -224,4 +244,13 @@ export function DocumentsList() {
       </section>
     </LayoutBody>
   )
+}
+
+function DocumentExchangeStatus({ status }: { status?: string }) {
+  if (!status) return <span className="text-xs text-muted-foreground">Stored</span>
+  const failed = status === "FAILED" || status === "NEEDS_REVIEW"
+  const delivered = status === "DELIVERED"
+  const Icon = failed ? CircleAlert : delivered ? CheckCircle2 : Clock3
+  const label = failed ? "Needs attention" : delivered ? "Delivered" : "Sending"
+  return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${failed ? "text-destructive" : delivered ? "text-success-foreground" : "text-muted-foreground"}`}><Icon className="h-3.5 w-3.5" aria-hidden="true" />{label}</span>
 }

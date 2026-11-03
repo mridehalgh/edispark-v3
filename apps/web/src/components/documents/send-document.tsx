@@ -74,7 +74,7 @@ export function SendDocument({ documentSetId, documentId }: { documentSetId: str
     return (
       <div className={`mt-3 flex max-w-md items-start gap-2 rounded-md px-3 py-2 text-left text-xs ${needsAttention ? 'bg-destructive/10 text-destructive' : 'bg-success/25 text-success-foreground'}`} role="status">
         {needsAttention ? <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
-        <span>{needsAttention ? 'The exchange needs attention.' : 'Queued for secure AS2 delivery.'} <Link className="font-medium underline" to="/trading-network?tab=exchanges">View evidence</Link></span>
+        <span>{needsAttention ? 'The exchange needs attention.' : 'Queued for delivery.'}</span>
       </div>
     )
   }
@@ -92,10 +92,14 @@ export function SendDocument({ documentSetId, documentId }: { documentSetId: str
     return (
       <div className="mt-3 max-w-md rounded-md border bg-muted/35 p-3 text-left text-xs">
         <p className="font-medium">No qualified route is active</p>
-        <p className="mt-1 leading-5 text-muted-foreground">Publish a mapping and activate a matching agreement before sending.</p>
-        <Button asChild variant="link" size="sm" className="mt-1 h-auto gap-1 p-0"><Link to="/trading-network"><Settings2 className="h-3.5 w-3.5" />Configure trading network</Link></Button>
+        <p className="mt-1 leading-5 text-muted-foreground">Ask a workspace administrator to finish this partner connection.</p>
+        <Button asChild variant="link" size="sm" className="mt-1 h-auto gap-1 p-0"><Link to="/settings/connections"><Settings2 className="h-3.5 w-3.5" />Open connections</Link></Button>
       </div>
     )
+  }
+
+  if (routes.length === 1) {
+    return <div className="mt-3"><Button type="button" className="gap-2" onClick={() => void send()} disabled={sending}><Send className="h-4 w-4" aria-hidden="true" />{sending ? 'Queuing…' : 'Send to partner'}</Button>{error && <p className="mt-2 text-xs text-destructive" role="alert">{error}</p>}</div>
   }
 
   return (

@@ -43,7 +43,7 @@ const initials = (value: string) =>
     .slice(0, 2)
     .toUpperCase()
 
-export function OrganizationSettingsPage() {
+export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: boolean }) {
   const { data: activeOrganization, isPending } = authClient.useActiveOrganization()
   const { data: organizations, isPending: isOrganizationsPending } = authClient.useListOrganizations()
   const { data: session } = authClient.useSession()
@@ -113,15 +113,13 @@ export function OrganizationSettingsPage() {
     return <OrganizationPageSkeleton label={notice?.kind === "error" ? notice.text : "Preparing your workspace…"} />
   }
   if (!activeOrganization && organizationList.length > 1) return <Navigate to="/workspace" replace />
+  if (activeOrganization && setupOnly) return <Navigate to="/documents" replace />
   if (!activeOrganization) {
     return (
       <LayoutBody className="mx-auto w-full max-w-xl py-10">
         <section className="border bg-card p-6 sm:p-8" aria-labelledby="create-workspace-title">
           <Building2 className="h-8 w-8 text-primary" aria-hidden="true" />
           <h1 id="create-workspace-title" className="mt-5 text-2xl font-semibold tracking-tight">Create your workspace</h1>
-          <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-            Your workspace keeps retailer connections, EDI documents, and colleagues together in one secure place.
-          </p>
           <CreateOrganizationForm onSubmit={createOrganization} isCreating={isCreating} className="mt-6" />
         </section>
       </LayoutBody>
@@ -131,12 +129,7 @@ export function OrganizationSettingsPage() {
   return (
     <LayoutBody className="mx-auto w-full max-w-7xl py-8">
       <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Workspaces</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Switch between workspaces and manage the people and settings for each one.
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">Workspace</h1>
         <Button variant="outline" onClick={() => setIsAddingOrganization((open) => !open)} aria-expanded={isAddingOrganization}>
           {isAddingOrganization ? <X className="mr-2 h-4 w-4" aria-hidden="true" /> : <Plus className="mr-2 h-4 w-4" aria-hidden="true" />}
           {isAddingOrganization ? "Cancel" : "New workspace"}
@@ -159,9 +152,6 @@ export function OrganizationSettingsPage() {
         <section className="mt-6 border bg-muted/45 p-5 sm:p-6" aria-labelledby="new-workspace-title">
           <div className="max-w-2xl">
             <h2 id="new-workspace-title" className="text-base font-semibold">Create a separate workspace</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Use this for a different business or operating company. Your data and members remain separate.
-            </p>
             <CreateOrganizationForm onSubmit={createOrganization} isCreating={isCreating} className="mt-5" />
           </div>
         </section>
@@ -169,10 +159,7 @@ export function OrganizationSettingsPage() {
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
         <aside aria-labelledby="your-workspaces-title">
-          <div className="flex items-center justify-between px-1">
-            <h2 id="your-workspaces-title" className="text-sm font-semibold">Your workspaces</h2>
-            <span className="text-xs tabular-nums text-muted-foreground">{organizationList.length} of 5</span>
-          </div>
+          <h2 id="your-workspaces-title" className="px-1 text-sm font-semibold">Workspaces</h2>
           <div className="mt-2 overflow-hidden rounded-md border bg-card">
             {organizationList.map((organization) => {
               const isActive = organization.id === activeOrganization.id
@@ -196,18 +183,13 @@ export function OrganizationSettingsPage() {
                   </Avatar>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{organization.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {isSwitching ? "Switching…" : isActive ? "Current workspace" : organization.slug}
-                    </span>
+                    {isSwitching && <span className="block truncate text-xs text-muted-foreground">Switching…</span>}
                   </span>
                   {isActive ? <Check className="h-4 w-4 text-primary" aria-label="Selected" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
                 </button>
               )
             })}
           </div>
-          <p className="mt-3 px-1 text-xs leading-5 text-muted-foreground">
-            Switching changes the documents, connections, and people shown across EDI Spark.
-          </p>
         </aside>
 
         <main className="min-w-0">
@@ -219,10 +201,6 @@ export function OrganizationSettingsPage() {
             </Avatar>
             <div className="min-w-0">
               <h2 className="truncate text-lg font-semibold">{activeOrganization.name}</h2>
-              <p className="text-sm text-muted-foreground">
-                {activeOrganization.members.length} {activeOrganization.members.length === 1 ? "member" : "members"}
-                {role ? ` · You are ${role === "owner" ? "the owner" : `an ${role}`}` : ""}
-              </p>
             </div>
           </div>
 

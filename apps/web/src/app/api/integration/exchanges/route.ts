@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
-    const client = await createAuthenticatedIntegrationClient(request)
+    const client = await createAuthenticatedIntegrationClient(request, 'member')
     const { data } = await client.listExchanges({ throwOnError: true })
     return Response.json(data, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json() as SubmitExchangeRequest
-    const client = await createAuthenticatedIntegrationClient(request)
+    const client = await createAuthenticatedIntegrationClient(request, 'member')
     const { data } = await client.submitOutboundExchange({ body, throwOnError: true })
     return Response.json(data, { status: 202 })
   } catch (error) {

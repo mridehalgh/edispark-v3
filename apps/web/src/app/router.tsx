@@ -1,15 +1,13 @@
 'use client';
 
 import React from 'react';
-import {Outlet, RouterProvider, createBrowserRouter, useRouteError} from "react-router-dom";
-import Home from "@/app/page";
+import {Navigate, Outlet, RouterProvider, createBrowserRouter, useParams, useRouteError} from "react-router-dom";
 import Header from "@/components/layout/header";
 import {AccountSettingsPage} from "@/app/account/settings";
 import { FilesPage } from '@/app/files/files';
 import { FilesList } from './files/list';
 import { DocumentsList } from '@/app/documents/list';
-import { OrderDocumentPage } from '@/app/documents/order';
-import { InvoiceDocumentPage } from '@/app/documents/invoice';
+import { BusinessDocumentPage } from '@/app/documents/document';
 import { AuthGate, ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage, TwoFactorPage, WorkspaceSelectionPage } from "@/components/auth/auth-pages"
 import { OrganizationSettingsPage } from "@/app/organization/settings"
 import { InvitePage } from "@/components/auth/invite-page"
@@ -19,6 +17,9 @@ import { MftDocsPage } from "@/app/mft/docs"
 import { TradingNetworkPage } from "@/app/trading-network/trading-network"
 import { MappingsPage } from "@/app/mappings/mappings"
 import { MappingWorkspacePage } from "@/app/mappings/mapping-workspace"
+import { RequireOrganizationAdmin, RequirePlatformAdmin } from "@/components/auth/access-gates"
+import { SettingsNavigation } from "@/components/layout/settings-navigation"
+import { LayoutBody } from "@/components/layout/layout"
 
 const AppLayout = () => (
     <div className="min-h-screen bg-background">
@@ -31,6 +32,22 @@ const AppLayout = () => (
       </main>
     </div>
 );
+
+const SettingsLayout = () => <><SettingsNavigation /><Outlet /></>
+
+function LegacyMappingRedirect() {
+  const { mappingId } = useParams<{ mappingId: string }>()
+  return <Navigate to={mappingId ? `/settings/mappings/${mappingId}` : "/settings/mappings"} replace />
+}
+
+function LegacyInvoiceRedirect() {
+  const { setId, documentId } = useParams<{ setId: string; documentId: string }>()
+  return <Navigate to={`/documents/${setId}/${documentId}`} replace />
+}
+
+function PlatformBoundary() {
+  return <LayoutBody className="mx-auto w-full max-w-[96rem] py-8"><h1 className="text-2xl font-semibold tracking-tight">Platform</h1></LayoutBody>
+}
 
 function RouterError() {
   const error = useRouteError()
@@ -46,60 +63,61 @@ function ReactRouterComponent() {
         children: [
           {
             path: "/",
-            element: <AuthGate><Home /></AuthGate>,
+            element: <AuthGate><Navigate to="/documents" replace /></AuthGate>,
           },
           {
             path: "/account/settings",
             element: <AuthGate><AccountSettingsPage /></AuthGate>
           },
           {
-            path: "/file",
-            element: <AuthGate><FilesList /></AuthGate>,
-          },
-          {
-            path: "/file/:id",
-            element: <AuthGate><FilesPage /></AuthGate>,
-          },
-          {
             path: "/documents",
             element: <AuthGate><DocumentsList /></AuthGate>,
           },
           {
-            path: "/mft",
-            element: <AuthGate><MftPage /></AuthGate>,
-          },
-          {
-            path: "/mft/docs",
-            element: <AuthGate><MftDocsPage /></AuthGate>,
-          },
-          {
-            path: "/trading-network",
-            element: <AuthGate><TradingNetworkPage /></AuthGate>,
-          },
-          {
-            path: "/mappings",
-            element: <AuthGate><MappingsPage /></AuthGate>,
-          },
-          {
-            path: "/mappings/:mappingId",
-            element: <AuthGate><MappingWorkspacePage /></AuthGate>,
-          },
-          {
             path: "/documents/:setId/:documentId",
-            element: <AuthGate><OrderDocumentPage /></AuthGate>,
+            element: <AuthGate><BusinessDocumentPage /></AuthGate>,
           },
           {
             path: "/documents/:setId/:documentId/invoice",
-            element: <AuthGate><InvoiceDocumentPage /></AuthGate>,
+            element: <AuthGate><LegacyInvoiceRedirect /></AuthGate>,
           },
           {
-            path: "/organization",
-            element: <AuthGate><OrganizationSettingsPage /></AuthGate>,
+            path: "/workspace/setup",
+            element: <AuthGate><OrganizationSettingsPage setupOnly /></AuthGate>,
           },
           ...(process.env.NODE_ENV === "development" ? [{
             path: "/debug/jwt",
             element: <AuthGate><JwtDebugPage /></AuthGate>,
           }] : []),
+          {
+            element: <RequireOrganizationAdmin />,
+            children: [
+              { path: "/settings", element: <Navigate to="/settings/connections" replace /> },
+              {
+                element: <SettingsLayout />,
+                children: [
+                  { path: "/settings/connections", element: <TradingNetworkPage /> },
+                  { path: "/settings/connections/transport", element: <MftPage /> },
+                  { path: "/settings/mappings", element: <MappingsPage /> },
+                  { path: "/settings/workspace", element: <OrganizationSettingsPage /> },
+                ],
+              },
+              { path: "/settings/connections/guide", element: <MftDocsPage /> },
+              { path: "/settings/mappings/:mappingId", element: <MappingWorkspacePage /> },
+              { path: "/file", element: <FilesList /> },
+              { path: "/file/:id", element: <FilesPage /> },
+              { path: "/mft", element: <Navigate to="/settings/connections/transport" replace /> },
+              { path: "/mft/docs", element: <Navigate to="/settings/connections/guide" replace /> },
+              { path: "/trading-network", element: <Navigate to="/settings/connections" replace /> },
+              { path: "/mappings", element: <Navigate to="/settings/mappings" replace /> },
+              { path: "/mappings/:mappingId", element: <LegacyMappingRedirect /> },
+              { path: "/organization", element: <Navigate to="/settings/workspace" replace /> },
+            ],
+          },
+          {
+            element: <RequirePlatformAdmin />,
+            children: [{ path: "/platform", element: <PlatformBoundary /> }],
+          },
         ]
       },
       { path: "/sign-in", element: <SignInPage /> },

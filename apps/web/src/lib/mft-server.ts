@@ -2,7 +2,8 @@ import "server-only"
 
 import { MftClientError, createMftClient } from "@edispark/mft-client"
 
-import { auth } from "@/lib/auth"
+import { canManageOrganization } from "@/lib/access"
+import { auth, getRequestAccess } from "@/lib/auth"
 
 const DEFAULT_MFT_API_URL = "http://localhost:8081"
 
@@ -17,6 +18,10 @@ export async function createAuthenticatedMftClient(request: Request) {
   const authHeaders = request.headers
   const session = await auth.api.getSession({ headers: authHeaders })
   if (!session) throw new MftBffError(401, "UNAUTHENTICATED", "Sign in to access managed file transfer.")
+  const access = await getRequestAccess(authHeaders)
+  if (!access || !canManageOrganization(access.organizationRole)) {
+    throw new MftBffError(403, "FORBIDDEN", "Organization administrator access is required.")
+  }
 
   let tokenPromise: Promise<string> | undefined
   const accessToken = () => {

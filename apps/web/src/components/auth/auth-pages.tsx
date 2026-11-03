@@ -262,7 +262,7 @@ export function WorkspaceSelectionPage() {
 
   useEffect(() => {
     if (!isSessionPending && !session) navigate("/sign-in", { replace: true })
-    if (!isOrganizationsPending && organizationList.length === 0) navigate("/organization", { replace: true })
+    if (!isOrganizationsPending && organizationList.length === 0) navigate("/workspace/setup", { replace: true })
     if (!isOrganizationsPending && organizationList.length === 1) {
       authClient.organization.setActive({ organizationId: organizationList[0].id }).then((result) => {
         if (result.error) setError(result.error.message ?? "Unable to select your workspace.")

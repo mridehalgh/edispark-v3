@@ -11,6 +11,7 @@ import { dirname } from "node:path"
 
 import { sendTransactionalEmail } from "@/lib/email"
 import { createKmsJwtSigner, getRemoteJwtSigningConfig } from "@/lib/jwt-signing"
+import { isOrganizationRole, type AccessContext, type PlatformRole } from "@/lib/access"
 
 const databasePath = process.env.BETTER_AUTH_DATABASE_PATH ?? "auth.db"
 mkdirSync(dirname(databasePath), { recursive: true })
@@ -21,6 +22,16 @@ const BASE62_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrs
 const DEFAULT_LOCAL_SEED_TENANT_ID = "2OnHVzeAJKwm0ThFLcy1HfLHGPm"
 const LOCAL_TEST_ORGANIZATION_ID = "local-test-workspace"
 const LOCAL_TEST_MEMBER_ID = "local-test-owner"
+const LOCAL_OPERATIONS_MEMBER_ID = "local-test-operations"
+
+database.exec(`
+  CREATE TABLE IF NOT EXISTS platform_principal (
+    user_id TEXT PRIMARY KEY NOT NULL,
+    role TEXT NOT NULL CHECK (role = 'platform_admin'),
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+  )
+`)
 
 function encodeBase62(bytes: Buffer) {
   let value = BigInt(`0x${bytes.toString("hex")}`)
@@ -123,10 +134,26 @@ function defineJwtPayload({
     throw new Error("An active organization is required to issue a JWT")
   }
 
+  const userId = typeof user.id === "string" ? user.id : undefined
+  if (!userId) throw new Error("A user identifier is required to issue a JWT")
+
+  const membership = database.prepare(
+    "SELECT role FROM member WHERE organizationId = ? AND userId = ?",
+  ).get(organizationId, userId) as { role: string } | undefined
+  if (!membership || !isOrganizationRole(membership.role)) {
+    throw new Error("Active organization membership is required to issue a JWT")
+  }
+
+  const platformPrincipal = database.prepare(
+    "SELECT role FROM platform_principal WHERE user_id = ?",
+  ).get(userId) as { role: PlatformRole } | undefined
+
   return {
     ...user,
     organizationId,
     tenant_id: resolveTenantId(organizationId),
+    organization_role: membership.role,
+    ...(platformPrincipal ? { platform_role: platformPrincipal.role } : {}),
   }
 }
 
@@ -290,19 +317,16 @@ async function prepareLocalAuth() {
 
   if (process.env.LOCAL_TEST_USER_BOOTSTRAP !== "true") return
 
-  const email = process.env.LOCAL_TEST_USER_EMAIL
-  const password = process.env.LOCAL_TEST_USER_PASSWORD
-  const name = process.env.LOCAL_TEST_USER_NAME ?? "Local Tester"
-  if (!email || !password) throw new Error("Local test-user credentials are not configured")
-
-  const existingUser = database.prepare("SELECT id FROM user WHERE email = ?").get(email) as { id: string } | undefined
-  if (!existingUser) {
-    await auth.api.signUpEmail({ body: { email, password, name } })
-  }
-  database.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(email)
-
-  const user = database.prepare("SELECT id FROM user WHERE email = ?").get(email) as { id: string } | undefined
-  if (!user) throw new Error("Unable to provision the local test user")
+  const owner = await ensureLocalUser(
+    process.env.LOCAL_TEST_USER_EMAIL,
+    process.env.LOCAL_TEST_USER_PASSWORD,
+    process.env.LOCAL_TEST_USER_NAME ?? "Local Tester",
+  )
+  const operations = await ensureLocalUser(
+    process.env.LOCAL_MEMBER_USER_EMAIL,
+    process.env.LOCAL_MEMBER_USER_PASSWORD,
+    process.env.LOCAL_MEMBER_USER_NAME ?? "Operations User",
+  )
 
   const createdAt = new Date().toISOString()
   database.prepare(`
@@ -312,16 +336,30 @@ async function prepareLocalAuth() {
   database.prepare(`
     INSERT OR IGNORE INTO member (id, organizationId, userId, role, createdAt)
     VALUES (?, ?, ?, ?, ?)
-  `).run(LOCAL_TEST_MEMBER_ID, LOCAL_TEST_ORGANIZATION_ID, user.id, "owner", createdAt)
+  `).run(LOCAL_TEST_MEMBER_ID, LOCAL_TEST_ORGANIZATION_ID, owner.id, "owner", createdAt)
+  database.prepare(`
+    INSERT INTO member (id, organizationId, userId, role, createdAt)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET role = excluded.role
+  `).run(LOCAL_OPERATIONS_MEMBER_ID, LOCAL_TEST_ORGANIZATION_ID, operations.id, "member", createdAt)
   ensureLocalOrganizationTenantMapping()
 }
 
-export function activateLocalTestWorkspace() {
+async function ensureLocalUser(email: string | undefined, password: string | undefined, name: string) {
+  if (!email || !password) throw new Error("Local test-user credentials are not configured")
+  const existing = database.prepare("SELECT id FROM user WHERE email = ?").get(email) as { id: string } | undefined
+  if (!existing) await auth.api.signUpEmail({ body: { email, password, name } })
+  database.prepare("UPDATE user SET emailVerified = 1 WHERE email = ?").run(email)
+  const user = database.prepare("SELECT id FROM user WHERE email = ?").get(email) as { id: string } | undefined
+  if (!user) throw new Error("Unable to provision the local test user")
+  return user
+}
+
+export function activateLocalTestWorkspace(email = process.env.LOCAL_TEST_USER_EMAIL) {
   if (process.env.NODE_ENV !== "development" || process.env.LOCAL_TEST_USER_BOOTSTRAP !== "true") {
     throw new Error("Local test login is unavailable")
   }
 
-  const email = process.env.LOCAL_TEST_USER_EMAIL
   const user = database.prepare("SELECT id FROM user WHERE email = ?").get(email) as { id: string } | undefined
   if (!user) throw new Error("Local test user is unavailable")
 
@@ -330,6 +368,27 @@ export function activateLocalTestWorkspace() {
     SET activeOrganizationId = ?
     WHERE userId = ? AND activeOrganizationId IS NULL
   `).run(LOCAL_TEST_ORGANIZATION_ID, user.id)
+}
+
+export async function getRequestAccess(headers: Headers): Promise<AccessContext | null> {
+  const result = await auth.api.getSession({ headers })
+  const session = result?.session as { activeOrganizationId?: string } | undefined
+  const user = result?.user as { id?: string } | undefined
+  if (!session?.activeOrganizationId || !user?.id) return null
+
+  const membership = database.prepare(
+    "SELECT role FROM member WHERE organizationId = ? AND userId = ?",
+  ).get(session.activeOrganizationId, user.id) as { role: string } | undefined
+  if (!membership || !isOrganizationRole(membership.role)) return null
+
+  const platformPrincipal = database.prepare(
+    "SELECT role FROM platform_principal WHERE user_id = ?",
+  ).get(user.id) as { role: PlatformRole } | undefined
+
+  return {
+    organizationRole: membership.role,
+    platformRole: platformPrincipal?.role,
+  }
 }
 
 export const authReady = process.env.BETTER_AUTH_AUTO_MIGRATE === "true"

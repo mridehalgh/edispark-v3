@@ -8,7 +8,8 @@ The goal is not a large synthetic database. The goal is a small, safe set of con
 
 | Concern | Stable identity | Owner |
 |---|---|---|
-| Better Auth user | `local@edispark.test` | `apps/web/src/lib/auth.ts` |
+| Better Auth administrator | `local@edispark.test`, owner | `apps/web/src/lib/auth.ts` |
+| Better Auth operations user | `operations@edispark.test`, member | `apps/web/src/lib/auth.ts` |
 | Organization | `local-test-workspace` / `EdiSpark Local` | `apps/web/src/lib/auth.ts` |
 | Internal tenant | `LOCAL_SEED_TENANT_ID` | `tooling/scripts/local-environment.mjs` |
 | Organization-to-tenant mapping | One-to-one row in `organization_tenant` | `apps/web/src/lib/auth.ts` |
@@ -22,6 +23,7 @@ All local services must resolve the same internal tenant. A new tenant-aware ser
 | Feature journey | Stable fixture keys and expected states | Reconciler | Behavior evidence |
 |---|---|---|---|
 | Authentication and workspace activation | Verified local user, owner membership, active `EdiSpark Local` organization, stable tenant mapping | `prepareLocalAuth` | Full-stack startup and local sign-in flow |
+| Role-aware product workspace | Stable owner and member personas share the same tenant; members see Documents while owners can open Connections, Mappings, evidence, and Workspace settings | `prepareLocalAuth`, local test-login route | Local tools persona switch, web typecheck, route and API authorization tests |
 | Documents inbound processing | `PO-2026-0042`, comprehensive multi-line TRADACOMS source with successful parse and full UBL JSON derivative | `DocumentSetSeeder` (`comprehensive-v2`) | `DocumentSetSeederTest` creation, derivative, stale-fixture migration, and repair coverage |
 | Documents business documents | `INV-100045` and `CN-1007`, comprehensive UBL 2.1 JSON covering references, parties, delivery/payment terms, tax, allowances, totals, identifiers, classifications, and lines | `DocumentSetSeeder` (`comprehensive-v2`) | `UblSeedDocumentTest` model parsing and field-depth assertions plus seeder repair/idempotence coverage |
 | MFT partner configuration | `Northstar Trading`, local AS2 ID `EDISPARK`, remote AS2 ID `SIMULATOR` | `LocalMftDemoSeeder` | MFT startup smoke verification |

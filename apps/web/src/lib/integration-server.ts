@@ -2,7 +2,8 @@ import 'server-only'
 
 import { IntegrationClientError, createIntegrationClient } from '@edispark/integration-client'
 
-import { auth } from '@/lib/auth'
+import { canManageOrganization } from '@/lib/access'
+import { auth, getRequestAccess } from '@/lib/auth'
 
 const DEFAULT_INTEGRATION_API_URL = 'http://localhost:8083'
 
@@ -13,10 +14,14 @@ export class IntegrationBffError extends Error {
   }
 }
 
-export async function createAuthenticatedIntegrationClient(request: Request) {
+export async function createAuthenticatedIntegrationClient(request: Request, required: 'member' | 'admin' = 'admin') {
   const authHeaders = request.headers
   const session = await auth.api.getSession({ headers: authHeaders })
   if (!session) throw new IntegrationBffError(401, 'UNAUTHENTICATED', 'Sign in to manage your trading network.')
+  const access = await getRequestAccess(authHeaders)
+  if (!access || (required === 'admin' && !canManageOrganization(access.organizationRole))) {
+    throw new IntegrationBffError(403, 'FORBIDDEN', 'Organization administrator access is required.')
+  }
 
   let tokenPromise: Promise<string> | undefined
   const accessToken = () => {

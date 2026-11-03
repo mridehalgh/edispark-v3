@@ -30,7 +30,7 @@ function Definition({ term, children }: { term: string; children: React.ReactNod
 
 export function MftDocsPage() {
   return <LayoutBody className="w-full px-0 py-0">
-    <div className="border-b bg-card/50"><div className="mx-auto flex w-full max-w-[96rem] flex-col gap-5 px-4 py-7 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8"><div><h1 className="text-2xl font-semibold tracking-tight">File exchange setup guide</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Set up a trading partner, send a test file, and understand what each delivery status means.</p></div><Button asChild variant="outline" className="gap-2 self-start"><Link to="/mft"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to file exchange</Link></Button></div></div>
+    <div className="border-b bg-card/50"><div className="mx-auto flex w-full max-w-[96rem] flex-col gap-5 px-4 py-7 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8"><h1 className="text-2xl font-semibold tracking-tight">Connection guide</h1><Button asChild variant="outline" className="gap-2 self-start"><Link to="/settings/connections/transport"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to transport</Link></Button></div></div>
 
     <div className="border-b px-4 pt-2 lg:hidden"><DocNav compact /></div>
     <div className="mx-auto grid w-full max-w-[96rem] lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_16rem]">

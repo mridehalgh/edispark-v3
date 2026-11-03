@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Stores one retained inbound EDI payload and its canonical JSON representation exactly once. */
+/** Stores one retained inbound EDI message and its canonical JSON representation exactly once. */
 public final class InboundCanonicalDocumentService {
     private static final SchemaVersionRef SOURCE_SCHEMA = SchemaVersionRef.of(
             SchemaId.fromString("00000000-0000-4000-8000-000000000001"), VersionIdentifier.of("source"));
@@ -41,7 +41,7 @@ public final class InboundCanonicalDocumentService {
         validate(command);
         Content raw = Content.of(command.rawEdi(), Format.EDI);
         Content canonical = Content.of(command.canonicalJson(), Format.JSON);
-        DocumentSetId setId = new DocumentSetId(stable("document-set", command.transferId()));
+        DocumentSetId setId = new DocumentSetId(stable("document-set", command.transferId(), command.messageOrdinal()));
         var existing = sets.findById(setId);
         if (existing.isPresent()) {
             Document document = existing.get().getAllDocuments().stream().findFirst()
@@ -58,9 +58,11 @@ public final class InboundCanonicalDocumentService {
         content.store(raw);
         content.store(canonical);
 
-        DocumentId documentId = new DocumentId(stable("document", command.transferId()));
-        DocumentVersionId versionId = new DocumentVersionId(stable("source-version", command.transferId()));
-        DerivativeId derivativeId = new DerivativeId(stable("canonical-derivative", command.transferId()));
+        DocumentId documentId = new DocumentId(stable("document", command.transferId(), command.messageOrdinal()));
+        DocumentVersionId versionId = new DocumentVersionId(stable(
+                "source-version", command.transferId(), command.messageOrdinal()));
+        DerivativeId derivativeId = new DerivativeId(stable(
+                "canonical-derivative", command.transferId(), command.messageOrdinal()));
         DocumentVersion source = DocumentVersion.reconstitute(versionId, 1, ContentRef.of(raw.hash()), raw.hash(),
                 Format.EDI, command.receivedAt(), CREATED_BY, null, "PARSED", command.messageType(), List.of());
         Derivative derivative = Derivative.reconstitute(derivativeId, versionId, Format.JSON,
@@ -69,14 +71,17 @@ public final class InboundCanonicalDocumentService {
         Document document = Document.reconstitute(documentId, command.documentType(), SOURCE_SCHEMA,
                 List.of(source), List.of(derivative), null);
         DocumentSet documentSet = DocumentSet.reconstitute(setId, Map.of(documentId, document),
-                command.receivedAt(), CREATED_BY, Map.of(
-                        "direction", "INBOUND",
-                        "mftTransferId", command.transferId().toString(),
-                        "mftPartnerId", command.partnerId().toString(),
-                        "as2MessageId", command.messageId(),
-                        "filename", command.filename(),
-                        "ediStandard", command.standard(),
-                        "ediMessageType", command.messageType()));
+                command.receivedAt(), CREATED_BY, Map.ofEntries(
+                        Map.entry("direction", "INBOUND"),
+                        Map.entry("mftTransferId", command.transferId().toString()),
+                        Map.entry("mftPartnerId", command.partnerId().toString()),
+                        Map.entry("as2MessageId", command.messageId()),
+                        Map.entry("filename", command.filename()),
+                        Map.entry("ediStandard", command.standard()),
+                        Map.entry("ediMessageType", command.messageType()),
+                        Map.entry("messageOrdinal", Integer.toString(command.messageOrdinal())),
+                        Map.entry("messageCount", Integer.toString(command.messageCount())),
+                        Map.entry("sourceMessageReference", command.sourceMessageReference())));
         sets.save(documentSet);
         return result(documentSet, document);
     }
@@ -89,8 +94,10 @@ public final class InboundCanonicalDocumentService {
                 canonical.id().value(), canonical.contentHash().hash());
     }
 
-    private static UUID stable(String kind, UUID transferId) {
-        return UUID.nameUUIDFromBytes((kind + ":" + transferId).getBytes(StandardCharsets.UTF_8));
+    private static UUID stable(String kind, UUID transferId, int messageOrdinal) {
+        String identity = messageOrdinal == 1 ? kind + ":" + transferId
+                : kind + ":" + transferId + ":message:" + messageOrdinal;
+        return UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8));
     }
 
     private void validate(InboundRequest request) {
@@ -98,6 +105,8 @@ public final class InboundCanonicalDocumentService {
                 || request.documentType() == null || request.receivedAt() == null
                 || invalidText(request.messageId(), 255) || invalidText(request.filename(), 255)
                 || invalidText(request.standard(), 32) || invalidText(request.messageType(), 32)
+                || invalidText(request.sourceMessageReference(), 120)
+                || request.messageOrdinal() < 1 || request.messageCount() < request.messageOrdinal()
                 || request.rawEdi() == null || request.rawEdi().length == 0
                 || request.rawEdi().length > 25 * 1024 * 1024
                 || request.canonicalJson() == null || request.canonicalJson().length == 0
@@ -112,7 +121,15 @@ public final class InboundCanonicalDocumentService {
 
     public record InboundRequest(UUID transferId, UUID partnerId, String messageId, String filename, String standard,
                           String messageType, DocumentType documentType, Instant receivedAt,
-                          byte[] rawEdi, byte[] canonicalJson) { }
+                          byte[] rawEdi, byte[] canonicalJson, int messageOrdinal, int messageCount,
+                          String sourceMessageReference) {
+        public InboundRequest(UUID transferId, UUID partnerId, String messageId, String filename, String standard,
+                String messageType, DocumentType documentType, Instant receivedAt,
+                byte[] rawEdi, byte[] canonicalJson) {
+            this(transferId, partnerId, messageId, filename, standard, messageType, documentType, receivedAt,
+                    rawEdi, canonicalJson, 1, 1, "1");
+        }
+    }
     public record Result(UUID documentSetId, UUID documentId, UUID sourceVersionId, String sourceSha256,
                          UUID canonicalDerivativeId, String canonicalSha256) { }
 }

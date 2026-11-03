@@ -73,7 +73,7 @@ Before launching, the development runner terminates any processes listening on i
 | Simulator health | http://localhost:8082/actuator/health |
 | Embedded DynamoDB | http://localhost:8000 |
 
-The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and reconciles a complete safe demo workspace. The demo includes three Documents examples plus an MFT partner, public/local certificates, and transfers in delivered, awaiting-MDN, retry, and needs-review states. These generated files are ignored by Git.
+The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and reconciles a complete safe demo workspace. The demo includes matching eight-line retailer orders and supplier invoices for EDIFACT and TRADACOMS partners, three Documents examples, public/local certificates, and transfers in delivered, awaiting-MDN, retry, and needs-review states. These generated files are ignored by Git.
 
 ### Local authentication
 
@@ -84,7 +84,7 @@ The local runner provisions this development-only account on the first authentic
 | Username / email | `local@edispark.test` |
 | Password | `EdiSpark-Local-2026!` |
 
-When running `pnpm dev`, every page shows a floating **Local tools** dock in the lower-right corner. Open it to sign in with the test account and activate the automatically provisioned `EdiSpark Local` workspace. Once signed in, the same dock can run live MFT inbound and outbound simulations. Future local simulators should extend this dock instead of adding separate floating controls. You can also enter the credentials above manually.
+When running `pnpm dev`, every page shows a floating **Local tools** dock in the lower-right corner. Open it to sign in with the test account and activate the automatically provisioned `EdiSpark Local` workspace. Once signed in, the same dock can run live MFT inbound and outbound simulations, including a two-message inbound EDIFACT order batch. Future local simulators should extend this dock instead of adding separate floating controls. You can also enter the credentials above manually.
 
 The button and its login route are development-only: the control is rendered only when `LOCAL_TEST_USER_BOOTSTRAP` is enabled, and the route returns HTTP 404 outside `next dev`. The predictable credential is enabled only by `tooling/scripts/local-environment.mjs`; do not enable `LOCAL_TEST_USER_BOOTSTRAP` in a deployed environment.
 

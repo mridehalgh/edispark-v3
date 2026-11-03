@@ -92,7 +92,7 @@ export function TradingNetworkPage() {
     const form = new FormData(event.currentTarget)
     await perform('/api/integration/partners', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName: form.get('displayName'), identities: [{ scheme: form.get('scheme'), value: form.get('value') }] }),
+      body: JSON.stringify({ displayName: form.get('displayName'), identities: [{ scheme: form.get('scheme'), value: form.get('value') }], inboundFileFailurePolicy: 'REJECT_FILE' }),
     }, 'Trading partner profile created.')
     event.currentTarget.reset()
   }
@@ -110,7 +110,7 @@ export function TradingNetworkPage() {
   async function savePartnerDraft(partner: TradingPartner, form: FormData) {
     await perform(`/api/integration/partners/${partner.id}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName: form.get('displayName'), identities: [{ scheme: form.get('scheme'), value: form.get('value') }] }),
+      body: JSON.stringify({ displayName: form.get('displayName'), identities: [{ scheme: form.get('scheme'), value: form.get('value') }], inboundFileFailurePolicy: form.get('inboundFileFailurePolicy') }),
     }, 'Partner draft saved.')
   }
 
@@ -171,7 +171,7 @@ export function TradingNetworkPage() {
         </article>)}{!loading && state.agreements.length === 0 && <section className="rounded-lg border bg-card"><AdminEmptyState title="No agreements" /></section>}</div>
       </TabsContent>
 
-      <TabsContent value="exchanges"><section className="overflow-hidden rounded-lg border bg-card"><div className="flex items-center justify-between border-b px-4 py-3"><h2 className="text-sm font-semibold">Activity</h2><Activity className="h-4 w-4 text-primary" /></div><div className="overflow-x-auto"><table className="w-full min-w-[64rem] text-left text-sm"><thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr><th className="px-4 py-2.5 font-medium">Exchange</th><th className="px-4 py-2.5 font-medium">Partner</th><th className="px-4 py-2.5 font-medium">Agreement</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium">Transport</th><th className="px-4 py-2.5 font-medium">Updated</th></tr></thead><tbody className="divide-y">{state.exchanges.map((exchange) => <tr key={exchange.id} className="hover:bg-muted/30"><td className="px-4 py-3 font-mono text-xs">{exchange.id}</td><td className="px-4 py-3">{partnerNames.get(exchange.partnerId) ?? exchange.partnerId}</td><td className="px-4 py-3 text-xs">{exchange.agreementId?.slice(0, 8)}… · r{exchange.agreementRevision}</td><td className="px-4 py-3"><StatusBadge status={exchange.status} /></td><td className="px-4 py-3 font-mono text-xs text-muted-foreground">{exchange.mftTransferId ?? 'Not queued'}</td><td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(exchange.updatedAt)}</td></tr>)}{!loading && state.exchanges.length === 0 && <tr><td colSpan={6}><AdminEmptyState title="No activity" /></td></tr>}</tbody></table></div></section></TabsContent>
+      <TabsContent value="exchanges"><section className="overflow-hidden rounded-lg border bg-card"><div className="flex items-center justify-between border-b px-4 py-3"><h2 className="text-sm font-semibold">Activity</h2><Activity className="h-4 w-4 text-primary" /></div><div className="overflow-x-auto"><table className="w-full min-w-[72rem] text-left text-sm"><thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr><th className="px-4 py-2.5 font-medium">Exchange</th><th className="px-4 py-2.5 font-medium">Partner</th><th className="px-4 py-2.5 font-medium">Message</th><th className="px-4 py-2.5 font-medium">Agreement</th><th className="px-4 py-2.5 font-medium">Status</th><th className="px-4 py-2.5 font-medium">Transport</th><th className="px-4 py-2.5 font-medium">Updated</th></tr></thead><tbody className="divide-y">{state.exchanges.map((exchange) => <tr key={exchange.id} className="hover:bg-muted/30"><td className="px-4 py-3 font-mono text-xs">{exchange.id}</td><td className="px-4 py-3">{partnerNames.get(exchange.partnerId) ?? exchange.partnerId}</td><td className="px-4 py-3"><p className="font-mono text-xs">#{exchange.messageOrdinal ?? 1} · {exchange.sourceMessageReference ?? 'outbound'}</p>{exchange.status === 'NEEDS_REVIEW' ? <p className="mt-1 max-w-xs text-xs text-destructive">{exchange.stages?.at(-1)?.detail}</p> : null}</td><td className="px-4 py-3 text-xs">{exchange.agreementId ? `${exchange.agreementId.slice(0, 8)}… · r${exchange.agreementRevision}` : 'Unrouted'}</td><td className="px-4 py-3"><StatusBadge status={exchange.status} /></td><td className="px-4 py-3 font-mono text-xs text-muted-foreground">{exchange.mftTransferId ?? 'Not queued'}</td><td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(exchange.updatedAt)}</td></tr>)}{!loading && state.exchanges.length === 0 && <tr><td colSpan={7}><AdminEmptyState title="No activity" /></td></tr>}</tbody></table></div></section></TabsContent>
     </Tabs>
   </AdminPage>
 }

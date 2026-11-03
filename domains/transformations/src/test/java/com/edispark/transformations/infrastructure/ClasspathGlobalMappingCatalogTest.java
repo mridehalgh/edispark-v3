@@ -64,4 +64,32 @@ class ClasspathGlobalMappingCatalogTest {
         assertThat(ubl.at("/Order/0/OrderLine/0/LineItem/0/Item/0/StandardItemIdentification/0/ID/0/_").asText())
                 .isEqualTo("05012345000017");
     }
+
+    @Test
+    void everyPublishedFieldIsPopulatedAndLargeSamplesContainEightMeaningfulLines() throws Exception {
+        var runtime = new MappingRuntime(mapper);
+        for (var mapping : catalog.list()) {
+            var source = mapper.readTree(mapping.sample().sourceDocument());
+            assertThat(mapping.nodes()).allSatisfy(node -> {
+                if (node.operation() == com.edispark.transformations.domain.MappingOperation.CONSTANT) return;
+                assertThat(!source.at(node.sourcePointers().getFirst()).isMissingNode()
+                        && !source.at(node.sourcePointers().getFirst()).isNull())
+                        .as("source value for %s", node.sourcePointers().getFirst()).isTrue();
+            });
+
+            var output = mapper.readTree(runtime.execute(mapping,
+                    mapping.sample().sourceDocument().getBytes(StandardCharsets.UTF_8)));
+            assertThat(mapping.nodes()).allSatisfy(node -> assertThat(
+                    !output.at(node.targetPointer()).isMissingNode() && !output.at(node.targetPointer()).isNull())
+                    .as("target value for %s", node.targetPointer()).isTrue());
+
+            String rawEdi = mapping.sample().sourceRaw() != null
+                    ? mapping.sample().sourceRaw() : mapping.sample().targetRaw();
+            assertThat(rawEdi.lines()).hasSizeGreaterThanOrEqualTo(20);
+            var target = mapper.readTree(mapping.sample().targetDocument());
+            var ubl = source.has("Order") || source.has("Invoice") ? source : target;
+            assertThat(ubl.at(mapping.name().contains("Invoice")
+                    ? "/Invoice/0/InvoiceLine" : "/Order/0/OrderLine").size()).isGreaterThanOrEqualTo(8);
+        }
+    }
 }

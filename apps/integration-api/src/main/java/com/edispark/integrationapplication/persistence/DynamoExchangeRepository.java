@@ -49,13 +49,14 @@ final class DynamoExchangeRepository implements ExchangeRepository {
     private record Snapshot(UUID id, String tenantId, ExchangeDirection direction, UUID partnerId, UUID agreementId,
             int agreementRevision, UUID capabilityId, String idempotencyKey, DocumentReference sourceDocument,
             DocumentReference generatedDocument, UUID mftTransferId, ExchangeStatus status, Instant createdAt,
-            Instant updatedAt, List<ExchangeStage> stages) {
+            Instant updatedAt, List<ExchangeStage> stages, int messageOrdinal, String sourceMessageReference) {
         static Snapshot from(EdiExchange value) { return new Snapshot(value.id(), value.tenantId(), value.direction(),
                 value.partnerId(), value.agreementId(), value.agreementRevision(), value.capabilityId(),
                 value.idempotencyKey(), value.sourceDocument(), value.generatedDocument(), value.mftTransferId(),
-                value.status(), value.createdAt(), value.updatedAt(), value.stages()); }
+                value.status(), value.createdAt(), value.updatedAt(), value.stages(), value.messageOrdinal(),
+                value.sourceMessageReference()); }
         EdiExchange toDomain() { return EdiExchange.restore(id, tenantId, direction, partnerId, agreementId,
                 agreementRevision, capabilityId, idempotencyKey, sourceDocument, generatedDocument, mftTransferId,
-                status, createdAt, updatedAt, stages); }
+                status, createdAt, updatedAt, stages, messageOrdinal, sourceMessageReference); }
     }
 }

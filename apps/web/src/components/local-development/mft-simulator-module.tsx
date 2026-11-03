@@ -76,7 +76,7 @@ export function MftSimulatorModule() {
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Button variant="outline" className="h-auto justify-start gap-2 py-3" disabled={Boolean(busy)} onClick={() => void simulate("INBOUND")}>
           <ArrowDownToLine className="h-4 w-4 text-primary" aria-hidden="true" />
-          <span className="text-left"><span className="block text-sm">Receive order</span><span className="block text-[11px] font-normal text-muted-foreground">Simulator → MFT</span></span>
+          <span className="text-left"><span className="block text-sm">Receive order batch</span><span className="block text-[11px] font-normal text-muted-foreground">2 messages · simulator → MFT</span></span>
         </Button>
         <Button variant="outline" className="h-auto justify-start gap-2 py-3" disabled={Boolean(busy)} onClick={() => void simulate("OUTBOUND")}>
           <ArrowUpFromLine className="h-4 w-4 text-primary" aria-hidden="true" />

@@ -9,7 +9,8 @@ export const zBusinessIdentity = z.object({
 
 export const zCreatePartnerRequest = z.object({
     displayName: z.string().min(0).max(120),
-    identities: z.array(zBusinessIdentity).min(1)
+    identities: z.array(zBusinessIdentity).min(1),
+    inboundFileFailurePolicy: z.enum(['REJECT_FILE', 'KEEP_VALID_MESSAGES']).optional()
 });
 
 export const zTradingPartner = z.object({
@@ -31,7 +32,8 @@ export const zTradingPartner = z.object({
     revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
     scheduledAt: z.iso.datetime().optional(),
     archivedAt: z.iso.datetime().optional(),
-    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional()
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    inboundFileFailurePolicy: z.enum(['REJECT_FILE', 'KEEP_VALID_MESSAGES']).optional()
 });
 
 export const zCapabilityRequest = z.object({
@@ -253,7 +255,9 @@ export const zExchangeResponse = z.object({
     mftTransferId: z.uuid().optional(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
-    stages: z.array(zExchangeStage).optional()
+    stages: z.array(zExchangeStage).optional(),
+    messageOrdinal: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    sourceMessageReference: z.string().optional()
 });
 
 export const zDependency = z.object({

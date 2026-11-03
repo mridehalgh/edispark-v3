@@ -22,11 +22,11 @@ Local startup reconciles these stable examples:
 
 | Area | Fixtures |
 |---|---|
-| Documents | TRADACOMS Order `PO-2026-0042` with a UBL derivative, UBL Invoice `INV-100045`, UBL Credit Note `CN-1007` |
-| MFT partner | `Northstar Trading`, local AS2 ID `EDISPARK`, partner AS2 ID `SIMULATOR` |
+| Documents | Inbound eight-line TRADACOMS Order `PO-2026-0042` with a UBL derivative, outbound matching UBL Invoice `INV-100045`, outbound UBL Credit Note `CN-1007` |
+| MFT partners | EDIFACT retailer `Northstar Retail` (`SIMULATOR`) and TRADACOMS retailer `Harbour Retail` (`SIMULATOR_TRADACOMS`), local AS2 ID `EDISPARK` |
 | Certificates | One disposable local PKCS#12 identity and the simulator's public X.509 certificate |
-| Retailer onboarding | Copyable `EDISPARK` connection details and a downloadable public-only PEM certificate for `Northstar Trading` |
-| Transfers | Delivered inbound, delivered outbound, awaiting signed MDN, retry scheduled, and needs review |
+| Retailer onboarding | Copyable `EDISPARK` connection details and a downloadable public-only PEM certificate for each retailer connection |
+| Transfers | Each retailer sends an eight-line order and receives a matching invoice; Northstar also demonstrates awaiting signed MDN, retry scheduled, and needs review |
 
 Documents persistence is durable in local DynamoDB, so its seeder creates only missing stable business fixtures. MFT metadata is currently in memory, so its complete fixture is recreated on each MFT API start. Sample EDI uses generic placeholders and contains no real PII.
 
@@ -60,7 +60,7 @@ Run `pnpm dev`. The runner starts the Documents API, MFT API, AS2 partner simula
 
 Once authenticated, the shared development dock provides two live exchanges:
 
-- **Receive order**: the simulator signs and encrypts `local-inbound-order.edi`, sends it to the MFT AS2 receiver, and captures the signed MDN.
+- **Receive order batch**: the simulator signs and encrypts `local-inbound-orders-batch.edi`, sends its two ORDERS messages to the MFT AS2 receiver, and captures the signed MDN.
 - **Send invoice**: the MFT API queues `local-outbound-invoice.edi`; the delivery worker sends it to the simulator and records the MDN evidence.
 
 The dock shows the simulator peer's latest observations. The MFT transfer log remains the authoritative tenant-scoped evidence record. The Trading partners tab also exposes the local organisation's retailer-facing connection pack through the authenticated `/api/mft/connection-details` BFF. It contains public connection metadata and an X.509 public certificate only. The PKCS#12 bytes and password never enter the response or browser. Both the dock and `/api/mft/local-simulator` are unavailable when `NODE_ENV` is not `development`. The BFF keeps the MFT bearer token and simulator URL out of browser JavaScript.

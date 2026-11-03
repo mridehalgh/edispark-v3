@@ -12,6 +12,7 @@ Documents and AS2 transport are independently useful, but an EDI operator needs 
 - Add outbound orchestration from a Documents version through generated EDI retention to AS2 submission with end-to-end provenance and idempotency.
 - Add a generated Integration API client, authenticated BFF, Trading Network UI, and document-level send action.
 - Add tenant-partitioned DynamoDB persistence and EventBridge-to-SQS agreement snapshot infrastructure.
+- Split inbound EDIFACT and TRADACOMS files into independently routed messages, with partner-configurable strict or keep-valid failure handling and reviewable per-message evidence.
 
 ## Boundaries
 

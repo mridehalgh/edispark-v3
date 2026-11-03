@@ -45,6 +45,9 @@ public final class InternalInboundDocumentController {
             @RequestHeader("X-EdiSpark-Tenant-Id") String tenantId,
             @RequestParam("transferId") UUID transferId, @RequestParam("partnerId") UUID partnerId,
             @RequestParam("messageId") String messageId, @RequestParam("filename") String filename,
+            @RequestParam("messageOrdinal") int messageOrdinal,
+            @RequestParam("messageCount") int messageCount,
+            @RequestParam("sourceMessageReference") String sourceMessageReference,
             @RequestParam("standard") String standard, @RequestParam("messageType") String messageType,
             @RequestParam("documentType") DocumentType documentType,
             @RequestParam("receivedAt") Instant receivedAt,
@@ -56,7 +59,8 @@ public final class InternalInboundDocumentController {
         AtomicReference<InboundCanonicalDocumentService.Result> result = new AtomicReference<>();
         TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(tenantId)), () -> result.set(service.ingest(
                 new InboundCanonicalDocumentService.InboundRequest(transferId, partnerId, messageId, filename, standard,
-                        messageType, documentType, receivedAt, rawBytes, canonicalBytes))));
+                        messageType, documentType, receivedAt, rawBytes, canonicalBytes, messageOrdinal,
+                        messageCount, sourceMessageReference))));
         return result.get();
     }
 

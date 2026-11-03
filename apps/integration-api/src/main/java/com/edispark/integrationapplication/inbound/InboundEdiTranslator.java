@@ -9,30 +9,47 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public final class InboundEdiTranslator {
     private static final int MAXIMUM_BYTES = 25 * 1024 * 1024;
-    private final ObjectMapper mapper;
+    private final InboundEdiMappingInputParser mappingInput;
+    private final InboundEdiBatchSplitter splitter;
 
-    public InboundEdiTranslator(ObjectMapper mapper) { this.mapper = mapper; }
+    public InboundEdiTranslator(ObjectMapper mapper) {
+        this(mapper, 1_000);
+    }
+
+    @Autowired
+    public InboundEdiTranslator(ObjectMapper mapper,
+            @Value("${integration.inbound.max-messages-per-file:1000}") int maximumMessages) {
+        this.mappingInput = new InboundEdiMappingInputParser(mapper);
+        this.splitter = new InboundEdiBatchSplitter(maximumMessages);
+    }
 
     public Translation translate(byte[] input) {
+        List<InboundEdiBatchSplitter.InboundMessage> messages = split(input);
+        if (messages.size() != 1) throw new IllegalArgumentException("Inbound EDI payload must contain exactly one message");
+        return translate(messages.getFirst());
+    }
+
+    List<InboundEdiBatchSplitter.InboundMessage> split(byte[] input) {
         if (input == null || input.length == 0 || input.length > MAXIMUM_BYTES) {
             throw new IllegalArgumentException("Inbound EDI payload size is invalid");
         }
-        String edi = ascii(input);
-        return edi.contains("UNH+") ? edifact(edi) : tradacoms(edi);
+        return splitter.split(ascii(input));
     }
 
-    private Translation edifact(String edi) {
-        List<String> segments = segments(edi);
-        requireSingleMessage(segments, "UNH+");
+    Translation translate(InboundEdiBatchSplitter.InboundMessage message) {
+        return message.standard() == EdiStandard.EDIFACT ? edifact(message) : tradacoms(message);
+    }
+
+    private Translation edifact(InboundEdiBatchSplitter.InboundMessage message) {
+        List<String> segments = message.mappingSegments();
         String unh = required(segments, "UNH+");
         String[] identity = element(unh, 1).split(":", -1);
         if (identity.length < 4) throw new IllegalArgumentException("EDIFACT UNH identity is incomplete");
@@ -44,13 +61,13 @@ public final class InboundEdiTranslator {
                 .map(item -> composite(element(item, 0), 1)).findFirst().map(this::date).orElse("");
         String buyer = party(segments, "BY");
         String supplier = party(segments, "SU");
-        return translation(EdiStandard.EDIFACT, release, messageType, type, reference, issueDate, buyer, supplier);
+        return translation(EdiStandard.EDIFACT, release, messageType, type, reference, issueDate,
+                mappingInput.edifact(segments, type), message);
     }
 
-    private Translation tradacoms(String edi) {
-        List<String> segments = segments(edi);
-        requireSingleMessage(segments, "MHD=");
-        String mhd = required(segments, "MHD=");
+    private Translation tradacoms(InboundEdiBatchSplitter.InboundMessage message) {
+        List<String> segments = message.mappingSegments();
+        String mhd = requiredLast(segments, "MHD=");
         String[] identity = element(mhd, 1).split(":", -1);
         if (identity.length < 2) throw new IllegalArgumentException("TRADACOMS MHD identity is incomplete");
         String wireType = identity[0].toUpperCase();
@@ -69,37 +86,16 @@ public final class InboundEdiTranslator {
         String sender = element(stx, 1);
         String receiver = element(stx, 2);
         return translation(EdiStandard.TRADACOMS, identity[1], messageType, type, reference, issueDate,
-                receiver, sender);
+                mappingInput.tradacoms(segments, type), message);
     }
 
     private Translation translation(EdiStandard standard, String release, String messageType,
-            BusinessDocumentType type, String reference, String issueDate, String buyer, String supplier) {
+            BusinessDocumentType type, String reference, String issueDate, byte[] mappingInputJson,
+            InboundEdiBatchSplitter.InboundMessage message) {
         if (reference.isBlank()) throw new IllegalArgumentException("EDI business document reference is required");
-        Map<String, Object> root = new LinkedHashMap<>();
-        Map<String, Object> document = new LinkedHashMap<>();
-        document.put("ID", value(reference));
-        if (!issueDate.isBlank()) document.put("IssueDate", value(issueDate));
-        if (type == BusinessDocumentType.ORDER) {
-            document.put("BuyerCustomerParty", party("Party", buyer));
-            document.put("SellerSupplierParty", party("Party", supplier));
-            root.put("Order", List.of(document));
-        } else {
-            document.put("AccountingSupplierParty", party("Party", supplier));
-            document.put("AccountingCustomerParty", party("Party", buyer));
-            root.put("Invoice", List.of(document));
-        }
-        try {
-            return new Translation(standard, release, messageType, type, mapper.writeValueAsBytes(root));
-        } catch (Exception exception) {
-            throw new IllegalArgumentException("Canonical document could not be serialized", exception);
-        }
+        return new Translation(standard, release, messageType, type, mappingInputJson, message.rawMessage(),
+                message.ordinal(), message.messageCount(), message.sourceReference());
     }
-
-    private List<Map<String, Object>> party(String key, String endpoint) {
-        return endpoint.isBlank() ? List.of() : List.of(Map.of(key, List.of(Map.of("EndpointID", value(endpoint)))));
-    }
-
-    private List<Map<String, String>> value(String value) { return List.of(Map.of("_", value)); }
     private String party(List<String> segments, String qualifier) {
         return segments.stream().filter(item -> item.startsWith("NAD+" + qualifier + "+"))
                 .map(item -> composite(element(item, 1), 0)).findFirst().orElse("");
@@ -111,19 +107,13 @@ public final class InboundEdiTranslator {
             default -> throw new IllegalArgumentException("Unsupported inbound EDI message type: " + messageType);
         };
     }
-    private List<String> segments(String edi) {
-        return Arrays.stream(edi.replace("\r", "").replace("\n", "").split("'"))
-                .map(String::strip).filter(value -> !value.isBlank()).toList();
-    }
     private String required(List<String> segments, String prefix) {
         return segments.stream().filter(item -> item.startsWith(prefix)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Required EDI segment is missing: " + prefix));
     }
-    private void requireSingleMessage(List<String> segments, String prefix) {
-        long messages = segments.stream().filter(item -> item.startsWith(prefix)).count();
-        if (messages != 1) {
-            throw new IllegalArgumentException("Inbound EDI payload must contain exactly one message");
-        }
+    private String requiredLast(List<String> segments, String prefix) {
+        return segments.reversed().stream().filter(item -> item.startsWith(prefix)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Required EDI segment is missing: " + prefix));
     }
     private String element(String segment, int index) {
         String body = segment.substring(4);
@@ -151,5 +141,6 @@ public final class InboundEdiTranslator {
     }
 
     public record Translation(EdiStandard standard, String release, String messageType,
-                              BusinessDocumentType documentType, byte[] canonicalJson) { }
+            BusinessDocumentType documentType, byte[] mappingInputJson, byte[] rawMessage,
+            int messageOrdinal, int messageCount, String sourceMessageReference) { }
 }

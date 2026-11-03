@@ -153,7 +153,7 @@ export function PartnerPage() {
     await perform(`/api/integration/partners/${item.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName: form.get("displayName"), identities: [{ scheme: form.get("scheme"), value: form.get("value") }] }),
+      body: JSON.stringify({ displayName: form.get("displayName"), identities: [{ scheme: form.get("scheme"), value: form.get("value") }], inboundFileFailurePolicy: form.get("inboundFileFailurePolicy") }),
     }, "Partner saved.")
   }
 

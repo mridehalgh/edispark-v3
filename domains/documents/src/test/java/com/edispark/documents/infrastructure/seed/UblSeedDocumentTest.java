@@ -33,13 +33,13 @@ class UblSeedDocumentTest {
         assertThat(order.getId().getFirst().get__()).isEqualTo("PO-2026-0042");
         assertThat(order.getBuyerCustomerParty()).hasSize(1);
         assertThat(order.getSellerSupplierParty()).hasSize(1);
-        assertThat(order.getOrderLine()).hasSize(2);
+        assertThat(order.getOrderLine()).hasSize(8);
         assertThat(order.getPaymentTerms()).hasSize(1);
         assertThat(order.getAllowanceCharge()).hasSize(1);
         assertThat(order.getOrderLine().getFirst().getLineItem().getFirst().getItem().getFirst()
                 .getCommodityClassification()).hasSize(1);
         assertThat(order.getAnticipatedMonetaryTotal().getFirst().getPayableAmount().getFirst().get__())
-                .isEqualByComparingTo(new BigDecimal("662.90"));
+                .isEqualByComparingTo(new BigDecimal("2575.58"));
     }
 
     @Test
@@ -51,12 +51,12 @@ class UblSeedDocumentTest {
         assertThat(invoice.getId().getFirst().get__()).isEqualTo("INV-100045");
         assertThat(invoice.getAccountingSupplierParty()).hasSize(1);
         assertThat(invoice.getAccountingCustomerParty()).hasSize(1);
-        assertThat(invoice.getInvoiceLine()).hasSize(2);
+        assertThat(invoice.getInvoiceLine()).hasSize(8);
         assertThat(invoice.getPaymentTerms()).hasSize(1);
         assertThat(invoice.getAllowanceCharge()).hasSize(1);
         assertThat(invoice.getInvoiceLine().getFirst().getItem().getFirst().getCommodityClassification()).hasSize(1);
         assertThat(invoice.getLegalMonetaryTotal().getFirst().getPayableAmount().getFirst().get__())
-                .isEqualByComparingTo(new BigDecimal("662.90"));
+                .isEqualByComparingTo(new BigDecimal("2575.58"));
     }
 
     @Test

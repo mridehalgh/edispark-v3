@@ -8,6 +8,7 @@ import com.edispark.partnerships.domain.model.BusinessIdentity;
 import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
+import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +43,7 @@ public final class PartnershipController {
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
     @Operation(operationId = "createTradingPartner", summary = "Create a retailer or other trading partner")
     public TradingPartner createPartner(@Valid @RequestBody CreatePartnerRequest request) {
-        return service.createPartner(request.displayName(), request.identities());
+        return service.createPartner(request.displayName(), request.identities(), request.inboundFileFailurePolicy());
     }
 
     @GetMapping("/{partnerId}") @Operation(operationId = "getTradingPartner", summary = "Get a partner revision")
@@ -55,7 +56,8 @@ public final class PartnershipController {
     @PutMapping("/{partnerId}/draft")
     @Operation(operationId = "updateTradingPartnerDraft", summary = "Update a draft partner revision")
     public TradingPartner updatePartner(@PathVariable UUID partnerId, @Valid @RequestBody CreatePartnerRequest request) {
-        return service.updatePartner(partnerId, request.displayName(), request.identities());
+        return service.updatePartner(partnerId, request.displayName(), request.identities(),
+                request.inboundFileFailurePolicy());
     }
 
     @PostMapping("/{partnerId}/activate")
@@ -134,7 +136,8 @@ public final class PartnershipController {
     public void deleteAgreement(@PathVariable UUID agreementId) { service.deleteAgreementDraft(agreementId); }
 
     public record CreatePartnerRequest(@NotBlank @Size(max = 120) String displayName,
-                                       @NotEmpty List<@Valid BusinessIdentity> identities) { }
+            @NotEmpty List<@Valid BusinessIdentity> identities,
+            InboundFileFailurePolicy inboundFileFailurePolicy) { }
     public record CreateAgreementRequest(@NotBlank @Size(max = 120) String name) { }
     public record CapabilityRequest(@NotNull ExchangeDirection direction, @NotNull BusinessDocumentType documentType,
             @NotNull EdiStandard standard, @NotBlank String release, @NotBlank String messageType,

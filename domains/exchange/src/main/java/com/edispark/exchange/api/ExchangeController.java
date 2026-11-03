@@ -57,12 +57,12 @@ public final class ExchangeController {
     public record ExchangeResponse(UUID id, ExchangeDirection direction, UUID partnerId, UUID agreementId,
             int agreementRevision, UUID capabilityId, ExchangeStatus status, DocumentReference sourceDocument,
             DocumentReference generatedDocument, UUID mftTransferId, Instant createdAt, Instant updatedAt,
-            List<ExchangeStage> stages) {
+            List<ExchangeStage> stages, int messageOrdinal, String sourceMessageReference) {
         static ExchangeResponse from(EdiExchange exchange) {
             return new ExchangeResponse(exchange.id(), exchange.direction(), exchange.partnerId(), exchange.agreementId(),
                     exchange.agreementRevision(), exchange.capabilityId(), exchange.status(), exchange.sourceDocument(),
                     exchange.generatedDocument(), exchange.mftTransferId(), exchange.createdAt(), exchange.updatedAt(),
-                    exchange.stages());
+                    exchange.stages(), exchange.messageOrdinal(), exchange.sourceMessageReference());
         }
     }
 }

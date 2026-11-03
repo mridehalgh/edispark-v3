@@ -64,6 +64,9 @@ class DocumentSetSeederTest {
         assertThat(documentSets.findAll())
                 .extracting(set -> set.metadata().get("businessDocumentNumber"))
                 .containsExactlyInAnyOrder("PO-2026-0042", "INV-100045", "CN-1007");
+        assertThat(directionOf("PO-2026-0042")).isEqualTo("INBOUND");
+        assertThat(directionOf("INV-100045")).isEqualTo("OUTBOUND");
+        assertThat(directionOf("CN-1007")).isEqualTo("OUTBOUND");
     }
 
     @Test
@@ -102,9 +105,9 @@ class DocumentSetSeederTest {
         DocumentSet order = documentSets.findAll().stream()
                 .filter(set -> "PO-2026-0042".equals(set.metadata().get("businessDocumentNumber")))
                 .findFirst().orElseThrow();
-        assertThat(order.metadata()).containsEntry("fixtureVersion", "comprehensive-v2");
+        assertThat(order.metadata()).containsEntry("fixtureVersion", "supplier-order-invoice-v3");
         Document source = order.getAllDocuments().getFirst();
-        assertThat(asString(source)).contains("BUY-WATER-750", "OTC=GBP");
+        assertThat(asString(source)).contains("BUY-WATER-750", "HERBAL-TEA-80", "OTR=8");
         assertThat(source.derivatives()).hasSize(1);
         assertThat(asString(source.derivatives().getFirst()))
                 .contains("CommodityClassification", "PaymentTerms", "AllowanceCharge");
@@ -170,6 +173,15 @@ class DocumentSetSeederTest {
     private String asString(Derivative derivative) {
         byte[] bytes = content.retrieve(derivative.contentHash()).orElseThrow();
         return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    private String directionOf(String businessDocumentNumber) {
+        return documentSets.findAll().stream()
+                .filter(set -> businessDocumentNumber.equals(set.metadata().get("businessDocumentNumber")))
+                .findFirst()
+                .orElseThrow()
+                .metadata()
+                .get("direction");
     }
 
     private static final class InMemoryDocumentSetRepository implements DocumentSetRepository {

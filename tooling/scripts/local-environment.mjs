@@ -33,6 +33,7 @@ export async function localEnvironment() {
     DYNAMODB_LOCAL_DATA_DIR: process.env.DYNAMODB_LOCAL_DATA_DIR ?? resolve(localDirectory, "dynamodb"),
     DYNAMODB_LOCAL_EMBEDDED: process.env.DYNAMODB_LOCAL_EMBEDDED ?? "true",
     MFT_LOCAL_DEMO_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-partner-id"),
+    MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-tradacoms-partner-id"),
     SPRING_PROFILES_ACTIVE: process.env.SPRING_PROFILES_ACTIVE ?? "local",
   }
 }

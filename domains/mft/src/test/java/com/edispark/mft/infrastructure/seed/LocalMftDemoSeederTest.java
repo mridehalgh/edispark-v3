@@ -59,6 +59,43 @@ class LocalMftDemoSeederTest {
         });
     }
 
+    @Test
+    void createsOneReceivedOrderAndOneSentInvoiceForTradacomsRetailer() throws Exception {
+        InMemoryMftRepository repository = new InMemoryMftRepository();
+        FileSystemPayloadStore payloadStore = new FileSystemPayloadStore(Files.createTempDirectory("mft-tradacoms-demo"));
+        PartnerProfile partner = partner("Harbour Retail", "SIMULATOR_TRADACOMS");
+        repository.savePartner(partner);
+        LocalMftDemoSeeder seeder = new LocalMftDemoSeeder(
+                repository, payloadStore, null, null, Clock.fixed(NOW, ZoneOffset.UTC));
+
+        seeder.reconcileTradacomsTransfers(partner);
+        seeder.reconcileTradacomsTransfers(partner);
+
+        assertThat(repository.listTransfers(TENANT_ID)).hasSize(2);
+        assertThat(repository.listTransfers(TENANT_ID)).allSatisfy(transfer -> {
+            try {
+                String edi = new String(payloadStore.get(TENANT_ID, transfer.payload()).readAllBytes(),
+                        StandardCharsets.UTF_8);
+                assertThat(edi).startsWith("STX=").contains("MTR=").contains("END=");
+                if (transfer.direction() == com.edispark.mft.domain.model.TransferDirection.INBOUND) {
+                    assertThat(edi).contains("MHD=1+ORDERS:9'").contains("END=1'");
+                    assertThat(edi.split("MHD=", -1)).hasSize(2);
+                } else {
+                    assertThat(edi).contains("MHD=2+INVOIC:9'").contains("END=2'");
+                }
+            } catch (Exception exception) {
+                throw new AssertionError(exception);
+            }
+        });
+        assertThat(repository.listTransfers(TENANT_ID)).anySatisfy(transfer -> {
+            assertThat(transfer.direction()).isEqualTo(com.edispark.mft.domain.model.TransferDirection.INBOUND);
+            assertThat(transfer.filename()).startsWith("PO_HARBOUR");
+        }).anySatisfy(transfer -> {
+            assertThat(transfer.direction()).isEqualTo(com.edispark.mft.domain.model.TransferDirection.OUTBOUND);
+            assertThat(transfer.filename()).startsWith("invoice_harbour");
+        });
+    }
+
     private Transfer existingInbound(PartnerProfile partner, FileSystemPayloadStore payloadStore) throws Exception {
         Instant createdAt = NOW.minusSeconds(420);
         Transfer transfer = Transfer.inbound(TENANT_ID, partner.id(), "PO_45001235.edi", "application/edifact",
@@ -70,8 +107,12 @@ class LocalMftDemoSeederTest {
     }
 
     private PartnerProfile partner() {
+        return partner("Northstar Retail", "SIMULATOR");
+    }
+
+    private PartnerProfile partner(String name, String remoteAs2Id) {
         return new PartnerProfile(
-                UUID.randomUUID(), TENANT_ID, "Northstar Trading", "EDISPARK", "SIMULATOR",
+                UUID.randomUUID(), TENANT_ID, name, "EDISPARK", remoteAs2Id,
                 URI.create("http://localhost:8082/as2"), UUID.randomUUID(), UUID.randomUUID(),
                 MdnMode.SYNCHRONOUS, true, true, true, false, NOW.minusSeconds(600));
     }

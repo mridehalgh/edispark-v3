@@ -3,6 +3,15 @@
   "parties": {"sender": "[tenant_identifier]", "receiver": "[partner_identifier]", "buyerId": "BUYER-001", "buyerName": "[name]", "supplierId": "SUPPLIER-001", "supplierName": "[name]", "buyerTaxId": "[tax_identifier]", "supplierTaxId": "[tax_identifier]"},
   "delivery": {"id": "DELIVERY-42", "requestedDate": "2026-11-05", "latestDate": "2026-11-07", "locationId": "STORE-042", "country": "GB", "terms": "DAP"},
   "payment": {"termsId": "NET30", "dueDate": "2026-12-01"},
-  "totals": {"lineExtension": 100.00, "allowance": 5.00, "taxExclusive": 95.00, "taxInclusive": 114.00, "payable": 114.00},
-  "lines": [{"id": "1", "quantity": 10, "unitCode": "EA", "lineExtension": 100.00, "buyerItemId": "BUY-SKU-001", "sellerItemId": "SELL-SKU-001", "gtin": "05012345000017", "description": "Comprehensive sample retail item", "name": "Sample item", "price": 10.00, "taxCategory": "S", "taxPercent": 20}]
+  "totals": {"lineExtension": 2168.00, "allowance": 21.68, "taxExclusive": 2146.32, "taxInclusive": 2575.58, "payable": 2575.58},
+  "lines": [
+    {"id": "1", "quantity": 48, "unitCode": "EA", "lineExtension": 108.00, "buyerItemId": "BUY-WATER-750", "sellerItemId": "SPARK-WATER-750", "gtin": "05012345000017", "description": "Sparkling mineral water, 750 ml case", "name": "Spark Water 750", "price": 2.25, "taxCategory": "S", "taxPercent": 20},
+    {"id": "2", "quantity": 24, "unitCode": "EA", "lineExtension": 450.00, "buyerItemId": "BUY-OAT-12", "sellerItemId": "OAT-BAR-12PK", "gtin": "05012345000024", "description": "Oat and honey snack bars, 12 pack", "name": "Oat Bar 12 Pack", "price": 18.75, "taxCategory": "S", "taxPercent": 20},
+    {"id": "3", "quantity": 36, "unitCode": "EA", "lineExtension": 162.00, "buyerItemId": "BUY-COFFEE-1K", "sellerItemId": "ROAST-COFFEE-1K", "gtin": "05012345000031", "description": "Medium roast coffee beans, 1 kg", "name": "Roast Coffee 1 kg", "price": 4.50, "taxCategory": "S", "taxPercent": 20},
+    {"id": "4", "quantity": 12, "unitCode": "EA", "lineExtension": 384.00, "buyerItemId": "BUY-DETERGENT-5L", "sellerItemId": "ECO-DETERGENT-5L", "gtin": "05012345000048", "description": "Concentrated surface detergent, 5 litre", "name": "Eco Detergent 5 L", "price": 32.00, "taxCategory": "S", "taxPercent": 20},
+    {"id": "5", "quantity": 60, "unitCode": "EA", "lineExtension": 192.00, "buyerItemId": "BUY-PASSATA-6", "sellerItemId": "PASSATA-6PK", "gtin": "05012345000055", "description": "Tomato passata, six bottle case", "name": "Passata 6 Pack", "price": 3.20, "taxCategory": "S", "taxPercent": 20},
+    {"id": "6", "quantity": 20, "unitCode": "EA", "lineExtension": 308.00, "buyerItemId": "BUY-TOWEL-24", "sellerItemId": "PAPER-TOWEL-24", "gtin": "05012345000062", "description": "Recycled paper towel, 24 roll case", "name": "Paper Towel 24", "price": 15.40, "taxCategory": "S", "taxPercent": 20},
+    {"id": "7", "quantity": 16, "unitCode": "EA", "lineExtension": 360.00, "buyerItemId": "BUY-OIL-6", "sellerItemId": "OLIVE-OIL-6PK", "gtin": "05012345000079", "description": "Extra virgin olive oil, six bottle case", "name": "Olive Oil 6 Pack", "price": 22.50, "taxCategory": "S", "taxPercent": 20},
+    {"id": "8", "quantity": 30, "unitCode": "EA", "lineExtension": 204.00, "buyerItemId": "BUY-TEA-80", "sellerItemId": "HERBAL-TEA-80", "gtin": "05012345000086", "description": "Assorted herbal tea, 80 bag box", "name": "Herbal Tea 80", "price": 6.80, "taxCategory": "S", "taxPercent": 20}
+  ]
 }

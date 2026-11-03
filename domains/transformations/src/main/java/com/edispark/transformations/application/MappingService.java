@@ -54,6 +54,14 @@ public final class MappingService {
         return new TestResult(matches, output, matches ? List.of() : List.of("Output did not match the expected fixture"));
     }
 
+    public byte[] executePublished(UUID id, byte[] input) {
+        MappingRevision mapping = require(id);
+        if (mapping.status() != MappingStatus.PUBLISHED) {
+            throw new IllegalArgumentException("Published mapping was not found");
+        }
+        return runtime.execute(mapping, input);
+    }
+
     public MappingRevision publish(UUID id, List<Fixture> fixtures) {
         return publish(id, fixtures, null);
     }

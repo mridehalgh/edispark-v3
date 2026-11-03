@@ -79,10 +79,11 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
     private MappingRevision mapping(String value, String name, UUID source, UUID target,
             List<PathPair> paths, boolean reverse, MappingSample sample) {
         UUID mappingId = id(value);
-        List<MappingNode> nodes = paths.stream().map(path -> node(mappingId,
-                reverse ? path.target() : path.source(), reverse ? path.source() : path.target())).toList();
+        List<MappingNode> nodes = new ArrayList<>(paths.stream().map(path -> node(mappingId,
+                reverse ? path.target() : path.source(), reverse ? path.source() : path.target())).toList());
+        if (reverse) nodes.addAll(ublEnvelopeNodes(mappingId, target));
         return new MappingRevision(mappingId, GLOBAL_OWNER, name, 1, source, target, MappingStatus.PUBLISHED,
-                nodes, "edispark-global-v1-" + mappingId, RELEASED_AT, RELEASED_AT, mappingId, null, null, 1,
+                List.copyOf(nodes), "edispark-global-v1-" + mappingId, RELEASED_AT, RELEASED_AT, mappingId, null, null, 1,
                 MappingScope.GLOBAL, VENDOR, sample, null);
     }
 
@@ -90,6 +91,29 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
         UUID nodeId = UUID.nameUUIDFromBytes((mappingId + ":" + source + ":" + target)
                 .getBytes(StandardCharsets.UTF_8));
         return new MappingNode(nodeId, MappingOperation.COPY, List.of(source), target, null, null);
+    }
+
+    private List<MappingNode> ublEnvelopeNodes(UUID mappingId, UUID target) {
+        boolean order = target.equals(UBL_ORDER);
+        String root = order ? "/Order/0" : "/Invoice/0";
+        String documentNamespace = "urn:oasis:names:specification:ubl:schema:xsd:"
+                + (order ? "Order" : "Invoice") + "-2";
+        return List.of(
+                constant(mappingId, "/_D", documentNamespace),
+                constant(mappingId, "/_A",
+                        "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"),
+                constant(mappingId, "/_B",
+                        "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"),
+                constant(mappingId, root + "/UBLVersionID/0/_", "2.1"),
+                constant(mappingId, root + "/CustomizationID/0/_", "urn:edispark:ubl:mapped:1"),
+                constant(mappingId, root + "/ProfileID/0/_", order
+                        ? "urn:edispark:profile:retail-order:1" : "urn:edispark:profile:retail-invoice:1"));
+    }
+
+    private MappingNode constant(UUID mappingId, String target, String value) {
+        UUID nodeId = UUID.nameUUIDFromBytes((mappingId + ":constant:" + target + ":" + value)
+                .getBytes(StandardCharsets.UTF_8));
+        return new MappingNode(nodeId, MappingOperation.CONSTANT, List.of(), target, value, null);
     }
 
     private MappingSample sample(String sourceFormat, String sourceDocument, String sourceRaw,
@@ -128,7 +152,9 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
         paths.add(pair("/Order/0/AnticipatedMonetaryTotal/0/TaxExclusiveAmount/0/_", "/totals/taxExclusive"));
         paths.add(pair("/Order/0/AnticipatedMonetaryTotal/0/TaxInclusiveAmount/0/_", "/totals/taxInclusive"));
         paths.add(pair("/Order/0/AnticipatedMonetaryTotal/0/PayableAmount/0/_", "/totals/payable"));
-        paths.addAll(linePaths("/Order/0/OrderLine/0/LineItem/0", false));
+        for (int index = 0; index < 8; index++) {
+            paths.addAll(linePaths("/Order/0/OrderLine/" + index + "/LineItem/0", false, index));
+        }
         return List.copyOf(paths);
     }
 
@@ -167,25 +193,29 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
         paths.add(pair("/Invoice/0/LegalMonetaryTotal/0/TaxExclusiveAmount/0/_", "/totals/taxExclusive"));
         paths.add(pair("/Invoice/0/LegalMonetaryTotal/0/TaxInclusiveAmount/0/_", "/totals/taxInclusive"));
         paths.add(pair("/Invoice/0/LegalMonetaryTotal/0/PayableAmount/0/_", "/totals/payable"));
-        paths.addAll(linePaths("/Invoice/0/InvoiceLine/0", true));
-        paths.add(pair("/Invoice/0/InvoiceLine/0/OrderLineReference/0/LineID/0/_", "/lines/0/orderLineId"));
+        for (int index = 0; index < 8; index++) {
+            paths.addAll(linePaths("/Invoice/0/InvoiceLine/" + index, true, index));
+            paths.add(pair("/Invoice/0/InvoiceLine/" + index + "/OrderLineReference/0/LineID/0/_",
+                    "/lines/" + index + "/orderLineId"));
+        }
         return List.copyOf(paths);
     }
 
-    private static List<PathPair> linePaths(String base, boolean invoice) {
+    private static List<PathPair> linePaths(String base, boolean invoice, int index) {
         String quantity = invoice ? "InvoicedQuantity" : "Quantity";
-        return List.of(pair(base + "/ID/0/_", "/lines/0/id"),
-                pair(base + "/" + quantity + "/0/_", "/lines/0/quantity"),
-                pair(base + "/" + quantity + "/0/unitCode", "/lines/0/unitCode"),
-                pair(base + "/LineExtensionAmount/0/_", "/lines/0/lineExtension"),
-                pair(base + "/Item/0/BuyersItemIdentification/0/ID/0/_", "/lines/0/buyerItemId"),
-                pair(base + "/Item/0/SellersItemIdentification/0/ID/0/_", "/lines/0/sellerItemId"),
-                pair(base + "/Item/0/StandardItemIdentification/0/ID/0/_", "/lines/0/gtin"),
-                pair(base + "/Item/0/Description/0/_", "/lines/0/description"),
-                pair(base + "/Item/0/Name/0/_", "/lines/0/name"),
-                pair(base + "/Price/0/PriceAmount/0/_", "/lines/0/price"),
-                pair(base + "/Item/0/ClassifiedTaxCategory/0/ID/0/_", "/lines/0/taxCategory"),
-                pair(base + "/Item/0/ClassifiedTaxCategory/0/Percent/0/_", "/lines/0/taxPercent"));
+        String target = "/lines/" + index;
+        return List.of(pair(base + "/ID/0/_", target + "/id"),
+                pair(base + "/" + quantity + "/0/_", target + "/quantity"),
+                pair(base + "/" + quantity + "/0/unitCode", target + "/unitCode"),
+                pair(base + "/LineExtensionAmount/0/_", target + "/lineExtension"),
+                pair(base + "/Item/0/BuyersItemIdentification/0/ID/0/_", target + "/buyerItemId"),
+                pair(base + "/Item/0/SellersItemIdentification/0/ID/0/_", target + "/sellerItemId"),
+                pair(base + "/Item/0/StandardItemIdentification/0/ID/0/_", target + "/gtin"),
+                pair(base + "/Item/0/Description/0/_", target + "/description"),
+                pair(base + "/Item/0/Name/0/_", target + "/name"),
+                pair(base + "/Price/0/PriceAmount/0/_", target + "/price"),
+                pair(base + "/Item/0/ClassifiedTaxCategory/0/ID/0/_", target + "/taxCategory"),
+                pair(base + "/Item/0/ClassifiedTaxCategory/0/Percent/0/_", target + "/taxPercent"));
     }
 
     private static PathPair pair(String source, String target) { return new PathPair(source, target); }

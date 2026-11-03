@@ -22,10 +22,12 @@ Outbound submission atomically claims `(tenant, idempotencyKey)`, resolves one a
 
 Production metadata uses one tenant-partitioned DynamoDB table with transactional idempotency markers. Agreement activation events are published to a dedicated EventBridge bus and delivered at least once to an encrypted SQS queue with a five-attempt DLQ; consumers deduplicate by agreement ID and revision.
 
+Inbound files are structurally split before business processing. EDIFACT `UNH`/`UNT` and TRADACOMS `MHD`/`MTR` blocks become ordered business messages; TRADACOMS file-header blocks remain mapping context. Each business message resolves its own active capability and becomes one Documents aggregate and one Exchange activity record keyed by transfer ID plus ordinal. A partner revision chooses `REJECT_FILE`, which preflights every message before writes, or `KEEP_VALID_MESSAGES`, which stores valid messages and records deterministic failures as `NEEDS_REVIEW`. Structural ambiguity and transient infrastructure failures reject the event under both policies.
+
 ## Observability and security
 
 The Integration API emits one structured completion event per request with correlation ID, tenant ID, deployment metadata, status, and duration. Tokens and payloads are excluded. Downstream calls propagate bearer and correlation context. Inputs use validated UUIDs, bounded strings, constrained JSON pointers, bounded files, and separator escaping.
 
 ## Local workspace
 
-The complete runner starts Documents, MFT, Integration, the AS2 simulator, and web in dependency order. MFT writes the reconciled demo connection ID to a local-only handoff file; Integration uses it to seed one partner, one active agreement, and eight published mappings for inbound and outbound Order/Invoice × EDIFACT/TRADACOMS. A local polling adapter reconciles retained inbound transfers with the same idempotent processor used by production SQS delivery.
+The complete runner starts Documents, MFT, Integration, the AS2 simulator, and web in dependency order. MFT writes the reconciled demo connection ID to a local-only handoff file; Integration uses it to seed strict and keep-valid partners, active agreements, and eight published mappings for inbound and outbound Order/Invoice × EDIFACT/TRADACOMS. A local polling adapter reconciles retained inbound transfers with the same idempotent processor used by production SQS delivery, and the local tools dock supplies a deterministic two-order batch.

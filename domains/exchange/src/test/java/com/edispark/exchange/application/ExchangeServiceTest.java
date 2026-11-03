@@ -3,6 +3,7 @@ package com.edispark.exchange.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.edispark.exchange.domain.DocumentReference;
+import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeStatus;
 import com.edispark.exchange.infrastructure.InMemoryExchangeRepository;
 import com.edispark.identifiers.tenant.TenantId;
@@ -62,6 +63,27 @@ class ExchangeServiceTest {
             assertThat(transports).hasValue(1);
             assertThat(documents.retained).hasValue(1);
         });
+    }
+
+    @Test
+    void reviewedInboundMessageCanBeCompletedWithoutChangingItsExchangeIdentity() {
+        UUID partnerId = UUID.randomUUID();
+        UUID transferId = UUID.randomUUID();
+        var exchange = EdiExchange.inboundNeedsReview(TENANT, partnerId, transferId, 2, "42",
+                "MESSAGE_REJECTED: no route", NOW);
+        UUID originalId = exchange.id();
+        var source = new DocumentReference(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "source-hash");
+        var canonical = new DocumentReference(source.documentSetId(), source.documentId(), UUID.randomUUID(),
+                "canonical-hash");
+
+        exchange.completeInbound(UUID.randomUUID(), 3, UUID.randomUUID(), source, canonical, NOW.plusSeconds(60));
+
+        assertThat(exchange.id()).isEqualTo(originalId);
+        assertThat(exchange.status()).isEqualTo(ExchangeStatus.DELIVERED);
+        assertThat(exchange.messageOrdinal()).isEqualTo(2);
+        assertThat(exchange.sourceMessageReference()).isEqualTo("42");
+        assertThat(exchange.stages()).extracting(item -> item.status())
+                .containsExactly(ExchangeStatus.RECEIVED, ExchangeStatus.NEEDS_REVIEW, ExchangeStatus.DELIVERED);
     }
 
     private ExchangeCapability capability() {

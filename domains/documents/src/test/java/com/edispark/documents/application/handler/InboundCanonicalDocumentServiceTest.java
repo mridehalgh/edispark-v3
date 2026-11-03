@@ -34,4 +34,36 @@ final class InboundCanonicalDocumentServiceTest {
                 .singleElement().extracting(item -> item.targetFormat().name()).isEqualTo("JSON");
         assertThat(content.size()).isEqualTo(2);
     }
+
+    @Test
+    void messagesFromOneTransferCreateDistinctStableDocumentSets() {
+        var repository = new InMemoryDocumentSetRepository();
+        var content = new InMemoryContentStore();
+        var service = new InboundCanonicalDocumentService(repository, content);
+        UUID transferId = UUID.fromString("214ed6fd-1870-4e73-b06c-5c70a95ab15d");
+        UUID partnerId = UUID.fromString("853b78d4-0925-48d0-b9f7-3298d6f23ab4");
+        var first = request(transferId, partnerId, 1, "1", "PO-1");
+        var second = request(transferId, partnerId, 2, "2", "PO-2");
+
+        var firstResult = service.ingest(first);
+        var secondResult = service.ingest(second);
+
+        assertThat(secondResult.documentSetId()).isNotEqualTo(firstResult.documentSetId());
+        assertThat(repository.findAll()).hasSize(2);
+        assertThat(service.ingest(second)).isEqualTo(secondResult);
+        assertThat(repository.findById(new com.edispark.documents.domain.model.DocumentSetId(secondResult.documentSetId()))
+                .orElseThrow().metadata()).containsEntry("messageOrdinal", "2")
+                .containsEntry("mftTransferId", transferId.toString());
+    }
+
+    private InboundCanonicalDocumentService.InboundRequest request(UUID transferId, UUID partnerId,
+            int ordinal, String reference, String orderId) {
+        return new InboundCanonicalDocumentService.InboundRequest(transferId, partnerId, "<[email]>",
+                "orders.edi", "EDIFACT", "ORDERS", DocumentType.ORDER,
+                Instant.parse("2026-11-01T12:00:00Z"),
+                ("UNH+" + reference + "+ORDERS:D:96A:UN'BGM+220+" + orderId + "'")
+                        .getBytes(StandardCharsets.US_ASCII),
+                ("{\"Order\":[{\"ID\":[{\"_\":\"" + orderId + "\"}]}]}")
+                        .getBytes(StandardCharsets.UTF_8), ordinal, 2, reference);
+    }
 }

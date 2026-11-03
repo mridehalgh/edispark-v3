@@ -39,7 +39,7 @@ describe("parseUblOrder", () => {
     expect(result.order.id).toBe("PO-2026-0042")
     expect(result.order.buyer.name).toBe("[name]")
     expect(result.order.seller.name).toBe("[name]")
-    expect(result.order.lines).toHaveLength(2)
+    expect(result.order.lines).toHaveLength(8)
     expect(result.order.lines[0]).toMatchObject({
       id: "1",
       sellerItemId: "SPARK-WATER-750",
@@ -47,7 +47,7 @@ describe("parseUblOrder", () => {
       quantity: { value: 48, unit: "EA" },
       price: { value: 2.25, currency: "GBP" },
     })
-    expect(result.order.totals?.payable).toEqual({ value: 662.9, currency: "GBP" })
+    expect(result.order.totals?.payable).toEqual({ value: 2575.58, currency: "GBP" })
   })
 
   it("maps the official OASIS UBL 2.1 Order example", () => {

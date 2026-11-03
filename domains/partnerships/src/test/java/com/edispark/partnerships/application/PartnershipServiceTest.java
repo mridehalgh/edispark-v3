@@ -12,6 +12,7 @@ import com.edispark.partnerships.domain.model.BusinessIdentity;
 import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
+import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.infrastructure.InMemoryPartnershipRepository;
 import io.cottn.core.tenancy.TenantContext;
 import io.cottn.core.tenancy.TenantContextHolder;
@@ -92,6 +93,27 @@ class PartnershipServiceTest {
             var agreement = service.createAgreement(partner.id(), "Retail orders");
             service.deleteAgreementDraft(agreement.id());
             assertThat(repository.findAgreement(TENANT, agreement.id())).isEmpty();
+        });
+    }
+
+    @Test
+    void defaultsToStrictFilesAndCarriesAnExplicitFailurePolicyThroughRevisions() {
+        var service = new PartnershipService(new InMemoryPartnershipRepository(), new QualificationProbe(),
+                ignored -> { }, CLOCK);
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var strict = service.createPartner("Strict Retailer",
+                    List.of(new BusinessIdentity("GLN", "[strict_partner_identifier]")));
+            var tolerant = service.createPartner("Tolerant Retailer",
+                    List.of(new BusinessIdentity("GLN", "[tolerant_partner_identifier]")),
+                    InboundFileFailurePolicy.KEEP_VALID_MESSAGES);
+            var draft = service.createPartnerRevision(tolerant.id());
+            var revisedByLegacyClient = service.updatePartner(draft.id(), draft.displayName(), draft.identities(), null);
+
+            assertThat(strict.inboundFileFailurePolicy()).isEqualTo(InboundFileFailurePolicy.REJECT_FILE);
+            assertThat(draft.inboundFileFailurePolicy())
+                    .isEqualTo(InboundFileFailurePolicy.KEEP_VALID_MESSAGES);
+            assertThat(revisedByLegacyClient.inboundFileFailurePolicy())
+                    .isEqualTo(InboundFileFailurePolicy.KEEP_VALID_MESSAGES);
         });
     }
 

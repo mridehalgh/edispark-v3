@@ -47,7 +47,7 @@ describe("parseUblInvoice", () => {
     })
     expect(result.invoice.supplier.name).toBe("[name]")
     expect(result.invoice.customer.name).toBe("[name]")
-    expect(result.invoice.lines).toHaveLength(2)
+    expect(result.invoice.lines).toHaveLength(8)
     expect(result.invoice.lines[0]).toMatchObject({
       id: "1",
       name: "Spark Water 750",
@@ -56,8 +56,8 @@ describe("parseUblInvoice", () => {
       price: { value: 2.25, currency: "GBP" },
       lineExtension: { value: 108, currency: "GBP" },
     })
-    expect(result.invoice.taxes[0].taxAmount).toEqual({ value: 110.48, currency: "GBP" })
-    expect(result.invoice.totals.payable).toEqual({ value: 662.9, currency: "GBP" })
+    expect(result.invoice.taxes[0].taxAmount).toEqual({ value: 429.26, currency: "GBP" })
+    expect(result.invoice.totals.payable).toEqual({ value: 2575.58, currency: "GBP" })
   })
 
   it("maps the official OASIS UBL 2.1 Invoice example", () => {

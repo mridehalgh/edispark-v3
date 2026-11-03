@@ -2,6 +2,7 @@ package com.edispark.partnerships.application;
 
 import com.edispark.partnerships.domain.model.BusinessIdentity;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
+import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.PartnerStatus;
 import com.edispark.partnerships.domain.model.QualificationReport;
 import com.edispark.partnerships.domain.model.TradingAgreement;
@@ -28,14 +29,20 @@ public final class PartnershipService {
         this.repository = repository; this.qualification = qualification; this.snapshots = snapshots; this.clock = clock;
     }
 
-    public TradingPartner createPartner(String name, List<BusinessIdentity> identities) {
+    public TradingPartner createPartner(String name, List<BusinessIdentity> identities,
+            InboundFileFailurePolicy failurePolicy) {
         String tenant = tenant();
         for (BusinessIdentity identity : identities) {
             boolean duplicate = repository.listPartners(tenant).stream()
                     .flatMap(item -> item.identities().stream()).anyMatch(identity::equals);
             if (duplicate) throw new IllegalArgumentException("Business identity is already registered");
         }
-        return repository.savePartner(TradingPartner.create(tenant, name, identities, clock.instant()));
+        return repository.savePartner(TradingPartner.create(tenant, name, identities,
+                failurePolicy == null ? InboundFileFailurePolicy.REJECT_FILE : failurePolicy, clock.instant()));
+    }
+
+    public TradingPartner createPartner(String name, List<BusinessIdentity> identities) {
+        return createPartner(name, identities, InboundFileFailurePolicy.REJECT_FILE);
     }
 
     public List<TradingPartner> listPartners() { promoteDue(); return repository.listPartners(tenant()); }
@@ -46,9 +53,17 @@ public final class PartnershipService {
         return repository.savePartner(requirePartner(id).newDraft(clock.instant()));
     }
 
-    public TradingPartner updatePartner(UUID id, String name, List<BusinessIdentity> identities) {
+    public TradingPartner updatePartner(UUID id, String name, List<BusinessIdentity> identities,
+            InboundFileFailurePolicy failurePolicy) {
         ensureUniqueIdentities(id, identities);
-        return repository.savePartner(requirePartner(id).revise(name, identities, clock.instant()));
+        TradingPartner current = requirePartner(id);
+        InboundFileFailurePolicy effectivePolicy = failurePolicy == null
+                ? current.inboundFileFailurePolicy() : failurePolicy;
+        return repository.savePartner(current.revise(name, identities, effectivePolicy, clock.instant()));
+    }
+
+    public TradingPartner updatePartner(UUID id, String name, List<BusinessIdentity> identities) {
+        return updatePartner(id, name, identities, requirePartner(id).inboundFileFailurePolicy());
     }
 
     public TradingPartner activatePartner(UUID id, Instant effectiveAt) {

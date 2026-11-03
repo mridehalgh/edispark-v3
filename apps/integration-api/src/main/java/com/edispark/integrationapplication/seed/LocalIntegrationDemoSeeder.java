@@ -8,6 +8,7 @@ import com.edispark.partnerships.domain.model.BusinessIdentity;
 import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
+import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.PartnerStatus;
 import com.edispark.partnerships.domain.model.QualificationReport;
 import com.edispark.partnerships.domain.model.TradingAgreement;
@@ -46,6 +47,8 @@ public final class LocalIntegrationDemoSeeder {
     private static final UUID AGREEMENT_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac02");
     private static final UUID PARTNER_DRAFT_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac03");
     private static final UUID AGREEMENT_SCHEDULED_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac04");
+    private static final UUID TRADACOMS_PARTNER_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac05");
+    private static final UUID TRADACOMS_AGREEMENT_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac06");
     private static final UUID ORDER_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac10");
     private static final UUID INVOICE_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac11");
     private static final UUID EDIFACT_ORDER_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac12");
@@ -73,39 +76,58 @@ public final class LocalIntegrationDemoSeeder {
 
     @Value("${integration.local-demo.tenant-id}") private String tenantId;
     @Value("${integration.local-demo.mft-partner-id-file}") private Path mftPartnerIdFile;
+    @Value("${integration.local-demo.mft-tradacoms-partner-id-file}") private Path mftTradacomsPartnerIdFile;
 
     @EventListener(ApplicationReadyEvent.class)
     public void seed() {
         try {
-            UUID as2ConnectionId = UUID.fromString(Files.readString(mftPartnerIdFile).trim());
-            reconcile(tenantId, as2ConnectionId);
+            UUID edifactConnectionId = readPartnerId(mftPartnerIdFile);
+            UUID tradacomsConnectionId = readPartnerId(mftTradacomsPartnerIdFile);
+            reconcile(tenantId, edifactConnectionId, tradacomsConnectionId);
         } catch (IOException | IllegalArgumentException exception) {
             throw new IllegalStateException("Unable to seed the local trading network demo", exception);
         }
     }
 
-    void reconcile(String targetTenantId, UUID as2ConnectionId) {
+    private UUID readPartnerId(Path path) throws IOException {
+        return UUID.fromString(Files.readString(path).trim());
+    }
+
+    void reconcile(String targetTenantId, UUID edifactConnectionId, UUID tradacomsConnectionId) {
         Instant now = clock.instant();
         GLOBAL_MAPPING_IDS.forEach(id -> mappings.delete(targetTenantId, id));
         List<MappingRevision> demoMappings = mappings(targetTenantId, now);
         demoMappings.forEach(mapping -> mappings.find(targetTenantId, mapping.id()).orElseGet(() -> mappings.save(mapping)));
-        var activePartner = new TradingPartner(PARTNER_ID, targetTenantId, "Northstar Trading",
-                List.of(new BusinessIdentity("GLN", "[partner_identifier]")), PartnerStatus.ACTIVE, now, now);
-        if (partnerships.findPartner(targetTenantId, PARTNER_ID).isEmpty()) partnerships.savePartner(activePartner);
-        if (partnerships.findPartner(targetTenantId, PARTNER_DRAFT_ID).isEmpty()) {
-            partnerships.savePartner(new TradingPartner(PARTNER_DRAFT_ID, targetTenantId, "Northstar Trading UK",
-                    activePartner.identities(), PartnerStatus.DRAFT, now, now, PARTNER_ID, 2, null, null, 1));
-        }
-        TradingAgreement activeAgreement = agreement(targetTenantId, as2ConnectionId, now);
-        if (partnerships.findAgreement(targetTenantId, AGREEMENT_ID).isEmpty()) partnerships.saveAgreement(activeAgreement);
-        if (partnerships.findAgreement(targetTenantId, AGREEMENT_SCHEDULED_ID).isEmpty()) {
-            Instant scheduledAt = Instant.parse("2099-01-01T09:00:00Z");
-            partnerships.saveAgreement(new TradingAgreement(AGREEMENT_SCHEDULED_ID, targetTenantId, PARTNER_ID, 2,
-                    activeAgreement.name(), AgreementStatus.SCHEDULED, scheduledAt, null, activeAgreement.capabilities(),
-                    activeAgreement.qualification(), now, now, AGREEMENT_ID, scheduledAt, null, 1));
-        }
-        log.info("Integration demo ready for tenant {}; versioned partner and agreement families, {} mappings",
+        TradingPartner edifactPartner = partner(PARTNER_ID, targetTenantId, "Northstar Retail", "[edifact_buyer_gln]", now);
+        TradingPartner tradacomsPartner = partner(TRADACOMS_PARTNER_ID, targetTenantId, "Harbour Retail",
+                "[tradacoms_buyer_gln]", now);
+        partnerships.savePartner(edifactPartner);
+        partnerships.savePartner(tradacomsPartner);
+        partnerships.savePartner(new TradingPartner(PARTNER_DRAFT_ID, targetTenantId, "Northstar Retail UK",
+                edifactPartner.identities(), PartnerStatus.DRAFT, now, now, PARTNER_ID, 2, null, null, 1,
+                InboundFileFailurePolicy.REJECT_FILE));
+
+        TradingAgreement edifactAgreement = agreement(targetTenantId, PARTNER_ID, AGREEMENT_ID,
+                "Northstar EDIFACT order to invoice", EdiStandard.EDIFACT, edifactConnectionId, now);
+        TradingAgreement tradacomsAgreement = agreement(targetTenantId, TRADACOMS_PARTNER_ID, TRADACOMS_AGREEMENT_ID,
+                "Harbour TRADACOMS order to invoice", EdiStandard.TRADACOMS, tradacomsConnectionId, now);
+        partnerships.saveAgreement(edifactAgreement);
+        partnerships.saveAgreement(tradacomsAgreement);
+        Instant scheduledAt = Instant.parse("2099-01-01T09:00:00Z");
+        partnerships.saveAgreement(new TradingAgreement(AGREEMENT_SCHEDULED_ID, targetTenantId, PARTNER_ID, 2,
+                edifactAgreement.name(), AgreementStatus.SCHEDULED, scheduledAt, null,
+                edifactAgreement.capabilities(), edifactAgreement.qualification(), now, now,
+                AGREEMENT_ID, scheduledAt, null, 1));
+        log.info("Integration demo ready for tenant {}; two supplier relationships and {} editable mappings",
                 targetTenantId, demoMappings.size());
+    }
+
+    private TradingPartner partner(UUID id, String targetTenantId, String name, String gln, Instant now) {
+        InboundFileFailurePolicy policy = id.equals(TRADACOMS_PARTNER_ID)
+                ? InboundFileFailurePolicy.KEEP_VALID_MESSAGES : InboundFileFailurePolicy.REJECT_FILE;
+        return new TradingPartner(id, targetTenantId, name,
+                List.of(new BusinessIdentity("GLN", gln)), PartnerStatus.ACTIVE, now, now,
+                id, 1, null, null, 1, policy);
     }
 
     private List<MappingRevision> mappings(String targetTenantId, Instant now) {
@@ -143,27 +165,22 @@ public final class LocalIntegrationDemoSeeder {
                 List.of(source), target, null, null);
     }
 
-    private TradingAgreement agreement(String targetTenantId, UUID as2ConnectionId, Instant now) {
+    private TradingAgreement agreement(String targetTenantId, UUID partnerId, UUID agreementId, String name,
+            EdiStandard standard, UUID as2ConnectionId, Instant now) {
+        boolean edifact = standard == EdiStandard.EDIFACT;
+        String release = edifact ? "D96A" : "9";
+        UUID orderSchema = edifact ? EDIFACT_ORDER_SCHEMA : TRADACOMS_ORDER_SCHEMA;
+        UUID invoiceSchema = edifact ? EDIFACT_INVOICE_SCHEMA : TRADACOMS_INVOICE_SCHEMA;
+        UUID inboundOrderMapping = edifact ? EDIFACT_ORDER_INBOUND_MAPPING : TRADACOMS_ORDER_INBOUND_MAPPING;
+        UUID outboundInvoiceMapping = edifact ? EDIFACT_INVOICE_MAPPING : TRADACOMS_INVOICE_MAPPING;
         List<ExchangeCapability> capabilities = List.of(
-                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER, EdiStandard.EDIFACT, "D96A",
-                        "ORDERS", ORDER_SOURCE_SCHEMA, EDIFACT_ORDER_SCHEMA, EDIFACT_ORDER_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.INVOICE, EdiStandard.EDIFACT, "D96A",
-                        "INVOIC", INVOICE_SOURCE_SCHEMA, EDIFACT_INVOICE_SCHEMA, EDIFACT_INVOICE_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER, EdiStandard.TRADACOMS, "9",
-                        "ORDERS", ORDER_SOURCE_SCHEMA, TRADACOMS_ORDER_SCHEMA, TRADACOMS_ORDER_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.INVOICE, EdiStandard.TRADACOMS, "9",
-                        "INVOIC", INVOICE_SOURCE_SCHEMA, TRADACOMS_INVOICE_SCHEMA, TRADACOMS_INVOICE_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.INBOUND, BusinessDocumentType.ORDER, EdiStandard.EDIFACT, "D96A",
-                        "ORDERS", EDIFACT_ORDER_SCHEMA, ORDER_SOURCE_SCHEMA, EDIFACT_ORDER_INBOUND_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.INBOUND, BusinessDocumentType.INVOICE, EdiStandard.EDIFACT, "D96A",
-                        "INVOIC", EDIFACT_INVOICE_SCHEMA, INVOICE_SOURCE_SCHEMA, EDIFACT_INVOICE_INBOUND_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.INBOUND, BusinessDocumentType.ORDER, EdiStandard.TRADACOMS, "9",
-                        "ORDERS", TRADACOMS_ORDER_SCHEMA, ORDER_SOURCE_SCHEMA, TRADACOMS_ORDER_INBOUND_MAPPING, as2ConnectionId),
-                capability(ExchangeDirection.INBOUND, BusinessDocumentType.INVOICE, EdiStandard.TRADACOMS, "9",
-                        "INVOIC", TRADACOMS_INVOICE_SCHEMA, INVOICE_SOURCE_SCHEMA, TRADACOMS_INVOICE_INBOUND_MAPPING, as2ConnectionId));
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.ORDER, standard, release,
+                        "ORDERS", orderSchema, ORDER_SOURCE_SCHEMA, inboundOrderMapping, as2ConnectionId),
+                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.INVOICE, standard, release,
+                        "INVOIC", INVOICE_SOURCE_SCHEMA, invoiceSchema, outboundInvoiceMapping, as2ConnectionId));
         List<String> checks = capabilities.stream().flatMap(item -> List.of(
                 "Published mapping " + item.mappingRevisionId(), "Active AS2 connection " + as2ConnectionId).stream()).toList();
-        return new TradingAgreement(AGREEMENT_ID, targetTenantId, PARTNER_ID, 1, "Northstar retail documents",
+        return new TradingAgreement(agreementId, targetTenantId, partnerId, 1, name,
                 AgreementStatus.ACTIVE, now, null, capabilities,
                 new QualificationReport(true, checks, List.of(), now), now, now);
     }

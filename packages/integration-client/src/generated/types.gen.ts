@@ -12,6 +12,7 @@ export type BusinessIdentity = {
 export type CreatePartnerRequest = {
     displayName: string;
     identities: Array<BusinessIdentity>;
+    inboundFileFailurePolicy?: 'REJECT_FILE' | 'KEEP_VALID_MESSAGES';
 };
 
 export type TradingPartner = {
@@ -27,6 +28,7 @@ export type TradingPartner = {
     scheduledAt?: string;
     archivedAt?: string;
     version?: number;
+    inboundFileFailurePolicy?: 'REJECT_FILE' | 'KEEP_VALID_MESSAGES';
 };
 
 export type CapabilityRequest = {
@@ -189,6 +191,8 @@ export type ExchangeResponse = {
     createdAt?: string;
     updatedAt?: string;
     stages?: Array<ExchangeStage>;
+    messageOrdinal?: number;
+    sourceMessageReference?: string;
 };
 
 export type ExchangeStage = {

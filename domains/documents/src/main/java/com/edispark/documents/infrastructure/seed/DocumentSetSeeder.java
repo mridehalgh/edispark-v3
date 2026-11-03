@@ -52,7 +52,7 @@ import java.util.Set;
 public class DocumentSetSeeder {
 
     private static final String CREATED_BY = "local-seeder";
-    private static final String FIXTURE_VERSION = "comprehensive-v2";
+    private static final String FIXTURE_VERSION = "supplier-order-invoice-v3";
     private static final String RESOURCE_ROOT = "/seed/documents/";
     private static final VersionIdentifier INITIAL_VERSION = VersionIdentifier.of("2.1");
     private static final List<DocumentType> SEEDED_TYPES = List.of(
@@ -147,8 +147,9 @@ public class DocumentSetSeeder {
                     DocumentType.INVOICE,
                     "ubl-invoice-100045.json",
                     "Invoice INV-100045",
-                    "UBL 2.1 invoice awaiting payment",
-                    "INV-100045");
+                    "Supplier invoice sent in response to order PO-2026-0042",
+                    "INV-100045",
+                    "OUTBOUND");
         }
         if (missingTypes.contains(DocumentType.CREDIT_NOTE)) {
             createUblDocumentSet(
@@ -156,7 +157,8 @@ public class DocumentSetSeeder {
                     "ubl-credit-note-1007.json",
                     "Credit note CN-1007",
                     "UBL 2.1 credit note against invoice INV-100045",
-                    "CN-1007");
+                    "CN-1007",
+                    "OUTBOUND");
         }
 
         log.info("Created {} missing document sets", missingTypes.size());
@@ -177,11 +179,11 @@ public class DocumentSetSeeder {
                 "description", "TRADACOMS order received and parsed into UBL 2.1 JSON",
                 "direction", "INBOUND",
                 "sourceStandard", "TRADACOMS",
-                "sourceFileName", "supplier-po-2026-0042.edi",
+                "sourceFileName", "retailer-po-2026-0042.edi",
                 "businessDocumentNumber", "PO-2026-0042",
                 "fixtureVersion", FIXTURE_VERSION,
-                "senderId", "5012345678901",
-                "receiverId", "5098765432109");
+                "senderId", "[tradacoms_buyer_gln]",
+                "receiverId", "[tenant_identifier]");
 
         DocumentSet documentSet = documentSetCommandHandler.handle(new StoreSourceDocumentCommand(
                 DocumentType.ORDER,
@@ -210,11 +212,12 @@ public class DocumentSetSeeder {
             String resourceName,
             String name,
             String description,
-            String businessDocumentNumber) {
+            String businessDocumentNumber,
+            String direction) {
         Map<String, String> metadata = Map.of(
                 "name", name,
                 "description", description,
-                "direction", "INBOUND",
+                "direction", direction,
                 "standard", "UBL",
                 "ublVersion", "2.1",
                 "fixtureVersion", FIXTURE_VERSION,

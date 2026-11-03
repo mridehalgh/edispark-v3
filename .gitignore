@@ -116,6 +116,7 @@ lerna-debug.log*
 
 # Next.js
 .next/
+.next-dev/
 out/
 .next/cache/
 next-env.d.ts

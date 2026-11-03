@@ -229,7 +229,7 @@ export function DocumentsList() {
             <FileText className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
             <p className="mt-3 text-sm font-medium">No documents found</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {documents.length === 0 ? "Orders and invoices will appear here when they are received." : "Try a different search term."}
+              {documents.length === 0 ? "Readable orders and invoices appear here when transferred files are converted into business records." : "Try a different search term."}
             </p>
           </div>
         )}

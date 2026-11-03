@@ -1,290 +1,147 @@
-'use client'
+"use client"
 
-import { useMemo, useState } from "react"
-import {
-  ArrowRight,
-  Download,
-  FileStack,
-  RefreshCw,
-  Search,
-} from "lucide-react"
+import type { PartnerResponse, TransferResponse } from "@edispark/mft-client"
+import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, Download, FileUp, RefreshCw, Search } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
-import { LayoutBody } from "@/components/layout/layout"
+import { AdminEmptyState, AdminNotice, AdminPage, AdminPageHeader } from "@/components/admin/admin-page"
+import { TransferStatus } from "@/components/mft/transfer-status"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { type DocumentSetSummary, useDocumentSets } from "@/lib/use-document-sets"
+import { adminApi, formatAdminDate } from "@/lib/admin-api"
+import { cn } from "@/lib/utils"
 
-function documentTypeLabel(value: string) {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
-}
-
-function formatDate(value?: string) {
-  if (!value) return "Not recorded"
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value))
-}
-
-function setName(documentSet: DocumentSetSummary) {
-  return documentSet.metadata?.name || `File set ${documentSet.id?.slice(0, 8) ?? "unknown"}`
-}
-
-function csvCell(value: unknown) {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`
+function formatSize(value?: number) {
+  if (value === undefined) return "Unknown size"
+  if (value < 1024) return `${value} B`
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export function FilesList() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [transfers, setTransfers] = useState<TransferResponse[]>([])
+  const [connections, setConnections] = useState<PartnerResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>()
   const [query, setQuery] = useState(searchParams.get("q") ?? "")
-  const [documentType, setDocumentType] = useState("all")
-  const {
-    documentSets,
-    error,
-    hasNext,
-    loading,
-    loadingMore,
-    loadNextPage,
-    reload,
-  } = useDocumentSets()
+  const [connectionId, setConnectionId] = useState(searchParams.get("connection") ?? "all")
+  const [direction, setDirection] = useState(searchParams.get("direction") ?? "all")
+  const [status, setStatus] = useState(searchParams.get("status") ?? "all")
 
-  const types = useMemo(() => {
-    return Array.from(new Set(
-      documentSets.flatMap((documentSet) =>
-        (documentSet.documents ?? []).flatMap((document) => document.type ? [document.type] : []),
-      ),
-    )).sort()
-  }, [documentSets])
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    setError(undefined)
+    try {
+      const [nextTransfers, nextConnections] = await Promise.all([
+        adminApi<TransferResponse[]>("/api/mft/transfers"),
+        adminApi<PartnerResponse[]>("/api/mft/partners"),
+      ])
+      setTransfers(nextTransfers)
+      setConnections(nextConnections)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Files could not be loaded.")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  const filteredDocumentSets = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    return documentSets.filter((documentSet) => {
-      const documents = documentSet.documents ?? []
-      const matchesType = documentType === "all"
-        || documents.some((document) => document.type === documentType)
-      const searchableValues = [
-        documentSet.id,
-        documentSet.createdBy,
-        ...Object.values(documentSet.metadata ?? {}),
-        ...documents.flatMap((document) => [document.id, document.type]),
-      ]
-      const matchesQuery = !normalizedQuery
-        || searchableValues.some((value) => value?.toLowerCase().includes(normalizedQuery))
-      return matchesType && matchesQuery
-    })
-  }, [documentSets, documentType, query])
+  useEffect(() => { void refresh() }, [refresh])
 
-  const exportDocumentSets = () => {
-    const header = ["File set", "Set ID", "File types", "Files", "Versions", "Created", "Created by"]
-    const rows = filteredDocumentSets.map((documentSet) => {
-      const documents = documentSet.documents ?? []
-      return [
-        setName(documentSet),
-        documentSet.id,
-        documents.flatMap((document) => document.type ? [documentTypeLabel(document.type)] : []).join("; "),
-        documents.length,
-        documents.reduce((total, document) => total + (document.versionCount ?? 0), 0),
-        documentSet.createdAt,
-        documentSet.createdBy,
-      ]
-    })
-    const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n")
+  const names = useMemo(() => new Map(connections.map((item) => [item.id, item.name])), [connections])
+  const filtered = useMemo(() => {
+    const search = query.trim().toLowerCase()
+    return [...transfers]
+      .filter((item) => connectionId === "all" || item.partnerId === connectionId)
+      .filter((item) => direction === "all" || item.direction === direction)
+      .filter((item) => status === "all" || item.status === status)
+      .filter((item) => !search || [item.filename, item.sha256, item.as2MessageId, names.get(item.partnerId)].some((value) => value?.toLowerCase().includes(search)))
+      .sort((left, right) => new Date(right.updatedAt ?? 0).getTime() - new Date(left.updatedAt ?? 0).getTime())
+  }, [connectionId, direction, names, query, status, transfers])
+
+  const selected = transfers.find((item) => item.id === searchParams.get("selected")) ?? filtered[0]
+
+  function selectTransfer(transfer: TransferResponse) {
+    const next = new URLSearchParams(searchParams)
+    if (transfer.id) next.set("selected", transfer.id)
+    setSearchParams(next, { replace: true })
+  }
+
+  function exportFiles() {
+    const rows = filtered.map((item) => [item.filename, names.get(item.partnerId), item.direction, item.status, item.size, item.updatedAt, item.sha256])
+    const csv = [["File", "Connection", "Direction", "Status", "Bytes", "Updated", "SHA-256"], ...rows]
+      .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+      .join("\n")
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
     const link = window.document.createElement("a")
     link.href = url
-    link.download = "edi-spark-file-sets.csv"
+    link.download = "edispark-files.csv"
     link.click()
     URL.revokeObjectURL(url)
   }
 
   return (
-    <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-      <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Files</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Inspect source files, immutable versions, and generated derivatives for technical traceability.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={exportDocumentSets}
-          disabled={filteredDocumentSets.length === 0}
-          className="gap-2 self-start sm:self-auto"
-        >
-          <Download className="h-4 w-4" aria-hidden="true" />
-          Export current view
-        </Button>
-      </header>
+    <AdminPage className="max-w-none px-0 py-0 sm:py-0">
+      <div className="border-b px-4 py-5 sm:px-6 lg:px-8">
+        <AdminPageHeader title="Files" className="mb-0" actions={<><Button variant="ghost" size="icon" onClick={() => void refresh()} disabled={loading} aria-label="Refresh files"><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button><Button variant="outline" onClick={exportFiles} disabled={!filtered.length}><Download className="mr-2 h-4 w-4" />Export</Button><Button asChild><Link to="/files/send"><FileUp className="mr-2 h-4 w-4" />Send file</Link></Button></>} />
+      </div>
 
-      <section aria-label="File filters" className="mb-4 flex flex-col gap-2 sm:flex-row">
-        <label className="relative flex-1 sm:max-w-lg">
-          <span className="sr-only">Search file sets</span>
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search file name, identifier, creator, or type…"
-            className="pl-9"
-          />
-        </label>
-        <label>
-          <span className="sr-only">Filter by file type</span>
-          <select
-            value={documentType}
-            onChange={(event) => setDocumentType(event.target.value)}
-            className="h-10 w-full rounded-md border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-56"
-          >
-            <option value="all">All file types</option>
-            {types.map((type) => (
-              <option key={type} value={type}>{documentTypeLabel(type)}</option>
+      {error ? <div className="px-4 pt-5 sm:px-6 lg:px-8"><AdminNotice>{error}</AdminNotice></div> : null}
+
+      <div className="grid min-h-[calc(100vh-8.1rem)] xl:grid-cols-[minmax(36rem,1fr)_24rem]">
+        <section className="min-w-0 border-r" aria-label="Transferred files">
+          <div className="grid gap-2 border-b p-4 sm:grid-cols-2 lg:grid-cols-[minmax(14rem,1fr)_12rem_10rem_11rem]">
+            <label className="relative"><span className="sr-only">Search files</span><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files" className="pl-9" /></label>
+            <label><span className="sr-only">Connection</span><select value={connectionId} onChange={(event) => setConnectionId(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="all">All connections</option>{connections.filter((item) => item.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label><span className="sr-only">Direction</span><select value={direction} onChange={(event) => setDirection(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="all">Sent and received</option><option value="INBOUND">Received</option><option value="OUTBOUND">Sent</option></select></label>
+            <label><span className="sr-only">Status</span><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option><option value="DELIVERED">Delivered</option><option value="AWAITING_MDN">Waiting for receipt</option><option value="RETRY_SCHEDULED">Retry scheduled</option><option value="NEEDS_REVIEW">Needs attention</option><option value="FAILED">Failed</option></select></label>
+          </div>
+
+          <div className="hidden border-b bg-muted/35 px-4 py-2.5 text-xs text-muted-foreground md:grid md:grid-cols-[minmax(14rem,1fr)_10rem_8rem_10rem_9rem] md:gap-4"><span>File</span><span>Connection</span><span>Direction</span><span>Status</span><span>Time</span></div>
+          <div className="divide-y">
+            {filtered.map((transfer) => (
+              <button key={transfer.id} type="button" onClick={() => selectTransfer(transfer)} className={cn("grid min-h-16 w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 md:grid-cols-[minmax(14rem,1fr)_10rem_8rem_10rem_9rem] md:gap-4", selected?.id === transfer.id && "bg-accent/70")}>
+                <span className="min-w-0"><span className="block truncate text-sm font-medium">{transfer.filename}</span><span className="mt-0.5 block text-xs text-muted-foreground">{formatSize(transfer.size)}</span></span>
+                <span className="truncate text-xs text-muted-foreground">{names.get(transfer.partnerId) ?? "Unassigned"}</span>
+                <span className="inline-flex items-center gap-1.5 text-xs">{transfer.direction === "INBOUND" ? <ArrowDownToLine className="h-3.5 w-3.5" /> : <ArrowUpFromLine className="h-3.5 w-3.5" />}{transfer.direction === "INBOUND" ? "Received" : "Sent"}</span>
+                <TransferStatus status={transfer.status} />
+                <time className="text-xs text-muted-foreground">{formatAdminDate(transfer.updatedAt)}</time>
+              </button>
             ))}
-          </select>
-        </label>
-      </section>
-
-      {error && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-          <span>{error}</span>
-          <Button variant="outline" size="sm" onClick={reload} className="shrink-0 gap-2">
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-            Retry
-          </Button>
-        </div>
-      )}
-
-      <section aria-labelledby="results-title" className="overflow-hidden rounded-lg border bg-card">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div>
-            <h2 id="results-title" className="text-sm font-semibold">File sets</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">A set keeps related source files, responses, and transformations correlated.</p>
+            {!loading && filtered.length === 0 ? <AdminEmptyState title={transfers.length ? "No files match these filters" : "No files yet"} action={!transfers.length ? <Button asChild><Link to="/files/send">Send file</Link></Button> : undefined} /> : null}
+            {loading ? Array.from({ length: 6 }, (_, index) => <div key={index} className="h-16 animate-pulse border-b bg-muted/30" />) : null}
           </div>
-          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-            {filteredDocumentSets.length} shown
-          </span>
-        </div>
+        </section>
 
-        {loading ? (
-          <div className="divide-y" aria-label="Loading file sets">
-            {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className="grid animate-pulse gap-3 px-4 py-4 md:grid-cols-[minmax(16rem,1fr)_12rem_7rem_10rem]">
-                <span className="h-4 rounded bg-muted" />
-                <span className="h-4 rounded bg-muted" />
-                <span className="h-4 rounded bg-muted" />
-                <span className="h-4 rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[62rem] text-left text-sm">
-                <thead className="border-b bg-muted/55 text-xs text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-2.5 font-medium">File set</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">File types</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Files</th>
-                    <th scope="col" className="px-4 py-2.5 text-right font-medium">Versions</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Created</th>
-                    <th scope="col" className="px-4 py-2.5 font-medium">Created by</th>
-                    <th scope="col" className="px-4 py-2.5"><span className="sr-only">Action</span></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredDocumentSets.map((documentSet) => {
-                    const documents = documentSet.documents ?? []
-                    const documentTypes = Array.from(new Set(
-                      documents.flatMap((document) => document.type ? [documentTypeLabel(document.type)] : []),
-                    ))
-                    const versions = documents.reduce((total, document) => total + (document.versionCount ?? 0), 0)
-
-                    return (
-                      <tr key={documentSet.id} className="group transition-colors hover:bg-muted/45">
-                        <td className="px-4 py-3">
-                          <span className="font-medium">{setName(documentSet)}</span>
-                          <span className="mt-0.5 block font-mono text-xs tabular-nums text-muted-foreground">
-                            {documentSet.id}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {documentTypes.join(", ") || "No files"}
-                        </td>
-                        <td className="px-4 py-3 text-right tabular-nums">{documents.length}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{versions}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDate(documentSet.createdAt)}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{documentSet.createdBy || "Not recorded"}</td>
-                        <td className="px-4 py-3 text-right">
-                          {documentSet.id && (
-                            <Link
-                              to={`/file/${documentSet.id}`}
-                              className="inline-flex min-h-11 items-center gap-1 text-xs font-medium text-primary hover:underline"
-                            >
-                              Open set
-                              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="divide-y md:hidden">
-              {filteredDocumentSets.map((documentSet) => {
-                const documents = documentSet.documents ?? []
-                const versions = documents.reduce((total, document) => total + (document.versionCount ?? 0), 0)
-
-                return documentSet.id ? (
-                  <Link key={documentSet.id} to={`/file/${documentSet.id}`} className="block px-4 py-4 transition-colors hover:bg-muted/45">
-                    <div className="flex items-start gap-3">
-                      <FileStack className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{setName(documentSet)}</p>
-                        <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{documentSet.id}</p>
-                        <p className="mt-3 text-xs text-muted-foreground">
-                          {documents.length} {documents.length === 1 ? "file" : "files"} · {versions} {versions === 1 ? "version" : "versions"}
-                        </p>
-                        <time className="mt-1 block text-xs text-muted-foreground">{formatDate(documentSet.createdAt)}</time>
-                      </div>
-                      <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                    </div>
-                  </Link>
-                ) : null
-              })}
-            </div>
-          </>
-        )}
-
-        {!loading && filteredDocumentSets.length === 0 && (
-          <div className="px-4 py-14 text-center">
-            <FileStack className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
-            <p className="mt-3 text-sm font-medium">No file sets found</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {documentSets.length === 0
-                ? "File sets will appear here when the Documents API receives them."
-                : "Try a different file type or search term."}
-            </p>
-          </div>
-        )}
-
-        {hasNext && (
-          <div className="border-t px-4 py-3 text-center">
-            <Button variant="outline" size="sm" onClick={() => void loadNextPage()} disabled={loadingMore}>
-              {loadingMore ? "Loading…" : "Load more file sets"}
-            </Button>
-          </div>
-        )}
-      </section>
-    </LayoutBody>
+        <aside className="hidden min-w-0 xl:block" aria-label="Selected file">
+          {selected ? <FileInspector transfer={selected} connectionName={names.get(selected.partnerId)} /> : <AdminEmptyState title="Select a file" />}
+        </aside>
+      </div>
+    </AdminPage>
   )
+}
+
+function FileInspector({ transfer, connectionName }: { transfer: TransferResponse; connectionName?: string }) {
+  const relatedDocument = transfer.provenance?.documentSetId && transfer.provenance.documentId
+    ? `/documents/${transfer.provenance.documentSetId}/${transfer.provenance.documentId}`
+    : undefined
+  return (
+    <div className="sticky top-16 p-6">
+      <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="break-words text-lg font-semibold">{transfer.filename}</h2><TransferStatus status={transfer.status} className="mt-2" /></div><Button asChild variant="ghost" size="icon"><Link to={`/files/transfers/${transfer.id}`} aria-label="Open file details"><ArrowRight className="h-4 w-4" /></Link></Button></div>
+      <dl className="mt-6 divide-y border-y text-sm">
+        <Definition label="Connection" value={connectionName ?? "Unassigned"} />
+        <Definition label="Direction" value={transfer.direction === "INBOUND" ? "Received" : "Sent"} />
+        <Definition label="Size" value={formatSize(transfer.size)} />
+        <Definition label="Updated" value={formatAdminDate(transfer.updatedAt)} />
+      </dl>
+      {transfer.failureReason ? <p className="mt-5 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{transfer.failureReason}</p> : null}
+      {relatedDocument ? <section className="mt-6 border-t pt-5"><h3 className="text-sm font-semibold">Document</h3><Link to={relatedDocument} className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">Open related document<ArrowRight className="h-4 w-4" /></Link></section> : null}
+      <div className="mt-6 grid grid-cols-2 gap-2"><Button asChild variant="outline"><a href={`/api/mft/transfers/${transfer.id}/content`}><Download className="mr-2 h-4 w-4" />Download</a></Button><Button asChild><Link to={`/files/transfers/${transfer.id}`}>View details</Link></Button></div>
+    </div>
+  )
+}
+
+function Definition({ label, value }: { label: string; value: string }) {
+  return <div className="grid grid-cols-[7rem_1fr] gap-3 py-3"><dt className="text-muted-foreground">{label}</dt><dd className="break-words font-medium">{value}</dd></div>
 }

@@ -228,7 +228,7 @@ export function InvoiceDocumentPage() {
             </Button>
             {setId && (
               <Button asChild variant="outline">
-                <Link to={`/file/${setId}`}>Inspect file</Link>
+                <Link to={`/files/${setId}`}>Open files</Link>
               </Button>
             )}
           </div>

@@ -34,7 +34,7 @@ export function UserNav({ admin }: { admin: boolean }) {
         <DropdownMenuLabel>{name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild><Link to="/account/settings">Account settings</Link></DropdownMenuItem>
-        {admin && <DropdownMenuItem asChild><Link to="/settings/workspace">Workspace settings</Link></DropdownMenuItem>}
+        {admin && <DropdownMenuItem asChild><Link to="/organisation/people">Organisation</Link></DropdownMenuItem>}
         {process.env.NODE_ENV === "development" && (
           <DropdownMenuItem asChild><Link to="/debug/jwt">JWT diagnostics</Link></DropdownMenuItem>
         )}

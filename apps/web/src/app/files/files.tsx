@@ -193,7 +193,7 @@ export function FilesPage() {
 
   if (loading) {
     return (
-      <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8" aria-label="Loading file set">
+      <LayoutBody className="mx-auto w-full max-w-6xl py-7 sm:py-8" aria-label="Loading evidence">
         <div className="animate-pulse">
           <div className="h-4 w-32 rounded bg-muted" />
           <div className="mt-6 h-8 w-72 rounded bg-muted" />
@@ -209,8 +209,8 @@ export function FilesPage() {
 
   if (error || !detail) {
     return (
-      <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-        <Link to="/file" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
+      <LayoutBody className="mx-auto w-full max-w-6xl py-7 sm:py-8">
+        <Link to="/files" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to files
         </Link>
@@ -241,8 +241,8 @@ export function FilesPage() {
     : "Source version"
 
   return (
-    <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-      <Link to="/file" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
+    <LayoutBody className="mx-auto w-full max-w-6xl py-7 sm:py-8">
+      <Link to="/files" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Back to files
       </Link>
@@ -251,10 +251,6 @@ export function FilesPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-              {documentSet.metadata?.description || "A correlated set of business documents and their immutable versions."}
-            </p>
-            <p className="mt-3 break-all font-mono text-xs tabular-nums text-muted-foreground">{documentSet.id}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
             <FileStack className="h-4 w-4 text-primary" aria-hidden="true" />
@@ -264,6 +260,7 @@ export function FilesPage() {
       </header>
 
       <dl className="grid gap-x-8 gap-y-5 border-b py-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Definition label="File set ID" value={documentSet.id} />
         <Definition label="Created" value={formatDate(documentSet.createdAt)} />
         <Definition label="Created by" value={documentSet.createdBy || "Not recorded"} />
         {metadata.map(([key, value]) => (
@@ -274,8 +271,7 @@ export function FilesPage() {
       <div className="mt-6 grid items-start gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
         <aside aria-labelledby="set-documents-title" className="overflow-hidden rounded-lg border bg-card">
           <div className="border-b px-4 py-3">
-            <h2 id="set-documents-title" className="text-sm font-semibold">Files in this set</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Select a file to inspect its current version.</p>
+            <h2 id="set-documents-title" className="text-sm font-semibold">Files</h2>
           </div>
           <div className="divide-y">
             {detail.documents.map((document) => (

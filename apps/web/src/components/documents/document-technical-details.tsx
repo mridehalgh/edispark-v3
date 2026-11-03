@@ -28,7 +28,7 @@ export function DocumentTechnicalDetails({
       </summary>
       <div className="flex flex-col gap-3 pb-2 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span>UBL {ublVersion ?? "unknown"}{profileId ? ` · ${profileId}` : ""}{representation ? ` · ${representation}` : ""}</span>
-        {setId ? <Link to={`/file/${setId}`} className="inline-flex min-h-11 items-center gap-1.5 font-medium text-primary hover:underline">Open evidence<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link> : null}
+        {setId ? <Link to={`/files/${setId}`} className="inline-flex min-h-11 items-center gap-1.5 font-medium text-primary hover:underline">Open files<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link> : null}
       </div>
     </details>
   )

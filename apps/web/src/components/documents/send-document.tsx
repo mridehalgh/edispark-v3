@@ -93,7 +93,7 @@ export function SendDocument({ documentSetId, documentId }: { documentSetId: str
       <div className="mt-3 max-w-md rounded-md border bg-muted/35 p-3 text-left text-xs">
         <p className="font-medium">No qualified route is active</p>
         <p className="mt-1 leading-5 text-muted-foreground">Ask a workspace administrator to finish this partner connection.</p>
-        <Button asChild variant="link" size="sm" className="mt-1 h-auto gap-1 p-0"><Link to="/settings/connections"><Settings2 className="h-3.5 w-3.5" />Open connections</Link></Button>
+        <Button asChild variant="link" size="sm" className="mt-1 h-auto gap-1 p-0"><Link to="/partners"><Settings2 className="h-3.5 w-3.5" />Open partners</Link></Button>
       </div>
     )
   }

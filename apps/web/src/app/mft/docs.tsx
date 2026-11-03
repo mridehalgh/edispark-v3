@@ -30,10 +30,10 @@ function Definition({ term, children }: { term: string; children: React.ReactNod
 
 export function MftDocsPage() {
   return <LayoutBody className="w-full px-0 py-0">
-    <div className="border-b bg-card/50"><div className="mx-auto flex w-full max-w-[96rem] flex-col gap-5 px-4 py-7 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8"><h1 className="text-2xl font-semibold tracking-tight">Connection guide</h1><Button asChild variant="outline" className="gap-2 self-start"><Link to="/settings/connections/transport"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to transport</Link></Button></div></div>
+    <div className="border-b"><div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-7 sm:px-6 lg:px-8"><h1 className="text-2xl font-semibold tracking-tight">Connection guide</h1><Button asChild variant="ghost" className="gap-2"><Link to="/settings/connections/transport"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Connection setup</Link></Button></div></div>
 
     <div className="border-b px-4 pt-2 lg:hidden"><DocNav compact /></div>
-    <div className="mx-auto grid w-full max-w-[96rem] lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_16rem]">
+    <div className="mx-auto grid w-full max-w-6xl lg:grid-cols-[13rem_minmax(0,1fr)]">
       <aside className="hidden border-r px-4 py-8 lg:block"><div className="sticky top-24"><p className="mb-3 px-3 text-xs font-medium text-muted-foreground">On this page</p><DocNav /></div></aside>
 
       <article className="min-w-0 px-4 py-10 sm:px-8 xl:px-12">
@@ -81,7 +81,6 @@ export function MftDocsPage() {
         </section>
       </article>
 
-      <aside className="hidden border-l px-5 py-10 xl:block"><div className="sticky top-24 space-y-6"><div><h2 className="text-sm font-semibold">Before you start</h2><ul className="mt-3 space-y-3 text-xs leading-5 text-muted-foreground"><li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-foreground" aria-hidden="true" />Your agreed AS2 identifiers</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-foreground" aria-hidden="true" />Partner receiving URL</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-foreground" aria-hidden="true" />Partner public certificate</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-foreground" aria-hidden="true" />Receipt preference</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success-foreground" aria-hidden="true" />Agreed test file</li></ul></div><div className="border-t pt-6"><h2 className="text-sm font-semibold">Who is this guide for?</h2><p className="mt-2 text-xs leading-5 text-muted-foreground">Organisation administrators who set up and monitor their own trading partner connections. EdiSpark platform operations are managed separately.</p></div></div></aside>
     </div>
   </LayoutBody>
 }

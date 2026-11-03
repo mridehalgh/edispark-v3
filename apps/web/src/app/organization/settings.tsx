@@ -4,10 +4,10 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import {
   Building2,
   Check,
-  ChevronRight,
   CircleUserRound,
   Copy,
   ExternalLink,
+  FileCode2,
   KeyRound,
   Plus,
   Settings2,
@@ -17,9 +17,10 @@ import {
   Users,
   X,
 } from "lucide-react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
+import { AdminPage, AdminPageHeader } from "@/components/admin/admin-page"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,14 +44,14 @@ const initials = (value: string) =>
     .slice(0, 2)
     .toUpperCase()
 
-export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: boolean }) {
+export function OrganizationSettingsPage({ setupOnly = false, initialTab = "people" }: { setupOnly?: boolean; initialTab?: "people" | "settings" | "sso" }) {
+  const navigate = useNavigate()
   const { data: activeOrganization, isPending } = authClient.useActiveOrganization()
   const { data: organizations, isPending: isOrganizationsPending } = authClient.useListOrganizations()
   const { data: session } = authClient.useSession()
   const [notice, setNotice] = useState<Notice>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [isAddingOrganization, setIsAddingOrganization] = useState(false)
-  const [switchingOrganizationId, setSwitchingOrganizationId] = useState<string | null>(null)
   const attemptedWorkspaceId = useRef<string | null>(null)
   const organizationList = Array.isArray(organizations) ? organizations : []
   const soleOrganization = organizationList.length === 1 ? organizationList[0] : null
@@ -59,10 +60,8 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
     if (activeOrganization || !soleOrganization || attemptedWorkspaceId.current === soleOrganization.id) return
 
     attemptedWorkspaceId.current = soleOrganization.id
-    setSwitchingOrganizationId(soleOrganization.id)
     void authClient.organization.setActive({ organizationId: soleOrganization.id }).then((result) => {
       if (result.error) setNotice({ kind: "error", text: getError(result.error, "Unable to open your workspace.") })
-      setSwitchingOrganizationId(null)
     })
   }, [activeOrganization, soleOrganization])
 
@@ -81,15 +80,6 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
     return true
   }
 
-  async function chooseOrganization(organizationId: string) {
-    if (organizationId === activeOrganization?.id) return
-    setNotice(null)
-    setSwitchingOrganizationId(organizationId)
-    const result = await authClient.organization.setActive({ organizationId })
-    if (result.error) setNotice({ kind: "error", text: getError(result.error, "Unable to switch workspace.") })
-    setSwitchingOrganizationId(null)
-  }
-
   async function createOrganization(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsCreating(true)
@@ -100,7 +90,7 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
         name: String(form.get("name")).trim(),
         slug: String(form.get("slug")).trim().toLowerCase(),
       }),
-      "Workspace created.",
+      "Organisation created.",
     )
     setIsCreating(false)
     if (created) {
@@ -110,7 +100,7 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
   }
 
   if (isPending || isOrganizationsPending || (soleOrganization && !activeOrganization)) {
-    return <OrganizationPageSkeleton label={notice?.kind === "error" ? notice.text : "Preparing your workspace…"} />
+    return <OrganizationPageSkeleton label={notice?.kind === "error" ? notice.text : "Preparing your organisation…"} />
   }
   if (!activeOrganization && organizationList.length > 1) return <Navigate to="/workspace" replace />
   if (activeOrganization && setupOnly) return <Navigate to="/documents" replace />
@@ -119,7 +109,7 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
       <LayoutBody className="mx-auto w-full max-w-xl py-10">
         <section className="border bg-card p-6 sm:p-8" aria-labelledby="create-workspace-title">
           <Building2 className="h-8 w-8 text-primary" aria-hidden="true" />
-          <h1 id="create-workspace-title" className="mt-5 text-2xl font-semibold tracking-tight">Create your workspace</h1>
+          <h1 id="create-workspace-title" className="mt-5 text-2xl font-semibold tracking-tight">Create your organisation</h1>
           <CreateOrganizationForm onSubmit={createOrganization} isCreating={isCreating} className="mt-6" />
         </section>
       </LayoutBody>
@@ -127,14 +117,13 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
   }
 
   return (
-    <LayoutBody className="mx-auto w-full max-w-7xl py-8">
-      <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Workspace</h1>
+    <AdminPage>
+      <AdminPageHeader title="Organisation" actions={
         <Button variant="outline" onClick={() => setIsAddingOrganization((open) => !open)} aria-expanded={isAddingOrganization}>
           {isAddingOrganization ? <X className="mr-2 h-4 w-4" aria-hidden="true" /> : <Plus className="mr-2 h-4 w-4" aria-hidden="true" />}
-          {isAddingOrganization ? "Cancel" : "New workspace"}
+          {isAddingOrganization ? "Cancel" : "New organisation"}
         </Button>
-      </header>
+      } />
 
       {notice && (
         <p
@@ -151,48 +140,13 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
       {isAddingOrganization && (
         <section className="mt-6 border bg-muted/45 p-5 sm:p-6" aria-labelledby="new-workspace-title">
           <div className="max-w-2xl">
-            <h2 id="new-workspace-title" className="text-base font-semibold">Create a separate workspace</h2>
+            <h2 id="new-workspace-title" className="text-base font-semibold">Create an organisation</h2>
             <CreateOrganizationForm onSubmit={createOrganization} isCreating={isCreating} className="mt-5" />
           </div>
         </section>
       )}
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
-        <aside aria-labelledby="your-workspaces-title">
-          <h2 id="your-workspaces-title" className="px-1 text-sm font-semibold">Workspaces</h2>
-          <div className="mt-2 overflow-hidden rounded-md border bg-card">
-            {organizationList.map((organization) => {
-              const isActive = organization.id === activeOrganization.id
-              const isSwitching = switchingOrganizationId === organization.id
-              return (
-                <button
-                  key={organization.id}
-                  type="button"
-                  onClick={() => chooseOrganization(organization.id)}
-                  disabled={Boolean(switchingOrganizationId)}
-                  aria-current={isActive ? "true" : undefined}
-                  className={cn(
-                    "flex min-h-16 w-full items-center gap-3 border-b px-3 py-2.5 text-left transition-colors last:border-b-0 hover:bg-accent focus-visible:relative disabled:cursor-wait",
-                    isActive && "bg-accent",
-                  )}
-                >
-                  <Avatar className="h-9 w-9 rounded-md">
-                    <AvatarFallback className={cn("rounded-md text-xs font-semibold", isActive && "bg-primary text-primary-foreground")}>
-                      {initials(organization.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">{organization.name}</span>
-                    {isSwitching && <span className="block truncate text-xs text-muted-foreground">Switching…</span>}
-                  </span>
-                  {isActive ? <Check className="h-4 w-4 text-primary" aria-label="Selected" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
-                </button>
-              )
-            })}
-          </div>
-        </aside>
-
-        <main className="min-w-0">
+      <main className="mt-6 min-w-0">
           <div className="flex items-center gap-3 border-b pb-5">
             <Avatar className="h-11 w-11 rounded-md">
               <AvatarFallback className="rounded-md bg-primary text-sm font-semibold text-primary-foreground">
@@ -204,16 +158,19 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
             </div>
           </div>
 
-          <Tabs defaultValue="people" className="mt-5">
+          <Tabs value={initialTab} onValueChange={(value) => navigate({ people: "/organisation/people", settings: "/organisation/details", sso: "/organisation/sign-in", rules: "/organisation/document-rules" }[value] ?? "/organisation/people")} className="mt-5">
             <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-b bg-transparent p-0">
               <TabsTrigger value="people" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
                 <Users className="h-4 w-4" aria-hidden="true" /> People
               </TabsTrigger>
               <TabsTrigger value="settings" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
-                <Settings2 className="h-4 w-4" aria-hidden="true" /> Settings
+                <Settings2 className="h-4 w-4" aria-hidden="true" /> Details
               </TabsTrigger>
               <TabsTrigger value="sso" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
                 <KeyRound className="h-4 w-4" aria-hidden="true" /> Single sign-on
+              </TabsTrigger>
+              <TabsTrigger value="rules" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
+                <FileCode2 className="h-4 w-4" aria-hidden="true" /> Document rules
               </TabsTrigger>
             </TabsList>
             <TabsContent value="people" className="mt-6">
@@ -226,9 +183,8 @@ export function OrganizationSettingsPage({ setupOnly = false }: { setupOnly?: bo
               <SingleSignOn organization={activeOrganization} canManage={canManage} />
             </TabsContent>
           </Tabs>
-        </main>
-      </div>
-    </LayoutBody>
+      </main>
+    </AdminPage>
   )
 }
 
@@ -237,10 +193,7 @@ function OrganizationPageSkeleton({ label }: { label: string }) {
     <LayoutBody className="mx-auto w-full max-w-7xl py-8" aria-live="polite">
       <div className="h-7 w-40 animate-pulse rounded bg-muted" />
       <div className="mt-3 h-4 w-80 max-w-full animate-pulse rounded bg-muted" />
-      <div className="mt-8 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
-        <div className="h-48 animate-pulse rounded-md bg-muted" />
-        <div className="h-72 animate-pulse rounded-md bg-muted" />
-      </div>
+      <div className="mt-8 h-72 animate-pulse rounded-md bg-muted" />
       <span className="sr-only">{label}</span>
     </LayoutBody>
   )
@@ -258,16 +211,15 @@ function CreateOrganizationForm({
   return (
     <form onSubmit={onSubmit} className={cn("grid gap-4 sm:grid-cols-2", className)}>
       <label className="grid gap-1.5 text-sm font-medium">
-        Workspace name
+        Organisation name
         <Input required name="name" autoComplete="organization" placeholder="Example Supplies" />
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
-        Workspace URL name
-        <Input required name="slug" pattern="[a-z0-9-]+" placeholder="example-supplies" aria-describedby="slug-help" />
-        <span id="slug-help" className="text-xs font-normal text-muted-foreground">Lowercase letters, numbers, and hyphens.</span>
+        Organisation URL name
+        <Input required name="slug" pattern="[a-z0-9-]+" placeholder="example-supplies" title="Use lowercase letters, numbers, and hyphens" />
       </label>
       <Button className="w-fit sm:col-span-2" type="submit" disabled={isCreating}>
-        {isCreating ? "Creating…" : "Create workspace"}
+        {isCreating ? "Creating…" : "Create organisation"}
       </Button>
     </form>
   )
@@ -279,7 +231,7 @@ function OrganizationDetails({ organization, canManage, execute }: { organizatio
     const name = String(new FormData(event.currentTarget).get("name")).trim()
     await execute(
       () => authClient.organization.update({ organizationId: organization.id, data: { name } }),
-      "Workspace details updated.",
+      "Organisation updated.",
     )
   }
 
@@ -287,14 +239,11 @@ function OrganizationDetails({ organization, canManage, execute }: { organizatio
     <section aria-labelledby="workspace-details-title">
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
-        <div>
-          <h3 id="workspace-details-title" className="text-base font-semibold">Workspace details</h3>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">This name appears throughout EDI Spark and in member invitations.</p>
-        </div>
+        <h3 id="workspace-details-title" className="text-base font-semibold">Organisation details</h3>
       </div>
       <form onSubmit={submit} className="mt-6 max-w-xl">
         <label className="grid gap-1.5 text-sm font-medium">
-          Workspace name
+          Organisation name
           <Input required name="name" defaultValue={organization.name} disabled={!canManage} />
         </label>
         <div className="mt-4 flex items-center gap-3">
@@ -419,12 +368,7 @@ function SingleSignOn({ organization, canManage }: { organization: any; canManag
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex max-w-2xl items-start gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-          <div>
-            <h3 id="single-sign-on-title" className="text-base font-semibold">Single sign-on</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              Connect each company domain to its identity provider. People who sign in through a provider are added to this workspace as members automatically.
-            </p>
-          </div>
+          <h3 id="single-sign-on-title" className="text-base font-semibold">Single sign-on</h3>
         </div>
         {canManage && (
           <Button variant="outline" onClick={() => setIsAdding((open) => !open)} aria-expanded={isAdding}>
@@ -455,10 +399,7 @@ function SingleSignOn({ organization, canManage }: { organization: any; canManag
       {isAdding && canManage && (
         <form onSubmit={register} className="mt-6 border-y bg-muted/35 px-4 py-5 sm:px-5" aria-labelledby="add-sso-provider-title">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h4 id="add-sso-provider-title" className="text-sm font-semibold">Add an identity provider</h4>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">Credentials are stored by the authentication service and are never returned to the browser.</p>
-            </div>
+            <h4 id="add-sso-provider-title" className="text-sm font-semibold">Add identity provider</h4>
             <div className="flex w-fit rounded-md bg-background p-1" role="tablist" aria-label="Identity provider protocol">
               {(["oidc", "saml"] as const).map((value) => (
                 <button
@@ -556,7 +497,6 @@ function SingleSignOn({ organization, canManage }: { organization: any; canManag
             <Button type="submit" disabled={Boolean(pendingProviderId)}>
               {pendingProviderId ? "Checking provider…" : "Add provider"}
             </Button>
-            <p className="text-xs leading-5 text-muted-foreground">New users receive the member role. Owners can promote them after their first sign-in.</p>
           </div>
         </form>
       )}
@@ -571,10 +511,7 @@ function SingleSignOn({ organization, canManage }: { organization: any; canManag
         ) : providers.length === 0 ? (
           <div className="mt-2 border-y bg-muted/25 px-4 py-7 text-center">
             <KeyRound className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
-            <p className="mt-3 text-sm font-medium">No company sign-in providers yet</p>
-            <p className="mx-auto mt-1 max-w-lg text-sm leading-6 text-muted-foreground">
-              Add an OIDC or SAML provider to route people into this workspace using their company credentials.
-            </p>
+            <p className="mt-3 text-sm font-medium">No identity providers</p>
           </div>
         ) : (
           <div className="mt-2 divide-y rounded-md border">
@@ -666,10 +603,7 @@ function Members({ organization, canManage, execute }: { organization: any; canM
   return (
     <section aria-labelledby="people-title">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h3 id="people-title" className="text-base font-semibold">People with access</h3>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">Manage who can work with this workspace’s documents and connections.</p>
-        </div>
+        <h3 id="people-title" className="text-base font-semibold">People</h3>
         <Badge variant="secondary" className="w-fit font-medium">
           {organization.members.length} {organization.members.length === 1 ? "member" : "members"}
         </Badge>

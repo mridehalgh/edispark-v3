@@ -2,6 +2,7 @@ package com.edispark.documents.api.rest;
 
 import com.edispark.documents.api.dto.ErrorResponse;
 import com.edispark.documents.application.handler.DocumentNotFoundException;
+import com.edispark.documents.application.handler.DocumentFinalizationException;
 import com.edispark.documents.application.handler.DerivativeNotFoundException;
 import com.edispark.documents.application.handler.DocumentSetNotFoundException;
 import com.edispark.documents.application.handler.InvalidPaginationTokenException;
@@ -33,6 +34,15 @@ import java.util.Map;
 @ControllerAdvice
 @Slf4j
 public class DocumentExceptionHandler {
+
+    @ExceptionHandler(DocumentFinalizationException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentFinalization(DocumentFinalizationException ex) {
+        var errors = ex.validationResult().errors().stream()
+                .map(error -> Map.of("path", error.path(), "message", error.message()))
+                .toList();
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(ErrorResponse.of("DOCUMENT_VALIDATION_FAILED", ex.getMessage(), Map.of("errors", errors)));
+    }
 
     /**
      * Handles DocumentSetNotFoundException.

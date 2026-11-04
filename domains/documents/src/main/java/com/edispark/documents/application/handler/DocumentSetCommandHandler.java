@@ -2,8 +2,10 @@ package com.edispark.documents.application.handler;
 
 import com.edispark.documents.application.command.AddDocumentCommand;
 import com.edispark.documents.application.command.AddVersionCommand;
+import com.edispark.documents.application.command.CancelDocumentCommand;
 import com.edispark.documents.application.command.CreateDerivativeCommand;
 import com.edispark.documents.application.command.CreateDocumentSetCommand;
+import com.edispark.documents.application.command.FinalizeDocumentCommand;
 import com.edispark.documents.application.command.StoreSourceDocumentCommand;
 import com.edispark.documents.application.command.ValidateDocumentCommand;
 import com.edispark.documents.application.command.StoreExternalDerivativeCommand;
@@ -11,6 +13,8 @@ import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.ContentRef;
 import com.edispark.documents.domain.model.Derivative;
 import com.edispark.documents.domain.model.Document;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
+import com.edispark.documents.domain.model.DocumentRelation;
 import com.edispark.documents.domain.model.DocumentSet;
 import com.edispark.documents.domain.model.DocumentVersion;
 import com.edispark.documents.domain.model.Format;
@@ -101,6 +105,10 @@ public class DocumentSetCommandHandler {
                 null,
                 List.of());
 
+        if (command.lifecycleStatus() == DocumentLifecycleStatus.DRAFT) {
+            documentSet.getAllDocuments().getFirst().markDraft();
+        }
+
         // Persist
         documentSetRepository.save(documentSet);
 
@@ -141,6 +149,7 @@ public class DocumentSetCommandHandler {
                     null,
                     null,
                     List.of());
+            document.addRelation(new DocumentRelation(command.relationType(), command.relatedDocumentId()));
         } else {
             document = documentSet.addDocument(
                     command.type(),
@@ -152,6 +161,10 @@ public class DocumentSetCommandHandler {
                     null,
                     null,
                     List.of());
+        }
+
+        if (command.lifecycleStatus() == DocumentLifecycleStatus.DRAFT) {
+            document.markDraft();
         }
 
         // Persist
@@ -324,6 +337,29 @@ public class DocumentSetCommandHandler {
 
         // Validate
         return validator.validate(documentContent, schemaContent);
+    }
+
+    public Document handle(FinalizeDocumentCommand command) {
+        DocumentSet documentSet = findDocumentSetOrThrow(command.documentSetId());
+        Document document = documentSet.getDocument(command.documentId())
+                .orElseThrow(() -> new DocumentNotFoundException(command.documentSetId(), command.documentId()));
+        ValidationResult result = handle(new ValidateDocumentCommand(
+                command.documentSetId(), command.documentId(), document.getCurrentVersion().versionNumber()));
+        if (!result.valid()) {
+            throw new DocumentFinalizationException(result);
+        }
+        document.finalizeDocument();
+        documentSetRepository.save(documentSet);
+        return document;
+    }
+
+    public Document handle(CancelDocumentCommand command) {
+        DocumentSet documentSet = findDocumentSetOrThrow(command.documentSetId());
+        Document document = documentSet.getDocument(command.documentId())
+                .orElseThrow(() -> new DocumentNotFoundException(command.documentSetId(), command.documentId()));
+        document.cancel();
+        documentSetRepository.save(documentSet);
+        return document;
     }
 
     private DocumentSet findDocumentSetOrThrow(com.edispark.documents.domain.model.DocumentSetId documentSetId) {

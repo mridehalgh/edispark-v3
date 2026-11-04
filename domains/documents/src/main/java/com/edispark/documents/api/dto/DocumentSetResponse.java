@@ -1,6 +1,7 @@
 package com.edispark.documents.api.dto;
 
 import com.edispark.documents.domain.model.DocumentType;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -33,6 +34,7 @@ public record DocumentSetResponse(
     public record DocumentSummary(
         UUID id,
         DocumentType type,
-        int versionCount
+        int versionCount,
+        DocumentLifecycleStatus lifecycleStatus
     ) {}
 }

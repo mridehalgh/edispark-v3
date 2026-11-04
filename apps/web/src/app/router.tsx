@@ -10,6 +10,7 @@ import { SendFilePage } from './files/send-file';
 import { TransferPage } from './files/transfer';
 import { DocumentsList } from '@/app/documents/list';
 import { BusinessDocumentPage } from '@/app/documents/document';
+import { AuthorDocumentPage } from '@/app/documents/author';
 import { AuthGate, ForgotPasswordPage, ResetPasswordPage, SignInPage, SignUpPage, TwoFactorPage, WorkspaceSelectionPage } from "@/components/auth/auth-pages"
 import { OrganizationSettingsPage } from "@/app/organization/settings"
 import { NewCertificatePage } from "@/app/connections/new-certificate"
@@ -98,6 +99,10 @@ function ReactRouterComponent() {
           {
             path: "/documents/:setId/:documentId",
             element: <AuthGate><BusinessDocumentPage /></AuthGate>,
+          },
+          {
+            path: "/documents/new",
+            element: <AuthGate><AuthorDocumentPage /></AuthGate>,
           },
           {
             path: "/documents/:setId/:documentId/invoice",

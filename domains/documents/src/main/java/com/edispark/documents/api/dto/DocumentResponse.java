@@ -1,6 +1,7 @@
 package com.edispark.documents.api.dto;
 
 import com.edispark.documents.domain.model.DocumentType;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,5 +22,7 @@ public record DocumentResponse(
     SchemaRefResponse schemaRef,
     int versionCount,
     DocumentVersionResponse currentVersion,
-    List<DerivativeResponse> derivatives
+    List<DerivativeResponse> derivatives,
+    DocumentLifecycleStatus lifecycleStatus,
+    List<DocumentRelationResponse> relations
 ) {}

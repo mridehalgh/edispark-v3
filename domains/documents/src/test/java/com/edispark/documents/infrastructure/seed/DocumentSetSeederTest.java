@@ -246,7 +246,8 @@ class DocumentSetSeederTest {
             return false;
         }
 
-        private List<Schema> findAll() {
+        @Override
+        public List<Schema> findAll() {
             return new ArrayList<>(values.values());
         }
     }

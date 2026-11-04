@@ -60,7 +60,18 @@ export const zCreateDocumentSetRequest = z.object({
     schemaVersion: z.string().min(1),
     content: z.string().min(1),
     createdBy: z.string().min(1),
-    metadata: z.record(z.string(), z.string()).optional()
+    metadata: z.record(z.string(), z.string()).optional(),
+    format: z.enum([
+        'XML',
+        'JSON',
+        'PDF',
+        'EDI'
+    ]).optional(),
+    lifecycleStatus: z.enum([
+        'DRAFT',
+        'FINAL',
+        'CANCELLED'
+    ]).optional()
 });
 
 export const zDocumentSummary = z.object({
@@ -79,7 +90,12 @@ export const zDocumentSummary = z.object({
         'CATALOGUE',
         'APPLICATION_RESPONSE'
     ]).optional(),
-    versionCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+    versionCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    lifecycleStatus: z.enum([
+        'DRAFT',
+        'FINAL',
+        'CANCELLED'
+    ]).optional()
 });
 
 export const zDocumentSetResponse = z.object({
@@ -109,7 +125,28 @@ export const zAddDocumentRequest = z.object({
     schemaVersion: z.string().min(1),
     content: z.string().min(1),
     createdBy: z.string().min(1),
-    relatedDocumentId: z.uuid().optional()
+    relatedDocumentId: z.uuid().optional(),
+    relationType: z.enum([
+        'RELATED_TO',
+        'RESPONDS_TO',
+        'DESPATCHES',
+        'RECEIVES',
+        'INVOICES',
+        'REMITS',
+        'CORRECTS',
+        'SUPERSEDES'
+    ]).optional(),
+    format: z.enum([
+        'XML',
+        'JSON',
+        'PDF',
+        'EDI'
+    ]).optional(),
+    lifecycleStatus: z.enum([
+        'DRAFT',
+        'FINAL',
+        'CANCELLED'
+    ]).optional()
 });
 
 export const zDerivativeResponse = z.object({
@@ -125,6 +162,20 @@ export const zDerivativeResponse = z.object({
     transformationMethod: z.string().optional(),
     variantKey: z.string().optional(),
     createdAt: z.iso.datetime().optional()
+});
+
+export const zDocumentRelationResponse = z.object({
+    type: z.enum([
+        'RELATED_TO',
+        'RESPONDS_TO',
+        'DESPATCHES',
+        'RECEIVES',
+        'INVOICES',
+        'REMITS',
+        'CORRECTS',
+        'SUPERSEDES'
+    ]).optional(),
+    targetDocumentId: z.uuid().optional()
 });
 
 export const zDocumentVersionResponse = z.object({
@@ -168,12 +219,24 @@ export const zDocumentResponse = z.object({
     schemaRef: zSchemaRefResponse.optional(),
     versionCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
     currentVersion: zDocumentVersionResponse.optional(),
-    derivatives: z.array(zDerivativeResponse).optional()
+    derivatives: z.array(zDerivativeResponse).optional(),
+    lifecycleStatus: z.enum([
+        'DRAFT',
+        'FINAL',
+        'CANCELLED'
+    ]).optional(),
+    relations: z.array(zDocumentRelationResponse).optional()
 });
 
 export const zAddVersionRequest = z.object({
     content: z.string().min(1),
-    createdBy: z.string().min(1)
+    createdBy: z.string().min(1),
+    format: z.enum([
+        'XML',
+        'JSON',
+        'PDF',
+        'EDI'
+    ]).optional()
 });
 
 export const zValidationErrorResponse = z.object({
@@ -212,6 +275,11 @@ export const zPaginatedResponseDocumentSetResponse = z.object({
     previousUrl: z.string().optional(),
     nextUrl: z.string().optional()
 });
+
+/**
+ * OK
+ */
+export const zListSchemasResponse = z.array(zSchemaResponse);
 
 export const zCreateSchemaBody = zCreateSchemaRequest;
 
@@ -282,6 +350,16 @@ export const zValidateDocumentVersionPath = z.object({
  */
 export const zValidateDocumentVersionResponse = zValidationResultResponse;
 
+export const zFinalizeDocumentPath = z.object({
+    setId: z.uuid(),
+    docId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zFinalizeDocumentResponse = zDocumentResponse;
+
 export const zStoreExternalDerivativeBody = z.object({
     file: z.string()
 });
@@ -328,6 +406,16 @@ export const zCreateDerivativePath = z.object({
  * Derivative created successfully
  */
 export const zCreateDerivativeResponse = zDerivativeResponse;
+
+export const zCancelDocumentPath = z.object({
+    setId: z.uuid(),
+    docId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zCancelDocumentResponse = zDocumentResponse;
 
 export const zGetSchemaVersionPath = z.object({
     schemaId: z.uuid(),

@@ -1,6 +1,8 @@
 package com.edispark.documents.api.dto;
 
 import com.edispark.documents.domain.model.DocumentType;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
+import com.edispark.documents.domain.model.Format;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -23,5 +25,18 @@ public record CreateDocumentSetRequest(
     @NotBlank String schemaVersion,
     @NotBlank String content,
     @NotBlank String createdBy,
-    Map<String, String> metadata
-) {}
+    Map<String, String> metadata,
+    Format format,
+    DocumentLifecycleStatus lifecycleStatus
+) {
+    public CreateDocumentSetRequest(
+            DocumentType documentType,
+            UUID schemaId,
+            String schemaVersion,
+            String content,
+            String createdBy,
+            Map<String, String> metadata) {
+        this(documentType, schemaId, schemaVersion, content, createdBy, metadata, Format.XML,
+                DocumentLifecycleStatus.FINAL);
+    }
+}

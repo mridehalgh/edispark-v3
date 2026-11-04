@@ -2,6 +2,7 @@ package com.edispark.documents.api.rest;
 
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -55,6 +56,16 @@ public class SchemaController {
 
     private final SchemaCommandHandler commandHandler;
     private final SchemaRepository repository;
+
+    @GetMapping
+    @Operation(operationId = "listSchemas", summary = "List schemas",
+            description = "Lists schemas available to the authenticated tenant for document authoring.")
+    public ResponseEntity<List<SchemaResponse>> listSchemas() {
+        return ResponseEntity.ok(repository.findAll().stream()
+                .sorted(Comparator.comparing(Schema::name))
+                .map(this::mapToResponse)
+                .toList());
+    }
 
     /**
      * Creates a new schema.

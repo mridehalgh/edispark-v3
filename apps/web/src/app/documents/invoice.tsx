@@ -142,6 +142,7 @@ export function InvoiceDocumentPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [lifecycleStatus, setLifecycleStatus] = useState("FINAL")
 
   useEffect(() => {
     const controller = new AbortController()
@@ -162,6 +163,7 @@ export function InvoiceDocumentPage() {
         if (!document || document.type !== "INVOICE") {
           throw new Error("This business document is not an invoice.")
         }
+        setLifecycleStatus(document.lifecycleStatus ?? "FINAL")
 
         const candidates: Array<{ label: string; load: () => Promise<Blob> }> = []
         if (document.currentVersion?.format === "JSON" && document.currentVersion.versionNumber) {
@@ -272,7 +274,7 @@ export function InvoiceDocumentPage() {
           {invoice.dueDate && (
             <p className="mt-1 text-xs text-muted-foreground">Due {formatDate(invoice.dueDate)}</p>
           )}
-          {setId && documentId && <SendDocument documentSetId={setId} documentId={documentId} />}
+          {setId && documentId && <SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} />}
         </div>
       </header>
 

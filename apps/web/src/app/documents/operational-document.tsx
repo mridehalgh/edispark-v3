@@ -44,6 +44,7 @@ export function OperationalDocumentPage({ kind }: { kind: OperationalDocumentKin
   const [error, setError] = useState<string>()
   const [loading, setLoading] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
+  const [lifecycleStatus, setLifecycleStatus] = useState("FINAL")
 
   useEffect(() => {
     const controller = new AbortController()
@@ -59,6 +60,7 @@ export function OperationalDocumentPage({ kind }: { kind: OperationalDocumentKin
       .then(async (detail) => {
         const metadata = detail.documents.find((item) => item.id === documentId)
         if (!metadata || metadata.type !== kind) throw new Error("The requested business document type does not match.")
+        setLifecycleStatus(metadata.lifecycleStatus ?? "FINAL")
         const candidates: Array<{ label: string; load: () => Promise<Blob> }> = []
         if (metadata.currentVersion?.format === "JSON" && metadata.currentVersion.versionNumber) {
           candidates.push({
@@ -112,7 +114,7 @@ export function OperationalDocumentPage({ kind }: { kind: OperationalDocumentKin
       <Link to="/documents" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline"><ArrowLeft className="h-4 w-4" aria-hidden="true" />Back to documents</Link>
       <header className="mt-5 flex flex-col justify-between gap-4 border-b pb-6 sm:flex-row sm:items-start">
         <div><p className="text-xs text-muted-foreground">{document.title}</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">{document.id}</h1><p className="mt-2 text-sm text-muted-foreground">Issued {formatDate(document.issueDate)}{document.reference ? ` · Reference ${document.reference}` : ""}</p></div>
-        <SendDocument documentSetId={setId!} documentId={documentId!} />
+        <SendDocument documentSetId={setId!} documentId={documentId!} lifecycleStatus={lifecycleStatus} />
       </header>
 
       <section className="grid gap-6 border-b py-6 md:grid-cols-3" aria-label="Document summary">

@@ -46,8 +46,10 @@ import com.edispark.documents.api.dto.SchemaRefResponse;
 import com.edispark.documents.api.dto.ValidationResultResponse;
 import com.edispark.documents.application.command.AddDocumentCommand;
 import com.edispark.documents.application.command.AddVersionCommand;
+import com.edispark.documents.application.command.CancelDocumentCommand;
 import com.edispark.documents.application.command.CreateDerivativeCommand;
 import com.edispark.documents.application.command.CreateDocumentSetCommand;
+import com.edispark.documents.application.command.FinalizeDocumentCommand;
 import com.edispark.documents.application.command.ValidateDocumentCommand;
 import com.edispark.documents.application.command.StoreExternalDerivativeCommand;
 import com.edispark.documents.application.handler.DocumentSetCommandHandler;
@@ -183,7 +185,7 @@ public class DocumentSetController {
         
         // Create content with default format (will be determined by schema)
         // Using XML as default format; actual format determination happens in command handler
-        Content content = Content.of(contentBytes, Format.XML);
+        Content content = Content.of(contentBytes, request.format() == null ? Format.XML : request.format());
         
         // Build command
         CreateDocumentSetCommand command = new CreateDocumentSetCommand(
@@ -191,7 +193,8 @@ public class DocumentSetController {
                 schemaRef,
                 content,
                 request.createdBy(),
-                request.metadata()
+                request.metadata(),
+                request.lifecycleStatus()
         );
         
         // Execute command
@@ -262,7 +265,7 @@ public class DocumentSetController {
         );
         
         // Create content with default format (will be determined by schema)
-        Content content = Content.of(contentBytes, Format.XML);
+        Content content = Content.of(contentBytes, request.format() == null ? Format.XML : request.format());
         
         // Create related document ID if provided
         DocumentId relatedDocumentId = request.relatedDocumentId() != null
@@ -276,7 +279,9 @@ public class DocumentSetController {
                 schemaRef,
                 content,
                 request.createdBy(),
-                relatedDocumentId
+                relatedDocumentId,
+                request.relationType(),
+                request.lifecycleStatus()
         );
         
         // Execute command
@@ -327,6 +332,27 @@ public class DocumentSetController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{setId}/documents/{docId}/finalize")
+    @Operation(operationId = "finalizeDocument", summary = "Finalize a draft document",
+            description = "Validates the current version against its OASIS UBL schema and marks it final.")
+    public ResponseEntity<DocumentResponse> finalizeDocument(
+            @PathVariable("setId") UUID setId,
+            @PathVariable("docId") UUID docId) {
+        Document document = commandHandler.handle(new FinalizeDocumentCommand(
+                new DocumentSetId(setId), new DocumentId(docId)));
+        return ResponseEntity.ok(mapToDocumentResponse(document));
+    }
+
+    @PostMapping("/{setId}/documents/{docId}/cancel")
+    @Operation(operationId = "cancelDocument", summary = "Cancel a document")
+    public ResponseEntity<DocumentResponse> cancelDocument(
+            @PathVariable("setId") UUID setId,
+            @PathVariable("docId") UUID docId) {
+        Document document = commandHandler.handle(new CancelDocumentCommand(
+                new DocumentSetId(setId), new DocumentId(docId)));
+        return ResponseEntity.ok(mapToDocumentResponse(document));
+    }
+
     /**
      * Adds a new version to an existing document.
      *
@@ -357,7 +383,7 @@ public class DocumentSetController {
         byte[] contentBytes = Base64.getDecoder().decode(request.content());
         
         // Create content with default format (will be determined by document's schema)
-        Content content = Content.of(contentBytes, Format.XML);
+        Content content = Content.of(contentBytes, request.format() == null ? Format.XML : request.format());
         
         // Build command
         AddVersionCommand command = new AddVersionCommand(
@@ -676,7 +702,8 @@ public class DocumentSetController {
                 .map(doc -> new DocumentSetResponse.DocumentSummary(
                         doc.id().value(),
                         doc.type(),
-                        doc.versionCount()
+                        doc.versionCount(),
+                        doc.lifecycleStatus()
                 ))
                 .toList();
 
@@ -732,13 +759,20 @@ public class DocumentSetController {
                 ))
                 .toList();
         
+        var relationResponses = document.relations().stream()
+                .map(relation -> new com.edispark.documents.api.dto.DocumentRelationResponse(
+                        relation.type(), relation.targetDocumentId().value()))
+                .toList();
+
         return new DocumentResponse(
                 document.id().value(),
                 document.type(),
                 schemaRefResponse,
                 document.versionCount(),
                 currentVersionResponse,
-                derivativeResponses
+                derivativeResponses,
+                document.lifecycleStatus(),
+                relationResponses
         );
     }
 

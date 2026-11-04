@@ -2,6 +2,7 @@ package com.edispark.documents.application.command;
 
 import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.DocumentType;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
 import com.edispark.documents.domain.model.SchemaVersionRef;
 
 import java.util.Map;
@@ -21,17 +22,28 @@ public record CreateDocumentSetCommand(
         SchemaVersionRef schemaRef,
         Content initialContent,
         String createdBy,
-        Map<String, String> metadata
+        Map<String, String> metadata,
+        DocumentLifecycleStatus lifecycleStatus
 ) {
     public CreateDocumentSetCommand {
         Objects.requireNonNull(initialDocumentType, "Initial document type cannot be null");
         Objects.requireNonNull(schemaRef, "Schema reference cannot be null");
         Objects.requireNonNull(initialContent, "Initial content cannot be null");
         Objects.requireNonNull(createdBy, "Created by cannot be null");
+        lifecycleStatus = lifecycleStatus == null ? DocumentLifecycleStatus.FINAL : lifecycleStatus;
         if (createdBy.isBlank()) {
             throw new IllegalArgumentException("Created by cannot be blank");
         }
         metadata = metadata != null ? Map.copyOf(metadata) : Map.of();
+    }
+
+    public CreateDocumentSetCommand(
+            DocumentType initialDocumentType,
+            SchemaVersionRef schemaRef,
+            Content initialContent,
+            String createdBy,
+            Map<String, String> metadata) {
+        this(initialDocumentType, schemaRef, initialContent, createdBy, metadata, DocumentLifecycleStatus.FINAL);
     }
 
     /**
@@ -42,6 +54,7 @@ public record CreateDocumentSetCommand(
             SchemaVersionRef schemaRef,
             Content content,
             String createdBy) {
-        return new CreateDocumentSetCommand(documentType, schemaRef, content, createdBy, Map.of());
+        return new CreateDocumentSetCommand(documentType, schemaRef, content, createdBy, Map.of(),
+                DocumentLifecycleStatus.FINAL);
     }
 }

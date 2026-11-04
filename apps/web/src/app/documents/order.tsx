@@ -9,6 +9,7 @@ import {
   MapPin,
   PackageOpen,
   RefreshCw,
+  Reply,
   Truck,
 } from "lucide-react"
 import { Link, useParams } from "react-router-dom"
@@ -141,6 +142,7 @@ export function OrderDocumentPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [lifecycleStatus, setLifecycleStatus] = useState("FINAL")
 
   useEffect(() => {
     const controller = new AbortController()
@@ -161,6 +163,7 @@ export function OrderDocumentPage() {
         if (!document || document.type !== "ORDER") {
           throw new Error("This business document is not an order.")
         }
+        setLifecycleStatus(document.lifecycleStatus ?? "FINAL")
 
         const candidates: Array<{ label: string; load: () => Promise<Blob> }> = []
         if (document.currentVersion?.format === "JSON" && document.currentVersion.versionNumber) {
@@ -272,7 +275,7 @@ export function OrderDocumentPage() {
               {formatMoney(totals.payable, order.currency)}
             </p>
           </>}
-          {setId && documentId && <SendDocument documentSetId={setId} documentId={documentId} />}
+          {setId && documentId && <div className="mt-3 flex flex-wrap justify-end gap-2"><Button asChild variant="outline"><Link to={`/documents/new?type=ORDER_RESPONSE&fromSet=${encodeURIComponent(setId)}&fromDocument=${encodeURIComponent(documentId)}`}><Reply className="mr-2 h-4 w-4" />Create response</Link></Button><SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
         </div>
       </header>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { ExchangeResponse } from "@edispark/integration-client"
-import { ArrowRight, CheckCircle2, CircleAlert, Clock3, FileText, RefreshCw, Search } from "lucide-react"
+import { ArrowRight, CheckCircle2, CircleAlert, Clock3, FileText, Plus, RefreshCw, Search } from "lucide-react"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
@@ -106,7 +106,7 @@ export function DocumentsList() {
         direction: metadata.direction,
         standard: metadata.standard ?? metadata.sourceStandard,
         createdAt: documentSet.createdAt,
-        status: exchangeByDocument.get(`${documentSet.id}:${document.id}`)?.status,
+        status: document.lifecycleStatus === "DRAFT" ? "DRAFT" : exchangeByDocument.get(`${documentSet.id}:${document.id}`)?.status,
       }]
     })
   }), [documentSets, exchangeByDocument])
@@ -126,8 +126,9 @@ export function DocumentsList() {
 
   return (
     <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
+      <header className="mb-6 flex items-center justify-between gap-4">
+        <div><h1 className="text-2xl font-semibold tracking-tight">Documents</h1><p className="mt-1 text-sm text-muted-foreground">Canonical OASIS UBL documents and their partner exchanges.</p></div>
+        <Button asChild><Link to="/documents/new"><Plus className="mr-2 h-4 w-4" />Create document</Link></Button>
       </header>
 
       <label className="relative mb-4 block w-full sm:max-w-lg">
@@ -262,6 +263,7 @@ export function DocumentsList() {
 
 function DocumentExchangeStatus({ status }: { status?: string }) {
   if (!status) return <span className="text-xs text-muted-foreground">Stored</span>
+  if (status === "DRAFT") return <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"><FileText className="h-3.5 w-3.5" aria-hidden="true" />Draft</span>
   const failed = status === "FAILED" || status === "NEEDS_REVIEW"
   const delivered = status === "DELIVERED"
   const Icon = failed ? CircleAlert : delivered ? CheckCircle2 : Clock3

@@ -110,6 +110,17 @@ public final class DocumentSetItemMapper {
         item.put("documentType", AttributeValue.builder().s(document.type().name()).build());
         item.put("schemaId", AttributeValue.builder().s(document.schemaRef().schemaId().toString()).build());
         item.put("schemaVersion", AttributeValue.builder().s(document.schemaRef().version().value()).build());
+        item.put("lifecycleStatus", AttributeValue.builder().s(document.lifecycleStatus().name()).build());
+
+        if (!document.relations().isEmpty()) {
+            item.put("relations", AttributeValue.builder().l(document.relations().stream()
+                    .map(relation -> AttributeValue.builder().m(Map.of(
+                            "type", AttributeValue.builder().s(relation.type().name()).build(),
+                            "targetDocumentId", AttributeValue.builder()
+                                    .s(relation.targetDocumentId().toString()).build()))
+                            .build())
+                    .toList()).build());
+        }
         
         document.relatedDocumentId().ifPresent(relatedId ->
                 item.put("relatedDocumentId", AttributeValue.builder().s(relatedId.toString()).build()));
@@ -134,7 +145,22 @@ public final class DocumentSetItemMapper {
             relatedDocumentId = DocumentId.fromString(item.get("relatedDocumentId").s());
         }
         
-        return new DocumentData(id, type, schemaRef, relatedDocumentId);
+        var lifecycleStatus = item.containsKey("lifecycleStatus")
+                ? com.edispark.documents.domain.model.DocumentLifecycleStatus.valueOf(item.get("lifecycleStatus").s())
+                : com.edispark.documents.domain.model.DocumentLifecycleStatus.FINAL;
+        var relations = item.containsKey("relations")
+                ? item.get("relations").l().stream()
+                        .map(value -> new com.edispark.documents.domain.model.DocumentRelation(
+                                com.edispark.documents.domain.model.DocumentRelationType.valueOf(
+                                        value.m().get("type").s()),
+                                DocumentId.fromString(value.m().get("targetDocumentId").s())))
+                        .toList()
+                : relatedDocumentId == null ? List.<com.edispark.documents.domain.model.DocumentRelation>of()
+                        : List.of(new com.edispark.documents.domain.model.DocumentRelation(
+                                com.edispark.documents.domain.model.DocumentRelationType.RELATED_TO,
+                                relatedDocumentId));
+
+        return new DocumentData(id, type, schemaRef, relations, lifecycleStatus);
     }
 
     // ========== DocumentVersion ==========
@@ -302,7 +328,8 @@ public final class DocumentSetItemMapper {
                     docData.schemaRef(),
                     new ArrayList<>(versions),
                     new ArrayList<>(derivatives),
-                    docData.relatedDocumentId());
+                    docData.relations(),
+                    docData.lifecycleStatus());
             
             documents.put(document.id(), document);
         }
@@ -352,5 +379,13 @@ public final class DocumentSetItemMapper {
             DocumentId id,
             DocumentType type,
             SchemaVersionRef schemaRef,
-            DocumentId relatedDocumentId) {}
+            List<com.edispark.documents.domain.model.DocumentRelation> relations,
+            com.edispark.documents.domain.model.DocumentLifecycleStatus lifecycleStatus) {
+        public DocumentData(DocumentId id, DocumentType type, SchemaVersionRef schemaRef, DocumentId relatedDocumentId) {
+            this(id, type, schemaRef,
+                    relatedDocumentId == null ? List.of() : List.of(new com.edispark.documents.domain.model.DocumentRelation(
+                            com.edispark.documents.domain.model.DocumentRelationType.RELATED_TO, relatedDocumentId)),
+                    com.edispark.documents.domain.model.DocumentLifecycleStatus.FINAL);
+        }
+    }
 }

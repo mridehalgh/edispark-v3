@@ -4,6 +4,8 @@ import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.DocumentId;
 import com.edispark.documents.domain.model.DocumentSetId;
 import com.edispark.documents.domain.model.DocumentType;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
+import com.edispark.documents.domain.model.DocumentRelationType;
 import com.edispark.documents.domain.model.SchemaVersionRef;
 
 import java.util.Objects;
@@ -24,7 +26,9 @@ public record AddDocumentCommand(
         SchemaVersionRef schemaRef,
         Content content,
         String createdBy,
-        DocumentId relatedDocumentId
+        DocumentId relatedDocumentId,
+        DocumentRelationType relationType,
+        DocumentLifecycleStatus lifecycleStatus
 ) {
     public AddDocumentCommand {
         Objects.requireNonNull(documentSetId, "Document set ID cannot be null");
@@ -35,7 +39,20 @@ public record AddDocumentCommand(
         if (createdBy.isBlank()) {
             throw new IllegalArgumentException("Created by cannot be blank");
         }
+        relationType = relationType == null ? DocumentRelationType.RELATED_TO : relationType;
+        lifecycleStatus = lifecycleStatus == null ? DocumentLifecycleStatus.FINAL : lifecycleStatus;
         // relatedDocumentId can be null
+    }
+
+    public AddDocumentCommand(
+            DocumentSetId documentSetId,
+            DocumentType type,
+            SchemaVersionRef schemaRef,
+            Content content,
+            String createdBy,
+            DocumentId relatedDocumentId) {
+        this(documentSetId, type, schemaRef, content, createdBy, relatedDocumentId,
+                DocumentRelationType.RELATED_TO, DocumentLifecycleStatus.FINAL);
     }
 
     /**
@@ -47,7 +64,8 @@ public record AddDocumentCommand(
             SchemaVersionRef schemaRef,
             Content content,
             String createdBy) {
-        return new AddDocumentCommand(documentSetId, type, schemaRef, content, createdBy, null);
+        return new AddDocumentCommand(documentSetId, type, schemaRef, content, createdBy, null,
+                DocumentRelationType.RELATED_TO, DocumentLifecycleStatus.FINAL);
     }
 
     /**
@@ -60,6 +78,7 @@ public record AddDocumentCommand(
             Content content,
             String createdBy,
             DocumentId relatedDocumentId) {
-        return new AddDocumentCommand(documentSetId, type, schemaRef, content, createdBy, relatedDocumentId);
+        return new AddDocumentCommand(documentSetId, type, schemaRef, content, createdBy, relatedDocumentId,
+                DocumentRelationType.RELATED_TO, DocumentLifecycleStatus.FINAL);
     }
 }

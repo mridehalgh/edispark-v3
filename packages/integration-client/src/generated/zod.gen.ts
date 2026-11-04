@@ -59,7 +59,26 @@ export const zCapabilityRequest = z.object({
         'PRESERVE_INBOUND_BATCH',
         'GROUP_OUTBOUND'
     ]),
-    outboundLossPolicy: z.enum(['STRICT', 'ALLOW_WITH_WARNING']).optional()
+    outboundLossPolicy: z.enum(['STRICT', 'ALLOW_WITH_WARNING']).optional(),
+    automationMode: z.enum([
+        'MANUAL',
+        'AUTO_DRAFT',
+        'APPROVAL_REQUIRED',
+        'AUTO_SEND'
+    ]).optional(),
+    approvalPolicy: z.enum([
+        'NONE',
+        'AUTHORIZED_MEMBER',
+        'FOUR_EYES'
+    ]).optional(),
+    responseDocumentType: z.enum([
+        'ORDER',
+        'ORDER_RESPONSE',
+        'DESPATCH_ADVICE',
+        'INVOICE',
+        'REMITTANCE_ADVICE',
+        'RECEIPT_ADVICE'
+    ]).optional()
 });
 
 export const zExchangeCapability = z.object({
@@ -86,7 +105,26 @@ export const zExchangeCapability = z.object({
         'PRESERVE_INBOUND_BATCH',
         'GROUP_OUTBOUND'
     ]).optional(),
-    outboundLossPolicy: z.enum(['STRICT', 'ALLOW_WITH_WARNING']).optional()
+    outboundLossPolicy: z.enum(['STRICT', 'ALLOW_WITH_WARNING']).optional(),
+    automationMode: z.enum([
+        'MANUAL',
+        'AUTO_DRAFT',
+        'APPROVAL_REQUIRED',
+        'AUTO_SEND'
+    ]).optional(),
+    approvalPolicy: z.enum([
+        'NONE',
+        'AUTHORIZED_MEMBER',
+        'FOUR_EYES'
+    ]).optional(),
+    responseDocumentType: z.enum([
+        'ORDER',
+        'ORDER_RESPONSE',
+        'DESPATCH_ADVICE',
+        'INVOICE',
+        'REMITTANCE_ADVICE',
+        'RECEIPT_ADVICE'
+    ]).optional()
 });
 
 export const zQualificationReport = z.object({

@@ -12,6 +12,8 @@ import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
+import com.edispark.partnerships.domain.model.WorkflowApprovalPolicy;
+import com.edispark.partnerships.domain.model.WorkflowAutomationMode;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -144,12 +146,14 @@ public final class PartnershipController {
             @NotNull EdiStandard standard, @NotBlank String release, @NotBlank String messageType,
             @NotNull UUID sourceSchemaId, @NotNull UUID targetSchemaId, @NotNull UUID mappingRevisionId,
             @NotNull UUID as2ConnectionId, @NotNull AcknowledgementPolicy acknowledgementPolicy,
-            @NotNull BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy) {
+            @NotNull BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy,
+            WorkflowAutomationMode automationMode, WorkflowApprovalPolicy approvalPolicy,
+            BusinessDocumentType responseDocumentType) {
         ExchangeCapability toDomain() { return toDomain(UUID.randomUUID()); }
         ExchangeCapability toDomain(UUID id) {
             return new ExchangeCapability(id, direction, documentType, standard, release, messageType,
                     sourceSchemaId, targetSchemaId, mappingRevisionId, as2ConnectionId, acknowledgementPolicy,
-                    batchingPolicy, outboundLossPolicy);
+                    batchingPolicy, outboundLossPolicy, automationMode, approvalPolicy, responseDocumentType);
         }
     }
     public record ActivationRequest(java.time.Instant effectiveAt) { }

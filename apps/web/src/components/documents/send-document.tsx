@@ -1,7 +1,7 @@
 'use client'
 
 import type { EligibleRoute, ExchangeResponse } from '@edispark/integration-client'
-import { CheckCircle2, CircleAlert, Send, Settings2 } from 'lucide-react'
+import { CheckCircle2, CircleAlert, FileCheck2, Send, Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -21,13 +21,27 @@ function routeLabel(route: EligibleRoute) {
     .join(' · ')
 }
 
-export function SendDocument({ documentSetId, documentId }: { documentSetId: string; documentId: string }) {
+export function SendDocument({ documentSetId, documentId, lifecycleStatus = 'FINAL' }: { documentSetId: string; documentId: string; lifecycleStatus?: string }) {
   const [routes, setRoutes] = useState<EligibleRoute[]>()
   const [selected, setSelected] = useState('')
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const [exchange, setExchange] = useState<ExchangeResponse>()
+  const [currentLifecycle, setCurrentLifecycle] = useState(lifecycleStatus)
+
+  async function finalize() {
+    setLoading(true)
+    setError(undefined)
+    try {
+      await requestJson(`/api/documents/${documentSetId}/documents/${documentId}/finalize`, { method: 'POST' })
+      setCurrentLifecycle('FINAL')
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'The document could not be finalized.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function openRoutes() {
     setLoading(true)
@@ -78,6 +92,12 @@ export function SendDocument({ documentSetId, documentId }: { documentSetId: str
       </div>
     )
   }
+
+  if (currentLifecycle === 'DRAFT') {
+    return <div className="mt-3 flex flex-col items-start gap-2"><Button type="button" className="gap-2" onClick={() => void finalize()} disabled={loading}><FileCheck2 className="h-4 w-4" />{loading ? 'Validating…' : 'Validate and finalize'}</Button><p className="text-xs text-muted-foreground">Drafts cannot be sent.</p>{error && <p className="text-xs text-destructive" role="alert">{error}</p>}</div>
+  }
+
+  if (currentLifecycle === 'CANCELLED') return <p className="mt-3 text-xs text-muted-foreground">This document was cancelled and cannot be sent.</p>
 
   if (!routes) {
     return (

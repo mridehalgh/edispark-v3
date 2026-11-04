@@ -6,6 +6,7 @@ import com.edispark.documents.domain.model.SchemaVersionRef;
 import com.edispark.documents.domain.repository.SchemaRepository;
 import io.cottn.core.tenancy.TenantContext;
 import java.util.Optional;
+import java.util.List;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Resolves the authenticated tenant for every repository operation. */
@@ -22,6 +23,11 @@ public final class TenantScopedSchemaRepository implements SchemaRepository {
     @Override
     public Optional<Schema> findById(SchemaId id) {
         return delegate().findById(id);
+    }
+
+    @Override
+    public List<Schema> findAll() {
+        return delegate().findAll();
     }
 
     @Override

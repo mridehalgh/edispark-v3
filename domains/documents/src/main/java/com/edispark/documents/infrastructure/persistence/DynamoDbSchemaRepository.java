@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 import java.util.ArrayList;
@@ -66,6 +67,24 @@ public class DynamoDbSchemaRepository implements SchemaRepository {
         }
         
         return Optional.of(reconstructFromItems(response.items()));
+    }
+
+    @Override
+    public List<Schema> findAll() {
+        var response = client.scan(ScanRequest.builder()
+                .tableName(tableName)
+                .filterExpression("#tenantId = :tenantId AND #entityType = :entityType")
+                .expressionAttributeNames(Map.of(
+                        "#tenantId", "tenantId",
+                        "#entityType", "entityType"))
+                .expressionAttributeValues(Map.of(
+                        ":tenantId", AttributeValue.builder().s(tenantId).build(),
+                        ":entityType", AttributeValue.builder().s("SCHEMA").build()))
+                .build());
+        return response.items().stream()
+                .map(mapper::fromSchemaMetadataItem)
+                .map(metadata -> findById(metadata.id()).orElseThrow())
+                .toList();
     }
 
     @Override

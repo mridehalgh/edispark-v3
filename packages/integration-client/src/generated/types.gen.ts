@@ -44,6 +44,9 @@ export type CapabilityRequest = {
     acknowledgementPolicy: 'TRANSPORT_ONLY' | 'FUNCTIONAL';
     batchingPolicy: 'INDIVIDUAL' | 'PRESERVE_INBOUND_BATCH' | 'GROUP_OUTBOUND';
     outboundLossPolicy?: 'STRICT' | 'ALLOW_WITH_WARNING';
+    automationMode?: 'MANUAL' | 'AUTO_DRAFT' | 'APPROVAL_REQUIRED' | 'AUTO_SEND';
+    approvalPolicy?: 'NONE' | 'AUTHORIZED_MEMBER' | 'FOUR_EYES';
+    responseDocumentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
 };
 
 export type ExchangeCapability = {
@@ -60,6 +63,9 @@ export type ExchangeCapability = {
     acknowledgementPolicy?: 'TRANSPORT_ONLY' | 'FUNCTIONAL';
     batchingPolicy?: 'INDIVIDUAL' | 'PRESERVE_INBOUND_BATCH' | 'GROUP_OUTBOUND';
     outboundLossPolicy?: 'STRICT' | 'ALLOW_WITH_WARNING';
+    automationMode?: 'MANUAL' | 'AUTO_DRAFT' | 'APPROVAL_REQUIRED' | 'AUTO_SEND';
+    approvalPolicy?: 'NONE' | 'AUTHORIZED_MEMBER' | 'FOUR_EYES';
+    responseDocumentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
 };
 
 export type QualificationReport = {

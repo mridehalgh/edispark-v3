@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, StoreExternalDerivativeData, StoreExternalDerivativeResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
-import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zStoreExternalDerivativeBody, zStoreExternalDerivativePath, zStoreExternalDerivativeQuery, zStoreExternalDerivativeResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
+import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CancelDocumentData, CancelDocumentResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, FinalizeDocumentData, FinalizeDocumentResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, ListSchemasData, ListSchemasResponses, StoreExternalDerivativeData, StoreExternalDerivativeResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
+import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCancelDocumentPath, zCancelDocumentResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zFinalizeDocumentPath, zFinalizeDocumentResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zListSchemasResponse, zStoreExternalDerivativeBody, zStoreExternalDerivativePath, zStoreExternalDerivativeQuery, zStoreExternalDerivativeResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 class HeyApiClient {
     protected client: Client;
-    
+
     constructor(args?: {
         client?: Client;
     }) {
@@ -33,9 +33,9 @@ class HeyApiClient {
 
 class HeyApiRegistry<T> {
     private readonly defaultKey = 'default';
-    
+
     private readonly instances: Map<string, T> = new Map();
-    
+
     get(key?: string): T {
         const instance = this.instances.get(key ?? this.defaultKey);
         if (!instance) {
@@ -60,6 +60,25 @@ export class DocumentsClient extends HeyApiClient {
         DocumentsClient.__registry.set(this, args?.key);
     }
     
+    /**
+     * List schemas
+     *
+     * Lists schemas available to the authenticated tenant for document authoring.
+     */
+    public listSchemas<ThrowOnError extends boolean = false>(options?: Options<ListSchemasData, ThrowOnError>): RequestResult<ListSchemasResponses, unknown, ThrowOnError> {
+        return (options?.client ?? this.client).get<ListSchemasResponses, unknown, ThrowOnError>({
+            requestValidator: async (data) => await z.object({
+                body: z.never().optional(),
+                path: z.never().optional(),
+                query: z.never().optional()
+            }).parseAsync(data),
+            responseValidator: async (data) => await zListSchemasResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/schemas',
+            ...options
+        });
+    }
+
     /**
      * Create a new schema
      *
@@ -214,6 +233,25 @@ export class DocumentsClient extends HeyApiClient {
     }
     
     /**
+     * Finalize a draft document
+     *
+     * Validates the current version against its OASIS UBL schema and marks it final.
+     */
+    public finalizeDocument<ThrowOnError extends boolean = false>(options: Options<FinalizeDocumentData, ThrowOnError>): RequestResult<FinalizeDocumentResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<FinalizeDocumentResponses, unknown, ThrowOnError>({
+            requestValidator: async (data) => await z.object({
+                body: z.never().optional(),
+                path: zFinalizeDocumentPath,
+                query: z.never().optional()
+            }).parseAsync(data),
+            responseValidator: async (data) => await zFinalizeDocumentResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/document-sets/{setId}/documents/{docId}/finalize',
+            ...options
+        });
+    }
+
+    /**
      * Retain an externally generated derivative
      */
     public storeExternalDerivative<ThrowOnError extends boolean = false>(options: Options<StoreExternalDerivativeData, ThrowOnError>): RequestResult<StoreExternalDerivativeResponses, unknown, ThrowOnError> {
@@ -277,6 +315,23 @@ export class DocumentsClient extends HeyApiClient {
         });
     }
     
+    /**
+     * Cancel a document
+     */
+    public cancelDocument<ThrowOnError extends boolean = false>(options: Options<CancelDocumentData, ThrowOnError>): RequestResult<CancelDocumentResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CancelDocumentResponses, unknown, ThrowOnError>({
+            requestValidator: async (data) => await z.object({
+                body: z.never().optional(),
+                path: zCancelDocumentPath,
+                query: z.never().optional()
+            }).parseAsync(data),
+            responseValidator: async (data) => await zCancelDocumentResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/document-sets/{setId}/documents/{docId}/cancel',
+            ...options
+        });
+    }
+
     /**
      * Get a schema version
      *

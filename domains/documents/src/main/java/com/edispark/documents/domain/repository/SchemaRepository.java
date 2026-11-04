@@ -5,6 +5,7 @@ import com.edispark.documents.domain.model.SchemaId;
 import com.edispark.documents.domain.model.SchemaVersionRef;
 
 import java.util.Optional;
+import java.util.List;
 
 /**
  * Repository interface for Schema aggregate persistence.
@@ -15,6 +16,10 @@ import java.util.Optional;
  * <p>Requirements: 3.6</p>
  */
 public interface SchemaRepository {
+
+    default List<Schema> findAll() {
+        return List.of();
+    }
 
     /**
      * Finds a Schema by its unique identifier.

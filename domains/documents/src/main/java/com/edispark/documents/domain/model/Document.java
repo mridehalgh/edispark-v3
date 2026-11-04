@@ -21,7 +21,8 @@ public final class Document {
     private final SchemaVersionRef schemaRef;
     private final List<DocumentVersion> versions;
     private final List<Derivative> derivatives;
-    private final DocumentId relatedDocumentId;
+    private final List<DocumentRelation> relations;
+    private DocumentLifecycleStatus lifecycleStatus;
 
     private Document(
             DocumentId id,
@@ -29,13 +30,15 @@ public final class Document {
             SchemaVersionRef schemaRef,
             List<DocumentVersion> versions,
             List<Derivative> derivatives,
-            DocumentId relatedDocumentId) {
+            List<DocumentRelation> relations,
+            DocumentLifecycleStatus lifecycleStatus) {
         this.id = Objects.requireNonNull(id, "Document ID cannot be null");
         this.type = Objects.requireNonNull(type, "Document type cannot be null");
         this.schemaRef = Objects.requireNonNull(schemaRef, "Schema reference cannot be null");
         this.versions = new ArrayList<>(Objects.requireNonNull(versions, "Versions list cannot be null"));
         this.derivatives = new ArrayList<>(Objects.requireNonNull(derivatives, "Derivatives list cannot be null"));
-        this.relatedDocumentId = relatedDocumentId; // Can be null
+        this.relations = new ArrayList<>(Objects.requireNonNull(relations, "Relations list cannot be null"));
+        this.lifecycleStatus = Objects.requireNonNull(lifecycleStatus, "Lifecycle status cannot be null");
     }
 
     /**
@@ -68,7 +71,8 @@ public final class Document {
                 schemaRef,
                 List.of(firstVersion),
                 List.of(),
-                null);
+                List.of(),
+                DocumentLifecycleStatus.FINAL);
     }
 
     /**
@@ -104,7 +108,9 @@ public final class Document {
                 schemaRef,
                 List.of(firstVersion),
                 List.of(),
-                relatedDocumentId);
+                relatedDocumentId == null ? List.of() : List.of(new DocumentRelation(
+                        DocumentRelationType.RELATED_TO, relatedDocumentId)),
+                DocumentLifecycleStatus.FINAL);
     }
 
     /**
@@ -117,7 +123,51 @@ public final class Document {
             List<DocumentVersion> versions,
             List<Derivative> derivatives,
             DocumentId relatedDocumentId) {
-        return new Document(id, type, schemaRef, versions, derivatives, relatedDocumentId);
+        List<DocumentRelation> relations = relatedDocumentId == null
+                ? List.of()
+                : List.of(new DocumentRelation(DocumentRelationType.RELATED_TO, relatedDocumentId));
+        return new Document(id, type, schemaRef, versions, derivatives, relations, DocumentLifecycleStatus.FINAL);
+    }
+
+    public static Document reconstitute(
+            DocumentId id,
+            DocumentType type,
+            SchemaVersionRef schemaRef,
+            List<DocumentVersion> versions,
+            List<Derivative> derivatives,
+            List<DocumentRelation> relations,
+            DocumentLifecycleStatus lifecycleStatus) {
+        return new Document(id, type, schemaRef, versions, derivatives, relations, lifecycleStatus);
+    }
+
+    public void markDraft() {
+        requireStatus(DocumentLifecycleStatus.FINAL, "Only final documents can be reopened as a draft");
+        lifecycleStatus = DocumentLifecycleStatus.DRAFT;
+    }
+
+    public void finalizeDocument() {
+        requireStatus(DocumentLifecycleStatus.DRAFT, "Only draft documents can be finalized");
+        lifecycleStatus = DocumentLifecycleStatus.FINAL;
+    }
+
+    public void cancel() {
+        if (lifecycleStatus == DocumentLifecycleStatus.CANCELLED) {
+            throw new IllegalStateException("Document is already cancelled");
+        }
+        lifecycleStatus = DocumentLifecycleStatus.CANCELLED;
+    }
+
+    public void addRelation(DocumentRelation relation) {
+        Objects.requireNonNull(relation, "Relation cannot be null");
+        if (!relations.contains(relation)) {
+            relations.add(relation);
+        }
+    }
+
+    private void requireStatus(DocumentLifecycleStatus required, String message) {
+        if (lifecycleStatus != required) {
+            throw new IllegalStateException(message);
+        }
     }
 
     /**
@@ -137,6 +187,9 @@ public final class Document {
             String parseStatus,
             String messageType,
             List<String> parseErrors) {
+        if (lifecycleStatus == DocumentLifecycleStatus.CANCELLED) {
+            throw new IllegalStateException("Cancelled documents cannot be changed");
+        }
         if (versions.isEmpty()) {
             throw new IllegalStateException("Document must have at least one version");
         }
@@ -282,7 +335,15 @@ public final class Document {
     }
 
     public Optional<DocumentId> relatedDocumentId() {
-        return Optional.ofNullable(relatedDocumentId);
+        return relations.stream().findFirst().map(DocumentRelation::targetDocumentId);
+    }
+
+    public List<DocumentRelation> relations() {
+        return Collections.unmodifiableList(relations);
+    }
+
+    public DocumentLifecycleStatus lifecycleStatus() {
+        return lifecycleStatus;
     }
 
     @Override

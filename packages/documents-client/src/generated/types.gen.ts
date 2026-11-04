@@ -44,6 +44,8 @@ export type CreateDocumentSetRequest = {
     metadata?: {
         [key: string]: string;
     };
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    lifecycleStatus?: 'DRAFT' | 'FINAL' | 'CANCELLED';
 };
 
 export type DocumentSetResponse = {
@@ -60,6 +62,7 @@ export type DocumentSummary = {
     id?: string;
     type?: 'INVOICE' | 'ORDER' | 'ORDER_RESPONSE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
     versionCount?: number;
+    lifecycleStatus?: 'DRAFT' | 'FINAL' | 'CANCELLED';
 };
 
 export type AddDocumentRequest = {
@@ -69,6 +72,9 @@ export type AddDocumentRequest = {
     content: string;
     createdBy: string;
     relatedDocumentId?: string;
+    relationType?: 'RELATED_TO' | 'RESPONDS_TO' | 'DESPATCHES' | 'RECEIVES' | 'INVOICES' | 'REMITS' | 'CORRECTS' | 'SUPERSEDES';
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    lifecycleStatus?: 'DRAFT' | 'FINAL' | 'CANCELLED';
 };
 
 export type DerivativeResponse = {
@@ -81,6 +87,11 @@ export type DerivativeResponse = {
     createdAt?: string;
 };
 
+export type DocumentRelationResponse = {
+    type?: 'RELATED_TO' | 'RESPONDS_TO' | 'DESPATCHES' | 'RECEIVES' | 'INVOICES' | 'REMITS' | 'CORRECTS' | 'SUPERSEDES';
+    targetDocumentId?: string;
+};
+
 export type DocumentResponse = {
     id?: string;
     type?: 'INVOICE' | 'ORDER' | 'ORDER_RESPONSE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
@@ -88,6 +99,8 @@ export type DocumentResponse = {
     versionCount?: number;
     currentVersion?: DocumentVersionResponse;
     derivatives?: Array<DerivativeResponse>;
+    lifecycleStatus?: 'DRAFT' | 'FINAL' | 'CANCELLED';
+    relations?: Array<DocumentRelationResponse>;
 };
 
 export type DocumentVersionResponse = {
@@ -110,6 +123,7 @@ export type SchemaRefResponse = {
 export type AddVersionRequest = {
     content: string;
     createdBy: string;
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
 };
 
 export type ValidationErrorResponse = {
@@ -143,6 +157,22 @@ export type PaginatedResponseDocumentSetResponse = {
     previousUrl?: string;
     nextUrl?: string;
 };
+
+export type ListSchemasData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/schemas';
+};
+
+export type ListSchemasResponses = {
+    /**
+     * OK
+     */
+    200: Array<SchemaResponse>;
+};
+
+export type ListSchemasResponse = ListSchemasResponses[keyof ListSchemasResponses];
 
 export type CreateSchemaData = {
     body: CreateSchemaRequest;
@@ -380,6 +410,25 @@ export type ValidateDocumentVersionResponses = {
 
 export type ValidateDocumentVersionResponse = ValidateDocumentVersionResponses[keyof ValidateDocumentVersionResponses];
 
+export type FinalizeDocumentData = {
+    body?: never;
+    path: {
+        setId: string;
+        docId: string;
+    };
+    query?: never;
+    url: '/api/document-sets/{setId}/documents/{docId}/finalize';
+};
+
+export type FinalizeDocumentResponses = {
+    /**
+     * OK
+     */
+    200: DocumentResponse;
+};
+
+export type FinalizeDocumentResponse = FinalizeDocumentResponses[keyof FinalizeDocumentResponses];
+
 export type StoreExternalDerivativeData = {
     body?: {
         file: Blob | File;
@@ -476,6 +525,25 @@ export type CreateDerivativeResponses = {
 };
 
 export type CreateDerivativeResponse = CreateDerivativeResponses[keyof CreateDerivativeResponses];
+
+export type CancelDocumentData = {
+    body?: never;
+    path: {
+        setId: string;
+        docId: string;
+    };
+    query?: never;
+    url: '/api/document-sets/{setId}/documents/{docId}/cancel';
+};
+
+export type CancelDocumentResponses = {
+    /**
+     * OK
+     */
+    200: DocumentResponse;
+};
+
+export type CancelDocumentResponse = CancelDocumentResponses[keyof CancelDocumentResponses];
 
 export type GetSchemaVersionData = {
     body?: never;

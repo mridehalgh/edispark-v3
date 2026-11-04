@@ -1,7 +1,9 @@
 "use client"
 
-import { AlertTriangle, Check, ChevronDown, Package, Plus, Trash2 } from "lucide-react"
+import { AlertTriangle, Check, ChevronDown, Package, Plus, Sparkles, Trash2 } from "lucide-react"
+import { useState } from "react"
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { BusinessCodeSelect } from "@/components/documents/business-code-select"
@@ -9,6 +11,7 @@ import { COUNTRIES, HANDLING_UNIT_TYPES, ORDER_RESPONSE_CODES, PAYMENT_MEANS, TA
 import {
   fillRemainingAllocations,
   getLineAllocationSummary,
+  hasValidSscc,
   type AuthorableDocumentType,
   type AuthoringHandlingUnit,
   type AuthoringLine,
@@ -22,6 +25,10 @@ type Props = {
   lines: AuthoringLine[]
   onChange: (values: AuthoringSpecialistValues) => void
   onLineChange: (index: number, field: keyof AuthoringLine, value: string) => void
+  ssccGenerationAvailable?: boolean
+  generatingSscc?: boolean
+  onGenerateSscc?: (unitIndex: number) => void
+  onGenerateMissingSsccs?: () => void
 }
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
@@ -51,7 +58,9 @@ function groupedQuantities(items: Array<{ value: number; unitCode: string }>) {
     .join(" · ")
 }
 
-export function SpecialistAuthoringSections({ documentType, values, lines, onChange, onLineChange }: Props) {
+export function SpecialistAuthoringSections({ documentType, values, lines, onChange, onLineChange,
+  ssccGenerationAvailable = false, generatingSscc = false, onGenerateSscc, onGenerateMissingSsccs }: Props) {
+  const [activeHandlingUnit, setActiveHandlingUnit] = useState("unit-0")
   const change = <K extends keyof AuthoringSpecialistValues>(key: K, value: AuthoringSpecialistValues[K]) => onChange({ ...values, [key]: value })
   const shipmentDocument = documentType === "DESPATCH_ADVICE" || documentType === "RECEIPT_ADVICE"
   const commercialDocument = documentType === "ORDER" || documentType === "ORDER_RESPONSE" || documentType === "INVOICE"
@@ -69,6 +78,18 @@ export function SpecialistAuthoringSections({ documentType, values, lines, onCha
         ...(allocationQuantity ? [{ lineId, quantity: allocationQuantity }] : []),
       ],
     })
+  }
+
+  function addHandlingUnit() {
+    const nextIndex = values.handlingUnits.length
+    change("handlingUnits", [...values.handlingUnits, newHandlingUnit(nextIndex)])
+    setActiveHandlingUnit(`unit-${nextIndex}`)
+  }
+
+  function removeHandlingUnit(index: number) {
+    change("handlingUnits", values.handlingUnits.filter((_, unitIndex) => unitIndex !== index))
+    const nextIndex = Math.max(0, Math.min(index, values.handlingUnits.length - 2))
+    setActiveHandlingUnit(values.handlingUnits.length > 1 ? `unit-${nextIndex}` : "")
   }
 
   const packingSummaries = lines.map((line) => getLineAllocationSummary(line, values.handlingUnits, -1))
@@ -98,6 +119,7 @@ export function SpecialistAuthoringSections({ documentType, values, lines, onCha
         {documentType === "ORDER" ? <Field label="Requested delivery date"><Input type="date" value={values.requestedDeliveryDate} onChange={(event) => change("requestedDeliveryDate", event.target.value)} /></Field> : null}
         {documentType === "ORDER_RESPONSE" ? <Field label="Promised delivery date"><Input type="date" value={values.promisedDeliveryDate} onChange={(event) => change("promisedDeliveryDate", event.target.value)} /></Field> : null}
         {shipmentDocument || documentType === "INVOICE" ? <Field label="Actual delivery date"><Input type="date" value={values.actualDeliveryDate} onChange={(event) => change("actualDeliveryDate", event.target.value)} /></Field> : null}
+        {documentType === "DESPATCH_ADVICE" ? <Field label="Despatch date"><Input type="date" value={values.actualDespatchDate ?? ""} onChange={(event) => change("actualDespatchDate", event.target.value)} /></Field> : null}
         <Field label="Address line"><Input value={values.deliveryAddress.line1} onChange={(event) => change("deliveryAddress", { ...values.deliveryAddress, line1: event.target.value })} placeholder="[address]" /></Field>
         <Field label="Town or city"><Input value={values.deliveryAddress.city} onChange={(event) => change("deliveryAddress", { ...values.deliveryAddress, city: event.target.value })} /></Field>
         <Field label="Postcode"><Input value={values.deliveryAddress.postcode} onChange={(event) => change("deliveryAddress", { ...values.deliveryAddress, postcode: event.target.value })} /></Field>
@@ -116,29 +138,31 @@ export function SpecialistAuthoringSections({ documentType, values, lines, onCha
         <Field label="Weight unit"><BusinessCodeSelect value={values.weightUnit} options={WEIGHT_UNITS} onChange={(value) => change("weightUnit", value)} /></Field>
       </div>
 
-      <div className="mt-8 flex flex-col items-start justify-between gap-4 sm:flex-row">
+      <div className="mt-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h3 className="text-sm font-semibold">Pallets and handling units</h3>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Add each physical pallet, carton or roll cage, then assign the items packed on it.</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Work on one unit at a time. Its summary stays visible when you move to the next.</p>
         </div>
-        <Button className="shrink-0" type="button" size="sm" variant="outline" onClick={() => change("handlingUnits", [...values.handlingUnits, newHandlingUnit(values.handlingUnits.length)])}>
-          <Plus className="mr-2 h-4 w-4" />Add handling unit
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {ssccGenerationAvailable && values.handlingUnits.some((unit) => !unit.sscc) ? <Button className="shrink-0" type="button" size="sm" variant="outline" disabled={generatingSscc} onClick={onGenerateMissingSsccs}><Sparkles className="mr-2 h-4 w-4" />{generatingSscc ? "Generating…" : "Generate all SSCCs"}</Button> : null}
+          <Button className="shrink-0" type="button" size="sm" variant="outline" onClick={addHandlingUnit}><Plus className="mr-2 h-4 w-4" />Add unit</Button>
+        </div>
       </div>
       {values.handlingUnits.length ? <>
-        <div className="mt-4 border-y bg-muted/20 px-3 py-3" aria-live="polite">
+        <div className="mt-4 border-y bg-muted/30 px-4 py-3" aria-live="polite">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm">
-            <div>
-              <span className="font-medium">{fullyPackedLines} of {lines.length} lines fully packed</span>
-              <span className="ml-2 text-muted-foreground">{remainingQuantities || "Nothing left to pack"}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="font-medium">{values.handlingUnits.length} {values.handlingUnits.length === 1 ? "unit" : "units"}</span>
+              <span>{fullyPackedLines} of {lines.length} item lines packed</span>
+              <span className="text-muted-foreground">{remainingQuantities ? `${remainingQuantities} remaining` : "Everything is packed"}</span>
             </div>
-            {overAllocatedLines > 0 ? <span className="inline-flex items-center gap-1.5 font-medium text-warning-foreground"><AlertTriangle className="h-4 w-4" aria-hidden="true" />{overAllocatedLines} {overAllocatedLines === 1 ? "line needs" : "lines need"} attention</span> : null}
+            {overAllocatedLines > 0 ? <span className="inline-flex items-center gap-1.5 font-medium text-warning-foreground"><AlertTriangle className="h-4 w-4" aria-hidden="true" />{overAllocatedLines} {overAllocatedLines === 1 ? "line is" : "lines are"} over-packed</span> : <span className="tabular-nums text-muted-foreground">{Math.round(packingProgress)}% packed</span>}
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Packing progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(packingProgress)}>
             <div className="h-full rounded-full bg-success-foreground transition-[width] duration-200" style={{ width: `${packingProgress}%` }} />
           </div>
         </div>
-        <div className="divide-y overflow-hidden rounded-b-md border-x border-b">{values.handlingUnits.map((unit, index) => {
+        <Accordion className="border-x border-b" type="single" collapsible value={activeHandlingUnit} onValueChange={setActiveHandlingUnit}>{values.handlingUnits.map((unit, index) => {
           const allocatedLines = unit.allocations.filter((allocation) => Number(allocation.quantity) > 0)
           const quantitiesOnUnit = groupedQuantities(allocatedLines.map((allocation) => ({
             value: Number(allocation.quantity) || 0,
@@ -148,65 +172,65 @@ export function SpecialistAuthoringSections({ documentType, values, lines, onCha
             const summary = getLineAllocationSummary(line, values.handlingUnits, index)
             return summary.availableForCurrent > 0 && summary.availableForCurrent !== summary.allocatedHere
           })
-          return <details key={`${unit.id}-${index}`} className="group/unit" open={!unit.sscc}>
-            <summary className="grid min-h-16 cursor-pointer list-none grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-3 px-3 py-2.5 text-sm sm:grid-cols-[1.25rem_minmax(9rem,1.3fr)_minmax(8rem,1fr)_6rem_minmax(10rem,1fr)]">
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open/unit:rotate-180" aria-hidden="true" />
-              <span className="flex min-w-0 items-center gap-2">
-                <Package className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span className="min-w-0"><strong className="block truncate font-medium">{unit.id || `Handling unit ${index + 1}`}</strong><span className="block truncate text-xs text-muted-foreground">{unit.sscc ? `SSCC ${unit.sscc}` : "SSCC not added"}</span></span>
+          const unitLineCount = allocatedLines.length
+          const validSscc = hasValidSscc(unit.sscc)
+          return <AccordionItem key={`${unit.id}-${index}`} value={`unit-${index}`} className="last:border-b-0">
+            <AccordionTrigger className="min-h-[4.5rem] px-4 py-3 text-left hover:bg-muted/35 hover:no-underline data-[state=open]:bg-muted/35">
+              <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 pr-3 sm:grid-cols-[minmax(12rem,1.4fr)_minmax(8rem,1fr)_6rem_minmax(9rem,1fr)]">
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-md", validSscc ? "bg-success/35 text-success-foreground" : "bg-muted text-muted-foreground")}><Package className="h-4 w-4" aria-hidden="true" /></span>
+                  <span className="min-w-0"><strong className="block truncate text-sm font-semibold">{unit.id || `Handling unit ${index + 1}`}</strong><span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">{unit.typeCode.toLowerCase().replaceAll("_", " ")} · {unit.packageCount || "0"} {Number(unit.packageCount) === 1 ? "package" : "packages"}</span></span>
+                </span>
+                <span className="hidden min-w-0 sm:block"><span className="block text-xs font-normal text-muted-foreground">Packed here</span><span className="block truncate text-sm font-medium tabular-nums">{quantitiesOnUnit || "Nothing yet"}</span></span>
+                <span className="hidden sm:block"><span className="block text-xs font-normal text-muted-foreground">Item lines</span><span className="text-sm font-medium tabular-nums">{unitLineCount}</span></span>
+                <span className="justify-self-end">{validSscc ? <span className="inline-flex items-center gap-1.5 rounded-full bg-success/35 px-2.5 py-1 text-xs font-semibold text-success-foreground"><Check className="h-3.5 w-3.5" aria-hidden="true" />SSCC ready</span> : unit.sscc ? <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-warning-foreground"><AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />Check SSCC</span> : <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Needs SSCC</span>}</span>
               </span>
-              <span className="col-start-2 sm:col-start-auto"><span className="block text-xs text-muted-foreground">Type</span>{unit.typeCode.toLowerCase().replaceAll("_", " ")}</span>
-              <span className="col-start-2 sm:col-start-auto"><span className="block text-xs text-muted-foreground">Packages</span><span className="tabular-nums">{unit.packageCount || "0"}</span></span>
-              <span className="col-start-2 sm:col-start-auto"><span className="block text-xs text-muted-foreground">Packed here</span><span className="tabular-nums">{quantitiesOnUnit || "No items yet"}</span></span>
-            </summary>
-            <fieldset className="border-t bg-muted/20 px-3 py-4"><legend className="sr-only">Handling unit {index + 1}</legend>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Handling unit ID"><Input value={unit.id} onChange={(event) => updateHandlingUnit(index, { ...unit, id: event.target.value })} required /></Field>
-          <Field label="SSCC" hint="18 digits; GS1 check digit is validated before finalization."><Input inputMode="numeric" maxLength={18} value={unit.sscc} onChange={(event) => updateHandlingUnit(index, { ...unit, sscc: event.target.value.replace(/\D/g, "") })} /></Field>
-          <Field label="Type"><BusinessCodeSelect value={unit.typeCode} options={HANDLING_UNIT_TYPES} onChange={(value) => updateHandlingUnit(index, { ...unit, typeCode: value })} /></Field>
-          <Field label="Package count"><Input type="number" min="0" step="1" value={unit.packageCount} onChange={(event) => updateHandlingUnit(index, { ...unit, packageCount: event.target.value })} /></Field>
-          <Field label="Gross weight"><Input type="number" min="0" step="any" value={unit.grossWeight} onChange={(event) => updateHandlingUnit(index, { ...unit, grossWeight: event.target.value })} /></Field>
-          <Field label="Weight unit"><BusinessCodeSelect value={unit.weightUnit} options={WEIGHT_UNITS} onChange={(value) => updateHandlingUnit(index, { ...unit, weightUnit: value })} /></Field>
-          <Field label="Shipping marks"><Input value={unit.shippingMarks} onChange={(event) => updateHandlingUnit(index, { ...unit, shippingMarks: event.target.value })} /></Field>
-          <div className="flex items-end justify-end"><Button type="button" size="sm" variant="ghost" onClick={() => change("handlingUnits", values.handlingUnits.filter((_, unitIndex) => unitIndex !== index))}><Trash2 className="mr-2 h-4 w-4" />Remove</Button></div>
-        </div>
-        <div className="mt-5 border-t pt-4">
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-            <div><p className="text-sm font-medium">Items on this unit</p><p className="mt-0.5 text-xs text-muted-foreground">See what is already packed elsewhere and fill only the quantity still available.</p></div>
-            <div className="flex flex-wrap gap-2">
-              {unit.allocations.length > 0 ? <Button type="button" size="sm" variant="ghost" onClick={() => updateHandlingUnit(index, { ...unit, allocations: [] })}>Clear this unit</Button> : null}
-              <Button type="button" size="sm" variant="outline" disabled={!canFillRemaining} onClick={() => change("handlingUnits", fillRemainingAllocations(lines, values.handlingUnits, index))}>Pack all remaining</Button>
-            </div>
-          </div>
-          <div className="mt-3 divide-y border-y">{lines.map((line, lineIndex) => {
-            const allocation = unit.allocations.find((entry) => entry.lineId === line.id)
-            const summary = getLineAllocationSummary(line, values.handlingUnits, index)
-            const allocationId = `handling-unit-${index}-line-${lineIndex}`
-            const helpId = `${allocationId}-help`
-            const exceedsAvailable = summary.allocatedHere > summary.availableForCurrent
-            return <div key={line.id} className="grid gap-3 py-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(12rem,.8fr)_minmax(17rem,1fr)] lg:items-center">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{line.id} · {line.itemName || "Unnamed item"}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Ordered {quantity(summary.required, line.unitCode)}{summary.allocatedElsewhere > 0 ? ` · ${quantity(summary.allocatedElsewhere, line.unitCode)} on other units` : ""}</p>
-              </div>
-              <div className={cn("flex items-center gap-1.5 text-sm", summary.overAllocated > 0 ? "font-medium text-warning-foreground" : summary.complete ? "text-success-foreground" : "text-foreground")}>
-                {summary.overAllocated > 0 ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" /> : summary.complete ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : null}
-                {summary.overAllocated > 0 ? `Over by ${quantity(summary.overAllocated, line.unitCode)}` : summary.complete ? "Fully packed" : `${quantity(summary.remaining, line.unitCode)} remaining`}
-              </div>
-              <div className="grid gap-1.5">
-                <label className="text-xs font-medium" htmlFor={allocationId}>On this unit</label>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Input id={allocationId} className="min-w-0 sm:flex-1" type="number" min="0" max={summary.availableForCurrent} step="any" value={allocation?.quantity ?? ""} placeholder="0" aria-describedby={helpId} aria-invalid={exceedsAvailable || undefined} onChange={(event) => updateLineAllocation(index, line.id, event.target.value)} />
-                  <Button className="shrink-0" type="button" size="sm" variant="outline" disabled={summary.availableForCurrent <= 0 || summary.availableForCurrent === summary.allocatedHere} onClick={() => updateLineAllocation(index, line.id, String(summary.availableForCurrent))}>Pack remaining</Button>
-                  {summary.allocatedHere > 0 ? <Button className="shrink-0" type="button" size="sm" variant="ghost" onClick={() => updateLineAllocation(index, line.id, "")}>Clear</Button> : null}
+            </AccordionTrigger>
+            <AccordionContent className="border-t bg-muted/20 p-0">
+              <fieldset><legend className="sr-only">Handling unit {index + 1}</legend>
+                <div className="px-4 py-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div><h4 className="text-sm font-semibold">Unit details</h4><p className="mt-0.5 text-xs text-muted-foreground">Identity, packaging and label information.</p></div>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => removeHandlingUnit(index)}><Trash2 className="mr-2 h-4 w-4" />Remove unit</Button>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
+                    <div className="lg:col-span-3"><Field label="Handling unit ID"><Input value={unit.id} onChange={(event) => updateHandlingUnit(index, { ...unit, id: event.target.value })} required /></Field></div>
+                    <div className="lg:col-span-3"><Field label="Type"><BusinessCodeSelect value={unit.typeCode} options={HANDLING_UNIT_TYPES} onChange={(value) => updateHandlingUnit(index, { ...unit, typeCode: value })} /></Field></div>
+                    <div className="lg:col-span-2"><Field label="Package count"><Input type="number" min="0" step="1" value={unit.packageCount} onChange={(event) => updateHandlingUnit(index, { ...unit, packageCount: event.target.value })} /></Field></div>
+                    <div className="lg:col-span-2"><Field label="Gross weight"><Input type="number" min="0" step="any" value={unit.grossWeight} onChange={(event) => updateHandlingUnit(index, { ...unit, grossWeight: event.target.value })} /></Field></div>
+                    <div className="lg:col-span-2"><Field label="Weight unit"><BusinessCodeSelect value={unit.weightUnit} options={WEIGHT_UNITS} onChange={(value) => updateHandlingUnit(index, { ...unit, weightUnit: value })} /></Field></div>
+                    <div className="lg:col-span-7"><div className="grid gap-1.5 text-sm font-medium"><span>SSCC</span><div className="flex gap-2"><Input className="font-mono tabular-nums" aria-label={`SSCC for ${unit.id || `handling unit ${index + 1}`}`} inputMode="numeric" maxLength={18} value={unit.sscc} readOnly={unit.ssccSource === "GENERATED"} placeholder="18-digit shipping container code" onChange={(event) => updateHandlingUnit(index, { ...unit, sscc: event.target.value.replace(/\D/g, ""), ssccSource: event.target.value ? "MANUAL" : undefined, ssccReservationId: undefined })} />{ssccGenerationAvailable && unit.ssccSource !== "GENERATED" ? <Button type="button" variant="outline" disabled={generatingSscc} onClick={() => onGenerateSscc?.(index)}><Sparkles className="mr-2 h-4 w-4" />Generate</Button> : null}{unit.ssccSource === "GENERATED" ? <Button type="button" variant="ghost" onClick={() => updateHandlingUnit(index, { ...unit, sscc: "", ssccSource: undefined, ssccReservationId: undefined })}>Replace</Button> : null}</div><span className="text-xs font-normal text-muted-foreground">{unit.ssccSource === "GENERATED" ? "Generated from your organisation’s licensed GS1 range." : "Enter 18 digits, or generate one from your organisation’s range."}</span></div></div>
+                    <div className="lg:col-span-5"><Field label="Shipping marks" hint="Optional text printed on the package"><Input value={unit.shippingMarks} onChange={(event) => updateHandlingUnit(index, { ...unit, shippingMarks: event.target.value })} /></Field></div>
+                  </div>
                 </div>
-                <p id={helpId} className={cn("text-xs", exceedsAvailable ? "text-warning-foreground" : "text-muted-foreground")}>Maximum on this unit: {quantity(summary.availableForCurrent, line.unitCode)}</p>
-              </div>
-            </div>
-          })}</div>
-        </div>
-      </fieldset></details>})}</div>
-      </> : <div className="mt-4 rounded-md border border-dashed px-4 py-7 text-center"><Package className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden="true" /><p className="mt-2 text-sm font-medium">No handling units yet</p><p className="mt-1 text-sm text-muted-foreground">Add a pallet or package when this shipment is packed.</p></div>}
+                <div className="border-t bg-background px-4 py-5">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                    <div><h4 className="text-sm font-semibold">Pack items</h4><p className="mt-0.5 text-xs text-muted-foreground">Enter what is physically on this unit. Available quantities update across every unit.</p></div>
+                    <div className="flex flex-wrap gap-2">{unit.allocations.length > 0 ? <Button type="button" size="sm" variant="ghost" onClick={() => updateHandlingUnit(index, { ...unit, allocations: [] })}>Clear quantities</Button> : null}<Button type="button" size="sm" variant="outline" disabled={!canFillRemaining} onClick={() => change("handlingUnits", fillRemainingAllocations(lines, values.handlingUnits, index))}>Pack everything remaining</Button></div>
+                  </div>
+                  <div className="mt-4 overflow-hidden border-y">
+                    <div className="hidden grid-cols-[minmax(12rem,1.5fr)_7rem_7rem_7rem_minmax(12rem,.8fr)] gap-3 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground lg:grid"><span>Item</span><span className="text-right">Ordered</span><span className="text-right">Other units</span><span className="text-right">Remaining</span><span>On this unit</span></div>
+                    <div className="divide-y">{lines.map((line, lineIndex) => {
+                      const allocation = unit.allocations.find((entry) => entry.lineId === line.id)
+                      const summary = getLineAllocationSummary(line, values.handlingUnits, index)
+                      const allocationId = `handling-unit-${index}-line-${lineIndex}`
+                      const helpId = `${allocationId}-help`
+                      const exceedsAvailable = summary.allocatedHere > summary.availableForCurrent
+                      return <div key={line.id} className="grid gap-3 px-3 py-3 lg:grid-cols-[minmax(12rem,1.5fr)_7rem_7rem_7rem_minmax(12rem,.8fr)] lg:items-center">
+                        <div className="min-w-0"><p className="truncate text-sm font-medium">{line.id} · {line.itemName || "Unnamed item"}</p><div className="mt-1 flex flex-wrap gap-2 lg:hidden"><span className="text-xs text-muted-foreground">Ordered {quantity(summary.required, line.unitCode)}</span><span className="text-xs text-muted-foreground">Other units {quantity(summary.allocatedElsewhere, line.unitCode)}</span></div></div>
+                        <span className="hidden text-right text-sm tabular-nums lg:block">{quantity(summary.required, line.unitCode)}</span>
+                        <span className="hidden text-right text-sm tabular-nums text-muted-foreground lg:block">{quantity(summary.allocatedElsewhere, line.unitCode)}</span>
+                        <span className={cn("text-sm tabular-nums lg:text-right", summary.overAllocated > 0 ? "font-medium text-warning-foreground" : summary.remaining === 0 ? "text-success-foreground" : "text-foreground")}>{summary.overAllocated > 0 ? `Over ${quantity(summary.overAllocated, line.unitCode)}` : summary.remaining === 0 ? "Packed" : quantity(summary.remaining, line.unitCode)}</span>
+                        <div><label className="sr-only" htmlFor={allocationId}>{line.itemName || `Line ${line.id}`} on this unit</label><div className="flex gap-2"><Input id={allocationId} className="h-9 min-w-0 text-right tabular-nums" type="number" min="0" max={summary.availableForCurrent} step="any" value={allocation?.quantity ?? ""} placeholder="0" aria-describedby={helpId} aria-invalid={exceedsAvailable || undefined} onChange={(event) => updateLineAllocation(index, line.id, event.target.value)} /><Button className="shrink-0" type="button" size="sm" variant="outline" disabled={summary.availableForCurrent <= 0 || summary.availableForCurrent === summary.allocatedHere} onClick={() => updateLineAllocation(index, line.id, String(summary.availableForCurrent))}>Use max</Button></div><p id={helpId} className={cn("mt-1 text-right text-xs", exceedsAvailable ? "text-warning-foreground" : "text-muted-foreground")}>Up to {quantity(summary.availableForCurrent, line.unitCode)}</p></div>
+                      </div>
+                    })}</div>
+                  </div>
+                </div>
+              </fieldset>
+            </AccordionContent>
+          </AccordionItem>
+        })}</Accordion>
+      </> : <div className="mt-4 border-y py-8 text-center"><Package className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden="true" /><p className="mt-2 text-sm font-medium">No handling units yet</p><p className="mt-1 text-sm text-muted-foreground">Add the first pallet or package, then assign what is packed on it.</p><Button className="mt-4" type="button" size="sm" variant="outline" onClick={addHandlingUnit}><Plus className="mr-2 h-4 w-4" />Add first unit</Button></div>}
     </section> : null}
 
     {(documentType === "INVOICE" || documentType === "REMITTANCE_ADVICE") ? <section className="border-t py-6" aria-labelledby="payment-heading"><h2 id="payment-heading" className="text-base font-semibold">Payment</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="Payment method"><BusinessCodeSelect value={values.paymentMeansCode} options={PAYMENT_MEANS} emptyLabel="Choose a payment method" onChange={(value) => change("paymentMeansCode", value)} /></Field><Field label="Due date"><Input type="date" value={values.paymentDueDate} onChange={(event) => change("paymentDueDate", event.target.value)} /></Field><Field label="Account identifier"><Input value={values.paymentAccountId} onChange={(event) => change("paymentAccountId", event.target.value)} /></Field><Field label="Payment terms"><Input value={values.paymentTerms} onChange={(event) => change("paymentTerms", event.target.value)} /></Field></div></section> : null}

@@ -16,13 +16,15 @@ class ClasspathGlobalMappingCatalogTest {
     private final ClasspathGlobalMappingCatalog catalog = new ClasspathGlobalMappingCatalog();
 
     @Test
-    void vendsEightImmutableComprehensiveMappingDirectionsWithSamples() throws Exception {
-        assertThat(catalog.list()).hasSize(8).allSatisfy(mapping -> {
+    void vendsAllSixLifecycleDocumentsAndKeepsComprehensiveOrderInvoiceSamples() throws Exception {
+        assertThat(catalog.list()).hasSize(24).allSatisfy(mapping -> {
             assertThat(mapping.scope()).isEqualTo(MappingScope.GLOBAL);
             assertThat(mapping.status()).isEqualTo(MappingStatus.PUBLISHED);
             assertThat(mapping.vendor()).isEqualTo("EdiSpark");
+            assertThat(mapping.compatibility()).isNotNull();
+        });
+        assertThat(catalog.list()).filteredOn(mapping -> mapping.sample() != null).hasSize(8).allSatisfy(mapping -> {
             assertThat(mapping.nodes()).hasSizeGreaterThanOrEqualTo(40);
-            assertThat(mapping.sample()).isNotNull();
             assertThat(mapping.sample().sourceFormat()).isNotBlank();
             assertThat(mapping.sample().targetFormat()).isNotBlank();
             assertThat(mapping.sample().sourceDocument()).isNotBlank();
@@ -37,7 +39,7 @@ class ClasspathGlobalMappingCatalogTest {
             assertThat(rawEdi).containsAnyOf("LIN+2", "OLD=2", "ILD=2");
         });
         assertThat(catalog.list()).extracting(mapping -> mapping.id()).doesNotHaveDuplicates();
-        for (var mapping : catalog.list()) {
+        for (var mapping : catalog.list().stream().filter(item -> item.sample() != null).toList()) {
             assertThat(mapper.readTree(mapping.sample().sourceDocument())).isNotNull();
             assertThat(mapper.readTree(mapping.sample().targetDocument())).isNotNull();
         }
@@ -70,7 +72,7 @@ class ClasspathGlobalMappingCatalogTest {
     @Test
     void everyPublishedFieldIsPopulatedAndLargeSamplesContainEightMeaningfulLines() throws Exception {
         var runtime = new MappingRuntime(mapper);
-        for (var mapping : catalog.list()) {
+        for (var mapping : catalog.list().stream().filter(item -> item.sample() != null).toList()) {
             var source = mapper.readTree(mapping.sample().sourceDocument());
             assertThat(mapping.nodes()).allSatisfy(node -> {
                 if (node.operation() == com.edispark.transformations.domain.MappingOperation.CONSTANT) return;

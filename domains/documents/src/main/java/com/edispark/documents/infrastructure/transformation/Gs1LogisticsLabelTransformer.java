@@ -25,6 +25,7 @@ import org.apache.pdfbox.pdmodel.font.PDType1Font;
 /** Renders GS1 logistics labels from UBL TransportHandlingUnit aggregates. */
 public final class Gs1LogisticsLabelTransformer implements DocumentTransformer {
     private static final PDRectangle A5 = new PDRectangle(420, 595);
+    private static final char CODE_128_FNC1 = '\u00f1';
     private final ObjectMapper json;
 
     public Gs1LogisticsLabelTransformer(ObjectMapper json) {
@@ -112,15 +113,24 @@ public final class Gs1LogisticsLabelTransformer implements DocumentTransformer {
     }
 
     private void drawBarcode(PDPageContentStream content, String sscc, float x, float y, float width, float height) throws Exception {
-        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
-        hints.put(EncodeHintType.GS1_FORMAT, true);
-        hints.put(EncodeHintType.MARGIN, 10);
-        BitMatrix matrix = new MultiFormatWriter().encode("00" + sscc, BarcodeFormat.CODE_128, (int) width, 100, hints);
+        BitMatrix matrix = gs1SsccBarcode(sscc, (int) width);
         float module = width / matrix.getWidth();
         for (int column = 0; column < matrix.getWidth(); column++) {
             if (matrix.get(column, 50)) content.addRect(x + column * module, y, module + 0.2f, height);
         }
         content.fill();
+    }
+
+    static BitMatrix gs1SsccBarcode(String sscc, int width) throws Exception {
+        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+        hints.put(EncodeHintType.GS1_FORMAT, true);
+        hints.put(EncodeHintType.MARGIN, 10);
+        // Code 128 is only GS1-128 when FNC1 immediately follows its start character.
+        // ZXing's GS1_FORMAT hint does not insert FNC1 for Code128Writer, so include it
+        // explicitly. Parentheses belong to the human-readable text, not the symbol.
+        String elementString = CODE_128_FNC1 + "00" + sscc;
+        return new MultiFormatWriter().encode(elementString, BarcodeFormat.CODE_128,
+                (int) width, 100, hints);
     }
 
     private void text(PDPageContentStream content, float x, float y, float size, String value) throws Exception {

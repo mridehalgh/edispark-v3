@@ -1,6 +1,6 @@
 "use client"
 
-import type { DocumentFieldRule, DocumentProfile, ExchangeResponse, MappingRevision, TradingAgreement, TradingPartner } from "@edispark/integration-client"
+import type { DocumentFieldRule, DocumentProfile, ExchangeResponse, SsccIssuer, TradingAgreement, TradingPartner } from "@edispark/integration-client"
 import type { As2ConnectionDetailsResponse, CertificateResponse, PartnerResponse, TransferResponse } from "@edispark/mft-client"
 import { ArrowLeft, ArrowRight, Copy, Download, Edit3, FileText, Pause, Plug, Plus, RefreshCw, Send, Trash2, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { findPublishedMapping, unavailableExchangeMessage, type CompatibleMapping } from "@/lib/mapping-compatibility"
 
 type PartnerData = {
   partners: TradingPartner[]
@@ -22,18 +23,24 @@ type PartnerData = {
   connections: PartnerResponse[]
   certificates: CertificateResponse[]
   transfers: TransferResponse[]
-  mappings: MappingRevision[]
+  mappings: CompatibleMapping[]
   connectionDetails: As2ConnectionDetailsResponse[]
   documentProfiles: DocumentProfile[]
+  ssccIssuers: SsccIssuer[]
 }
 
-const EMPTY_DATA: PartnerData = { partners: [], agreements: [], exchanges: [], connections: [], certificates: [], transfers: [], mappings: [], connectionDetails: [], documentProfiles: [] }
+const EMPTY_DATA: PartnerData = { partners: [], agreements: [], exchanges: [], connections: [], certificates: [], transfers: [], mappings: [], connectionDetails: [], documentProfiles: [], ssccIssuers: [] }
 const PARTNER_TAB_CLASS = "min-h-10 shrink-0 justify-start rounded-md px-3 text-muted-foreground shadow-none data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=active]:shadow-none lg:w-full"
 
 async function readApi<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, cache: "no-store" })
   const body = await response.json().catch(() => undefined)
-  if (!response.ok) throw new Error(body?.error?.message ?? "The request could not be completed.")
+  if (!response.ok) {
+    const message = body?.error?.message ?? "The request could not be completed."
+    const action = body?.error?.recommendedAction
+    const reference = body?.error?.correlationId
+    throw new Error([message, action, reference ? `Reference: ${reference}` : undefined].filter(Boolean).join(" "))
+  }
   return body as T
 }
 
@@ -80,18 +87,19 @@ export function PartnerPage() {
   const refresh = useCallback(async () => {
     setError(undefined)
     try {
-      const [partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails, documentProfiles] = await Promise.all([
+      const [partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails, documentProfiles, ssccIssuers] = await Promise.all([
         readApi<TradingPartner[]>("/api/integration/partners"),
         readApi<TradingAgreement[]>("/api/integration/agreements"),
         readApi<ExchangeResponse[]>("/api/integration/exchanges"),
         readApi<PartnerResponse[]>("/api/mft/partners"),
         readApi<CertificateResponse[]>("/api/mft/certificates"),
         readApi<TransferResponse[]>("/api/mft/transfers"),
-        readApi<MappingRevision[]>("/api/integration/mappings"),
+        readApi<CompatibleMapping[]>("/api/integration/mappings"),
         readApi<As2ConnectionDetailsResponse[]>("/api/mft/connection-details"),
         partnerId ? readApi<DocumentProfile[]>(`/api/integration/partners/${partnerId}/document-profiles`) : Promise.resolve([]),
+        readApi<SsccIssuer[]>("/api/integration/sscc/issuers"),
       ])
-      setData({ partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails, documentProfiles })
+      setData({ partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails, documentProfiles, ssccIssuers })
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "The partner could not be loaded.")
     } finally {
@@ -262,14 +270,14 @@ export function PartnerPage() {
     const approvalPolicy = String(form.get("approvalPolicy") || "NONE")
     const responseDocumentType = String(form.get("responseDocumentType") || "") || undefined
     const documentProfileRevisionId = String(form.get("documentProfileRevisionId") || "") || undefined
-    const search = [direction === "INBOUND" ? "inbound" : "outbound", documentType.toLowerCase(), standard.toLowerCase()]
-    const mapping = data.mappings.find((item) => item.status === "PUBLISHED" && search.every((term) => item.name?.toLowerCase().includes(term)))
-      ?? data.mappings.find((item) => item.status === "PUBLISHED" && item.name?.toLowerCase().includes(standard.toLowerCase()) && item.name?.toLowerCase().includes(documentType.toLowerCase()))
-    if (!mapping?.id || !mapping.sourceSchemaId || !mapping.targetSchemaId) return setError("That document exchange is not available yet.")
+    const mapping = findPublishedMapping(data.mappings, direction, documentType, standard)
+    if (!mapping?.id || !mapping.sourceSchemaId || !mapping.targetSchemaId) {
+      return setError(unavailableExchangeMessage(direction, documentType, standard))
+    }
     await perform(`/api/integration/agreements/${agreement.id}/capabilities`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ direction, documentType, standard, release: standard === "EDIFACT" ? "D96A" : "9", messageType: ({ ORDER: "ORDERS", ORDER_RESPONSE: "ORDRSP", DESPATCH_ADVICE: "DESADV", INVOICE: "INVOIC", REMITTANCE_ADVICE: "REMADV", RECEIPT_ADVICE: "RECADV" } as const)[documentType], sourceSchemaId: mapping.sourceSchemaId, targetSchemaId: mapping.targetSchemaId, mappingRevisionId: mapping.id, as2ConnectionId: connection.id, acknowledgementPolicy: "TRANSPORT_ONLY", batchingPolicy: "INDIVIDUAL", automationMode: direction === "INBOUND" ? automationMode : "MANUAL", approvalPolicy: direction === "INBOUND" ? approvalPolicy : "NONE", responseDocumentType: direction === "INBOUND" ? responseDocumentType : undefined, documentProfileRevisionId }),
+      body: JSON.stringify({ direction, documentType, standard, release: mapping.compatibility?.release, messageType: mapping.compatibility?.messageType, sourceSchemaId: mapping.sourceSchemaId, targetSchemaId: mapping.targetSchemaId, mappingRevisionId: mapping.id, as2ConnectionId: connection.id, acknowledgementPolicy: "TRANSPORT_ONLY", batchingPolicy: "INDIVIDUAL", automationMode: direction === "INBOUND" ? automationMode : "MANUAL", approvalPolicy: direction === "INBOUND" ? approvalPolicy : "NONE", responseDocumentType: direction === "INBOUND" ? responseDocumentType : undefined, documentProfileRevisionId }),
     }, "Document exchange added.")
   }
 
@@ -285,14 +293,14 @@ export function PartnerPage() {
     if (created) setAddingProfile(false)
   }
 
-  async function saveDocumentProfile(profile: DocumentProfile, rules: DocumentFieldRule[]) {
+  async function saveDocumentProfile(profile: DocumentProfile, rules: DocumentFieldRule[], ssccGenerationMode: "MANUAL" | "ASSISTED" | "AUTOMATIC", ssccIssuerId?: string) {
     if (!profile.id) return
-    await perform(`/api/integration/document-profiles/${profile.id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rules) }, "Partner requirements saved.")
+    await perform(`/api/integration/document-profiles/${profile.id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fieldRules: rules, ssccGenerationMode, ssccIssuerId }) }, "Partner requirements saved.")
   }
 
-  async function publishDocumentProfile(profile: DocumentProfile, rules: DocumentFieldRule[]) {
+  async function publishDocumentProfile(profile: DocumentProfile, rules: DocumentFieldRule[], ssccGenerationMode: "MANUAL" | "ASSISTED" | "AUTOMATIC", ssccIssuerId?: string) {
     if (!profile.id) return
-    const saved = await perform(`/api/integration/document-profiles/${profile.id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rules) }, "Partner requirements saved.")
+    const saved = await perform(`/api/integration/document-profiles/${profile.id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fieldRules: rules, ssccGenerationMode, ssccIssuerId }) }, "Partner requirements saved.")
     if (saved) await profileAction(profile, "publish")
   }
 
@@ -421,7 +429,7 @@ export function PartnerPage() {
         <div className="mt-8 border-t">
           <header className="flex flex-wrap items-center gap-3 border-b py-4"><div><h3 className="text-base font-semibold">Partner requirements</h3><p className="mt-0.5 max-w-3xl text-sm text-muted-foreground">Configure only the extra information this partner asks for.</p></div><Button className="ml-auto" type="button" size="sm" variant="outline" onClick={() => setAddingProfile((value) => !value)}>{addingProfile ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}{addingProfile ? "Cancel" : "New requirements"}</Button></header>
           {addingProfile ? <form onSubmit={createDocumentProfile} className="grid gap-3 border-b bg-muted/20 p-4 sm:grid-cols-3"><label className="grid gap-1.5 text-sm font-medium">Name<Input name="name" required placeholder="ASN requirements" /></label><label className="grid gap-1.5 text-sm font-medium">Direction<select name="direction" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="OUTBOUND">Documents we send</option><option value="INBOUND">Documents we receive</option></select></label><label className="grid gap-1.5 text-sm font-medium">Document<select name="documentType" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="ORDER">Order</option><option value="ORDER_RESPONSE">Order response</option><option value="DESPATCH_ADVICE">Despatch advice</option><option value="INVOICE">Invoice</option><option value="REMITTANCE_ADVICE">Remittance advice</option><option value="RECEIPT_ADVICE">Receipt advice</option></select></label><div className="flex justify-end sm:col-span-3"><Button disabled={busy}>Create draft</Button></div></form> : null}
-          {data.documentProfiles.length ? data.documentProfiles.toSorted((left, right) => (right.revision ?? 0) - (left.revision ?? 0)).map((profile) => <DocumentProfileEditor key={profile.id} profile={profile} busy={busy} onSave={saveDocumentProfile} onPublish={publishDocumentProfile} onRevise={(item) => profileAction(item, "revisions")} />) : <AdminEmptyState title="No extra requirements" />}
+          {data.documentProfiles.length ? data.documentProfiles.toSorted((left, right) => (right.revision ?? 0) - (left.revision ?? 0)).map((profile) => <DocumentProfileEditor key={profile.id} profile={profile} ssccIssuers={data.ssccIssuers} busy={busy} onSave={saveDocumentProfile} onPublish={publishDocumentProfile} onRevise={(item) => profileAction(item, "revisions")} />) : <AdminEmptyState title="No extra requirements" />}
         </div>
       </section>
         </TabsContent>

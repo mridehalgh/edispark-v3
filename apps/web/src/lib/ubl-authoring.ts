@@ -46,6 +46,8 @@ export interface AuthoringHandlingUnit {
   weightUnit: string
   shippingMarks: string
   allocations: HandlingUnitAllocation[]
+  ssccSource?: "GENERATED" | "MANUAL"
+  ssccReservationId?: string
 }
 
 export interface LineAllocationSummary {
@@ -131,6 +133,7 @@ export interface AuthoringSpecialistValues {
   requestedDeliveryDate: string
   promisedDeliveryDate: string
   actualDeliveryDate: string
+  actualDespatchDate?: string
   deliveryAddress: AuthoringAddress
   paymentMeansCode: string
   paymentDueDate: string
@@ -278,6 +281,7 @@ function delivery(specialist: AuthoringSpecialistValues) {
   if (specialist.actualDeliveryDate) result.ActualDeliveryDate = value(specialist.actualDeliveryDate)
   if (specialist.requestedDeliveryDate) result.RequestedDeliveryPeriod = [{ StartDate: value(specialist.requestedDeliveryDate) }]
   if (specialist.promisedDeliveryDate) result.PromisedDeliveryPeriod = [{ StartDate: value(specialist.promisedDeliveryDate) }]
+  if (specialist.actualDespatchDate) result.Despatch = [{ ActualDespatchDate: value(specialist.actualDespatchDate) }]
   const deliveryAddress = address(specialist.deliveryAddress)
   if (Object.keys(deliveryAddress).length) result.DeliveryAddress = [deliveryAddress]
   return result

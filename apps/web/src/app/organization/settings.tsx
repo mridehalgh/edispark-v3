@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import {
+  Barcode,
   Building2,
   Check,
   CircleUserRound,
@@ -17,6 +18,7 @@ import {
   Users,
   X,
 } from "lucide-react"
+import type { CreateSsccIssuerRequest, SsccIssuer } from "@edispark/integration-client"
 import { Navigate, useNavigate } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
@@ -44,7 +46,7 @@ const initials = (value: string) =>
     .slice(0, 2)
     .toUpperCase()
 
-export function OrganizationSettingsPage({ setupOnly = false, initialTab = "people" }: { setupOnly?: boolean; initialTab?: "people" | "settings" | "sso" }) {
+export function OrganizationSettingsPage({ setupOnly = false, initialTab = "people" }: { setupOnly?: boolean; initialTab?: "people" | "settings" | "sso" | "shipping" }) {
   const navigate = useNavigate()
   const { data: activeOrganization, isPending } = authClient.useActiveOrganization()
   const { data: organizations, isPending: isOrganizationsPending } = authClient.useListOrganizations()
@@ -158,7 +160,7 @@ export function OrganizationSettingsPage({ setupOnly = false, initialTab = "peop
             </div>
           </div>
 
-          <Tabs value={initialTab} onValueChange={(value) => navigate({ people: "/organisation/people", settings: "/organisation/details", sso: "/organisation/sign-in", rules: "/organisation/document-rules" }[value] ?? "/organisation/people")} className="mt-5">
+          <Tabs value={initialTab} onValueChange={(value) => navigate({ people: "/organisation/people", settings: "/organisation/details", sso: "/organisation/sign-in", shipping: "/organisation/shipping-identifiers", rules: "/organisation/document-rules" }[value] ?? "/organisation/people")} className="mt-5">
             <TabsList className="h-auto w-full justify-start gap-5 rounded-none border-b bg-transparent p-0">
               <TabsTrigger value="people" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
                 <Users className="h-4 w-4" aria-hidden="true" /> People
@@ -168,6 +170,9 @@ export function OrganizationSettingsPage({ setupOnly = false, initialTab = "peop
               </TabsTrigger>
               <TabsTrigger value="sso" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
                 <KeyRound className="h-4 w-4" aria-hidden="true" /> Single sign-on
+              </TabsTrigger>
+              <TabsTrigger value="shipping" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
+                <Barcode className="h-4 w-4" aria-hidden="true" /> Shipping IDs
               </TabsTrigger>
               <TabsTrigger value="rules" className="relative gap-2 rounded-none px-1 pb-3 pt-1 shadow-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary">
                 <FileCode2 className="h-4 w-4" aria-hidden="true" /> Document rules
@@ -182,10 +187,107 @@ export function OrganizationSettingsPage({ setupOnly = false, initialTab = "peop
             <TabsContent value="sso" className="mt-6">
               <SingleSignOn organization={activeOrganization} canManage={canManage} />
             </TabsContent>
+            <TabsContent value="shipping" className="mt-6">
+              <ShippingIdentifiers canManage={canManage} />
+            </TabsContent>
           </Tabs>
       </main>
     </AdminPage>
   )
+}
+
+function ShippingIdentifiers({ canManage }: { canManage: boolean }) {
+  const [issuers, setIssuers] = useState<SsccIssuer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState<Notice>(null)
+  const [showForm, setShowForm] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await fetch("/api/integration/sscc/issuers", { cache: "no-store" })
+      const body = await response.json() as SsccIssuer[] | { error?: { message?: string } }
+      if (!response.ok) throw new Error("error" in body ? body.error?.message : "Unable to load shipping identifiers.")
+      setIssuers(body as SsccIssuer[])
+    } catch (caught) {
+      setNotice({ kind: "error", text: caught instanceof Error ? caught.message : "Unable to load shipping identifiers." })
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { void load() }, [load])
+
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSaving(true)
+    setNotice(null)
+    const formElement = event.currentTarget
+    const form = new FormData(formElement)
+    const body: CreateSsccIssuerRequest = {
+      name: String(form.get("name")).trim(),
+      gs1CompanyPrefix: String(form.get("prefix")).trim(),
+      extensionDigit: Number(form.get("extensionDigit")),
+      serialStart: Number(form.get("serialStart")),
+      serialEnd: Number(form.get("serialEnd")),
+      reuseAfterMonths: Number(form.get("reuseAfterMonths")),
+      defaultIssuer: form.get("defaultIssuer") === "on",
+      ownershipAttested: form.get("ownershipAttested") === "on",
+    }
+    try {
+      const response = await fetch("/api/integration/sscc/issuers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      const result = await response.json() as SsccIssuer | { error?: { message?: string } }
+      if (!response.ok) throw new Error("error" in result ? result.error?.message : "Unable to save this number range.")
+      formElement.reset()
+      setShowForm(false)
+      setNotice({ kind: "success", text: "Shipping identifier range saved as a draft." })
+      await load()
+    } catch (caught) {
+      setNotice({ kind: "error", text: caught instanceof Error ? caught.message : "Unable to save this number range." })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function action(issuerId: string, name: "activate" | "retire" | "default") {
+    setSaving(true)
+    setNotice(null)
+    try {
+      const response = await fetch(`/api/integration/sscc/issuers/${issuerId}/${name}`, { method: "POST" })
+      const result = await response.json() as SsccIssuer | { error?: { message?: string } }
+      if (!response.ok) throw new Error("error" in result ? result.error?.message : "Unable to update this range.")
+      setNotice({ kind: "success", text: name === "activate" ? "Range activated." : name === "retire" ? "Range retired." : "Default range updated." })
+      await load()
+    } catch (caught) {
+      setNotice({ kind: "error", text: caught instanceof Error ? caught.message : "Unable to update this range." })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return <section aria-labelledby="shipping-identifiers-title">
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-5">
+      <div><h3 id="shipping-identifiers-title" className="text-base font-semibold">GS1 shipping identifiers</h3><p className="mt-1 max-w-2xl text-sm text-muted-foreground">Use a licensed GS1 Company Prefix to generate unique pallet and handling-unit SSCCs. EdiSpark never supplies or certifies the prefix.</p></div>
+      {canManage ? <Button type="button" variant="outline" onClick={() => setShowForm((value) => !value)}><Plus className="mr-2 h-4 w-4" />{showForm ? "Cancel" : "Add number range"}</Button> : null}
+    </div>
+    {notice ? <p role={notice.kind === "error" ? "alert" : "status"} className={cn("mt-4 rounded-md px-3 py-2 text-sm", notice.kind === "error" ? "bg-destructive/10 text-destructive" : "bg-success/30")}>{notice.text}</p> : null}
+    {showForm ? <form onSubmit={create} className="mt-5 grid gap-4 border bg-muted/30 p-5 sm:grid-cols-2 lg:grid-cols-4">
+      <label className="grid gap-1.5 text-sm font-medium sm:col-span-2">Range name<Input name="name" required placeholder="Main warehouse range" /></label>
+      <label className="grid gap-1.5 text-sm font-medium">GS1 Company Prefix<Input name="prefix" required inputMode="numeric" pattern="[0-9]{4,12}" minLength={4} maxLength={12} placeholder="Licensed digits" /></label>
+      <label className="grid gap-1.5 text-sm font-medium">Extension digit<Input name="extensionDigit" required type="number" min={0} max={9} defaultValue={0} /></label>
+      <label className="grid gap-1.5 text-sm font-medium">First serial reference<Input name="serialStart" required type="number" min={0} defaultValue={1} /></label>
+      <label className="grid gap-1.5 text-sm font-medium">Last serial reference<Input name="serialEnd" required type="number" min={0} defaultValue={999999} /></label>
+      <label className="grid gap-1.5 text-sm font-medium">Do not reuse for<Input name="reuseAfterMonths" required type="number" min={12} defaultValue={12} /><span className="text-xs font-normal text-muted-foreground">Months; GS1 requires at least 12.</span></label>
+      <div className="grid content-end gap-2 text-sm"><label className="flex items-start gap-2"><input name="defaultIssuer" type="checkbox" className="mt-1" defaultChecked />Use as organisation default</label></div>
+      <label className="flex items-start gap-2 border-t pt-4 text-sm sm:col-span-2 lg:col-span-4"><input name="ownershipAttested" required type="checkbox" className="mt-1" /><span>I confirm this organisation is licensed to use this GS1 Company Prefix and the serial range is reserved exclusively for EdiSpark.</span></label>
+      <div className="flex justify-end sm:col-span-2 lg:col-span-4"><Button disabled={saving}>{saving ? "Saving…" : "Save draft range"}</Button></div>
+    </form> : null}
+    {loading ? <div className="mt-5 h-24 animate-pulse bg-muted" /> : issuers.length ? <div className="mt-5 divide-y border-y">{issuers.toSorted((a, b) => Number(Boolean(b.defaultIssuer)) - Number(Boolean(a.defaultIssuer))).map((issuer) => {
+      const remaining = Math.max(0, Number(issuer.serialEnd ?? 0) - Number(issuer.nextSerial ?? 0) + 1)
+      return <article key={issuer.id} className="flex flex-wrap items-center gap-4 py-4"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h4 className="font-medium">{issuer.name}</h4>{issuer.defaultIssuer ? <Badge>{issuer.status === "DRAFT" ? "Default when activated" : "Default"}</Badge> : null}<Badge variant="secondary">{issuer.status?.toLowerCase()}</Badge></div><p className="mt-1 text-sm text-muted-foreground">Prefix {issuer.gs1CompanyPrefix} · extension {issuer.extensionDigit} · {remaining.toLocaleString()} identifiers remaining · {issuer.reuseAfterMonths} month retention</p></div><div className="flex gap-2">{issuer.status === "DRAFT" && issuer.id ? <Button size="sm" disabled={saving} onClick={() => void action(issuer.id!, "activate")}>Activate</Button> : null}{issuer.status === "ACTIVE" && !issuer.defaultIssuer && issuer.id ? <Button size="sm" variant="outline" disabled={saving} onClick={() => void action(issuer.id!, "default")}>Make default</Button> : null}{issuer.status === "ACTIVE" && issuer.id ? <Button size="sm" variant="ghost" disabled={saving} onClick={() => void action(issuer.id!, "retire")}>Retire</Button> : null}</div></article>
+    })}</div> : <div className="mt-5 border-y py-8 text-center"><p className="text-sm font-medium">No GS1 number ranges configured</p><p className="mt-1 text-sm text-muted-foreground">Add a licensed prefix before generating pallet labels.</p></div>}
+  </section>
 }
 
 function OrganizationPageSkeleton({ label }: { label: string }) {

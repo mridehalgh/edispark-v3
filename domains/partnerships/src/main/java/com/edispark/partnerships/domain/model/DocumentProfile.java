@@ -17,6 +17,8 @@ public record DocumentProfile(
         BusinessDocumentType documentType,
         DocumentProfileStatus status,
         List<DocumentFieldRule> fieldRules,
+        SsccGenerationMode ssccGenerationMode,
+        UUID ssccIssuerId,
         Instant createdAt,
         Instant updatedAt) {
     public DocumentProfile {
@@ -29,6 +31,11 @@ public record DocumentProfile(
         Objects.requireNonNull(direction);
         Objects.requireNonNull(documentType);
         Objects.requireNonNull(status);
+        ssccGenerationMode = ssccGenerationMode == null ? SsccGenerationMode.MANUAL : ssccGenerationMode;
+        if ((ssccGenerationMode != SsccGenerationMode.MANUAL || ssccIssuerId != null)
+                && (direction != ExchangeDirection.OUTBOUND || documentType != BusinessDocumentType.DESPATCH_ADVICE)) {
+            throw new IllegalArgumentException("SSCC generation can only be configured for outbound despatch advice");
+        }
         fieldRules = List.copyOf(fieldRules == null ? List.of() : fieldRules);
         if (new HashSet<>(fieldRules.stream().map(DocumentFieldRule::fieldKey).toList()).size() != fieldRules.size()) {
             throw new IllegalArgumentException("field rule keys must be unique");
@@ -42,30 +49,46 @@ public record DocumentProfile(
             Instant now) {
         UUID id = UUID.randomUUID();
         return new DocumentProfile(id, id, tenantId, partnerId, 1, name, direction, documentType,
-                DocumentProfileStatus.DRAFT, rules, now, now);
+                DocumentProfileStatus.DRAFT, rules, SsccGenerationMode.MANUAL, null, now, now);
+    }
+
+    public static DocumentProfile draft(String tenantId, UUID partnerId, String name,
+            ExchangeDirection direction, BusinessDocumentType documentType, List<DocumentFieldRule> rules,
+            SsccGenerationMode generationMode, UUID ssccIssuerId, Instant now) {
+        UUID id = UUID.randomUUID();
+        return new DocumentProfile(id, id, tenantId, partnerId, 1, name, direction, documentType,
+                DocumentProfileStatus.DRAFT, rules, generationMode, ssccIssuerId, now, now);
     }
 
     public DocumentProfile revise(List<DocumentFieldRule> rules, Instant now) {
         if (status != DocumentProfileStatus.DRAFT) throw new IllegalStateException("Only draft profiles can be edited");
         return new DocumentProfile(id, familyId, tenantId, partnerId, revision, name, direction, documentType,
-                status, rules, createdAt, now);
+                status, rules, ssccGenerationMode, ssccIssuerId, createdAt, now);
+    }
+
+    public DocumentProfile revise(List<DocumentFieldRule> rules, SsccGenerationMode generationMode,
+            UUID issuerId, Instant now) {
+        if (status != DocumentProfileStatus.DRAFT) throw new IllegalStateException("Only draft profiles can be edited");
+        return new DocumentProfile(id, familyId, tenantId, partnerId, revision, name, direction, documentType,
+                status, rules, generationMode, issuerId, createdAt, now);
     }
 
     public DocumentProfile publish(Instant now) {
         if (status != DocumentProfileStatus.DRAFT) throw new IllegalStateException("Only draft profiles can be published");
         return new DocumentProfile(id, familyId, tenantId, partnerId, revision, name, direction, documentType,
-                DocumentProfileStatus.PUBLISHED, fieldRules, createdAt, now);
+                DocumentProfileStatus.PUBLISHED, fieldRules, ssccGenerationMode, ssccIssuerId, createdAt, now);
     }
 
     public DocumentProfile newRevision(Instant now) {
         if (status != DocumentProfileStatus.PUBLISHED) throw new IllegalStateException("Only published profiles can be revised");
         return new DocumentProfile(UUID.randomUUID(), familyId, tenantId, partnerId, revision + 1, name,
-                direction, documentType, DocumentProfileStatus.DRAFT, fieldRules, now, now);
+                direction, documentType, DocumentProfileStatus.DRAFT, fieldRules, ssccGenerationMode,
+                ssccIssuerId, now, now);
     }
 
     public DocumentProfile archive(Instant now) {
         if (status == DocumentProfileStatus.DRAFT) throw new IllegalStateException("Discard draft profiles instead of archiving them");
         return new DocumentProfile(id, familyId, tenantId, partnerId, revision, name, direction, documentType,
-                DocumentProfileStatus.ARCHIVED, fieldRules, createdAt, now);
+                DocumentProfileStatus.ARCHIVED, fieldRules, ssccGenerationMode, ssccIssuerId, createdAt, now);
     }
 }

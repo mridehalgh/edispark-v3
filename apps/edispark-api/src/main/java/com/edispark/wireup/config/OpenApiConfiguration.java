@@ -67,7 +67,7 @@ public class OpenApiConfiguration {
     GroupedOpenApi integrationApi() {
         return GroupedOpenApi.builder()
                 .group("integration")
-                .pathsToMatch("/api/trading-partners/**", "/api/mappings/**", "/api/exchanges/**")
+                .pathsToMatch("/api/trading-partners/**", "/api/mappings/**", "/api/exchanges/**", "/api/sscc/**")
                 .build();
     }
 }

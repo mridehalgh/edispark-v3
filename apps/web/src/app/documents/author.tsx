@@ -1,7 +1,7 @@
 "use client"
 
-import type { DocumentProfile, TradingPartner } from "@edispark/integration-client"
-import { useEffect, useMemo, useState } from "react"
+import type { DocumentProfile, SsccReservation, TradingPartner } from "@edispark/integration-client"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, ArrowLeft, Check, Copy, FileCheck2, Plus, RotateCcw, ShieldCheck, Trash2 } from "lucide-react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 
@@ -36,7 +36,7 @@ function blankReferences(): AuthoringReferences {
 function blankSpecialist(): AuthoringSpecialistValues {
   return {
     responseCode: "AB", responseDescription: "", requestedDeliveryDate: "", promisedDeliveryDate: "",
-    actualDeliveryDate: "", deliveryAddress: { line1: "", city: "", postcode: "", countryCode: "GB" },
+    actualDeliveryDate: "", actualDespatchDate: "", deliveryAddress: { line1: "", city: "", postcode: "", countryCode: "GB" },
     paymentMeansCode: "", paymentDueDate: "", paymentTerms: "", paymentAccountId: "", taxCategory: "S",
     taxPercent: "20", taxAmount: "", allowanceAmount: "", allowanceReason: "", shipmentId: "1",
     trackingId: "", carrierName: "", vehicleId: "", grossWeight: "", weightUnit: "KGM", handlingUnits: [],
@@ -68,11 +68,17 @@ export function AuthorDocumentPage() {
   const [edited, setEdited] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string>()
+  const [generatingSscc, setGeneratingSscc] = useState(false)
+  const authoringSessionId = useRef(crypto.randomUUID())
+  const reservationSequence = useRef(0)
+  const automaticAttempt = useRef("")
   const definition = authoringDefinitions[documentType]
   const sourceSetId = search.get("fromSet")
   const sourceDocumentId = search.get("fromDocument")
   const related = Boolean(sourceSetId && sourceDocumentId)
   const selectedProfile = profiles.find((profile) => profile.id === profileId)
+  const ssccGenerationAvailable = documentType === "DESPATCH_ADVICE"
+    && (!selectedProfile || selectedProfile.ssccGenerationMode !== "MANUAL")
 
   useEffect(() => {
     const controller = new AbortController()
@@ -154,6 +160,67 @@ export function AuthorDocumentPage() {
     setEdited(new Set())
   }
 
+  const reserveSsccs = useCallback(async (count: number, purpose: string) => {
+    reservationSequence.current += 1
+    const response = await fetch("/api/integration/sscc/reservations", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        issuerId: selectedProfile?.ssccIssuerId,
+        count,
+        idempotencyKey: `${authoringSessionId.current}:${reservationSequence.current}`,
+        context: purpose,
+      }),
+    })
+    const body = await response.json() as SsccReservation | { error?: { message?: string } }
+    if (!response.ok) throw new Error("error" in body ? body.error?.message : "SSCCs could not be generated.")
+    const reservation = body as SsccReservation
+    if (!reservation.id || reservation.ssccs?.length !== count) throw new Error("The SSCC reservation was incomplete.")
+    return reservation
+  }, [selectedProfile?.ssccIssuerId])
+
+  async function generateSscc(unitIndex: number) {
+    setGeneratingSscc(true)
+    setError(undefined)
+    try {
+      const reservation = await reserveSsccs(1, `ASN ${authoringSessionId.current} handling unit ${unitIndex + 1}`)
+      setSpecialist((current) => ({ ...current, handlingUnits: current.handlingUnits.map((unit, index) => index === unitIndex
+        ? { ...unit, sscc: reservation.ssccs![0], ssccSource: "GENERATED", ssccReservationId: reservation.id }
+        : unit) }))
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "SSCC could not be generated.")
+    } finally {
+      setGeneratingSscc(false)
+    }
+  }
+
+  const generateMissingSsccs = useCallback(async () => {
+    const missingIndexes = specialist.handlingUnits.flatMap((unit, index) => unit.sscc ? [] : [index])
+    if (!missingIndexes.length) return
+    setGeneratingSscc(true)
+    setError(undefined)
+    try {
+      const reservation = await reserveSsccs(missingIndexes.length, `ASN ${authoringSessionId.current} handling units`)
+      const ssccByIndex = new Map(missingIndexes.map((index, valueIndex) => [index, reservation.ssccs![valueIndex]]))
+      setSpecialist((current) => ({ ...current, handlingUnits: current.handlingUnits.map((unit, index) => ssccByIndex.has(index)
+        ? { ...unit, sscc: ssccByIndex.get(index)!, ssccSource: "GENERATED", ssccReservationId: reservation.id }
+        : unit) }))
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "SSCCs could not be generated.")
+    } finally {
+      setGeneratingSscc(false)
+    }
+  }, [reserveSsccs, specialist.handlingUnits])
+
+  useEffect(() => {
+    if (selectedProfile?.ssccGenerationMode !== "AUTOMATIC" || documentType !== "DESPATCH_ADVICE") return
+    const signature = specialist.handlingUnits.map((unit) => `${unit.id}:${unit.sscc}`).join("|")
+    if (!specialist.handlingUnits.some((unit) => !unit.sscc) || generatingSscc || automaticAttempt.current === signature) return
+    automaticAttempt.current = signature
+    void generateMissingSsccs()
+  }, [documentType, generateMissingSsccs, generatingSscc, selectedProfile?.ssccGenerationMode, specialist.handlingUnits])
+
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (smartCopy?.requiresCommercialReview && !commercialReviewed) {
@@ -164,12 +231,13 @@ export function AuthorDocumentPage() {
     setError(undefined)
     const form = new FormData(event.currentTarget)
     const content = buildUblDocument({ documentType, id: String(form.get("id")), issueDate: String(form.get("issueDate")), references, senderName, senderEndpoint, recipientName, recipientEndpoint, currency, note: String(form.get("note") ?? ""), lines, specialist, advancedFields })
+    const ssccReservationIds = [...new Set(specialist.handlingUnits.flatMap((unit) => unit.ssccReservationId ? [unit.ssccReservationId] : []))]
     try {
       const response = await fetch("/api/documents", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentType, content, metadata: { name: `${definition.label} ${String(form.get("id"))}`, direction: "OUTBOUND", standard: "UBL", ublVersion: "2.1", ...(partnerId ? { partnerId } : {}), ...(profileId ? { documentProfileRevisionId: profileId } : {}) }, related: related ? { setId: sourceSetId, documentId: sourceDocumentId, relationType: definition.relationType } : undefined }),
+        body: JSON.stringify({ documentType, content, metadata: { name: `${definition.label} ${String(form.get("id"))}`, direction: "OUTBOUND", standard: "UBL", ublVersion: "2.1", ...(partnerId ? { partnerId } : {}), ...(profileId ? { documentProfileRevisionId: profileId } : {}), ...(ssccReservationIds.length ? { ssccReservationIds: ssccReservationIds.join(",") } : {}) }, related: related ? { setId: sourceSetId, documentId: sourceDocumentId, relationType: definition.relationType } : undefined }),
       })
       const body = await response.json() as { setId?: string; document?: { id?: string }; error?: { message?: string } }
       if (!response.ok) throw new Error(body.error?.message ?? "The draft could not be saved.")
@@ -235,7 +303,7 @@ export function AuthorDocumentPage() {
           <fieldset className="grid gap-4 border-t pt-4"><legend className="pr-3 text-sm font-semibold">{definition.recipientLabel}</legend><Field label="Legal or trading name" hint={copiedHint(documentType === "RECEIPT_ADVICE" || documentType === "REMITTANCE_ADVICE" ? "seller" : "buyer")}><Input value={recipientName} onChange={(event) => { setRecipientName(event.target.value); markEdited("recipient") }} required placeholder="[name]" /></Field><Field label="Electronic address" hint="Usually a GLN for retail EDI."><Input value={recipientEndpoint} onChange={(event) => { setRecipientEndpoint(event.target.value); markEdited("recipient") }} required placeholder="[tenant_identifier]" /></Field></fieldset>
         </div></section>
 
-        <SpecialistAuthoringSections documentType={documentType} values={specialist} lines={lines} onChange={setSpecialist} onLineChange={updateLine} />
+        <SpecialistAuthoringSections documentType={documentType} values={specialist} lines={lines} onChange={setSpecialist} onLineChange={updateLine} ssccGenerationAvailable={ssccGenerationAvailable} generatingSscc={generatingSscc} onGenerateSscc={(index) => void generateSscc(index)} onGenerateMissingSsccs={() => void generateMissingSsccs()} />
 
         <section className="border-t py-6" aria-labelledby="lines-heading"><div className="flex items-center justify-between gap-4"><div><h2 id="lines-heading" className="text-base font-semibold">{documentType === "REMITTANCE_ADVICE" ? "Payment allocations" : "Line items"}</h2><p className="mt-1 text-sm text-muted-foreground">{documentType === "REMITTANCE_ADVICE" ? "Allocate the payment to each referenced invoice." : "Add one row for each product in this document."}</p></div><Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, newLine(current.length)])}><Plus className="mr-2 h-4 w-4" />Add line</Button></div>
           <div className="mt-4 divide-y border-y">{lines.map((line, index) => {

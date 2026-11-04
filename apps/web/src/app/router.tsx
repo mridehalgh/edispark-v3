@@ -144,6 +144,7 @@ function ReactRouterComponent() {
               { path: "/organisation/people", element: <OrganizationSettingsPage initialTab="people" /> },
               { path: "/organisation/details", element: <OrganizationSettingsPage initialTab="settings" /> },
               { path: "/organisation/sign-in", element: <OrganizationSettingsPage initialTab="sso" /> },
+              { path: "/organisation/shipping-identifiers", element: <OrganizationSettingsPage initialTab="shipping" /> },
               { path: "/organisation/certificates", element: <Navigate to="/connections/certificates" replace /> },
               { path: "/organisation/certificates/new", element: <Navigate to="/connections/certificates/new" replace /> },
               { path: "/organisation/document-rules", element: <MappingsPage /> },

@@ -3,6 +3,7 @@ package com.edispark.integrationapplication.seed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.edispark.partnerships.infrastructure.InMemoryPartnershipRepository;
+import com.edispark.partnerships.infrastructure.InMemorySsccRepository;
 import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.transformations.infrastructure.InMemoryMappingRepository;
 import java.time.Clock;
@@ -19,8 +20,9 @@ final class LocalIntegrationDemoSeederTest {
     @Test
     void repeatedReconciliationKeepsStablePartnerAgreementMappingsAndCapabilities() {
         var partnerships = new InMemoryPartnershipRepository();
+        var sscc = new InMemorySsccRepository();
         var mappings = new InMemoryMappingRepository();
-        var seeder = new LocalIntegrationDemoSeeder(partnerships, mappings,
+        var seeder = new LocalIntegrationDemoSeeder(partnerships, sscc, mappings,
                 Clock.fixed(Instant.parse("2026-11-01T12:00:00Z"), ZoneOffset.UTC));
 
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
@@ -31,6 +33,11 @@ final class LocalIntegrationDemoSeederTest {
 
         assertThat(partnerships.listPartners(TENANT_ID)).hasSize(3);
         assertThat(partnerships.listAgreements(TENANT_ID)).hasSize(3);
+        assertThat(sscc.list(TENANT_ID)).singleElement().satisfies(issuer -> {
+            assertThat(issuer.name()).isEqualTo("Local demonstration range");
+            assertThat(issuer.defaultIssuer()).isTrue();
+            assertThat(issuer.nextSerial()).isEqualTo(1);
+        });
         assertThat(mappings.list(TENANT_ID)).hasSize(2);
         assertThat(partnerships.listPartners(TENANT_ID)).extracting(item -> item.status().name())
                 .containsExactlyInAnyOrder("ACTIVE", "ACTIVE", "DRAFT");
@@ -49,10 +56,12 @@ final class LocalIntegrationDemoSeederTest {
         assertThat(partnerships.listAgreements(TENANT_ID).stream()
                 .filter(agreement -> agreement.status().name().equals("ACTIVE")))
                 .allSatisfy(agreement -> {
-                    assertThat(agreement.capabilities()).hasSize(2);
+                    assertThat(agreement.capabilities()).hasSize(6);
                     assertThat(agreement.capabilities()).extracting(capability ->
                                     capability.direction().name() + ":" + capability.documentType().name())
-                            .containsExactlyInAnyOrder("INBOUND:ORDER", "OUTBOUND:INVOICE");
+                            .containsExactlyInAnyOrder("INBOUND:ORDER", "OUTBOUND:ORDER_RESPONSE",
+                                    "OUTBOUND:DESPATCH_ADVICE", "OUTBOUND:INVOICE",
+                                    "INBOUND:REMITTANCE_ADVICE", "INBOUND:RECEIPT_ADVICE");
                     assertThat(agreement.capabilities()).extracting(capability -> capability.as2ConnectionId())
                             .containsOnly(agreement.name().contains("EDIFACT")
                                     ? EDIFACT_CONNECTION_ID : TRADACOMS_CONNECTION_ID);
@@ -66,9 +75,17 @@ final class LocalIntegrationDemoSeederTest {
                 .toList())
                 .containsExactlyInAnyOrder(
                         "EDIFACT:D96A:INBOUND:ORDER:d9c01ea5-f555-4c6d-9c87-1465ea78ac24",
+                        "EDIFACT:D96A:OUTBOUND:ORDER_RESPONSE:d9c01ea5-f555-4c6d-9c87-1465ea78ac40",
+                        "EDIFACT:D96A:OUTBOUND:DESPATCH_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac42",
                         "EDIFACT:D96A:OUTBOUND:INVOICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac21",
+                        "EDIFACT:D96A:INBOUND:REMITTANCE_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac54",
+                        "EDIFACT:D96A:INBOUND:RECEIPT_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac56",
                         "TRADACOMS:9:INBOUND:ORDER:d9c01ea5-f555-4c6d-9c87-1465ea78ac26",
-                        "TRADACOMS:9:OUTBOUND:INVOICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac23");
+                        "TRADACOMS:9:OUTBOUND:ORDER_RESPONSE:d9c01ea5-f555-4c6d-9c87-1465ea78ac41",
+                        "TRADACOMS:9:OUTBOUND:DESPATCH_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac43",
+                        "TRADACOMS:9:OUTBOUND:INVOICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac23",
+                        "TRADACOMS:9:INBOUND:REMITTANCE_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac55",
+                        "TRADACOMS:9:INBOUND:RECEIPT_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac57");
         assertThat(mappings.list(TENANT_ID).stream().flatMap(mapping -> mapping.nodes().stream())
                 .map(node -> node.id()).sorted().toList()).isEqualTo(firstMappingNodes);
     }

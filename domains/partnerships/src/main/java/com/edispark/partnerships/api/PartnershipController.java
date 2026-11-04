@@ -14,6 +14,7 @@ import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
+import com.edispark.partnerships.domain.model.SsccGenerationMode;
 import com.edispark.partnerships.domain.model.WorkflowApprovalPolicy;
 import com.edispark.partnerships.domain.model.WorkflowAutomationMode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -99,14 +100,15 @@ public final class PartnershipController {
     public DocumentProfile createDocumentProfile(@PathVariable UUID partnerId,
             @Valid @RequestBody DocumentProfileRequest request) {
         return service.createDocumentProfile(partnerId, request.name(), request.direction(), request.documentType(),
-                request.fieldRules());
+                request.fieldRules(), request.ssccGenerationMode(), request.ssccIssuerId());
     }
 
     @PutMapping("/document-profiles/{profileId}/draft")
     @Operation(operationId = "updatePartnerDocumentProfileDraft", summary = "Update a draft document profile")
     public DocumentProfile updateDocumentProfile(@PathVariable UUID profileId,
-            @RequestBody List<@Valid DocumentFieldRule> fieldRules) {
-        return service.updateDocumentProfile(profileId, fieldRules);
+            @Valid @RequestBody DocumentProfileUpdateRequest request) {
+        return service.updateDocumentProfile(profileId, request.fieldRules(), request.ssccGenerationMode(),
+                request.ssccIssuerId());
     }
 
     @PostMapping("/document-profiles/{profileId}/publish")
@@ -206,6 +208,9 @@ public final class PartnershipController {
     }
     public record DocumentProfileRequest(@NotBlank @Size(max = 120) String name,
             @NotNull ExchangeDirection direction, @NotNull BusinessDocumentType documentType,
-            List<@Valid DocumentFieldRule> fieldRules) { }
+            List<@Valid DocumentFieldRule> fieldRules, SsccGenerationMode ssccGenerationMode,
+            UUID ssccIssuerId) { }
+    public record DocumentProfileUpdateRequest(List<@Valid DocumentFieldRule> fieldRules,
+            SsccGenerationMode ssccGenerationMode, UUID ssccIssuerId) { }
     public record ActivationRequest(java.time.Instant effectiveAt) { }
 }

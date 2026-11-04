@@ -10,9 +10,12 @@ import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.PartnerStatus;
 import com.edispark.partnerships.domain.model.QualificationReport;
+import com.edispark.partnerships.domain.model.SsccGenerationMode;
+import com.edispark.partnerships.domain.model.SsccIssuerStatus;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
 import com.edispark.partnerships.domain.repository.PartnershipRepository;
+import com.edispark.partnerships.domain.repository.SsccRepository;
 import io.cottn.core.tenancy.TenantContext;
 import java.time.Clock;
 import java.time.Instant;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,10 +32,21 @@ public final class PartnershipService {
     private final QualificationAcl qualification;
     private final AgreementSnapshotPublisher snapshots;
     private final Clock clock;
+    private final SsccRepository ssccRepository;
+
+    @Autowired
+    public PartnershipService(PartnershipRepository repository, QualificationAcl qualification,
+            AgreementSnapshotPublisher snapshots, Clock clock, SsccRepository ssccRepository) {
+        this.repository = repository;
+        this.qualification = qualification;
+        this.snapshots = snapshots;
+        this.clock = clock;
+        this.ssccRepository = ssccRepository;
+    }
 
     public PartnershipService(PartnershipRepository repository, QualificationAcl qualification,
-                              AgreementSnapshotPublisher snapshots, Clock clock) {
-        this.repository = repository; this.qualification = qualification; this.snapshots = snapshots; this.clock = clock;
+            AgreementSnapshotPublisher snapshots, Clock clock) {
+        this(repository, qualification, snapshots, clock, null);
     }
 
     public TradingPartner createPartner(String name, List<BusinessIdentity> identities,
@@ -120,9 +135,16 @@ public final class PartnershipService {
 
     public DocumentProfile createDocumentProfile(UUID partnerId, String name, ExchangeDirection direction,
             BusinessDocumentType documentType, List<DocumentFieldRule> rules) {
+        return createDocumentProfile(partnerId, name, direction, documentType, rules,
+                SsccGenerationMode.MANUAL, null);
+    }
+
+    public DocumentProfile createDocumentProfile(UUID partnerId, String name, ExchangeDirection direction,
+            BusinessDocumentType documentType, List<DocumentFieldRule> rules, SsccGenerationMode generationMode,
+            UUID ssccIssuerId) {
         TradingPartner partner = requirePartner(partnerId);
         return repository.saveDocumentProfile(DocumentProfile.draft(tenant(), partner.id(), name, direction,
-                documentType, rules, clock.instant()));
+                documentType, rules, generationMode, ssccIssuerId, clock.instant()));
     }
 
     public List<DocumentProfile> listDocumentProfiles(UUID partnerId) {
@@ -134,8 +156,16 @@ public final class PartnershipService {
         return repository.saveDocumentProfile(requireDocumentProfile(profileId).revise(rules, clock.instant()));
     }
 
+    public DocumentProfile updateDocumentProfile(UUID profileId, List<DocumentFieldRule> rules,
+            SsccGenerationMode generationMode, UUID ssccIssuerId) {
+        return repository.saveDocumentProfile(requireDocumentProfile(profileId)
+                .revise(rules, generationMode, ssccIssuerId, clock.instant()));
+    }
+
     public DocumentProfile publishDocumentProfile(UUID profileId) {
-        return repository.saveDocumentProfile(requireDocumentProfile(profileId).publish(clock.instant()));
+        DocumentProfile profile = requireDocumentProfile(profileId);
+        validateSsccGeneration(profile);
+        return repository.saveDocumentProfile(profile.publish(clock.instant()));
     }
 
     public DocumentProfile createDocumentProfileRevision(UUID profileId) {
@@ -235,6 +265,18 @@ public final class PartnershipService {
     private TradingAgreement requireAgreement(UUID id) { return repository.findAgreement(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Trading agreement was not found")); }
     private DocumentProfile requireDocumentProfile(UUID id) { return repository.findDocumentProfile(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Document profile was not found")); }
     private String tenant() { return TenantContext.getCurrentTenant().asString(); }
+
+    private void validateSsccGeneration(DocumentProfile profile) {
+        if (ssccRepository == null || profile.ssccGenerationMode() == SsccGenerationMode.MANUAL) return;
+        boolean active = profile.ssccIssuerId() == null
+                ? ssccRepository.list(tenant()).stream().anyMatch(issuer -> issuer.defaultIssuer()
+                        && issuer.status() == SsccIssuerStatus.ACTIVE)
+                : ssccRepository.find(tenant(), profile.ssccIssuerId())
+                        .filter(issuer -> issuer.status() == SsccIssuerStatus.ACTIVE).isPresent();
+        if (!active) throw new IllegalStateException(profile.ssccIssuerId() == null
+                ? "Configure an active default SSCC range before publishing this profile"
+                : "The selected SSCC range must be active before publishing this profile");
+    }
 
     private void ensureUniqueIdentities(UUID currentId, List<BusinessIdentity> identities) {
         UUID familyId = requirePartner(currentId).familyId();

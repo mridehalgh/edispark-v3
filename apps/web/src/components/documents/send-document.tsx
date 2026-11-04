@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { attentionReason } from '@/lib/attention-reason'
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, cache: 'no-store' })
@@ -85,10 +86,11 @@ export function SendDocument({ documentSetId, documentId, lifecycleStatus = 'FIN
 
   if (exchange) {
     const needsAttention = exchange.status === 'FAILED' || exchange.status === 'NEEDS_REVIEW'
+    const reason = attentionReason(exchange)
     return (
       <div className={`mt-3 flex max-w-md items-start gap-2 rounded-md px-3 py-2 text-left text-xs ${needsAttention ? 'bg-destructive/10 text-destructive' : 'bg-success/25 text-success-foreground'}`} role="status">
         {needsAttention ? <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
-        <span>{needsAttention ? 'The exchange needs attention.' : 'Queued for delivery.'}</span>
+        <span><span className="block font-medium">{needsAttention ? 'The exchange needs attention.' : 'Queued for delivery.'}</span>{reason ? <span className="mt-1 block leading-5">{reason}</span> : null}</span>
       </div>
     )
   }

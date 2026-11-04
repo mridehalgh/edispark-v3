@@ -10,6 +10,7 @@ import { TransferStatus } from "@/components/mft/transfer-status"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { adminApi, formatAdminDate } from "@/lib/admin-api"
+import { attentionReason } from "@/lib/attention-reason"
 import { cn } from "@/lib/utils"
 
 function formatSize(value?: number) {
@@ -102,7 +103,7 @@ export function FilesList() {
           <div className="divide-y">
             {filtered.map((transfer) => (
               <button key={transfer.id} type="button" onClick={() => selectTransfer(transfer)} className={cn("grid min-h-16 w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 md:grid-cols-[minmax(14rem,1fr)_10rem_8rem_10rem_9rem] md:gap-4", selected?.id === transfer.id && "bg-accent/70")}>
-                <span className="min-w-0"><span className="block truncate text-sm font-medium">{transfer.filename}</span><span className="mt-0.5 block text-xs text-muted-foreground">{formatSize(transfer.size)}</span></span>
+                <span className="min-w-0"><span className="block truncate text-sm font-medium">{transfer.filename}</span><span className="mt-0.5 block text-xs text-muted-foreground">{formatSize(transfer.size)}</span>{attentionReason(transfer) ? <span className="mt-1 block text-xs leading-5 text-destructive">{attentionReason(transfer)}</span> : null}</span>
                 <span className="truncate text-xs text-muted-foreground">{names.get(transfer.partnerId) ?? "Unassigned"}</span>
                 <span className="inline-flex items-center gap-1.5 text-xs">{transfer.direction === "INBOUND" ? <ArrowDownToLine className="h-3.5 w-3.5" /> : <ArrowUpFromLine className="h-3.5 w-3.5" />}{transfer.direction === "INBOUND" ? "Received" : "Sent"}</span>
                 <TransferStatus status={transfer.status} />

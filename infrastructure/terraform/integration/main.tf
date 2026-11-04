@@ -132,7 +132,7 @@ resource "aws_iam_policy" "application" {
       {
         Sid      = "TenantMetadata"
         Effect   = "Allow"
-        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query", "dynamodb:TransactWriteItems"]
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:TransactWriteItems"]
         Resource = aws_dynamodb_table.metadata.arn
       },
       {

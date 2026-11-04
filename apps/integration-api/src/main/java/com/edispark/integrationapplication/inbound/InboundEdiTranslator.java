@@ -71,7 +71,11 @@ public final class InboundEdiTranslator {
         String[] identity = element(mhd, 1).split(":", -1);
         if (identity.length < 2) throw new IllegalArgumentException("TRADACOMS MHD identity is incomplete");
         String wireType = identity[0].toUpperCase();
-        String messageType = wireType.startsWith("ORD") ? "ORDERS" : wireType.startsWith("INV") ? "INVOIC" : wireType;
+        String messageType = switch (wireType) {
+            case "ORDERS" -> "ORDERS";
+            case "INVOIC" -> "INVOIC";
+            default -> wireType;
+        };
         BusinessDocumentType type = documentType(messageType);
         String reference;
         String issueDate = "";
@@ -79,6 +83,10 @@ public final class InboundEdiTranslator {
             String order = required(segments, "ORD=");
             reference = element(order, 0);
             if (order.split("\\+", -1).length > 1) issueDate = date(element(order, 1));
+        } else if (segments.stream().anyMatch(item -> item.startsWith("DOC="))) {
+            String document = required(segments, "DOC=");
+            reference = element(document, 0);
+            if (document.split("\\+", -1).length > 1) issueDate = date(element(document, 1));
         } else {
             reference = element(required(segments, "FIL="), 0);
         }
@@ -103,7 +111,11 @@ public final class InboundEdiTranslator {
     private BusinessDocumentType documentType(String messageType) {
         return switch (messageType) {
             case "ORDERS" -> BusinessDocumentType.ORDER;
+            case "ORDRSP" -> BusinessDocumentType.ORDER_RESPONSE;
+            case "DESADV" -> BusinessDocumentType.DESPATCH_ADVICE;
             case "INVOIC" -> BusinessDocumentType.INVOICE;
+            case "REMADV" -> BusinessDocumentType.REMITTANCE_ADVICE;
+            case "RECADV" -> BusinessDocumentType.RECEIPT_ADVICE;
             default -> throw new IllegalArgumentException("Unsupported inbound EDI message type: " + messageType);
         };
     }

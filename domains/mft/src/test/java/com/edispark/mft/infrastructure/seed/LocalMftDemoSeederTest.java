@@ -34,10 +34,12 @@ class LocalMftDemoSeederTest {
 
         seeder.reconcileTransfers(partner);
         seeder.reconcileTransfers(partner);
+        seeder.reconcileLifecycleTransfers(partner, false);
+        seeder.reconcileLifecycleTransfers(partner, false);
         seeder.reconcilePartnerRevision(partner);
         seeder.reconcilePartnerRevision(partner);
 
-        assertThat(repository.listTransfers(TENANT_ID)).hasSize(5);
+        assertThat(repository.listTransfers(TENANT_ID)).hasSize(9);
         assertThat(repository.listPartners(TENANT_ID)).hasSize(2);
         assertThat(repository.listTransfers(TENANT_ID))
                 .extracting(Transfer::status)
@@ -46,17 +48,29 @@ class LocalMftDemoSeederTest {
                         TransferStatus.DELIVERED,
                         TransferStatus.AWAITING_MDN,
                         TransferStatus.RETRY_SCHEDULED,
-                        TransferStatus.NEEDS_REVIEW);
+                        TransferStatus.NEEDS_REVIEW,
+                        TransferStatus.DELIVERED,
+                        TransferStatus.DELIVERED,
+                        TransferStatus.DELIVERED,
+                        TransferStatus.DELIVERED);
         assertThat(repository.listTransfers(TENANT_ID)).allSatisfy(transfer -> {
             try {
                 String edi = new String(payloadStore.get(TENANT_ID, transfer.payload()).readAllBytes(),
                         StandardCharsets.UTF_8);
                 assertThat(edi).startsWith("UNB+").contains("UNH+1+").contains("UNT+").contains("UNZ+1+");
-                assertThat(edi.lines()).hasSizeGreaterThanOrEqualTo(18);
+                assertThat(edi.lines()).hasSizeGreaterThanOrEqualTo(10);
             } catch (Exception exception) {
                 throw new AssertionError(exception);
             }
         });
+        assertThat(repository.listTransfers(TENANT_ID)).filteredOn(transfer ->
+                transfer.filename().endsWith("_2026_0042.edi")).hasSize(4)
+                .extracting(Transfer::direction)
+                .containsExactlyInAnyOrder(
+                        com.edispark.mft.domain.model.TransferDirection.OUTBOUND,
+                        com.edispark.mft.domain.model.TransferDirection.OUTBOUND,
+                        com.edispark.mft.domain.model.TransferDirection.INBOUND,
+                        com.edispark.mft.domain.model.TransferDirection.INBOUND);
     }
 
     @Test
@@ -70,18 +84,20 @@ class LocalMftDemoSeederTest {
 
         seeder.reconcileTradacomsTransfers(partner);
         seeder.reconcileTradacomsTransfers(partner);
+        seeder.reconcileLifecycleTransfers(partner, true);
+        seeder.reconcileLifecycleTransfers(partner, true);
 
-        assertThat(repository.listTransfers(TENANT_ID)).hasSize(2);
+        assertThat(repository.listTransfers(TENANT_ID)).hasSize(6);
         assertThat(repository.listTransfers(TENANT_ID)).allSatisfy(transfer -> {
             try {
                 String edi = new String(payloadStore.get(TENANT_ID, transfer.payload()).readAllBytes(),
                         StandardCharsets.UTF_8);
                 assertThat(edi).startsWith("STX=").contains("MTR=").contains("END=");
-                if (transfer.direction() == com.edispark.mft.domain.model.TransferDirection.INBOUND) {
+                if (transfer.filename().startsWith("PO_HARBOUR")) {
                     assertThat(edi).contains("MHD=1+ORDERS:9'").contains("END=1'");
                     assertThat(edi.split("MHD=", -1)).hasSize(2);
                 } else {
-                    assertThat(edi).contains("MHD=2+INVOIC:9'").contains("END=2'");
+                    assertThat(edi).contains("MHD=2+").contains("END=2'");
                 }
             } catch (Exception exception) {
                 throw new AssertionError(exception);
@@ -94,6 +110,14 @@ class LocalMftDemoSeederTest {
             assertThat(transfer.direction()).isEqualTo(com.edispark.mft.domain.model.TransferDirection.OUTBOUND);
             assertThat(transfer.filename()).startsWith("invoice_harbour");
         });
+        assertThat(repository.listTransfers(TENANT_ID)).filteredOn(transfer ->
+                transfer.filename().contains("harbour_2026_0042.edi")).hasSize(4)
+                .extracting(Transfer::direction)
+                .containsExactlyInAnyOrder(
+                        com.edispark.mft.domain.model.TransferDirection.OUTBOUND,
+                        com.edispark.mft.domain.model.TransferDirection.OUTBOUND,
+                        com.edispark.mft.domain.model.TransferDirection.INBOUND,
+                        com.edispark.mft.domain.model.TransferDirection.INBOUND);
     }
 
     private Transfer existingInbound(PartnerProfile partner, FileSystemPayloadStore payloadStore) throws Exception {

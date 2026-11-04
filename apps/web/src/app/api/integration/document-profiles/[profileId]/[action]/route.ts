@@ -1,4 +1,4 @@
-import type { DocumentFieldRule } from "@edispark/integration-client"
+import type { DocumentProfileUpdateRequest } from "@edispark/integration-client"
 
 import { createAuthenticatedIntegrationClient, integrationErrorResponse } from "@/lib/integration-server"
 
@@ -7,7 +7,7 @@ const ACTIONS = new Set(["draft", "publish", "revisions", "archive"])
 export async function PUT(request: Request, { params }: { params: { profileId: string; action: string } }) {
   if (params.action !== "draft") return Response.json({ error: { message: "Unsupported action." } }, { status: 404 })
   try {
-    const body = await request.json() as DocumentFieldRule[]
+    const body = await request.json() as DocumentProfileUpdateRequest
     const client = await createAuthenticatedIntegrationClient(request)
     const { data } = await client.updatePartnerDocumentProfileDraft({ path: { profileId: params.profileId }, body, throwOnError: true })
     return Response.json(data)

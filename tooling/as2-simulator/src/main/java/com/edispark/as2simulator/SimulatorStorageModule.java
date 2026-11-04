@@ -20,8 +20,8 @@ final class SimulatorStorageModule extends AbstractProcessorModule implements IP
         try {
             MimeBodyPart body = message.getData();
             byte[] content = body.getInputStream().readAllBytes();
-            store.add(new SimulatorStore.SimulatedMessage("INBOUND", message.getMessageID(), message.getAS2From(),
-                    message.getAS2To(), body.getFileName(), body.getContentType(), content.length, Instant.now()));
+            store.add("INBOUND", message.getMessageID(), message.getAS2From(), message.getAS2To(),
+                    body.getFileName(), body.getContentType(), content, Instant.now());
         } catch (Exception exception) {
             throw new AS2Exception("Simulator could not retain the payload", exception);
         }

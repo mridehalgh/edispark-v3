@@ -118,7 +118,12 @@ public final class MappingRuntime {
     }
 
     private JsonNode first(List<JsonNode> values, MappingNode node) {
-        if (values.isEmpty()) throw new IllegalArgumentException("No source value for mapping node " + node.id());
+        if (values.isEmpty()) {
+            throw new IllegalArgumentException("Mapping cannot populate target '" + node.targetPointer()
+                    + "' because none of the configured source fields contain a value: " + node.sourcePointers()
+                    + ". Add the missing value to the source document or update mapping node " + node.id()
+                    + " (" + node.operation() + ") to use an available source field.");
+        }
         return values.getFirst().deepCopy();
     }
 

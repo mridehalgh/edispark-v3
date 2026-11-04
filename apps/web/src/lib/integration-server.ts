@@ -42,7 +42,15 @@ export function integrationErrorResponse(error: unknown) {
   }
   if (error instanceof IntegrationClientError) {
     const status = [400, 401, 403, 404, 409, 413, 422, 429, 503].includes(error.status) ? error.status : 502
-    return Response.json({ error: { code: error.code, message: error.message } }, { status })
+    return Response.json({ error: {
+      code: error.code,
+      message: error.message,
+      stage: error.stage,
+      retryable: error.retryable,
+      recommendedAction: error.recommendedAction,
+      correlationId: error.correlationId,
+      details: error.details,
+    } }, { status })
   }
   console.error('Integration API request failed', error)
   const message = process.env.NODE_ENV === 'development'

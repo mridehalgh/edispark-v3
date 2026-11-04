@@ -9,7 +9,15 @@ export interface MftClientConfig {
 }
 
 export class MftClientError extends Error {
-  constructor(readonly status: number, readonly code: string, message: string) {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string,
+    readonly stage?: string,
+    readonly retryable?: boolean,
+    readonly recommendedAction?: string,
+    readonly correlationId?: string,
+  ) {
     super(message)
     this.name = 'MftClientError'
   }
@@ -25,10 +33,18 @@ export function createMftClient(config: MftClientConfig): MftClient {
     throwOnError: true,
   })
   transport.interceptors.error.use((error, response) => {
-    const payload = error as { code?: unknown; message?: unknown } | undefined
+    const payload = error as { code?: unknown; message?: unknown; stage?: unknown; retryable?: unknown; recommendedAction?: unknown; correlationId?: unknown } | undefined
     const code = typeof payload?.code === 'string' ? payload.code : 'MFT_UPSTREAM_ERROR'
     const message = typeof payload?.message === 'string' ? payload.message : 'The MFT request could not be completed.'
-    return new MftClientError(response?.status ?? 502, code, message)
+    return new MftClientError(
+      response?.status ?? 502,
+      code,
+      message,
+      typeof payload?.stage === 'string' ? payload.stage : undefined,
+      typeof payload?.retryable === 'boolean' ? payload.retryable : undefined,
+      typeof payload?.recommendedAction === 'string' ? payload.recommendedAction : undefined,
+      typeof payload?.correlationId === 'string' ? payload.correlationId : undefined,
+    )
   })
   return new MftClient({
     client: transport,

@@ -1,5 +1,6 @@
 package com.edispark.transformations.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -105,5 +106,10 @@ public record MappingRevision(UUID id, String tenantId, String name, int revisio
         return new MappingRevision(draftId, targetTenantId, name, 1, sourceSchemaId, targetSchemaId,
                 MappingStatus.DRAFT, nodes, null, now, null, draftId, null, null, 1,
                 MappingScope.TENANT, null, sample, id);
+    }
+
+    @JsonProperty("compatibility")
+    public MappingCompatibility compatibility() {
+        return MappingCompatibilityRegistry.resolve(sourceSchemaId, targetSchemaId);
     }
 }

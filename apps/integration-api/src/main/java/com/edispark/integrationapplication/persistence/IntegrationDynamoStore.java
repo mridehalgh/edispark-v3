@@ -36,6 +36,45 @@ final class IntegrationDynamoStore {
         dynamo.putItem(PutItemRequest.builder().tableName(table).item(item(tenantId, sortKey, type, json)).build());
     }
 
+    boolean putVersionedIfCurrent(String tenantId, String sortKey, String type, String json, long version) {
+        var value = new java.util.HashMap<>(item(tenantId, sortKey, type, json));
+        value.put("version", number(version));
+        var request = PutItemRequest.builder().tableName(table).item(value);
+        if (version == 0) {
+            request.conditionExpression("attribute_not_exists(pk) AND attribute_not_exists(sk)");
+        } else {
+            request.conditionExpression("#version = :expected")
+                    .expressionAttributeNames(Map.of("#version", "version"))
+                    .expressionAttributeValues(Map.of(":expected", number(version - 1)));
+        }
+        try {
+            dynamo.putItem(request.build());
+            return true;
+        } catch (software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException exception) {
+            return false;
+        }
+    }
+
+    boolean putVersionedPairIfCurrent(String tenantId, String sortKey, String type, String json,
+            long expectedVersion, long newVersion, String secondKey, String secondType, String secondJson) {
+        var versioned = new java.util.HashMap<>(item(tenantId, sortKey, type, json));
+        versioned.put("version", number(newVersion));
+        var first = Put.builder().tableName(table).item(versioned)
+                .conditionExpression("#version = :expected")
+                .expressionAttributeNames(Map.of("#version", "version"))
+                .expressionAttributeValues(Map.of(":expected", number(expectedVersion))).build();
+        var second = Put.builder().tableName(table).item(item(tenantId, secondKey, secondType, secondJson))
+                .conditionExpression("attribute_not_exists(pk) AND attribute_not_exists(sk)").build();
+        try {
+            dynamo.transactWriteItems(TransactWriteItemsRequest.builder().transactItems(
+                    TransactWriteItem.builder().put(first).build(),
+                    TransactWriteItem.builder().put(second).build()).build());
+            return true;
+        } catch (TransactionCanceledException exception) {
+            return false;
+        }
+    }
+
     boolean putPairIfAbsent(String tenantId, String firstKey, String firstType, String firstJson,
             String uniqueKey, String uniqueJson) {
         var first = Put.builder().tableName(table).item(item(tenantId, firstKey, firstType, firstJson))
@@ -82,4 +121,5 @@ final class IntegrationDynamoStore {
     }
     private String pk(String tenantId) { return "TENANT#" + tenantId; }
     private static AttributeValue text(String value) { return AttributeValue.builder().s(value).build(); }
+    private static AttributeValue number(long value) { return AttributeValue.builder().n(Long.toString(value)).build(); }
 }

@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
-import { zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zGetExchangeResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zQualifyTradingAgreementResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
+import type { ActivateSsccIssuerData, ActivateSsccIssuerResponses, ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateSsccIssuerData, CreateSsccIssuerResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListSsccIssuersData, ListSsccIssuersResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, MakeDefaultSsccIssuerData, MakeDefaultSsccIssuerResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, ReserveSsccsData, ReserveSsccsResponses, RetireSsccIssuerData, RetireSsccIssuerResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
+import { zActivateSsccIssuerResponse, zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateSsccIssuerResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zGetExchangeResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListSsccIssuersResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zMakeDefaultSsccIssuerResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zQualifyTradingAgreementResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zReserveSsccsResponse, zRetireSsccIssuerResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -359,6 +359,86 @@ export class IntegrationClient extends HeyApiClient {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+
+    /**
+     * Idempotently reserve SSCCs for handling units
+     */
+    public reserveSsccs<ThrowOnError extends boolean = false>(options: Options<ReserveSsccsData, ThrowOnError>): RequestResult<ReserveSsccsResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ReserveSsccsResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zReserveSsccsResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/sscc/reservations',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * List organisation SSCC issuers and number ranges
+     */
+    public listSsccIssuers<ThrowOnError extends boolean = false>(options?: Options<ListSsccIssuersData, ThrowOnError>): RequestResult<ListSsccIssuersResponses, unknown, ThrowOnError> {
+        return (options?.client ?? this.client).get<ListSsccIssuersResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zListSsccIssuersResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/sscc/issuers',
+            ...options
+        });
+    }
+
+    /**
+     * Create a draft GS1 SSCC issuer and exclusive number range
+     */
+    public createSsccIssuer<ThrowOnError extends boolean = false>(options: Options<CreateSsccIssuerData, ThrowOnError>): RequestResult<CreateSsccIssuerResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateSsccIssuerResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zCreateSsccIssuerResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/sscc/issuers',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Retire an SSCC number range
+     */
+    public retireSsccIssuer<ThrowOnError extends boolean = false>(options: Options<RetireSsccIssuerData, ThrowOnError>): RequestResult<RetireSsccIssuerResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<RetireSsccIssuerResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zRetireSsccIssuerResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/sscc/issuers/{issuerId}/retire',
+            ...options
+        });
+    }
+
+    /**
+     * Use an active SSCC range by default
+     */
+    public makeDefaultSsccIssuer<ThrowOnError extends boolean = false>(options: Options<MakeDefaultSsccIssuerData, ThrowOnError>): RequestResult<MakeDefaultSsccIssuerResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<MakeDefaultSsccIssuerResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zMakeDefaultSsccIssuerResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/sscc/issuers/{issuerId}/default',
+            ...options
+        });
+    }
+
+    /**
+     * Activate an attested SSCC number range
+     */
+    public activateSsccIssuer<ThrowOnError extends boolean = false>(options: Options<ActivateSsccIssuerData, ThrowOnError>): RequestResult<ActivateSsccIssuerResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ActivateSsccIssuerResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zActivateSsccIssuerResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/sscc/issuers/{issuerId}/activate',
+            ...options
         });
     }
 

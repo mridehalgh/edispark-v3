@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,18 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
     private static final UUID EDIFACT_INVOICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac13");
     private static final UUID TRADACOMS_ORDER = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac14");
     private static final UUID TRADACOMS_INVOICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac15");
+    private static final UUID UBL_ORDER_RESPONSE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac16");
+    private static final UUID UBL_DESPATCH_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac17");
+    private static final UUID UBL_REMITTANCE_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac18");
+    private static final UUID UBL_RECEIPT_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac19");
+    private static final UUID EDIFACT_ORDER_RESPONSE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac30");
+    private static final UUID EDIFACT_DESPATCH_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac31");
+    private static final UUID EDIFACT_REMITTANCE_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac32");
+    private static final UUID EDIFACT_RECEIPT_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac33");
+    private static final UUID TRADACOMS_ORDER_RESPONSE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac34");
+    private static final UUID TRADACOMS_DESPATCH_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac35");
+    private static final UUID TRADACOMS_REMITTANCE_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac36");
+    private static final UUID TRADACOMS_RECEIPT_ADVICE = id("d9c01ea5-f555-4c6d-9c87-1465ea78ac37");
 
     private final List<MappingRevision> mappings;
     private final BusinessCodeCatalog codeCatalog = new BusinessCodeCatalog();
@@ -40,7 +53,7 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
         String ublInvoice = resource("ubl-invoice-2.1.json");
         String orderModel = resource("order-edi-model.json");
         String invoiceModel = resource("invoice-edi-model.json");
-        mappings = List.of(
+        List<MappingRevision> published = new ArrayList<>(List.of(
                 mapping("d9c01ea5-f555-4c6d-9c87-1465ea78ac20", "UBL Order 2.1 → EDIFACT ORDERS D96A",
                         UBL_ORDER, EDIFACT_ORDER, orderPaths(), false,
                         sample("UBL Order 2.1 JSON", ublOrder, null, "Parsed EDIFACT ORDERS D96A", orderModel,
@@ -72,7 +85,9 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
                 mapping("d9c01ea5-f555-4c6d-9c87-1465ea78ac27", "TRADACOMS INVOIC 9 → UBL Invoice 2.1",
                         TRADACOMS_INVOICE, UBL_INVOICE, invoicePaths(), true,
                         sample("Parsed TRADACOMS INVOIC 9", invoiceModel, resource("tradacoms-invoic-9.edi"),
-                                "UBL Invoice 2.1 JSON", ublInvoice, null)));
+                                "UBL Invoice 2.1 JSON", ublInvoice, null))));
+        published.addAll(operationalMappings());
+        mappings = List.copyOf(published);
     }
 
     @Override public List<MappingRevision> list() { return mappings; }
@@ -108,10 +123,10 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
     }
 
     private List<MappingNode> ublEnvelopeNodes(UUID mappingId, UUID target) {
-        boolean order = target.equals(UBL_ORDER);
-        String root = order ? "/Order/0" : "/Invoice/0";
+        String rootName = rootName(target);
+        String root = "/" + rootName + "/0";
         String documentNamespace = "urn:oasis:names:specification:ubl:schema:xsd:"
-                + (order ? "Order" : "Invoice") + "-2";
+                + rootName + "-2";
         return List.of(
                 constant(mappingId, "/_D", documentNamespace),
                 constant(mappingId, "/_A",
@@ -120,8 +135,84 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
                         "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"),
                 constant(mappingId, root + "/UBLVersionID/0/_", "2.1"),
                 constant(mappingId, root + "/CustomizationID/0/_", "urn:edispark:ubl:mapped:1"),
-                constant(mappingId, root + "/ProfileID/0/_", order
-                        ? "urn:edispark:profile:retail-order:1" : "urn:edispark:profile:retail-invoice:1"));
+                constant(mappingId, root + "/ProfileID/0/_",
+                        "urn:edispark:profile:retail-" + rootName.toLowerCase() + ":1"));
+    }
+
+    private List<MappingRevision> operationalMappings() {
+        List<OperationalDocument> documents = List.of(
+                new OperationalDocument("Order Response", "ORDRSP", UBL_ORDER_RESPONSE,
+                        EDIFACT_ORDER_RESPONSE, TRADACOMS_ORDER_RESPONSE),
+                new OperationalDocument("Despatch Advice", "DESADV", UBL_DESPATCH_ADVICE,
+                        EDIFACT_DESPATCH_ADVICE, TRADACOMS_DESPATCH_ADVICE),
+                new OperationalDocument("Remittance Advice", "REMADV", UBL_REMITTANCE_ADVICE,
+                        EDIFACT_REMITTANCE_ADVICE, TRADACOMS_REMITTANCE_ADVICE),
+                new OperationalDocument("Receipt Advice", "RECADV", UBL_RECEIPT_ADVICE,
+                        EDIFACT_RECEIPT_ADVICE, TRADACOMS_RECEIPT_ADVICE));
+        List<MappingRevision> result = new ArrayList<>();
+        for (int index = 0; index < documents.size(); index++) {
+            OperationalDocument document = documents.get(index);
+            List<PathPair> paths = operationalPaths(document.ubl());
+            int outboundBase = 40 + index * 2;
+            int inboundBase = 50 + index * 2;
+            result.add(mapping(mappingId(outboundBase), "UBL " + document.label() + " 2.1 → EDIFACT "
+                    + document.messageType() + " D96A", document.ubl(), document.edifact(), paths, false, null));
+            result.add(mapping(mappingId(outboundBase + 1), "UBL " + document.label() + " 2.1 → TRADACOMS "
+                    + document.messageType() + " 9", document.ubl(), document.tradacoms(), paths, false, null));
+            result.add(mapping(mappingId(inboundBase), "EDIFACT " + document.messageType() + " D96A → UBL "
+                    + document.label() + " 2.1", document.edifact(), document.ubl(), paths, true, null));
+            result.add(mapping(mappingId(inboundBase + 1), "TRADACOMS " + document.messageType() + " 9 → UBL "
+                    + document.label() + " 2.1", document.tradacoms(), document.ubl(), paths, true, null));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<PathPair> operationalPaths(UUID schemaId) {
+        String root = "/" + rootName(schemaId) + "/0";
+        String sender = schemaId.equals(UBL_ORDER_RESPONSE) ? "SellerSupplierParty"
+                : schemaId.equals(UBL_DESPATCH_ADVICE) || schemaId.equals(UBL_RECEIPT_ADVICE)
+                        ? "DespatchSupplierParty" : "AccountingCustomerParty";
+        String receiver = schemaId.equals(UBL_ORDER_RESPONSE) ? "BuyerCustomerParty"
+                : schemaId.equals(UBL_DESPATCH_ADVICE) || schemaId.equals(UBL_RECEIPT_ADVICE)
+                        ? "DeliveryCustomerParty" : "AccountingSupplierParty";
+        String line = schemaId.equals(UBL_ORDER_RESPONSE) ? "OrderLine/0/LineItem/0"
+                : schemaId.equals(UBL_DESPATCH_ADVICE) ? "DespatchLine/0"
+                : schemaId.equals(UBL_RECEIPT_ADVICE) ? "ReceiptLine/0" : "RemittanceAdviceLine/0";
+        String quantity = schemaId.equals(UBL_DESPATCH_ADVICE) ? "DeliveredQuantity"
+                : schemaId.equals(UBL_RECEIPT_ADVICE) ? "ReceivedQuantity" : "Quantity";
+        List<PathPair> paths = new ArrayList<>(List.of(
+                pair(root + "/ID/0/_", "/document/id"),
+                pair(root + "/IssueDate/0/_", "/document/issueDate"),
+                pair(root + "/" + sender + "/0/Party/0/EndpointID/0/_", "/parties/sender"),
+                pair(root + "/" + receiver + "/0/Party/0/EndpointID/0/_", "/parties/receiver"),
+                pair(root + "/" + line + "/ID/0/_", "/lines/0/id")));
+        if (schemaId.equals(UBL_ORDER_RESPONSE)) {
+            paths.add(pair(root + "/OrderReference/0/ID/0/_", "/document/orderReference"));
+        }
+        if (schemaId.equals(UBL_REMITTANCE_ADVICE)) {
+            paths.add(pair(root + "/TotalPaymentAmount/0/_", "/document/totalPaymentAmount"));
+            paths.add(coded(root + "/TotalPaymentAmount/0/currencyID", "/document/currency",
+                    BusinessCodeList.CURRENCY));
+        } else {
+            paths.add(pair(root + "/" + line + "/" + quantity + "/0/_", "/lines/0/quantity"));
+            paths.add(coded(root + "/" + line + "/" + quantity + "/0/unitCode", "/lines/0/unitCode",
+                    BusinessCodeList.UNIT_OF_MEASURE));
+        }
+        return List.copyOf(paths);
+    }
+
+    private static String rootName(UUID schemaId) {
+        if (schemaId.equals(UBL_ORDER)) return "Order";
+        if (schemaId.equals(UBL_INVOICE)) return "Invoice";
+        if (schemaId.equals(UBL_ORDER_RESPONSE)) return "OrderResponse";
+        if (schemaId.equals(UBL_DESPATCH_ADVICE)) return "DespatchAdvice";
+        if (schemaId.equals(UBL_REMITTANCE_ADVICE)) return "RemittanceAdvice";
+        if (schemaId.equals(UBL_RECEIPT_ADVICE)) return "ReceiptAdvice";
+        throw new IllegalArgumentException("No UBL root is registered for schema " + schemaId);
+    }
+
+    private static String mappingId(int suffix) {
+        return "d9c01ea5-f555-4c6d-9c87-1465ea78ac" + suffix;
     }
 
     private MappingNode constant(UUID mappingId, String target, String value) {
@@ -244,13 +335,12 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
     }
     private static UUID id(String value) { return UUID.fromString(value); }
     private static BusinessCodeSyntax syntax(UUID schemaId) {
-        if (schemaId.equals(UBL_ORDER) || schemaId.equals(UBL_INVOICE)) return BusinessCodeSyntax.UBL_2_1;
-        if (schemaId.equals(EDIFACT_ORDER) || schemaId.equals(EDIFACT_INVOICE)) {
-            return BusinessCodeSyntax.EDIFACT_D96A;
-        }
-        if (schemaId.equals(TRADACOMS_ORDER) || schemaId.equals(TRADACOMS_INVOICE)) {
-            return BusinessCodeSyntax.TRADACOMS_9;
-        }
+        if (Set.of(UBL_ORDER, UBL_INVOICE, UBL_ORDER_RESPONSE, UBL_DESPATCH_ADVICE,
+                UBL_REMITTANCE_ADVICE, UBL_RECEIPT_ADVICE).contains(schemaId)) return BusinessCodeSyntax.UBL_2_1;
+        if (Set.of(EDIFACT_ORDER, EDIFACT_INVOICE, EDIFACT_ORDER_RESPONSE, EDIFACT_DESPATCH_ADVICE,
+                EDIFACT_REMITTANCE_ADVICE, EDIFACT_RECEIPT_ADVICE).contains(schemaId)) return BusinessCodeSyntax.EDIFACT_D96A;
+        if (Set.of(TRADACOMS_ORDER, TRADACOMS_INVOICE, TRADACOMS_ORDER_RESPONSE, TRADACOMS_DESPATCH_ADVICE,
+                TRADACOMS_REMITTANCE_ADVICE, TRADACOMS_RECEIPT_ADVICE).contains(schemaId)) return BusinessCodeSyntax.TRADACOMS_9;
         throw new IllegalArgumentException("No business code syntax is registered for schema " + schemaId);
     }
     private static String resource(String name) {
@@ -263,4 +353,6 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
     private record PathPair(String source, String target, BusinessCodeList codeList) {
         private PathPair(String source, String target) { this(source, target, null); }
     }
+    private record OperationalDocument(String label, String messageType, UUID ubl, UUID edifact,
+                                       UUID tradacoms) { }
 }

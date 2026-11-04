@@ -43,6 +43,12 @@ export type DocumentFieldRule = {
     message?: string;
 };
 
+export type DocumentProfileUpdateRequest = {
+    fieldRules?: Array<DocumentFieldRule>;
+    ssccGenerationMode?: 'MANUAL' | 'ASSISTED' | 'AUTOMATIC';
+    ssccIssuerId?: string;
+};
+
 export type DocumentProfile = {
     id?: string;
     familyId?: string;
@@ -54,6 +60,8 @@ export type DocumentProfile = {
     documentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
     status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
     fieldRules?: Array<DocumentFieldRule>;
+    ssccGenerationMode?: 'MANUAL' | 'ASSISTED' | 'AUTOMATIC';
+    ssccIssuerId?: string;
     createdAt?: string;
     updatedAt?: string;
 };
@@ -142,6 +150,14 @@ export type UpdateMappingRequest = {
     nodes: Array<MappingNode>;
 };
 
+export type MappingCompatibility = {
+    direction?: string;
+    documentType?: string;
+    standard?: string;
+    release?: string;
+    messageType?: string;
+};
+
 export type MappingRevision = {
     id?: string;
     tenantId?: string;
@@ -162,6 +178,7 @@ export type MappingRevision = {
     vendor?: string;
     sample?: MappingSample;
     derivedFromMappingId?: string;
+    compatibility?: MappingCompatibility;
 };
 
 export type MappingSample = {
@@ -178,6 +195,8 @@ export type DocumentProfileRequest = {
     direction: 'INBOUND' | 'OUTBOUND';
     documentType: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
     fieldRules?: Array<DocumentFieldRule>;
+    ssccGenerationMode?: 'MANUAL' | 'ASSISTED' | 'AUTOMATIC';
+    ssccIssuerId?: string;
 };
 
 export type CreateAgreementRequest = {
@@ -186,6 +205,53 @@ export type CreateAgreementRequest = {
 
 export type ActivationRequest = {
     effectiveAt?: string;
+};
+
+export type ReserveSsccRequest = {
+    issuerId?: string;
+    count?: number;
+    idempotencyKey: string;
+    context: string;
+};
+
+export type SsccReservation = {
+    id?: string;
+    tenantId?: string;
+    issuerId?: string;
+    idempotencyKey?: string;
+    context?: string;
+    ssccs?: Array<string>;
+    reservedAt?: string;
+    expiresAt?: string;
+};
+
+export type CreateSsccIssuerRequest = {
+    name: string;
+    gs1CompanyPrefix: string;
+    extensionDigit?: number;
+    serialStart?: number;
+    serialEnd?: number;
+    reuseAfterMonths?: number;
+    defaultIssuer?: boolean;
+    ownershipAttested?: boolean;
+};
+
+export type SsccIssuer = {
+    id?: string;
+    tenantId?: string;
+    name?: string;
+    gs1CompanyPrefix?: string;
+    extensionDigit?: number;
+    serialStart?: number;
+    serialEnd?: number;
+    nextSerial?: number;
+    reuseAfterMonths?: number;
+    defaultIssuer?: boolean;
+    ownershipAttested?: boolean;
+    status?: 'DRAFT' | 'ACTIVE' | 'RETIRED';
+    version?: number;
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 export type CreateMappingRequest = {
@@ -314,7 +380,7 @@ export type UpdateTradingPartnerDraftResponses = {
 export type UpdateTradingPartnerDraftResponse = UpdateTradingPartnerDraftResponses[keyof UpdateTradingPartnerDraftResponses];
 
 export type UpdatePartnerDocumentProfileDraftData = {
-    body: Array<DocumentFieldRule>;
+    body: DocumentProfileUpdateRequest;
     path: {
         profileId: string;
     };
@@ -688,6 +754,108 @@ export type ActivateTradingAgreementResponses = {
 };
 
 export type ActivateTradingAgreementResponse = ActivateTradingAgreementResponses[keyof ActivateTradingAgreementResponses];
+
+export type ReserveSsccsData = {
+    body: ReserveSsccRequest;
+    path?: never;
+    query?: never;
+    url: '/api/sscc/reservations';
+};
+
+export type ReserveSsccsResponses = {
+    /**
+     * Created
+     */
+    201: SsccReservation;
+};
+
+export type ReserveSsccsResponse = ReserveSsccsResponses[keyof ReserveSsccsResponses];
+
+export type ListSsccIssuersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/sscc/issuers';
+};
+
+export type ListSsccIssuersResponses = {
+    /**
+     * OK
+     */
+    200: Array<SsccIssuer>;
+};
+
+export type ListSsccIssuersResponse = ListSsccIssuersResponses[keyof ListSsccIssuersResponses];
+
+export type CreateSsccIssuerData = {
+    body: CreateSsccIssuerRequest;
+    path?: never;
+    query?: never;
+    url: '/api/sscc/issuers';
+};
+
+export type CreateSsccIssuerResponses = {
+    /**
+     * Created
+     */
+    201: SsccIssuer;
+};
+
+export type CreateSsccIssuerResponse = CreateSsccIssuerResponses[keyof CreateSsccIssuerResponses];
+
+export type RetireSsccIssuerData = {
+    body?: never;
+    path: {
+        issuerId: string;
+    };
+    query?: never;
+    url: '/api/sscc/issuers/{issuerId}/retire';
+};
+
+export type RetireSsccIssuerResponses = {
+    /**
+     * OK
+     */
+    200: SsccIssuer;
+};
+
+export type RetireSsccIssuerResponse = RetireSsccIssuerResponses[keyof RetireSsccIssuerResponses];
+
+export type MakeDefaultSsccIssuerData = {
+    body?: never;
+    path: {
+        issuerId: string;
+    };
+    query?: never;
+    url: '/api/sscc/issuers/{issuerId}/default';
+};
+
+export type MakeDefaultSsccIssuerResponses = {
+    /**
+     * OK
+     */
+    200: SsccIssuer;
+};
+
+export type MakeDefaultSsccIssuerResponse = MakeDefaultSsccIssuerResponses[keyof MakeDefaultSsccIssuerResponses];
+
+export type ActivateSsccIssuerData = {
+    body?: never;
+    path: {
+        issuerId: string;
+    };
+    query?: never;
+    url: '/api/sscc/issuers/{issuerId}/activate';
+};
+
+export type ActivateSsccIssuerResponses = {
+    /**
+     * OK
+     */
+    200: SsccIssuer;
+};
+
+export type ActivateSsccIssuerResponse = ActivateSsccIssuerResponses[keyof ActivateSsccIssuerResponses];
 
 export type ListMappingsData = {
     body?: never;

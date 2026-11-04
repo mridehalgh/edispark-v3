@@ -36,7 +36,10 @@ final class InboundEdiBatchSplitter {
         List<Block> business = new ArrayList<>();
         for (Block block : blocks) {
             String type = component(element(block.segments().getFirst(), 1), 0).toUpperCase();
-            if (type.equals("ORDERS") || type.equals("INVOIC")) business.add(block);
+            if (type.equals("ORDERS") || type.equals("ORDRSP") || type.equals("DESADV")
+                    || type.equals("INVOIC") || type.equals("REMADV") || type.equals("RECADV")) {
+                business.add(block);
+            }
             else context.addAll(block.segments());
         }
         return messages(EdiStandard.TRADACOMS, context, business);

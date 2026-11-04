@@ -45,15 +45,19 @@ public final class EdiPayloadWriter {
         String issueDate = text(document, "/document/issueDate", "").replace("-", "");
         String sender = text(document, "/parties/sender", "EDISPARK");
         String receiver = text(document, "/parties/receiver", "PARTNER");
-        String bgmCode = capability.documentType() == BusinessDocumentType.INVOICE ? "380" : "220";
+        String bgmCode = bgmCode(capability.documentType());
         String directoryRelease = capability.release().startsWith("D")
                 ? capability.release().substring(1) : capability.release();
         List<String> message = new ArrayList<>();
         message.add("UNH+1+" + edi(capability.messageType()) + ":D:" + edi(directoryRelease) + ":UN");
         message.add("BGM+" + bgmCode + '+' + edi(reference) + "+9");
         if (!issueDate.isBlank()) message.add("DTM+137:" + edi(issueDate) + ":102");
+        addEdifactParties(message, sender, receiver);
+        addEdifactDocumentRequirements(message, document, capability.documentType(), issueDate);
+        addEdifactReference(message, document, capability.documentType());
         addEdifactCurrency(message, document);
-        addEdifactLines(message, document, capability.documentType() == BusinessDocumentType.INVOICE);
+        addEdifactRemittanceAmount(message, document, capability.documentType());
+        addEdifactLines(message, document, capability.documentType());
         addEdifactTotals(message, document);
         message.add("UNT+" + (message.size() + 1) + "+1");
         String interchange = "UNB+UNOC:3+" + edi(sender) + '+' + edi(receiver) + '+'
@@ -66,12 +70,12 @@ public final class EdiPayloadWriter {
         String reference = text(document, "/document/id", control);
         String sender = text(document, "/parties/sender", "EDISPARK");
         String receiver = text(document, "/parties/receiver", "PARTNER");
-        String message = capability.documentType() == BusinessDocumentType.INVOICE ? "INVFIL" : "ORDHDR";
+        String message = tradacomsFileMessage(capability.documentType());
         StringBuilder result = new StringBuilder("STX=ANA:1+" + edi(sender) + '+' + edi(receiver) + '+'
                 + TRADACOMS_DATE.format(clock.instant()) + ':'
                 + TRADACOMS_TIME.format(clock.instant()) + '+' + control + "++" + message + "'"
                 + "MHD=1+" + message + ':' + edi(capability.release()) + "'"
-                + "TYP=" + (capability.documentType() == BusinessDocumentType.INVOICE ? "0700" : "0430") + "'"
+                + "TYP=" + tradacomsTypeCode(capability.documentType()) + "'"
                 + "FIL=" + edi(reference) + "+1'"
                 + "MTR=4'");
         addTradacomsMessage(result, capability, document, reference);
@@ -84,23 +88,56 @@ public final class EdiPayloadWriter {
         if (!currency.isBlank()) message.add("CUX+2:" + edi(currency) + ":9");
     }
 
-    private void addEdifactLines(List<String> message, JsonNode document, boolean invoice) {
-        JsonNode lines = document.path("lines");
-        if (!lines.isArray()) return;
-        for (int index = 0; index < lines.size(); index++) addEdifactLine(message, lines.get(index), index + 1, invoice);
+    private void addEdifactRemittanceAmount(List<String> message, JsonNode document, BusinessDocumentType type) {
+        if (type == BusinessDocumentType.REMITTANCE_ADVICE) {
+            addSegment(message, "MOA+9:", document, "/document/totalPaymentAmount");
+        }
     }
 
-    private void addEdifactLine(List<String> message, JsonNode line, int position, boolean invoice) {
+    private void addEdifactReference(List<String> message, JsonNode document, BusinessDocumentType type) {
+        String reference = text(document, "/document/orderReference",
+                text(document, "/document/despatchReference", text(document, "/document/invoiceReference", "")));
+        if (!reference.isBlank() && type != BusinessDocumentType.ORDER) message.add("RFF+ON:" + edi(reference));
+    }
+
+    private void addEdifactParties(List<String> message, String sender, String receiver) {
+        message.add("NAD+SU+" + edi(sender) + "::9++[name]+++++GB");
+        message.add("NAD+BY+" + edi(receiver) + "::9++[name]+++++GB");
+    }
+
+    private void addEdifactDocumentRequirements(List<String> message, JsonNode document,
+            BusinessDocumentType type, String issueDate) {
+        if (type == BusinessDocumentType.ORDER) {
+            String requestedDate = text(document, "/delivery/requestedDate", issueDate);
+            if (!requestedDate.isBlank()) message.add("DTM+2:" + edi(requestedDate.replace("-", "")) + ":102");
+            message.add("NAD+DP+" + edi(text(document, "/delivery/locationId", "[delivery_location]"))
+                    + "::92++[name]+++++GB");
+            message.add("TOD+5++" + edi(text(document, "/delivery/terms", "DAP")));
+            message.add("PAT+1++5:3:D:30");
+        } else if (type == BusinessDocumentType.INVOICE) {
+            String dueDate = text(document, "/document/dueDate", issueDate);
+            if (!dueDate.isBlank()) message.add("DTM+13:" + edi(dueDate.replace("-", "")) + ":102");
+            message.add("PAT+1++5:3:D:30");
+        }
+    }
+
+    private void addEdifactLines(List<String> message, JsonNode document, BusinessDocumentType type) {
+        JsonNode lines = document.path("lines");
+        if (!lines.isArray()) return;
+        for (int index = 0; index < lines.size(); index++) addEdifactLine(message, lines.get(index), index + 1, type);
+    }
+
+    private void addEdifactLine(List<String> message, JsonNode line, int position, BusinessDocumentType type) {
         message.add("LIN+" + edi(text(line, "/id", Integer.toString(position))) + "++"
                 + edi(text(line, "/gtin", "")) + ":EN");
         addEdifactItemIdentifiers(message, line);
         String name = text(line, "/name", text(line, "/description", ""));
         if (!name.isBlank()) message.add("IMD+F++:::" + edi(name));
-        message.add("QTY+" + (invoice ? "47" : "21") + ':' + edi(text(line, "/quantity", "0")) + ':'
+        message.add("QTY+" + quantityQualifier(type) + ':' + edi(text(line, "/quantity", "0")) + ':'
                 + edi(text(line, "/unitCode", "")));
         addSegment(message, "PRI+AAA:", line, "/price");
         addSegment(message, "MOA+203:", line, "/lineExtension");
-        if (invoice) addEdifactTax(message, line);
+        if (type == BusinessDocumentType.INVOICE) addEdifactTax(message, line);
     }
 
     private void addEdifactItemIdentifiers(List<String> message, JsonNode line) {
@@ -136,12 +173,24 @@ public final class EdiPayloadWriter {
     private void addTradacomsMessage(StringBuilder result, ExchangeCapability capability, JsonNode document,
             String reference) {
         boolean invoice = capability.documentType() == BusinessDocumentType.INVOICE;
-        result.append("MHD=2+").append(invoice ? "INVOIC" : "ORDERS").append(':')
+        result.append("MHD=2+").append(edi(capability.messageType())).append(':')
                 .append(edi(capability.release())).append("'");
         if (invoice) result.append("IRF=").append(edi(reference)).append('+')
                 .append(edi(tradacomsDate(document))).append("'");
-        else result.append("ORD=").append(edi(reference)).append("++")
+        else result.append("DOC=").append(edi(reference)).append('+')
+                .append(edi(tradacomsDate(document))).append("'");
+        if (capability.documentType() == BusinessDocumentType.ORDER) result.append("ORD=").append(edi(reference)).append("++")
                 .append(edi(text(document, "/document/currency", ""))).append("'");
+        if (capability.documentType() == BusinessDocumentType.ORDER_RESPONSE) {
+            result.append("ORD=").append(edi(text(document, "/document/orderReference", reference))).append("'");
+        }
+        if (capability.documentType() == BusinessDocumentType.ORDER) {
+            result.append("CLO=").append(edi(text(document, "/delivery/locationId", "[delivery_location]")))
+                    .append(":[name]'");
+            result.append("DIN=").append(edi(tradacomsDate(document))).append("++DAP'");
+        }
+        if (invoice) result.append("ODD=").append(edi(text(document, "/document/orderReference", reference)))
+                .append("'");
         addTradacomsLines(result, document, invoice);
         addTradacomsTotals(result, document, invoice);
         result.append("MTR=").append(invoice ? "7" : "6").append("'");
@@ -169,13 +218,58 @@ public final class EdiPayloadWriter {
         result.append(invoice ? "STL=" : "OTR=").append(document.path("lines").size()).append('+')
                 .append(edi(text(document, "/totals/lineExtension", ""))).append('+');
         if (invoice) result.append(edi(text(document, "/tax/amount", ""))).append('+');
-        else result.append(edi(text(document, "/totals/allowance", ""))).append('+');
-        result.append(edi(text(document, "/totals/payable", ""))).append("'");
+        else result.append(edi(text(document, "/totals/allowance", "0"))).append('+');
+        result.append(edi(text(document, "/totals/payable",
+                text(document, "/document/totalPaymentAmount", "")))).append("'");
+        if (invoice) result.append("TLR=").append(edi(text(document, "/totals/lineExtension", ""))).append('+')
+                .append(edi(text(document, "/tax/amount", ""))).append('+')
+                .append(edi(text(document, "/totals/payable", ""))).append("'");
     }
 
     private String tradacomsDate(JsonNode document) {
         String date = text(document, "/document/issueDate", "").replace("-", "");
         return date.length() == 8 ? date.substring(2) : date;
+    }
+
+    private String bgmCode(BusinessDocumentType type) {
+        return switch (type) {
+            case ORDER -> "220";
+            case ORDER_RESPONSE -> "231";
+            case DESPATCH_ADVICE -> "351";
+            case INVOICE -> "380";
+            case REMITTANCE_ADVICE -> "481";
+            case RECEIPT_ADVICE -> "352";
+        };
+    }
+
+    private String quantityQualifier(BusinessDocumentType type) {
+        return switch (type) {
+            case INVOICE -> "47";
+            case DESPATCH_ADVICE -> "12";
+            case RECEIPT_ADVICE -> "194";
+            default -> "21";
+        };
+    }
+
+    private String tradacomsFileMessage(BusinessDocumentType type) {
+        return switch (type) {
+            case ORDER -> "ORDHDR";
+            case ORDER_RESPONSE -> "ACKHDR";
+            case DESPATCH_ADVICE, RECEIPT_ADVICE -> "DELHDR";
+            case INVOICE -> "INVFIL";
+            case REMITTANCE_ADVICE -> "PAYHDR";
+        };
+    }
+
+    private String tradacomsTypeCode(BusinessDocumentType type) {
+        return switch (type) {
+            case ORDER -> "0430";
+            case ORDER_RESPONSE -> "0440";
+            case DESPATCH_ADVICE -> "0400";
+            case INVOICE -> "0700";
+            case REMITTANCE_ADVICE -> "0900";
+            case RECEIPT_ADVICE -> "0410";
+        };
     }
 
     private String text(JsonNode document, String pointer, String fallback) {

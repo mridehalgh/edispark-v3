@@ -5,6 +5,7 @@ import { AlertCircle, ArrowLeft, Building2, ChevronDown, Download, RefreshCw } f
 import { Link, useParams } from "react-router-dom"
 
 import { DocumentTechnicalDetails } from "@/components/documents/document-technical-details"
+import { DocumentAttention } from "@/components/documents/document-attention"
 import { CreateNextDocument } from "@/components/documents/create-next-document"
 import { SendDocument } from "@/components/documents/send-document"
 import { LayoutBody } from "@/components/layout/layout"
@@ -168,6 +169,7 @@ export function OperationalDocumentPage({ kind }: { kind: OperationalDocumentKin
           {kind === "DESPATCH_ADVICE" && !canCreateLabels && !hasExistingLabels ? <p id="labels-unavailable" className="max-w-xs text-right text-xs text-muted-foreground">Add a valid SSCC to a handling unit to create labels.</p> : null}
         </div>
       </header>
+      <DocumentAttention documentSetId={setId!} documentId={documentId!} />
       {labelError ? <p className="mt-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm text-destructive" role="alert"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{labelError}</p> : null}
 
       <section className="grid gap-6 border-b py-6 md:grid-cols-3" aria-label="Document summary">

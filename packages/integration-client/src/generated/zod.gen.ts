@@ -52,6 +52,16 @@ export const zDocumentFieldRule = z.object({
     message: z.string().optional()
 });
 
+export const zDocumentProfileUpdateRequest = z.object({
+    fieldRules: z.array(zDocumentFieldRule).optional(),
+    ssccGenerationMode: z.enum([
+        'MANUAL',
+        'ASSISTED',
+        'AUTOMATIC'
+    ]).optional(),
+    ssccIssuerId: z.uuid().optional()
+});
+
 export const zDocumentProfile = z.object({
     id: z.uuid().optional(),
     familyId: z.uuid().optional(),
@@ -74,6 +84,12 @@ export const zDocumentProfile = z.object({
         'ARCHIVED'
     ]).optional(),
     fieldRules: z.array(zDocumentFieldRule).optional(),
+    ssccGenerationMode: z.enum([
+        'MANUAL',
+        'ASSISTED',
+        'AUTOMATIC'
+    ]).optional(),
+    ssccIssuerId: z.uuid().optional(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional()
 });
@@ -248,6 +264,14 @@ export const zUpdateMappingRequest = z.object({
     nodes: z.array(zMappingNode).min(1)
 });
 
+export const zMappingCompatibility = z.object({
+    direction: z.string().optional(),
+    documentType: z.string().optional(),
+    standard: z.string().optional(),
+    release: z.string().optional(),
+    messageType: z.string().optional()
+});
+
 export const zMappingSample = z.object({
     sourceFormat: z.string().optional(),
     sourceDocument: z.string().optional(),
@@ -282,7 +306,8 @@ export const zMappingRevision = z.object({
     scope: z.enum(['GLOBAL', 'TENANT']).optional(),
     vendor: z.string().optional(),
     sample: zMappingSample.optional(),
-    derivedFromMappingId: z.uuid().optional()
+    derivedFromMappingId: z.uuid().optional(),
+    compatibility: zMappingCompatibility.optional()
 });
 
 export const zDocumentProfileRequest = z.object({
@@ -296,7 +321,13 @@ export const zDocumentProfileRequest = z.object({
         'REMITTANCE_ADVICE',
         'RECEIPT_ADVICE'
     ]),
-    fieldRules: z.array(zDocumentFieldRule).optional()
+    fieldRules: z.array(zDocumentFieldRule).optional(),
+    ssccGenerationMode: z.enum([
+        'MANUAL',
+        'ASSISTED',
+        'AUTOMATIC'
+    ]).optional(),
+    ssccIssuerId: z.uuid().optional()
 });
 
 export const zCreateAgreementRequest = z.object({
@@ -305,6 +336,57 @@ export const zCreateAgreementRequest = z.object({
 
 export const zActivationRequest = z.object({
     effectiveAt: z.iso.datetime().optional()
+});
+
+export const zReserveSsccRequest = z.object({
+    issuerId: z.uuid().optional(),
+    count: z.int().gte(1).lte(100).optional(),
+    idempotencyKey: z.string().min(0).max(160),
+    context: z.string().min(0).max(240)
+});
+
+export const zSsccReservation = z.object({
+    id: z.uuid().optional(),
+    tenantId: z.string().optional(),
+    issuerId: z.uuid().optional(),
+    idempotencyKey: z.string().optional(),
+    context: z.string().optional(),
+    ssccs: z.array(z.string()).optional(),
+    reservedAt: z.iso.datetime().optional(),
+    expiresAt: z.iso.datetime().optional()
+});
+
+export const zCreateSsccIssuerRequest = z.object({
+    name: z.string().min(0).max(120),
+    gs1CompanyPrefix: z.string().min(4).max(12),
+    extensionDigit: z.int().gte(0).lte(9).optional(),
+    serialStart: z.coerce.bigint().gte(BigInt(0)).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    serialEnd: z.coerce.bigint().gte(BigInt(0)).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    reuseAfterMonths: z.int().gte(12).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    defaultIssuer: z.boolean().optional(),
+    ownershipAttested: z.boolean().optional()
+});
+
+export const zSsccIssuer = z.object({
+    id: z.uuid().optional(),
+    tenantId: z.string().optional(),
+    name: z.string().optional(),
+    gs1CompanyPrefix: z.string().optional(),
+    extensionDigit: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    serialStart: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    serialEnd: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    nextSerial: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    reuseAfterMonths: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    defaultIssuer: z.boolean().optional(),
+    ownershipAttested: z.boolean().optional(),
+    status: z.enum([
+        'DRAFT',
+        'ACTIVE',
+        'RETIRED'
+    ]).optional(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional()
 });
 
 export const zCreateMappingRequest = z.object({
@@ -456,7 +538,7 @@ export const zUpdateTradingPartnerDraftPath = z.object({
  */
 export const zUpdateTradingPartnerDraftResponse = zTradingPartner;
 
-export const zUpdatePartnerDocumentProfileDraftBody = z.array(zDocumentFieldRule);
+export const zUpdatePartnerDocumentProfileDraftBody = zDocumentProfileUpdateRequest;
 
 export const zUpdatePartnerDocumentProfileDraftPath = z.object({
     profileId: z.uuid()
@@ -656,6 +738,52 @@ export const zActivateTradingAgreementPath = z.object({
  * OK
  */
 export const zActivateTradingAgreementResponse = zTradingAgreement;
+
+export const zReserveSsccsBody = zReserveSsccRequest;
+
+/**
+ * Created
+ */
+export const zReserveSsccsResponse = zSsccReservation;
+
+/**
+ * OK
+ */
+export const zListSsccIssuersResponse = z.array(zSsccIssuer);
+
+export const zCreateSsccIssuerBody = zCreateSsccIssuerRequest;
+
+/**
+ * Created
+ */
+export const zCreateSsccIssuerResponse = zSsccIssuer;
+
+export const zRetireSsccIssuerPath = z.object({
+    issuerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zRetireSsccIssuerResponse = zSsccIssuer;
+
+export const zMakeDefaultSsccIssuerPath = z.object({
+    issuerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zMakeDefaultSsccIssuerResponse = zSsccIssuer;
+
+export const zActivateSsccIssuerPath = z.object({
+    issuerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zActivateSsccIssuerResponse = zSsccIssuer;
 
 /**
  * OK

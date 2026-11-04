@@ -90,6 +90,8 @@ public final class LocalMftDemoSeeder {
             writePartnerId(tradacomsPartnerIdFile, tradacomsPartner);
             reconcileTransfers(edifactPartner);
             reconcileTradacomsTransfers(tradacomsPartner);
+            reconcileLifecycleTransfers(edifactPartner, false);
+            reconcileLifecycleTransfers(tradacomsPartner, true);
             log.info("MFT demo ready for tenant {}; workspace totals: {} partner(s), {} certificate(s), {} transfer(s)",
                     tenantId,
                     repository.listPartners(tenantId).size(), repository.listCertificates(tenantId).size(),
@@ -208,6 +210,34 @@ public final class LocalMftDemoSeeder {
         reconcileFixturePayloads(partner.tenantId());
     }
 
+    void reconcileLifecycleTransfers(PartnerProfile partner, boolean tradacoms) throws IOException {
+        List<LifecycleFixture> fixtures = tradacoms ? List.of(
+                new LifecycleFixture("order_response_harbour_2026_0042.edi", TransferDirection.OUTBOUND),
+                new LifecycleFixture("despatch_harbour_2026_0042.edi", TransferDirection.OUTBOUND),
+                new LifecycleFixture("remittance_harbour_2026_0042.edi", TransferDirection.INBOUND),
+                new LifecycleFixture("receipt_harbour_2026_0042.edi", TransferDirection.INBOUND)) : List.of(
+                new LifecycleFixture("order_response_2026_0042.edi", TransferDirection.OUTBOUND),
+                new LifecycleFixture("despatch_2026_0042.edi", TransferDirection.OUTBOUND),
+                new LifecycleFixture("remittance_2026_0042.edi", TransferDirection.INBOUND),
+                new LifecycleFixture("receipt_2026_0042.edi", TransferDirection.INBOUND));
+        Instant now = clock.instant();
+        for (int index = 0; index < fixtures.size(); index++) {
+            LifecycleFixture fixture = fixtures.get(index);
+            if (repository.listTransfers(partner.tenantId()).stream()
+                    .anyMatch(transfer -> transfer.partnerId().equals(partner.id())
+                            && transfer.filename().equals(fixture.filename())
+                            && transfer.status() == TransferStatus.DELIVERED)) continue;
+            String key = "demo-lifecycle-" + (tradacoms ? "tradacoms-" : "edifact-") + index;
+            Transfer transfer = fixture.direction() == TransferDirection.INBOUND
+                    ? inbound(partner, fixture.filename(), "<" + key + "@as2.edispark.local>", now.minusSeconds(50 - index))
+                    : outbound(partner, fixture.filename(), key, now.minusSeconds(50 - index));
+            if (fixture.direction() == TransferDirection.OUTBOUND) transfer.startAttempt(now.minusSeconds(40 - index));
+            transfer.deliver("automatic-action/MDN-sent-automatically; processed", now.minusSeconds(30 - index));
+            repository.save(transfer);
+        }
+        reconcileFixturePayloads(partner.tenantId());
+    }
+
     private boolean hasInbound(List<Transfer> transfers) {
         return transfers.stream()
                 .anyMatch(transfer -> transfer.direction() == TransferDirection.INBOUND
@@ -264,7 +294,7 @@ public final class LocalMftDemoSeeder {
         return filename.equals("PO_45001235.edi") || filename.equals("invoice_77891.edi")
                 || filename.equals("ASN_9921.edi") || filename.equals("inventory_20261030.edi")
                 || filename.equals("remittance_1042.edi") || filename.equals("PO_HARBOUR_2026_1187.edi")
-                || filename.equals("invoice_harbour_2026_1187.edi");
+                || filename.equals("invoice_harbour_2026_1187.edi") || filename.contains("_2026_0042.edi");
     }
 
     private byte[] samplePayload(String filename) {
@@ -276,6 +306,14 @@ public final class LocalMftDemoSeeder {
             case "remittance_1042.edi" -> "edifact-remadv-d96a.edi";
             case "PO_HARBOUR_2026_1187.edi" -> "tradacoms-orders-9.edi";
             case "invoice_harbour_2026_1187.edi" -> "tradacoms-invoic-9.edi";
+            case "order_response_2026_0042.edi" -> "edifact-ordrsp-d96a.edi";
+            case "despatch_2026_0042.edi" -> "edifact-desadv-d96a.edi";
+            case "remittance_2026_0042.edi" -> "edifact-remadv-d96a.edi";
+            case "receipt_2026_0042.edi" -> "edifact-recadv-d96a.edi";
+            case "order_response_harbour_2026_0042.edi" -> "tradacoms-ordrsp-9.edi";
+            case "despatch_harbour_2026_0042.edi" -> "tradacoms-desadv-9.edi";
+            case "remittance_harbour_2026_0042.edi" -> "tradacoms-remadv-9.edi";
+            case "receipt_harbour_2026_0042.edi" -> "tradacoms-recadv-9.edi";
             default -> throw new IllegalArgumentException("No local MFT sample for " + filename);
         };
         try (InputStream input = LocalMftDemoSeeder.class.getResourceAsStream("/seed/mft/" + resourceName)) {
@@ -285,4 +323,6 @@ public final class LocalMftDemoSeeder {
             throw new IllegalStateException("Could not read MFT sample resource: " + resourceName, exception);
         }
     }
+
+    private record LifecycleFixture(String filename, TransferDirection direction) { }
 }

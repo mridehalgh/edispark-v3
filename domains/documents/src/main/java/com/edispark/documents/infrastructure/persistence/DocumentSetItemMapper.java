@@ -229,9 +229,7 @@ public final class DocumentSetItemMapper {
         String hashValue = item.get("contentHashValue").s();
         ContentHash contentHash = new ContentHash(algorithm, hashValue);
         ContentRef contentRef = ContentRef.of(contentHash);
-        Format format = item.containsKey("format")
-                ? Format.valueOf(item.get("format").s())
-                : Format.XML;
+        Format format = storedFormat(item);
 
         Instant createdAt = Instant.parse(item.get("createdAt").s());
         String createdBy = item.get("createdBy").s();
@@ -248,6 +246,13 @@ public final class DocumentSetItemMapper {
 
         return DocumentVersion.reconstitute(id, versionNumber, contentRef, contentHash, format, createdAt, createdBy,
                 previousVersion, parseStatus, messageType, parseErrors);
+    }
+
+    private Format storedFormat(Map<String, AttributeValue> item) {
+        if (!item.containsKey("format")) return Format.XML;
+        String value = item.get("format").s();
+        if (value.equals("TRADACOMS") || value.equals("EDIFACT")) return Format.EDI;
+        return Format.valueOf(value);
     }
 
     // ========== Derivative ==========

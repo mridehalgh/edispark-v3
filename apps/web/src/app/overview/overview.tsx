@@ -9,6 +9,7 @@ import { AdminEmptyState, AdminNotice, AdminPage, AdminPageHeader } from "@/comp
 import { TransferStatus } from "@/components/mft/transfer-status"
 import { Button } from "@/components/ui/button"
 import { adminApi, formatAdminDate } from "@/lib/admin-api"
+import { attentionReason } from "@/lib/attention-reason"
 import { cn } from "@/lib/utils"
 
 type OverviewData = {
@@ -63,7 +64,7 @@ export function OverviewPage() {
         <section className="border-y" aria-labelledby="attention-title">
           <div className="flex items-center gap-2 border-b px-4 py-3"><AlertCircle className="h-4 w-4 text-destructive" /><h2 id="attention-title" className="text-sm font-semibold">Needs attention</h2></div>
           <div className="divide-y">
-            {attention.slice(0, 5).map((transfer) => <Link key={transfer.id} to={`/files/transfers/${transfer.id}`} className="flex min-h-14 items-center gap-4 px-4 py-3 hover:bg-muted/40"><span className="min-w-0 flex-1 truncate text-sm font-medium">{transfer.filename}</span><span className="hidden text-xs text-muted-foreground sm:block">{connectionNames.get(transfer.partnerId) ?? "Unassigned connection"}</span><TransferStatus status={transfer.status} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></Link>)}
+            {attention.slice(0, 5).map((transfer) => { const reason = attentionReason(transfer); return <Link key={transfer.id} to={`/files/transfers/${transfer.id}`} className="flex min-h-14 items-center gap-4 px-4 py-3 hover:bg-muted/40"><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{transfer.filename}</span>{reason ? <span className="mt-1 block text-xs leading-5 text-destructive">{reason}</span> : null}</span><span className="hidden text-xs text-muted-foreground sm:block">{connectionNames.get(transfer.partnerId) ?? "Unassigned connection"}</span><TransferStatus status={transfer.status} /><ArrowRight className="h-4 w-4 text-muted-foreground" /></Link> })}
             {expiring.map((certificate) => <Link key={certificate.id} to="/connections/certificates" className="flex min-h-14 items-center gap-4 px-4 py-3 hover:bg-muted/40"><ShieldAlert className="h-4 w-4 text-warning-foreground" /><span className="min-w-0 flex-1 truncate text-sm font-medium">{certificate.name}</span><span className="text-xs text-muted-foreground">Expires {formatAdminDate(certificate.notAfter)}</span><ArrowRight className="h-4 w-4 text-muted-foreground" /></Link>)}
           </div>
         </section>

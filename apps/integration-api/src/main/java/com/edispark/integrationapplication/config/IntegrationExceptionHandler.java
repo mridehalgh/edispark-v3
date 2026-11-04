@@ -1,7 +1,9 @@
 package com.edispark.integrationapplication.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,28 +14,78 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 @RestControllerAdvice
 public class IntegrationExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
-    ResponseEntity<ErrorBody> invalid(IllegalArgumentException exception) {
-        return ResponseEntity.badRequest().body(ErrorBody.of("INVALID_INTEGRATION_CONFIGURATION", exception.getMessage()));
+    ResponseEntity<ActionableErrorBody> invalid(IllegalArgumentException exception, HttpServletRequest request) {
+        String message = safeMessage(exception, "The integration configuration is invalid");
+        if (message.contains("Published mapping was not found") || message.contains("capability schemas")) {
+            return ResponseEntity.badRequest().body(ActionableErrorBody.of("COMPATIBLE_MAPPING_NOT_FOUND", message,
+                    "CONFIGURATION", false,
+                    "Select or publish a mapping with the same direction, document type, standard and release, then retry.",
+                    correlationId(request)));
+        }
+        return ResponseEntity.badRequest().body(ActionableErrorBody.of("INVALID_INTEGRATION_CONFIGURATION", message,
+                "CONFIGURATION", false, "Correct the identified configuration value, then retry.",
+                correlationId(request)));
     }
+
     @ExceptionHandler(IllegalStateException.class)
-    ResponseEntity<ErrorBody> conflict(IllegalStateException exception) {
-        String message = exception.getMessage() == null ? "The operation is not allowed in the current state" : exception.getMessage();
+    ResponseEntity<ActionableErrorBody> conflict(IllegalStateException exception, HttpServletRequest request) {
+        String message = safeMessage(exception, "The operation is not allowed in the current state");
         String code = message.contains("used") || message.contains("referenced") || message.contains("unused draft")
                 ? "CONFIGURATION_IN_USE" : "INTEGRATION_STATE_CONFLICT";
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorBody(code, message, Instant.now(),
-                Map.of("resolution", "Create a new revision or remove the listed live dependency before retrying")));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ActionableErrorBody.of(code, message,
+                "CONFIGURATION", false,
+                "Create a new revision or remove the listed live dependency before retrying.",
+                correlationId(request)));
     }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<ErrorBody> validation(MethodArgumentNotValidException exception) {
-        return ResponseEntity.badRequest().body(ErrorBody.of("INVALID_REQUEST",
-                "The request contains invalid or missing fields"));
+    ResponseEntity<ActionableErrorBody> validation(MethodArgumentNotValidException exception,
+            HttpServletRequest request) {
+        Map<String, Object> details = Map.of("fields", exception.getBindingResult().getFieldErrors().stream()
+                .map(error -> Map.of("field", error.getField(), "issue",
+                        error.getDefaultMessage() == null ? "is invalid" : error.getDefaultMessage()))
+                .toList());
+        return ResponseEntity.badRequest().body(new ActionableErrorBody("INVALID_REQUEST",
+                "The request contains invalid or missing fields", Instant.now(), "REQUEST_VALIDATION", false,
+                "Correct the listed fields, then retry.", correlationId(request), details));
     }
+
     @ExceptionHandler(RestClientResponseException.class)
-    ResponseEntity<ErrorBody> dependency(RestClientResponseException exception) {
-        HttpStatus status = exception.getStatusCode().value() == 404 ? HttpStatus.NOT_FOUND : HttpStatus.BAD_GATEWAY;
-        return ResponseEntity.status(status).body(ErrorBody.of("INTEGRATION_DEPENDENCY_FAILED", "A dependent EdiSpark service rejected the request"));
+    ResponseEntity<ActionableErrorBody> dependency(RestClientResponseException exception,
+            HttpServletRequest request) {
+        if (exception.getStatusCode().value() == 404) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ActionableErrorBody.of(
+                    "INTEGRATION_DEPENDENCY_NOT_FOUND", "A required EdiSpark resource was not found",
+                    "DEPENDENCY", false, "Refresh the page and confirm that the referenced resource still exists.",
+                    correlationId(request)));
+        }
+        boolean retryable = exception.getStatusCode().value() == 429 || exception.getStatusCode().is5xxServerError();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ActionableErrorBody.of(
+                retryable ? "INTEGRATION_DEPENDENCY_UNAVAILABLE" : "INTEGRATION_DEPENDENCY_REJECTED",
+                retryable ? "A dependent EdiSpark service is temporarily unavailable"
+                        : "A dependent EdiSpark service rejected the request",
+                "DEPENDENCY", retryable,
+                retryable ? "Try again shortly. If the problem continues, use the correlation ID when checking service health."
+                        : "Correct the referenced resource or configuration before retrying.",
+                correlationId(request)));
     }
-    record ErrorBody(String code, String message, Instant timestamp, Map<String, Object> details) {
-        static ErrorBody of(String code, String message) { return new ErrorBody(code, message, Instant.now(), Map.of()); }
+
+    private String safeMessage(RuntimeException exception, String fallback) {
+        return exception.getMessage() == null || exception.getMessage().isBlank() ? fallback : exception.getMessage();
+    }
+
+    private String correlationId(HttpServletRequest request) {
+        String candidate = request.getHeader("X-Correlation-ID");
+        return candidate == null || !candidate.matches("[A-Za-z0-9._:-]{1,128}")
+                ? UUID.randomUUID().toString() : candidate;
+    }
+
+    public record ActionableErrorBody(String code, String message, Instant timestamp, String stage,
+            boolean retryable, String recommendedAction, String correlationId, Map<String, Object> details) {
+        static ActionableErrorBody of(String code, String message, String stage, boolean retryable,
+                String recommendedAction, String correlationId) {
+            return new ActionableErrorBody(code, message, Instant.now(), stage, retryable, recommendedAction,
+                    correlationId, Map.of());
+        }
     }
 }

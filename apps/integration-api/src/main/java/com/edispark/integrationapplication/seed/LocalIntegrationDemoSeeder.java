@@ -13,7 +13,10 @@ import com.edispark.partnerships.domain.model.PartnerStatus;
 import com.edispark.partnerships.domain.model.QualificationReport;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
+import com.edispark.partnerships.domain.model.SsccIssuer;
+import com.edispark.partnerships.domain.model.SsccIssuerStatus;
 import com.edispark.partnerships.domain.repository.PartnershipRepository;
+import com.edispark.partnerships.domain.repository.SsccRepository;
 import com.edispark.transformations.domain.MappingNode;
 import com.edispark.transformations.domain.MappingOperation;
 import com.edispark.transformations.domain.MappingRepository;
@@ -49,12 +52,25 @@ public final class LocalIntegrationDemoSeeder {
     private static final UUID AGREEMENT_SCHEDULED_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac04");
     private static final UUID TRADACOMS_PARTNER_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac05");
     private static final UUID TRADACOMS_AGREEMENT_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac06");
+    private static final UUID LOCAL_SSCC_ISSUER_ID = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac07");
     private static final UUID ORDER_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac10");
     private static final UUID INVOICE_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac11");
     private static final UUID EDIFACT_ORDER_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac12");
     private static final UUID EDIFACT_INVOICE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac13");
     private static final UUID TRADACOMS_ORDER_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac14");
     private static final UUID TRADACOMS_INVOICE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac15");
+    private static final UUID ORDER_RESPONSE_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac16");
+    private static final UUID DESPATCH_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac17");
+    private static final UUID REMITTANCE_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac18");
+    private static final UUID RECEIPT_SOURCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac19");
+    private static final UUID EDIFACT_ORDER_RESPONSE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac30");
+    private static final UUID EDIFACT_DESPATCH_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac31");
+    private static final UUID EDIFACT_REMITTANCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac32");
+    private static final UUID EDIFACT_RECEIPT_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac33");
+    private static final UUID TRADACOMS_ORDER_RESPONSE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac34");
+    private static final UUID TRADACOMS_DESPATCH_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac35");
+    private static final UUID TRADACOMS_REMITTANCE_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac36");
+    private static final UUID TRADACOMS_RECEIPT_SCHEMA = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac37");
     private static final UUID EDIFACT_ORDER_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac20");
     private static final UUID EDIFACT_INVOICE_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac21");
     private static final UUID TRADACOMS_ORDER_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac22");
@@ -63,6 +79,14 @@ public final class LocalIntegrationDemoSeeder {
     private static final UUID EDIFACT_INVOICE_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac25");
     private static final UUID TRADACOMS_ORDER_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac26");
     private static final UUID TRADACOMS_INVOICE_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac27");
+    private static final UUID EDIFACT_ORDER_RESPONSE_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac40");
+    private static final UUID TRADACOMS_ORDER_RESPONSE_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac41");
+    private static final UUID EDIFACT_DESPATCH_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac42");
+    private static final UUID TRADACOMS_DESPATCH_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac43");
+    private static final UUID EDIFACT_REMITTANCE_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac54");
+    private static final UUID TRADACOMS_REMITTANCE_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac55");
+    private static final UUID EDIFACT_RECEIPT_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac56");
+    private static final UUID TRADACOMS_RECEIPT_INBOUND_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac57");
     private static final UUID UNUSED_DRAFT_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac28");
     private static final UUID SCHEDULED_MAPPING = UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac29");
     private static final List<UUID> GLOBAL_MAPPING_IDS = List.of(EDIFACT_ORDER_MAPPING, EDIFACT_INVOICE_MAPPING,
@@ -71,6 +95,7 @@ public final class LocalIntegrationDemoSeeder {
     private static final String HASH = "8c22a4dd5b19426c04f0cfb8f6ac69e22375b87ef4a78717dc31de72fa941f11";
 
     private final PartnershipRepository partnerships;
+    private final SsccRepository sscc;
     private final MappingRepository mappings;
     private final Clock clock;
 
@@ -106,6 +131,9 @@ public final class LocalIntegrationDemoSeeder {
         partnerships.savePartner(new TradingPartner(PARTNER_DRAFT_ID, targetTenantId, "Northstar Retail UK",
                 edifactPartner.identities(), PartnerStatus.DRAFT, now, now, PARTNER_ID, 2, null, null, 1,
                 InboundFileFailurePolicy.REJECT_FILE));
+        sscc.find(targetTenantId, LOCAL_SSCC_ISSUER_ID).orElseGet(() -> sscc.save(new SsccIssuer(
+                LOCAL_SSCC_ISSUER_ID, targetTenantId, "Local demonstration range", "1234567", 0,
+                1, 999999999L, 1, 12, true, true, SsccIssuerStatus.ACTIVE, 0, now, now)));
 
         TradingAgreement edifactAgreement = agreement(targetTenantId, PARTNER_ID, AGREEMENT_ID,
                 "Northstar EDIFACT order to invoice", EdiStandard.EDIFACT, edifactConnectionId, now);
@@ -118,7 +146,7 @@ public final class LocalIntegrationDemoSeeder {
                 edifactAgreement.name(), AgreementStatus.SCHEDULED, scheduledAt, null,
                 edifactAgreement.capabilities(), edifactAgreement.qualification(), now, now,
                 AGREEMENT_ID, scheduledAt, null, 1));
-        log.info("Integration demo ready for tenant {}; two supplier relationships and {} editable mappings",
+        log.info("Integration demo ready for tenant {}; two supplier relationships, a synthetic SSCC range and {} editable mappings",
                 targetTenantId, demoMappings.size());
     }
 
@@ -173,11 +201,27 @@ public final class LocalIntegrationDemoSeeder {
         UUID invoiceSchema = edifact ? EDIFACT_INVOICE_SCHEMA : TRADACOMS_INVOICE_SCHEMA;
         UUID inboundOrderMapping = edifact ? EDIFACT_ORDER_INBOUND_MAPPING : TRADACOMS_ORDER_INBOUND_MAPPING;
         UUID outboundInvoiceMapping = edifact ? EDIFACT_INVOICE_MAPPING : TRADACOMS_INVOICE_MAPPING;
+        UUID orderResponseSchema = edifact ? EDIFACT_ORDER_RESPONSE_SCHEMA : TRADACOMS_ORDER_RESPONSE_SCHEMA;
+        UUID despatchSchema = edifact ? EDIFACT_DESPATCH_SCHEMA : TRADACOMS_DESPATCH_SCHEMA;
+        UUID remittanceSchema = edifact ? EDIFACT_REMITTANCE_SCHEMA : TRADACOMS_REMITTANCE_SCHEMA;
+        UUID receiptSchema = edifact ? EDIFACT_RECEIPT_SCHEMA : TRADACOMS_RECEIPT_SCHEMA;
         List<ExchangeCapability> capabilities = List.of(
                 capability(ExchangeDirection.INBOUND, BusinessDocumentType.ORDER, standard, release,
                         "ORDERS", orderSchema, ORDER_SOURCE_SCHEMA, inboundOrderMapping, as2ConnectionId),
+                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER_RESPONSE, standard, release,
+                        "ORDRSP", ORDER_RESPONSE_SOURCE_SCHEMA, orderResponseSchema,
+                        edifact ? EDIFACT_ORDER_RESPONSE_MAPPING : TRADACOMS_ORDER_RESPONSE_MAPPING, as2ConnectionId),
+                capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.DESPATCH_ADVICE, standard, release,
+                        "DESADV", DESPATCH_SOURCE_SCHEMA, despatchSchema,
+                        edifact ? EDIFACT_DESPATCH_MAPPING : TRADACOMS_DESPATCH_MAPPING, as2ConnectionId),
                 capability(ExchangeDirection.OUTBOUND, BusinessDocumentType.INVOICE, standard, release,
-                        "INVOIC", INVOICE_SOURCE_SCHEMA, invoiceSchema, outboundInvoiceMapping, as2ConnectionId));
+                        "INVOIC", INVOICE_SOURCE_SCHEMA, invoiceSchema, outboundInvoiceMapping, as2ConnectionId),
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.REMITTANCE_ADVICE, standard, release,
+                        "REMADV", remittanceSchema, REMITTANCE_SOURCE_SCHEMA,
+                        edifact ? EDIFACT_REMITTANCE_INBOUND_MAPPING : TRADACOMS_REMITTANCE_INBOUND_MAPPING, as2ConnectionId),
+                capability(ExchangeDirection.INBOUND, BusinessDocumentType.RECEIPT_ADVICE, standard, release,
+                        "RECADV", receiptSchema, RECEIPT_SOURCE_SCHEMA,
+                        edifact ? EDIFACT_RECEIPT_INBOUND_MAPPING : TRADACOMS_RECEIPT_INBOUND_MAPPING, as2ConnectionId));
         List<String> checks = capabilities.stream().flatMap(item -> List.of(
                 "Published mapping " + item.mappingRevisionId(), "Active AS2 connection " + as2ConnectionId).stream()).toList();
         return new TradingAgreement(agreementId, targetTenantId, partnerId, 1, name,

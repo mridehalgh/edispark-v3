@@ -17,11 +17,100 @@ final class InboundEdiMappingInputParser {
     }
 
     byte[] edifact(List<String> segments, BusinessDocumentType type) {
-        return type == BusinessDocumentType.INVOICE ? edifactInvoice(segments) : edifactOrder(segments);
+        return switch (type) {
+            case ORDER -> edifactOrder(segments);
+            case INVOICE -> edifactInvoice(segments);
+            default -> edifactOperational(segments, type);
+        };
     }
 
     byte[] tradacoms(List<String> segments, BusinessDocumentType type) {
-        return type == BusinessDocumentType.INVOICE ? tradacomsInvoice(segments) : tradacomsOrder(segments);
+        return switch (type) {
+            case ORDER -> tradacomsOrder(segments);
+            case INVOICE -> tradacomsInvoice(segments);
+            default -> tradacomsOperational(segments, type);
+        };
+    }
+
+    private byte[] edifactOperational(List<String> segments, BusinessDocumentType type) {
+        ObjectNode root = root();
+        String bgm = required(segments, "BGM+");
+        ObjectNode document = root.withObject("/document");
+        document.put("id", element(bgm, 1));
+        document.put("issueDate", qualifiedDate(segments, "137"));
+        document.put("typeCode", element(bgm, 0));
+        document.put("orderReference", reference(segments, "ON", ""));
+        String currency = optional(segments, "CUX+");
+        document.put("currency", currency.isBlank() ? "GBP" : composite(element(currency, 0), 1));
+        if (type == BusinessDocumentType.REMITTANCE_ADVICE) {
+            document.put("totalPaymentAmount", decimal(monetaryAmount(segments, "9")));
+        }
+        ObjectNode parties = root.withObject("/parties");
+        parties.put("sender", operationalPartyId(segments, type, true));
+        parties.put("receiver", operationalPartyId(segments, type, false));
+        addFlexibleEdifactLines(root, segments, type);
+        return bytes(root);
+    }
+
+    private byte[] tradacomsOperational(List<String> segments, BusinessDocumentType type) {
+        ObjectNode root = root();
+        String documentSegment = required(segments, "DOC=");
+        ObjectNode document = root.withObject("/document");
+        document.put("id", element(documentSegment, 0));
+        document.put("issueDate", date(element(documentSegment, 1)));
+        document.put("currency", "GBP");
+        if (type == BusinessDocumentType.REMITTANCE_ADVICE) {
+            document.put("totalPaymentAmount", decimal(element(required(segments, "OTR="), 3)));
+        }
+        if (type == BusinessDocumentType.ORDER_RESPONSE) {
+            String order = optional(segments, "ORD=");
+            document.put("orderReference", order.isBlank() ? element(documentSegment, 0) : element(order, 0));
+        }
+        ObjectNode parties = root.withObject("/parties");
+        parties.put("sender", tradacomsParty(segments, 1));
+        parties.put("receiver", tradacomsParty(segments, 2));
+        addFlexibleTradacomsLines(root, segments, type);
+        return bytes(root);
+    }
+
+    private void addFlexibleEdifactLines(ObjectNode root, List<String> segments, BusinessDocumentType type) {
+        ArrayNode lines = root.putArray("lines");
+        if (addEdifactRemittanceLines(lines, segments, type)) return;
+        for (int index = 0; index < segments.size(); index++) {
+            String segment = segments.get(index);
+            if (!segment.startsWith("LIN+")) continue;
+            int end = nextLineOrSummary(segments, index + 1);
+            List<String> group = segments.subList(index, end);
+            ObjectNode line = mapper.createObjectNode();
+            line.put("id", element(segment, 0));
+            line.put("gtin", composite(element(segment, 2), 0));
+            String quantity = optional(group, "QTY+");
+            if (!quantity.isBlank()) {
+                line.put("quantity", decimal(composite(element(quantity, 0), 1)));
+                line.put("unitCode", composite(element(quantity, 0), 2));
+            }
+            lines.add(line);
+        }
+    }
+
+    private boolean addEdifactRemittanceLines(ArrayNode lines, List<String> segments, BusinessDocumentType type) {
+        if (type != BusinessDocumentType.REMITTANCE_ADVICE) return false;
+        List<String> documents = segments.stream().filter(segment -> segment.startsWith("DOC+")).toList();
+        if (documents.isEmpty()) return false;
+        documents.stream().map(this::edifactRemittanceLine).forEach(lines::add);
+        return true;
+    }
+
+    private ObjectNode edifactRemittanceLine(String segment) {
+        ObjectNode line = mapper.createObjectNode();
+        line.put("id", element(segment, 1));
+        return line;
+    }
+
+    private void addFlexibleTradacomsLines(ObjectNode root, List<String> segments, BusinessDocumentType type) {
+        ArrayNode lines = root.putArray("lines");
+        segments.stream().filter(segment -> segment.startsWith("OLD=") || segment.startsWith("ILD="))
+                .map(this::tradacomsLine).forEach(lines::add);
     }
 
     private byte[] edifactOrder(List<String> segments) {
@@ -301,7 +390,7 @@ final class InboundEdiMappingInputParser {
     private ObjectNode tradacomsLine(String segment) {
         String productIds = element(segment, 2);
         String quantity = element(segment, 4);
-        BigDecimal price = decimal(element(segment, 5));
+        BigDecimal price = decimal(valueOr(element(segment, 5), "0"));
         String name = element(segment, 3);
         ObjectNode line = mapper.createObjectNode();
         line.put("id", element(segment, 0));
@@ -328,6 +417,20 @@ final class InboundEdiMappingInputParser {
 
     private String partyId(List<String> segments, String qualifier) {
         return composite(element(required(segments, "NAD+" + qualifier + "+"), 1), 0);
+    }
+
+    private String optionalPartyId(List<String> segments, String qualifier) {
+        String segment = optional(segments, "NAD+" + qualifier + "+");
+        return segment.isBlank() ? "" : composite(element(segment, 1), 0);
+    }
+
+    private String operationalPartyId(List<String> segments, BusinessDocumentType type, boolean sender) {
+        if (type != BusinessDocumentType.REMITTANCE_ADVICE) {
+            return optionalPartyId(segments, sender ? "SU" : "BY");
+        }
+        String remittanceQualifier = sender ? "PR" : "PE";
+        String value = optionalPartyId(segments, remittanceQualifier);
+        return value.isBlank() ? optionalPartyId(segments, sender ? "SU" : "BY") : value;
     }
 
     private String partyName(List<String> segments, String qualifier) {

@@ -98,6 +98,43 @@ class ExchangeServiceTest {
     }
 
     @Test
+    void badOutboundDocumentNeedsReviewWithoutBlockingTheNextExport() {
+        var partnerships = new InMemoryPartnershipRepository();
+        var capability = capability();
+        var agreement = agreement(capability);
+        partnerships.saveAgreement(agreement);
+        var attempts = new AtomicInteger();
+        var transports = new AtomicInteger();
+        var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, new DocumentProbe(),
+                (route, content) -> {
+                    if (attempts.getAndIncrement() == 0) {
+                        throw new IllegalArgumentException("Required outbound field is missing");
+                    }
+                    return new TransformationAcl.Result(
+                            "UNH+1+ORDERS:D:96A:UN'UNT+2+1'".getBytes(StandardCharsets.US_ASCII),
+                            "{\"warnings\":[]}".getBytes(StandardCharsets.UTF_8), List.of());
+                },
+                (connectionId, idempotencyKey, filename, contentType, content, exchangeId, agreementId,
+                 agreementRevision, capabilityId, sourceDocument, mappingRevisionId) -> {
+                    transports.incrementAndGet();
+                    return UUID.randomUUID();
+                }, Clock.fixed(NOW, ZoneOffset.UTC));
+        var bad = new AtomicReference<EdiExchange>();
+        var good = new AtomicReference<EdiExchange>();
+
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            bad.set(service.submitOutbound(new ExchangeService.SubmitOutbound(agreement.id(), capability.id(),
+                    UUID.randomUUID(), UUID.randomUUID(), "bad-export")));
+            good.set(service.submitOutbound(new ExchangeService.SubmitOutbound(agreement.id(), capability.id(),
+                    UUID.randomUUID(), UUID.randomUUID(), "good-export")));
+        });
+
+        assertThat(bad.get().status()).isEqualTo(ExchangeStatus.NEEDS_REVIEW);
+        assertThat(good.get().status()).isEqualTo(ExchangeStatus.AWAITING_RECEIPT);
+        assertThat(transports).hasValue(1);
+    }
+
+    @Test
     void reviewedInboundMessageCanBeCompletedWithoutChangingItsExchangeIdentity() {
         UUID partnerId = UUID.randomUUID();
         UUID transferId = UUID.randomUUID();

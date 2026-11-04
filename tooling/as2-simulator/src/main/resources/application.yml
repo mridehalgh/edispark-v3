@@ -11,6 +11,7 @@ simulator:
   keystore: ${AS2_SIMULATOR_KEYSTORE:./.local/as2-simulator/simulator.p12}
   keystore-password: ${AS2_SIMULATOR_PASSWORD}
   sender-id: ${AS2_SIMULATOR_SENDER_ID:SIMULATOR}
+  tradacoms-sender-id: ${AS2_SIMULATOR_TRADACOMS_SENDER_ID:SIMULATOR_TRADACOMS}
   sender-alias: ${AS2_SIMULATOR_SENDER_ALIAS:SIMULATOR}
   receiver-id: ${AS2_SIMULATOR_RECEIVER_ID:EDISPARK}
   receiver-certificate: ${AS2_SIMULATOR_RECEIVER_CERT:./.local/as2-simulator/edispark.cer}

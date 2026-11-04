@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debug Local Runtime"
+  short_description: "Reproduce and fix EdiSpark local runtime errors"
+  default_prompt: "Use $local-runtime-debugging to reproduce this EdiSpark local error through the running APIs, trace its cause, implement a scoped fix, and verify it end to end."

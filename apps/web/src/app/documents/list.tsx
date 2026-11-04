@@ -8,6 +8,8 @@ import { Link, useSearchParams } from "react-router-dom"
 import { LayoutBody } from "@/components/layout/layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { attentionReason } from "@/lib/attention-reason"
 import { useDocumentSets } from "@/lib/use-document-sets"
 
 type SupportedDocumentType = "ORDER" | "ORDER_RESPONSE" | "DESPATCH_ADVICE" | "INVOICE" | "REMITTANCE_ADVICE" | "RECEIPT_ADVICE"
@@ -22,6 +24,7 @@ interface BusinessDocumentSummary {
   standard?: string
   createdAt?: string
   status?: string
+  attentionReason?: string
 }
 
 const supportedDocumentTypes = new Set<SupportedDocumentType>([
@@ -97,6 +100,7 @@ export function DocumentsList() {
       if (!document.id || !supportedDocumentTypes.has(document.type as SupportedDocumentType)) return []
       const type = document.type as SupportedDocumentType
       const metadata = documentSet.metadata ?? {}
+      const exchange = exchangeByDocument.get(`${documentSet.id}:${document.id}`)
       return [{
         setId: documentSet.id!,
         documentId: document.id,
@@ -106,7 +110,8 @@ export function DocumentsList() {
         direction: metadata.direction,
         standard: metadata.standard ?? metadata.sourceStandard,
         createdAt: documentSet.createdAt,
-        status: document.lifecycleStatus === "DRAFT" ? "DRAFT" : exchangeByDocument.get(`${documentSet.id}:${document.id}`)?.status,
+        status: document.lifecycleStatus === "DRAFT" ? "DRAFT" : exchange?.status,
+        attentionReason: attentionReason(exchange ?? {}),
       }]
     })
   }), [documentSets, exchangeByDocument])
@@ -121,6 +126,7 @@ export function DocumentsList() {
       document.direction,
       document.standard,
       document.status,
+      document.attentionReason,
     ].some((value) => value?.toLowerCase().includes(normalized)))
   }, [documents, query])
 
@@ -197,7 +203,7 @@ export function DocumentsList() {
                       <td className="px-4 py-3 text-muted-foreground">
                         {document.direction ? document.direction.toLowerCase().replace(/^./, (letter) => letter.toUpperCase()) : "Not recorded"}
                       </td>
-                      <td className="px-4 py-3"><DocumentExchangeStatus status={document.status} /></td>
+                      <td className="px-4 py-3"><DocumentExchangeStatus status={document.status} reason={document.attentionReason} /></td>
                       <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{formatDate(document.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
                         <Link
@@ -228,7 +234,7 @@ export function DocumentsList() {
                     <span className="mt-1 block font-mono text-xs text-muted-foreground">{document.reference}</span>
                     <span className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                       <span>{document.direction ?? "Direction not recorded"}</span>
-                      <DocumentExchangeStatus status={document.status} />
+                      <DocumentExchangeStatus status={document.status} reason={document.attentionReason} />
                     </span>
                     <span className="mt-1 block text-xs text-muted-foreground">{formatDate(document.createdAt)}</span>
                   </span>
@@ -261,12 +267,14 @@ export function DocumentsList() {
   )
 }
 
-function DocumentExchangeStatus({ status }: { status?: string }) {
+function DocumentExchangeStatus({ status, reason }: { status?: string; reason?: string }) {
   if (!status) return <span className="text-xs text-muted-foreground">Stored</span>
   if (status === "DRAFT") return <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"><FileText className="h-3.5 w-3.5" aria-hidden="true" />Draft</span>
   const failed = status === "FAILED" || status === "NEEDS_REVIEW"
   const delivered = status === "DELIVERED"
   const Icon = failed ? CircleAlert : delivered ? CheckCircle2 : Clock3
   const label = failed ? "Needs attention" : delivered ? "Delivered" : "Sending"
-  return <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${failed ? "text-destructive" : delivered ? "text-success-foreground" : "text-muted-foreground"}`}><Icon className="h-3.5 w-3.5" aria-hidden="true" />{label}</span>
+  const indicator = <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${failed ? "text-destructive" : delivered ? "text-success-foreground" : "text-muted-foreground"}`}><Icon className="h-3.5 w-3.5" aria-hidden="true" />{label}</span>
+  if (!reason) return indicator
+  return <TooltipProvider><Tooltip><TooltipTrigger asChild><span className="inline-flex cursor-help" tabIndex={0} aria-label={`${label}: ${reason}`}>{indicator}</span></TooltipTrigger><TooltipContent className="max-w-sm leading-5">{reason}</TooltipContent></Tooltip></TooltipProvider>
 }

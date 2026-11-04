@@ -13,7 +13,9 @@ import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
+import com.edispark.partnerships.domain.model.SsccGenerationMode;
 import com.edispark.partnerships.infrastructure.InMemoryPartnershipRepository;
+import com.edispark.partnerships.infrastructure.InMemorySsccRepository;
 import io.cottn.core.tenancy.TenantContext;
 import io.cottn.core.tenancy.TenantContextHolder;
 import java.time.Clock;
@@ -114,6 +116,28 @@ class PartnershipServiceTest {
                     .isEqualTo(InboundFileFailurePolicy.KEEP_VALID_MESSAGES);
             assertThat(revisedByLegacyClient.inboundFileFailurePolicy())
                     .isEqualTo(InboundFileFailurePolicy.KEEP_VALID_MESSAGES);
+        });
+    }
+
+    @Test
+    void generatedSsccProfilesRequireAnActiveRangeBeforePublication() {
+        var ssccRepository = new InMemorySsccRepository();
+        var service = new PartnershipService(new InMemoryPartnershipRepository(), new QualificationProbe(),
+                ignored -> { }, CLOCK, ssccRepository);
+        var ssccService = new SsccService(ssccRepository, CLOCK);
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var partner = service.createPartner("Example Retailer",
+                    List.of(new BusinessIdentity("GLN", "[partner_identifier]")));
+            var profile = service.createDocumentProfile(partner.id(), "Outbound ASN", ExchangeDirection.OUTBOUND,
+                    BusinessDocumentType.DESPATCH_ADVICE, List.of(), SsccGenerationMode.AUTOMATIC, null);
+
+            assertThatThrownBy(() -> service.publishDocumentProfile(profile.id()))
+                    .hasMessageContaining("active default SSCC range");
+
+            var issuer = ssccService.createIssuer("Warehouse", "1234567", 0, 1, 100, 12, true, true);
+            ssccService.activate(issuer.id());
+            assertThat(service.publishDocumentProfile(profile.id()).ssccGenerationMode())
+                    .isEqualTo(SsccGenerationMode.AUTOMATIC);
         });
     }
 

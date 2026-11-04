@@ -65,4 +65,21 @@ class MappingRuntimeTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No code mapping for BOX");
     }
+
+    @Test
+    void explainsHowToRepairAMissingRequiredSourceValue() {
+        var node = new MappingNode(UUID.randomUUID(), MappingOperation.COPY,
+                List.of("/document/orderReference"), "/OrderResponse/0/OrderReference/0/ID/0/_", null, null);
+        var mapping = MappingRevision.draft("tenant", "Order response", UUID.randomUUID(), UUID.randomUUID(),
+                List.of(node), Instant.parse("2026-11-01T12:00:00Z"))
+                .publish("sha256", Instant.parse("2026-11-01T12:01:00Z"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new MappingRuntime(mapper).execute(mapping,
+                "{\"document\":{\"id\":\"OR-42\"}}".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("target '/OrderResponse/0/OrderReference/0/ID/0/_'")
+                .hasMessageContaining("source fields contain a value: [/document/orderReference]")
+                .hasMessageContaining("Add the missing value to the source document or update mapping node")
+                .hasMessageContaining("(COPY)");
+    }
 }

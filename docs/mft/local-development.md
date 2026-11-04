@@ -58,6 +58,10 @@ All generated material stays below `.local`, is ignored by Git, and must not con
 
 Run `pnpm dev`. The runner starts the unified EdiSpark API, AS2 partner simulator, and web application in dependency order. Open **Local tools** in the lower-right corner to sign in as the deterministic local user. `/mft` immediately shows the partners, certificates, and seven transfer scenarios. `/mft/docs` explains the production model; `http://localhost:8080/actuator/health` checks the API.
 
+Before the API starts, the runner validates the complete disposable AS2 lab manifest under `.local/as2-simulator`. A missing or partial generated manifest is regenerated as a set before Spring launches, so the MFT seeder never observes a keystore without its password or peer certificate. A complete manifest is preserved across restarts.
+
+The Java development build keeps a verified UBL generation manifest under `standards/ubl/target`. Repeated starts reuse generated sources only when the schemas, generator configuration, and every generated Java file still match that manifest. A Maven `clean`, changed input, missing output, or corrupt output restores normal UBL generation automatically. This cache is local-development-only; CI and ordinary Maven builds continue to generate through the canonical lifecycle.
+
 Once authenticated, the shared development dock provides two live exchanges:
 
 - **Receive order batch**: the simulator signs and encrypts `local-inbound-orders-batch.edi`, sends its two ORDERS messages to the MFT AS2 receiver, and captures the signed MDN.

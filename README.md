@@ -72,7 +72,7 @@ Before launching, the development runner terminates any processes listening on i
 | Simulator health | http://localhost:8082/actuator/health |
 | Embedded DynamoDB | http://localhost:8000 |
 
-The local runner creates `.local/settings.json` with a random Better Auth secret, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and reconciles a complete safe demo workspace. The demo includes matching eight-line retailer orders and supplier invoices for EDIFACT and TRADACOMS partners, three Documents examples, public/local certificates, and transfers in delivered, awaiting-MDN, retry, and needs-review states. These generated files are ignored by Git.
+The local runner creates `.local/settings.json` with a random Better Auth secret, verifies or repairs the complete disposable AS2 lab identity before starting the API, migrates `.local/auth.db`, starts persistent embedded DynamoDB, creates the Documents table, and reconciles a complete safe demo workspace. The Java development build verifies and reuses unchanged generated UBL sources, packages modules in parallel, and launches the executable API JAR directly; a clean build regenerates the UBL model normally. The demo includes matching eight-line retailer orders and supplier invoices for EDIFACT and TRADACOMS partners, three Documents examples, public/local certificates, and transfers in delivered, awaiting-MDN, retry, and needs-review states. These generated files are ignored by Git.
 
 ### Local authentication
 

@@ -24,7 +24,8 @@
     "contracts:generate": "pnpm contracts:generate:documents && pnpm contracts:generate:mft && pnpm contracts:generate:integration",
     "contracts:validate": "node --test tooling/scripts/openapi-contract-validation.test.mjs && node tooling/scripts/check-openapi-contracts.mjs",
     "contracts:check": "pnpm contracts:validate && pnpm --filter @edispark/documents-client generate && pnpm --filter @edispark/mft-client generate && pnpm --filter @edispark/integration-client generate && pnpm --filter @edispark/documents-client typecheck && pnpm --filter @edispark/mft-client typecheck && pnpm --filter @edispark/integration-client typecheck && git diff --exit-code -- contracts/documents packages/documents-client/src/generated contracts/mft packages/mft-client/src/generated contracts/integration packages/integration-client/src/generated",
-    "check": "./mvnw -B test && pnpm --filter @edispark/web test && pnpm --filter @edispark/web typecheck && pnpm --filter @edispark/web build && pnpm contracts:check"
+    "test:tooling": "node --test tooling/scripts/as2-lab.test.mjs tooling/scripts/ubl-dev-cache.test.mjs",
+    "check": "pnpm test:tooling && ./mvnw -B test && pnpm --filter @edispark/web test && pnpm --filter @edispark/web typecheck && pnpm --filter @edispark/web build && pnpm contracts:check"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.99.0",

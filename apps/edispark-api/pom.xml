@@ -30,9 +30,12 @@
     <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><version>${spring.boot.version}</version><executions><execution><goals><goal>repackage</goal></goals></execution></executions></plugin>
   </plugins></build>
   <profiles>
-    <profile><id>local-dev</id><dependencies>
-      <dependency><groupId>com.edispark</groupId><artifactId>local-runtime</artifactId><version>${project.version}</version><scope>runtime</scope></dependency>
-    </dependencies></profile>
+    <profile><id>local-dev</id>
+      <dependencies>
+        <dependency><groupId>com.edispark</groupId><artifactId>local-runtime</artifactId><version>${project.version}</version><scope>runtime</scope></dependency>
+      </dependencies>
+      <build><finalName>edispark-api-dev</finalName></build>
+    </profile>
     <profile>
       <id>openapi-export</id>
       <build><plugins>

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
+import { as2LabPaths } from "./as2-lab.mjs"
 
 const workspace = resolve(import.meta.dirname, "../..")
 const localDirectory = resolve(workspace, ".local")
@@ -10,6 +11,7 @@ const seedTenantId = "2OnHVzeAJKwm0ThFLcy1HfLHGPm"
 export async function localEnvironment() {
   await mkdir(localDirectory, { recursive: true })
   const settings = await readSettings()
+  const as2Lab = as2LabPaths()
   return {
     ...process.env,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? settings.betterAuthSecret,
@@ -32,6 +34,9 @@ export async function localEnvironment() {
     MFT_ALLOW_PRIVATE_NETWORKS: process.env.MFT_ALLOW_PRIVATE_NETWORKS ?? "true",
     MFT_PUBLIC_AS2_URL: process.env.MFT_PUBLIC_AS2_URL ?? "http://localhost:8080/as2",
     MFT_PUBLIC_AS2_MDN_URL: process.env.MFT_PUBLIC_AS2_MDN_URL ?? "http://localhost:8080/as2/mdn",
+    MFT_LOCAL_IDENTITY_PATH: process.env.MFT_LOCAL_IDENTITY_PATH ?? as2Lab.edisparkIdentity,
+    MFT_LOCAL_IDENTITY_PASSWORD_FILE: process.env.MFT_LOCAL_IDENTITY_PASSWORD_FILE ?? as2Lab.passwordFile,
+    MFT_LOCAL_PARTNER_CERTIFICATE_PATH: process.env.MFT_LOCAL_PARTNER_CERTIFICATE_PATH ?? as2Lab.simulatorCertificate,
     LOCAL_SEED_TENANT_ID: process.env.LOCAL_SEED_TENANT_ID ?? seedTenantId,
     DYNAMODB_LOCAL_DATA_DIR: process.env.DYNAMODB_LOCAL_DATA_DIR ?? resolve(localDirectory, "dynamodb"),
     DYNAMODB_LOCAL_EMBEDDED: process.env.DYNAMODB_LOCAL_EMBEDDED ?? "true",

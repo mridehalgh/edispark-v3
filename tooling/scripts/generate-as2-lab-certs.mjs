@@ -2,14 +2,16 @@ import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { as2LabDirectory, as2LabIsComplete } from "./as2-lab.mjs"
 
-const directory = resolve(".local/as2-simulator")
+const directory = as2LabDirectory
 const force = process.argv.includes("--force")
 if (existsSync(directory)) {
-  if (!force) {
+  if (!force && as2LabIsComplete(directory)) {
     console.log(`AS2 lab certificates already exist in ${directory}. Use --force to replace them.`)
     process.exit(0)
   }
+  if (!force) console.log(`AS2 lab certificate manifest is incomplete in ${directory}; regenerating it.`)
   rmSync(directory, { recursive: true })
 }
 mkdirSync(directory, { recursive: true, mode: 0o700 })
@@ -40,4 +42,4 @@ writeFileSync(resolve(directory, "password.txt"), `${password}\n`, { mode: 0o600
 console.log("\nAS2 lab ready:")
 console.log(`  EdiSpark identity: ${resolve(directory, "edispark.p12")}`)
 console.log(`  Partner certificate: ${resolve(directory, "simulator.cer")}`)
-console.log(`  PKCS#12 password: ${password}`)
+console.log(`  PKCS#12 password file: ${resolve(directory, "password.txt")}`)

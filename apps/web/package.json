@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "check:ubl-order-contract": "node scripts/check-ubl-order-contract.mjs",
     "check:ubl-invoice-contract": "node scripts/check-ubl-invoice-contract.mjs",
-    "check:ubl-contracts": "pnpm check:ubl-order-contract && pnpm check:ubl-invoice-contract"
+    "check:ubl-operational-contracts": "node scripts/check-ubl-operational-contracts.mjs",
+    "check:ubl-contracts": "pnpm check:ubl-order-contract && pnpm check:ubl-invoice-contract && pnpm check:ubl-operational-contracts"
   },
   "dependencies": {
     "@edispark/documents-client": "workspace:*",

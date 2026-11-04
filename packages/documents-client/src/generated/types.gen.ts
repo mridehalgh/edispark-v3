@@ -36,7 +36,7 @@ export type SchemaVersionResponse = {
 };
 
 export type CreateDocumentSetRequest = {
-    documentType: 'INVOICE' | 'ORDER' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
+    documentType: 'INVOICE' | 'ORDER' | 'ORDER_RESPONSE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
     schemaId: string;
     schemaVersion: string;
     content: string;
@@ -58,12 +58,12 @@ export type DocumentSetResponse = {
 
 export type DocumentSummary = {
     id?: string;
-    type?: 'INVOICE' | 'ORDER' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
+    type?: 'INVOICE' | 'ORDER' | 'ORDER_RESPONSE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
     versionCount?: number;
 };
 
 export type AddDocumentRequest = {
-    documentType: 'INVOICE' | 'ORDER' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
+    documentType: 'INVOICE' | 'ORDER' | 'ORDER_RESPONSE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
     schemaId: string;
     schemaVersion: string;
     content: string;
@@ -83,7 +83,7 @@ export type DerivativeResponse = {
 
 export type DocumentResponse = {
     id?: string;
-    type?: 'INVOICE' | 'ORDER' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
+    type?: 'INVOICE' | 'ORDER' | 'ORDER_RESPONSE' | 'CREDIT_NOTE' | 'DEBIT_NOTE' | 'QUOTATION' | 'DESPATCH_ADVICE' | 'RECEIPT_ADVICE' | 'STATEMENT' | 'REMITTANCE_ADVICE' | 'CATALOGUE' | 'APPLICATION_RESPONSE';
     schemaRef?: SchemaRefResponse;
     versionCount?: number;
     currentVersion?: DocumentVersionResponse;

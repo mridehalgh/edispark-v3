@@ -1,0 +1,17 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:ReceiptAdvice-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "ReceiptAdvice": [{
+    "UBLVersionID": [{"_": "2.1"}],
+    "ID": [{"_": "REC-2026-0042"}],
+    "IssueDate": [{"_": "2026-11-05"}],
+    "Note": [{"_": "Shipment received in full without a recorded discrepancy."}],
+    "OrderReference": [{"ID": [{"_": "PO-2026-0042"}]}],
+    "DespatchDocumentReference": [{"ID": [{"_": "DES-2026-0042"}]}],
+    "DeliveryCustomerParty": [{"Party": [{"EndpointID": [{"_": "[partner_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "DespatchSupplierParty": [{"Party": [{"EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "Shipment": [{"ID": [{"_": "SHIP-2026-0042"}]}],
+    "ReceiptLine": [{"ID": [{"_": "1"}], "ReceivedQuantity": [{"_": 48, "unitCode": "EA"}], "ShortQuantity": [{"_": 0, "unitCode": "EA"}], "Item": [{"Name": [{"_": "Spark Water 750"}], "Description": [{"_": "Sparkling mineral water, 750 ml case"}]}]}]
+  }]
+}

@@ -33,7 +33,7 @@ export type TradingPartner = {
 
 export type CapabilityRequest = {
     direction: 'INBOUND' | 'OUTBOUND';
-    documentType: 'ORDER' | 'INVOICE';
+    documentType: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
     standard: 'TRADACOMS' | 'EDIFACT';
     release: string;
     messageType: string;
@@ -43,12 +43,13 @@ export type CapabilityRequest = {
     as2ConnectionId: string;
     acknowledgementPolicy: 'TRANSPORT_ONLY' | 'FUNCTIONAL';
     batchingPolicy: 'INDIVIDUAL' | 'PRESERVE_INBOUND_BATCH' | 'GROUP_OUTBOUND';
+    outboundLossPolicy?: 'STRICT' | 'ALLOW_WITH_WARNING';
 };
 
 export type ExchangeCapability = {
     id?: string;
     direction?: 'INBOUND' | 'OUTBOUND';
-    documentType?: 'ORDER' | 'INVOICE';
+    documentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
     standard?: 'TRADACOMS' | 'EDIFACT';
     release?: string;
     messageType?: string;
@@ -58,6 +59,7 @@ export type ExchangeCapability = {
     as2ConnectionId?: string;
     acknowledgementPolicy?: 'TRANSPORT_ONLY' | 'FUNCTIONAL';
     batchingPolicy?: 'INDIVIDUAL' | 'PRESERVE_INBOUND_BATCH' | 'GROUP_OUTBOUND';
+    outboundLossPolicy?: 'STRICT' | 'ALLOW_WITH_WARNING';
 };
 
 export type QualificationReport = {
@@ -193,12 +195,21 @@ export type ExchangeResponse = {
     stages?: Array<ExchangeStage>;
     messageOrdinal?: number;
     sourceMessageReference?: string;
+    mappingReport?: DocumentReference;
+    warnings?: Array<ExchangeWarning>;
 };
 
 export type ExchangeStage = {
     status?: 'RECEIVED' | 'RESOLVING' | 'VALIDATING' | 'SPLITTING' | 'TRANSFORMING' | 'STORING' | 'QUEUING_TRANSPORT' | 'AWAITING_RECEIPT' | 'DELIVERED' | 'NEEDS_REVIEW' | 'FAILED';
     occurredAt?: string;
     detail?: string;
+};
+
+export type ExchangeWarning = {
+    code?: string;
+    sourcePath?: string;
+    disposition?: string;
+    message?: string;
 };
 
 export type Dependency = {

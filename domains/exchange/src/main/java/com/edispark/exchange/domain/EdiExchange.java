@@ -22,6 +22,8 @@ public final class EdiExchange {
     private final String sourceMessageReference;
     private DocumentReference sourceDocument;
     private DocumentReference generatedDocument;
+    private DocumentReference mappingReport;
+    private List<ExchangeWarning> warnings;
     private UUID mftTransferId;
     private ExchangeStatus status;
     private Instant updatedAt;
@@ -46,6 +48,7 @@ public final class EdiExchange {
         this.updatedAt = now;
         this.status = ExchangeStatus.RECEIVED;
         this.stages = new ArrayList<>();
+        this.warnings = List.of();
         stages.add(new ExchangeStage(status, now, "Exchange accepted"));
     }
 
@@ -92,11 +95,23 @@ public final class EdiExchange {
             DocumentReference sourceDocument, DocumentReference generatedDocument, UUID mftTransferId,
             ExchangeStatus status, Instant createdAt, Instant updatedAt, List<ExchangeStage> stages,
             int messageOrdinal, String sourceMessageReference) {
+        return restore(id, tenantId, direction, partnerId, agreementId, agreementRevision, capabilityId,
+                idempotencyKey, sourceDocument, generatedDocument, null, List.of(), mftTransferId, status,
+                createdAt, updatedAt, stages, messageOrdinal, sourceMessageReference);
+    }
+
+    public static EdiExchange restore(UUID id, String tenantId, ExchangeDirection direction, UUID partnerId,
+            UUID agreementId, int agreementRevision, UUID capabilityId, String idempotencyKey,
+            DocumentReference sourceDocument, DocumentReference generatedDocument, DocumentReference mappingReport,
+            List<ExchangeWarning> warnings, UUID mftTransferId, ExchangeStatus status, Instant createdAt,
+            Instant updatedAt, List<ExchangeStage> stages, int messageOrdinal, String sourceMessageReference) {
         EdiExchange exchange = new EdiExchange(id, tenantId, direction, partnerId, agreementId, agreementRevision,
                 capabilityId, idempotencyKey, messageOrdinal,
                 sourceMessageReference == null ? "1" : sourceMessageReference, createdAt);
         exchange.sourceDocument = sourceDocument;
         exchange.generatedDocument = generatedDocument;
+        exchange.mappingReport = mappingReport;
+        exchange.warnings = List.copyOf(warnings == null ? List.of() : warnings);
         exchange.mftTransferId = mftTransferId;
         exchange.status = Objects.requireNonNull(status);
         exchange.updatedAt = Objects.requireNonNull(updatedAt);
@@ -114,6 +129,10 @@ public final class EdiExchange {
     }
 
     public void generated(DocumentReference document) { generatedDocument = Objects.requireNonNull(document); }
+    public void mappingEvidence(DocumentReference report, List<ExchangeWarning> nextWarnings) {
+        mappingReport = Objects.requireNonNull(report);
+        warnings = List.copyOf(nextWarnings == null ? List.of() : nextWarnings);
+    }
     public void completeInbound(UUID nextAgreementId, int nextAgreementRevision, UUID nextCapabilityId,
             DocumentReference retainedSource, DocumentReference canonicalDocument, Instant now) {
         if (direction != ExchangeDirection.INBOUND || status != ExchangeStatus.NEEDS_REVIEW) {
@@ -145,6 +164,8 @@ public final class EdiExchange {
     public String idempotencyKey() { return idempotencyKey; }
     public DocumentReference sourceDocument() { return sourceDocument; }
     public DocumentReference generatedDocument() { return generatedDocument; }
+    public DocumentReference mappingReport() { return mappingReport; }
+    public List<ExchangeWarning> warnings() { return List.copyOf(warnings); }
     public UUID mftTransferId() { return mftTransferId; }
     public ExchangeStatus status() { return status; }
     public Instant createdAt() { return createdAt; }

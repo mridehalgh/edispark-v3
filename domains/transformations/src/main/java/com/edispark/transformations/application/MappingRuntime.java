@@ -3,6 +3,7 @@ package com.edispark.transformations.application;
 import com.edispark.transformations.domain.MappingNode;
 import com.edispark.transformations.domain.MappingOperation;
 import com.edispark.transformations.domain.MappingRevision;
+import com.edispark.transformations.domain.MappingWarning;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -10,6 +11,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.LinkedHashSet;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,6 +24,10 @@ public final class MappingRuntime {
     public MappingRuntime(ObjectMapper mapper) { this.mapper = mapper; }
 
     public byte[] execute(MappingRevision mapping, byte[] input) {
+        return executeDetailed(mapping, input).output();
+    }
+
+    public ExecutionResult executeDetailed(MappingRevision mapping, byte[] input) {
         if (input.length > MAX_INPUT_BYTES) throw new IllegalArgumentException("Mapping input exceeds 25 MiB");
         try {
             JsonNode source = mapper.readTree(input);
@@ -28,12 +35,58 @@ public final class MappingRuntime {
             for (MappingNode node : mapping.nodes()) write(target, node.targetPointer(), value(source, node));
             byte[] output = mapper.writeValueAsBytes(target);
             if (output.length > MAX_OUTPUT_BYTES) throw new IllegalArgumentException("Mapping output exceeds 25 MiB");
-            return output;
+            List<MappingWarning> warnings = unmappedWarnings(source, mapping);
+            ObjectNode report = mapper.createObjectNode();
+            report.put("mappingRevisionId", mapping.id().toString());
+            report.put("mappingFamilyId", mapping.familyId().toString());
+            report.put("mappingRevision", mapping.revision());
+            report.put("mappingName", mapping.name());
+            report.put("sourceSchemaId", mapping.sourceSchemaId().toString());
+            report.put("targetSchemaId", mapping.targetSchemaId().toString());
+            report.set("warnings", mapper.valueToTree(warnings));
+            return new ExecutionResult(output, mapper.writeValueAsBytes(report), warnings);
         } catch (IllegalArgumentException exception) {
             throw exception;
         } catch (Exception exception) {
             throw new IllegalArgumentException("Mapping execution failed", exception);
         }
+    }
+
+    private List<MappingWarning> unmappedWarnings(JsonNode source, MappingRevision mapping) {
+        Set<String> leaves = new LinkedHashSet<>();
+        collectLeaves(source, "", leaves);
+        List<String> mapped = mapping.nodes().stream().flatMap(node -> node.sourcePointers().stream()).toList();
+        return leaves.stream()
+                .filter(path -> !path.equals("/_D") && !path.equals("/_A") && !path.equals("/_B"))
+                .filter(path -> mapped.stream().noneMatch(pointer -> path.equals(pointer) || path.startsWith(pointer + "/")))
+                .map(path -> new MappingWarning("SOURCE_FIELD_UNMAPPED", path, "SOURCE_ONLY",
+                        "The populated source field has no mapping in this revision."))
+                .toList();
+    }
+
+    private void collectLeaves(JsonNode value, String path, Set<String> output) {
+        if (value == null || value.isNull() || value.isMissingNode()) return;
+        if (value.isValueNode()) {
+            if (!value.isTextual() || !value.asText().isBlank()) output.add(path.isEmpty() ? "/" : path);
+            return;
+        }
+        if (value.isArray()) {
+            for (int index = 0; index < value.size(); index++) collectLeaves(value.get(index), path + "/" + index, output);
+            return;
+        }
+        value.fields().forEachRemaining(entry -> collectLeaves(entry.getValue(), path + "/" + escape(entry.getKey()), output));
+    }
+
+    private String escape(String value) { return value.replace("~", "~0").replace("/", "~1"); }
+
+    public record ExecutionResult(byte[] output, byte[] report, List<MappingWarning> warnings) {
+        public ExecutionResult {
+            output = output.clone();
+            report = report.clone();
+            warnings = List.copyOf(warnings);
+        }
+        @Override public byte[] output() { return output.clone(); }
+        @Override public byte[] report() { return report.clone(); }
     }
 
     private JsonNode value(JsonNode source, MappingNode node) {

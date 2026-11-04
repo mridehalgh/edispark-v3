@@ -4,6 +4,7 @@ import com.edispark.partnerships.application.PartnershipService;
 import com.edispark.partnerships.domain.model.AcknowledgementPolicy;
 import com.edispark.partnerships.domain.model.BatchingPolicy;
 import com.edispark.partnerships.domain.model.BusinessDocumentType;
+import com.edispark.partnerships.domain.model.OutboundLossPolicy;
 import com.edispark.partnerships.domain.model.BusinessIdentity;
 import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
@@ -143,11 +144,12 @@ public final class PartnershipController {
             @NotNull EdiStandard standard, @NotBlank String release, @NotBlank String messageType,
             @NotNull UUID sourceSchemaId, @NotNull UUID targetSchemaId, @NotNull UUID mappingRevisionId,
             @NotNull UUID as2ConnectionId, @NotNull AcknowledgementPolicy acknowledgementPolicy,
-            @NotNull BatchingPolicy batchingPolicy) {
+            @NotNull BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy) {
         ExchangeCapability toDomain() { return toDomain(UUID.randomUUID()); }
         ExchangeCapability toDomain(UUID id) {
             return new ExchangeCapability(id, direction, documentType, standard, release, messageType,
-                    sourceSchemaId, targetSchemaId, mappingRevisionId, as2ConnectionId, acknowledgementPolicy, batchingPolicy);
+                    sourceSchemaId, targetSchemaId, mappingRevisionId, as2ConnectionId, acknowledgementPolicy,
+                    batchingPolicy, outboundLossPolicy);
         }
     }
     public record ActivationRequest(java.time.Instant effectiveAt) { }

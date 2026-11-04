@@ -8,6 +8,10 @@ import oasis.names.specification.ubl.schema.xsd.maindoc.Order;
 import oasis.names.specification.ubl.schema.xsd.maindoc.UBLCreditNote21;
 import oasis.names.specification.ubl.schema.xsd.maindoc.UBLInvoice21;
 import oasis.names.specification.ubl.schema.xsd.maindoc.UBLOrder21;
+import oasis.names.specification.ubl.schema.xsd.maindoc.UBLOrderResponse21;
+import oasis.names.specification.ubl.schema.xsd.maindoc.UBLDespatchAdvice21;
+import oasis.names.specification.ubl.schema.xsd.maindoc.UBLRemittanceAdvice21;
+import oasis.names.specification.ubl.schema.xsd.maindoc.UBLReceiptAdvice21;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -75,6 +79,43 @@ class UblSeedDocumentTest {
                 .hasSize(1);
         assertThat(creditNote.getLegalMonetaryTotal().getFirst().getPayableAmount().getFirst().get__())
                 .isEqualByComparingTo(new BigDecimal("90"));
+    }
+
+    @Test
+    @DisplayName("order response is valid for the generated UBL 2.1 model")
+    void parsesOrderResponseWithUblModel() throws IOException {
+        var response = read("ubl-order-response-2026-0042.json", UBLOrderResponse21.class)
+                .getOrderResponse().getFirst();
+        assertThat(response.getId().getFirst().get__()).isEqualTo("OR-2026-0042");
+        assertThat(response.getOrderReference().getFirst().getId().getFirst().get__()).isEqualTo("PO-2026-0042");
+        assertThat(response.getOrderLine()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("despatch advice is valid for the generated UBL 2.1 model")
+    void parsesDespatchAdviceWithUblModel() throws IOException {
+        var advice = read("ubl-despatch-advice-2026-0042.json", UBLDespatchAdvice21.class)
+                .getDespatchAdvice().getFirst();
+        assertThat(advice.getId().getFirst().get__()).isEqualTo("DES-2026-0042");
+        assertThat(advice.getDespatchLine()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("remittance advice is valid for the generated UBL 2.1 model")
+    void parsesRemittanceAdviceWithUblModel() throws IOException {
+        var advice = read("ubl-remittance-advice-2026-0042.json", UBLRemittanceAdvice21.class)
+                .getRemittanceAdvice().getFirst();
+        assertThat(advice.getId().getFirst().get__()).isEqualTo("REM-2026-0042");
+        assertThat(advice.getRemittanceAdviceLine()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("receipt advice is valid for the generated UBL 2.1 model")
+    void parsesReceiptAdviceWithUblModel() throws IOException {
+        var advice = read("ubl-receipt-advice-2026-0042.json", UBLReceiptAdvice21.class)
+                .getReceiptAdvice().getFirst();
+        assertThat(advice.getId().getFirst().get__()).isEqualTo("REC-2026-0042");
+        assertThat(advice.getReceiptLine()).hasSize(1);
     }
 
     private <T> T read(String resourceName, Class<T> type) throws IOException {

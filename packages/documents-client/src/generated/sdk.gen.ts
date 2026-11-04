@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 class HeyApiClient {
     protected client: Client;
-
+    
     constructor(args?: {
         client?: Client;
     }) {
@@ -33,9 +33,9 @@ class HeyApiClient {
 
 class HeyApiRegistry<T> {
     private readonly defaultKey = 'default';
-
+    
     private readonly instances: Map<string, T> = new Map();
-
+    
     get(key?: string): T {
         const instance = this.instances.get(key ?? this.defaultKey);
         if (!instance) {
@@ -43,7 +43,7 @@ class HeyApiRegistry<T> {
         }
         return instance;
     }
-
+    
     set(value: T, key?: string): void {
         this.instances.set(key ?? this.defaultKey, value);
     }
@@ -51,7 +51,7 @@ class HeyApiRegistry<T> {
 
 export class DocumentsClient extends HeyApiClient {
     public static readonly __registry: HeyApiRegistry<DocumentsClient> = new HeyApiRegistry<DocumentsClient>();
-
+    
     constructor(args?: {
         client?: Client;
         key?: string;
@@ -59,7 +59,7 @@ export class DocumentsClient extends HeyApiClient {
         super(args);
         DocumentsClient.__registry.set(this, args?.key);
     }
-
+    
     /**
      * Create a new schema
      *
@@ -82,7 +82,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-
+    
     /**
      * Add a schema version
      *
@@ -234,7 +234,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-
+    
     /**
      * Get all derivatives
      *

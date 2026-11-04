@@ -1,0 +1,16 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:RemittanceAdvice-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "RemittanceAdvice": [{
+    "UBLVersionID": [{"_": "2.1"}],
+    "ID": [{"_": "REM-2026-0042"}],
+    "IssueDate": [{"_": "2026-12-01"}],
+    "Note": [{"_": "Payment allocation for the referenced supplier invoice."}],
+    "AccountingCustomerParty": [{"Party": [{"EndpointID": [{"_": "[partner_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "AccountingSupplierParty": [{"Party": [{"EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "PayeeParty": [{"EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}],
+    "TotalPaymentAmount": [{"_": 2575.58, "currencyID": "GBP"}],
+    "RemittanceAdviceLine": [{"ID": [{"_": "1"}], "CreditLineAmount": [{"_": 2575.58, "currencyID": "GBP"}], "BalanceAmount": [{"_": 0, "currencyID": "GBP"}], "BillingReference": [{"InvoiceDocumentReference": [{"ID": [{"_": "INV-100045"}], "IssueDate": [{"_": "2026-11-01"}]}]}]}]
+  }]
+}

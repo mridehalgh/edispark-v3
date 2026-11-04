@@ -6,6 +6,7 @@ package com.edispark.documents.domain.model;
 public enum DocumentType {
     INVOICE,
     ORDER,
+    ORDER_RESPONSE,
     CREDIT_NOTE,
     DEBIT_NOTE,
     QUOTATION,

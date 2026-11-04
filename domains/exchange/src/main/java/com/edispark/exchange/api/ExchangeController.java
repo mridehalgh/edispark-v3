@@ -5,6 +5,7 @@ import com.edispark.exchange.domain.DocumentReference;
 import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeStage;
 import com.edispark.exchange.domain.ExchangeStatus;
+import com.edispark.exchange.domain.ExchangeWarning;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -57,12 +58,14 @@ public final class ExchangeController {
     public record ExchangeResponse(UUID id, ExchangeDirection direction, UUID partnerId, UUID agreementId,
             int agreementRevision, UUID capabilityId, ExchangeStatus status, DocumentReference sourceDocument,
             DocumentReference generatedDocument, UUID mftTransferId, Instant createdAt, Instant updatedAt,
-            List<ExchangeStage> stages, int messageOrdinal, String sourceMessageReference) {
+            List<ExchangeStage> stages, int messageOrdinal, String sourceMessageReference,
+            DocumentReference mappingReport, List<ExchangeWarning> warnings) {
         static ExchangeResponse from(EdiExchange exchange) {
             return new ExchangeResponse(exchange.id(), exchange.direction(), exchange.partnerId(), exchange.agreementId(),
                     exchange.agreementRevision(), exchange.capabilityId(), exchange.status(), exchange.sourceDocument(),
                     exchange.generatedDocument(), exchange.mftTransferId(), exchange.createdAt(), exchange.updatedAt(),
-                    exchange.stages(), exchange.messageOrdinal(), exchange.sourceMessageReference());
+                    exchange.stages(), exchange.messageOrdinal(), exchange.sourceMessageReference(),
+                    exchange.mappingReport(), exchange.warnings());
         }
     }
 }

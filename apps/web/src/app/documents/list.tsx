@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDocumentSets } from "@/lib/use-document-sets"
 
-type SupportedDocumentType = "ORDER" | "INVOICE"
+type SupportedDocumentType = "ORDER" | "ORDER_RESPONSE" | "DESPATCH_ADVICE" | "INVOICE" | "REMITTANCE_ADVICE" | "RECEIPT_ADVICE"
 
 interface BusinessDocumentSummary {
   setId: string
@@ -24,10 +24,24 @@ interface BusinessDocumentSummary {
   status?: string
 }
 
-const supportedDocumentTypes = new Set<SupportedDocumentType>(["ORDER", "INVOICE"])
+const supportedDocumentTypes = new Set<SupportedDocumentType>([
+  "ORDER",
+  "ORDER_RESPONSE",
+  "DESPATCH_ADVICE",
+  "INVOICE",
+  "REMITTANCE_ADVICE",
+  "RECEIPT_ADVICE",
+])
 
 function documentLabel(type: SupportedDocumentType) {
-  return type === "INVOICE" ? "Invoice" : "Order"
+  return {
+    ORDER: "Order",
+    ORDER_RESPONSE: "Order response",
+    DESPATCH_ADVICE: "Advance shipping notice",
+    INVOICE: "Invoice",
+    REMITTANCE_ADVICE: "Remittance advice",
+    RECEIPT_ADVICE: "Receipt advice",
+  }[type]
 }
 
 function documentHref(document: BusinessDocumentSummary) {
@@ -229,7 +243,7 @@ export function DocumentsList() {
             <FileText className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
             <p className="mt-3 text-sm font-medium">No documents found</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {documents.length === 0 ? "Readable orders and invoices appear here when transferred files are converted into business records." : "Try a different search term."}
+              {documents.length === 0 ? "Readable business documents appear here when transferred files are converted into UBL records." : "Try a different search term."}
             </p>
           </div>
         )}

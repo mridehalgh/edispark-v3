@@ -1,6 +1,7 @@
 package com.edispark.integrationapplication.acl;
 
 import com.edispark.exchange.application.TransformationAcl;
+import com.edispark.exchange.domain.ExchangeWarning;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.transformations.application.MappingRuntime;
 import com.edispark.transformations.application.MappingService;
@@ -16,11 +17,15 @@ public final class LocalTransformationAcl implements TransformationAcl {
     public LocalTransformationAcl(MappingService mappings, MappingRuntime runtime, EdiPayloadWriter edi) {
         this.mappings = mappings; this.runtime = runtime; this.edi = edi;
     }
-    @Override public byte[] executePublished(ExchangeCapability capability, byte[] canonicalContent) {
+    @Override public Result executePublished(ExchangeCapability capability, byte[] canonicalContent) {
         var mapping = mappings.get(capability.mappingRevisionId());
         if (mapping.status() != MappingStatus.PUBLISHED) {
             throw new IllegalArgumentException("Published mapping was not found");
         }
-        return edi.write(capability, runtime.execute(mapping, canonicalContent));
+        var result = runtime.executeDetailed(mapping, canonicalContent);
+        return new Result(edi.write(capability, result.output()), result.report(), result.warnings().stream()
+                .map(warning -> new ExchangeWarning(warning.code(), warning.sourcePath(), warning.disposition(),
+                        warning.message()))
+                .toList());
     }
 }

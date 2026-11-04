@@ -38,7 +38,14 @@ export const zTradingPartner = z.object({
 
 export const zCapabilityRequest = z.object({
     direction: z.enum(['INBOUND', 'OUTBOUND']),
-    documentType: z.enum(['ORDER', 'INVOICE']),
+    documentType: z.enum([
+        'ORDER',
+        'ORDER_RESPONSE',
+        'DESPATCH_ADVICE',
+        'INVOICE',
+        'REMITTANCE_ADVICE',
+        'RECEIPT_ADVICE'
+    ]),
     standard: z.enum(['TRADACOMS', 'EDIFACT']),
     release: z.string().min(1),
     messageType: z.string().min(1),
@@ -51,13 +58,21 @@ export const zCapabilityRequest = z.object({
         'INDIVIDUAL',
         'PRESERVE_INBOUND_BATCH',
         'GROUP_OUTBOUND'
-    ])
+    ]),
+    outboundLossPolicy: z.enum(['STRICT', 'ALLOW_WITH_WARNING']).optional()
 });
 
 export const zExchangeCapability = z.object({
     id: z.uuid().optional(),
     direction: z.enum(['INBOUND', 'OUTBOUND']).optional(),
-    documentType: z.enum(['ORDER', 'INVOICE']).optional(),
+    documentType: z.enum([
+        'ORDER',
+        'ORDER_RESPONSE',
+        'DESPATCH_ADVICE',
+        'INVOICE',
+        'REMITTANCE_ADVICE',
+        'RECEIPT_ADVICE'
+    ]).optional(),
     standard: z.enum(['TRADACOMS', 'EDIFACT']).optional(),
     release: z.string().optional(),
     messageType: z.string().optional(),
@@ -70,7 +85,8 @@ export const zExchangeCapability = z.object({
         'INDIVIDUAL',
         'PRESERVE_INBOUND_BATCH',
         'GROUP_OUTBOUND'
-    ]).optional()
+    ]).optional(),
+    outboundLossPolicy: z.enum(['STRICT', 'ALLOW_WITH_WARNING']).optional()
 });
 
 export const zQualificationReport = z.object({
@@ -230,6 +246,13 @@ export const zExchangeStage = z.object({
     detail: z.string().optional()
 });
 
+export const zExchangeWarning = z.object({
+    code: z.string().optional(),
+    sourcePath: z.string().optional(),
+    disposition: z.string().optional(),
+    message: z.string().optional()
+});
+
 export const zExchangeResponse = z.object({
     id: z.uuid().optional(),
     direction: z.enum(['INBOUND', 'OUTBOUND']).optional(),
@@ -257,7 +280,9 @@ export const zExchangeResponse = z.object({
     updatedAt: z.iso.datetime().optional(),
     stages: z.array(zExchangeStage).optional(),
     messageOrdinal: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
-    sourceMessageReference: z.string().optional()
+    sourceMessageReference: z.string().optional(),
+    mappingReport: zDocumentReference.optional(),
+    warnings: z.array(zExchangeWarning).optional()
 });
 
 export const zDependency = z.object({

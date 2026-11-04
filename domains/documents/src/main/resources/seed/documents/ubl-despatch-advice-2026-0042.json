@@ -1,0 +1,17 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "DespatchAdvice": [{
+    "UBLVersionID": [{"_": "2.1"}],
+    "ID": [{"_": "DES-2026-0042"}],
+    "IssueDate": [{"_": "2026-11-04"}],
+    "DocumentStatusCode": [{"_": "DESPATCHED"}],
+    "Note": [{"_": "Advance notice for the confirmed order shipment."}],
+    "OrderReference": [{"ID": [{"_": "PO-2026-0042"}]}],
+    "DespatchSupplierParty": [{"Party": [{"EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "DeliveryCustomerParty": [{"Party": [{"EndpointID": [{"_": "[partner_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "Shipment": [{"ID": [{"_": "SHIP-2026-0042"}], "GrossWeightMeasure": [{"_": 42.5, "unitCode": "KGM"}]}],
+    "DespatchLine": [{"ID": [{"_": "1"}], "DeliveredQuantity": [{"_": 48, "unitCode": "EA"}], "OrderLineReference": [{"LineID": [{"_": "1"}], "OrderReference": [{"ID": [{"_": "PO-2026-0042"}]}]}], "Item": [{"Name": [{"_": "Spark Water 750"}], "Description": [{"_": "Sparkling mineral water, 750 ml case"}]}]}]
+  }]
+}

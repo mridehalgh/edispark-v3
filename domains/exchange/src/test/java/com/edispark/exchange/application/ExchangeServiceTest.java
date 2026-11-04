@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.edispark.exchange.domain.DocumentReference;
 import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeStatus;
+import com.edispark.exchange.domain.ExchangeWarning;
 import com.edispark.exchange.infrastructure.InMemoryExchangeRepository;
 import com.edispark.identifiers.tenant.TenantId;
 import com.edispark.partnerships.domain.model.AcknowledgementPolicy;
@@ -15,6 +16,7 @@ import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.QualificationReport;
+import com.edispark.partnerships.domain.model.OutboundLossPolicy;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.infrastructure.InMemoryPartnershipRepository;
 import io.cottn.core.tenancy.TenantContext;
@@ -26,6 +28,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class ExchangeServiceTest {
@@ -41,7 +44,9 @@ class ExchangeServiceTest {
         var transports = new AtomicInteger();
         var documents = new DocumentProbe();
         var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, documents,
-                (route, content) -> "UNH+1+ORDERS:D:96A:UN'UNT+2+1'".getBytes(StandardCharsets.US_ASCII),
+                (route, content) -> new TransformationAcl.Result(
+                        "UNH+1+ORDERS:D:96A:UN'UNT+2+1'".getBytes(StandardCharsets.US_ASCII),
+                        "{\"warnings\":[]}".getBytes(StandardCharsets.UTF_8), List.of()),
                 (connectionId, idempotencyKey, filename, contentType, content, exchangeId, agreementId,
                  agreementRevision, capabilityId, sourceDocument, mappingRevisionId) -> {
                     transports.incrementAndGet();
@@ -61,8 +66,35 @@ class ExchangeServiceTest {
             assertThat(first.generatedDocument()).isNotNull();
             assertThat(first.mftTransferId()).isNotNull();
             assertThat(transports).hasValue(1);
-            assertThat(documents.retained).hasValue(1);
+            assertThat(documents.retained).hasValue(2);
         });
+    }
+
+    @Test
+    void strictPolicyRetainsMappingEvidenceAndStopsBeforeTransportWhenSourceFieldsAreUnmapped() {
+        var warning = new ExchangeWarning("SOURCE_FIELD_UNMAPPED", "/Order/0/Note/0/_", "SOURCE_ONLY",
+                "A populated source field was not represented by the published mapping");
+        var result = submitWithWarning(OutboundLossPolicy.STRICT, warning);
+
+        assertThat(result.exchange().status()).isEqualTo(ExchangeStatus.NEEDS_REVIEW);
+        assertThat(result.exchange().generatedDocument()).isNotNull();
+        assertThat(result.exchange().mappingReport()).isNotNull();
+        assertThat(result.exchange().warnings()).containsExactly(warning);
+        assertThat(result.transports()).hasValue(0);
+        assertThat(result.documents().retained).hasValue(2);
+    }
+
+    @Test
+    void allowWithWarningPolicyQueuesTransportAndRetainsTheWarningEvidence() {
+        var warning = new ExchangeWarning("SOURCE_FIELD_UNMAPPED", "/Invoice/0/Note/0/_", "SOURCE_ONLY",
+                "A populated source field was not represented by the published mapping");
+        var result = submitWithWarning(OutboundLossPolicy.ALLOW_WITH_WARNING, warning);
+
+        assertThat(result.exchange().status()).isEqualTo(ExchangeStatus.AWAITING_RECEIPT);
+        assertThat(result.exchange().mappingReport()).isNotNull();
+        assertThat(result.exchange().warnings()).containsExactly(warning);
+        assertThat(result.transports()).hasValue(1);
+        assertThat(result.documents().retained).hasValue(2);
     }
 
     @Test
@@ -87,9 +119,38 @@ class ExchangeServiceTest {
     }
 
     private ExchangeCapability capability() {
+        return capability(OutboundLossPolicy.STRICT);
+    }
+
+    private ExchangeCapability capability(OutboundLossPolicy lossPolicy) {
         return new ExchangeCapability(UUID.randomUUID(), ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER,
                 EdiStandard.EDIFACT, "D96A", "ORDERS", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                UUID.randomUUID(), AcknowledgementPolicy.TRANSPORT_ONLY, BatchingPolicy.INDIVIDUAL);
+                UUID.randomUUID(), AcknowledgementPolicy.TRANSPORT_ONLY, BatchingPolicy.INDIVIDUAL, lossPolicy);
+    }
+
+    private WarningSubmission submitWithWarning(OutboundLossPolicy policy, ExchangeWarning warning) {
+        var partnerships = new InMemoryPartnershipRepository();
+        var capability = capability(policy);
+        partnerships.saveAgreement(agreement(capability));
+        var transports = new AtomicInteger();
+        var documents = new DocumentProbe();
+        var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, documents,
+                (route, content) -> new TransformationAcl.Result(
+                        "UNH+1+ORDERS:D:96A:UN'UNT+2+1'".getBytes(StandardCharsets.US_ASCII),
+                        "{\"warnings\":[{\"code\":\"SOURCE_FIELD_UNMAPPED\"}]}".getBytes(StandardCharsets.UTF_8),
+                        List.of(warning)),
+                (connectionId, idempotencyKey, filename, contentType, content, exchangeId, agreementId,
+                 agreementRevision, capabilityId, sourceDocument, mappingRevisionId) -> {
+                    transports.incrementAndGet();
+                    return UUID.randomUUID();
+                }, Clock.fixed(NOW, ZoneOffset.UTC));
+        var command = new ExchangeService.SubmitOutbound(
+                partnerships.listAgreements(TENANT).getFirst().id(), capability.id(), UUID.randomUUID(),
+                UUID.randomUUID(), "warning-" + policy);
+        var exchange = new AtomicReference<EdiExchange>();
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)),
+                () -> exchange.set(service.submitOutbound(command)));
+        return new WarningSubmission(exchange.get(), transports, documents);
     }
 
     private TradingAgreement agreement(ExchangeCapability capability) {
@@ -114,4 +175,6 @@ class ExchangeServiceTest {
             return new DocumentReference(source.documentSetId(), source.documentId(), UUID.randomUUID(), "edi-hash");
         }
     }
+
+    private record WarningSubmission(EdiExchange exchange, AtomicInteger transports, DocumentProbe documents) { }
 }

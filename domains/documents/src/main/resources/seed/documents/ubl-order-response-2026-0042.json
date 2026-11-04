@@ -1,0 +1,16 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:OrderResponse-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "OrderResponse": [{
+    "UBLVersionID": [{"_": "2.1"}],
+    "ID": [{"_": "OR-2026-0042"}],
+    "IssueDate": [{"_": "2026-11-02"}],
+    "Note": [{"_": "Order accepted with the confirmed delivery date."}],
+    "DocumentCurrencyCode": [{"_": "GBP"}],
+    "OrderReference": [{"ID": [{"_": "PO-2026-0042"}]}],
+    "SellerSupplierParty": [{"Party": [{"EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "BuyerCustomerParty": [{"Party": [{"EndpointID": [{"_": "[partner_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
+    "OrderLine": [{"LineItem": [{"ID": [{"_": "1"}], "LineStatusCode": [{"_": "ACCEPTED"}], "Quantity": [{"_": 48, "unitCode": "EA"}], "Item": [{"Name": [{"_": "Spark Water 750"}], "Description": [{"_": "Sparkling mineral water, 750 ml case"}]}]}]}]
+  }]
+}

@@ -45,6 +45,7 @@ export const zCreateDocumentSetRequest = z.object({
     documentType: z.enum([
         'INVOICE',
         'ORDER',
+        'ORDER_RESPONSE',
         'CREDIT_NOTE',
         'DEBIT_NOTE',
         'QUOTATION',
@@ -67,6 +68,7 @@ export const zDocumentSummary = z.object({
     type: z.enum([
         'INVOICE',
         'ORDER',
+        'ORDER_RESPONSE',
         'CREDIT_NOTE',
         'DEBIT_NOTE',
         'QUOTATION',
@@ -92,6 +94,7 @@ export const zAddDocumentRequest = z.object({
     documentType: z.enum([
         'INVOICE',
         'ORDER',
+        'ORDER_RESPONSE',
         'CREDIT_NOTE',
         'DEBIT_NOTE',
         'QUOTATION',
@@ -151,6 +154,7 @@ export const zDocumentResponse = z.object({
     type: z.enum([
         'INVOICE',
         'ORDER',
+        'ORDER_RESPONSE',
         'CREDIT_NOTE',
         'DEBIT_NOTE',
         'QUOTATION',

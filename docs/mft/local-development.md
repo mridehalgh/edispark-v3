@@ -22,7 +22,7 @@ Local startup reconciles these stable examples:
 
 | Area | Fixtures |
 |---|---|
-| Documents | Inbound eight-line TRADACOMS Order `PO-2026-0042` with a UBL derivative, outbound matching UBL Invoice `INV-100045`, outbound UBL Credit Note `CN-1007` |
+| Documents | Six-document workflow: inbound Order `PO-2026-0042`; outbound Order Response `OR-2026-0042`, Despatch Advice `DES-2026-0042`, and Invoice `INV-100045`; inbound Remittance Advice `REM-2026-0042` and Receipt Advice `REC-2026-0042`. Outbound Credit Note `CN-1007` remains as a follow-up. |
 | MFT partners | EDIFACT retailer `Northstar Retail` (`SIMULATOR`) and TRADACOMS retailer `Harbour Retail` (`SIMULATOR_TRADACOMS`), local AS2 ID `EDISPARK` |
 | Certificates | One disposable local PKCS#12 identity and the simulator's public X.509 certificate |
 | Retailer onboarding | Copyable `EDISPARK` connection details and a downloadable public-only PEM certificate for each retailer connection |

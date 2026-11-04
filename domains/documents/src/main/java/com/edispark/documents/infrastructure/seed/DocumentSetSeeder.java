@@ -52,12 +52,16 @@ import java.util.Set;
 public class DocumentSetSeeder {
 
     private static final String CREATED_BY = "local-seeder";
-    private static final String FIXTURE_VERSION = "supplier-order-invoice-v3";
+    private static final String FIXTURE_VERSION = "six-document-workflow-v4";
     private static final String RESOURCE_ROOT = "/seed/documents/";
     private static final VersionIdentifier INITIAL_VERSION = VersionIdentifier.of("2.1");
     private static final List<DocumentType> SEEDED_TYPES = List.of(
             DocumentType.ORDER,
+            DocumentType.ORDER_RESPONSE,
+            DocumentType.DESPATCH_ADVICE,
             DocumentType.INVOICE,
+            DocumentType.REMITTANCE_ADVICE,
+            DocumentType.RECEIPT_ADVICE,
             DocumentType.CREDIT_NOTE);
 
     private final DocumentSetCommandHandler documentSetCommandHandler;
@@ -151,6 +155,26 @@ public class DocumentSetSeeder {
                     "INV-100045",
                     "OUTBOUND");
         }
+        if (missingTypes.contains(DocumentType.ORDER_RESPONSE)) {
+            createUblDocumentSet(DocumentType.ORDER_RESPONSE, "ubl-order-response-2026-0042.json",
+                    "Order response OR-2026-0042", "Accepted response to order PO-2026-0042",
+                    "OR-2026-0042", "OUTBOUND");
+        }
+        if (missingTypes.contains(DocumentType.DESPATCH_ADVICE)) {
+            createUblDocumentSet(DocumentType.DESPATCH_ADVICE, "ubl-despatch-advice-2026-0042.json",
+                    "Advance shipping notice DES-2026-0042", "Shipment notice for order PO-2026-0042",
+                    "DES-2026-0042", "OUTBOUND");
+        }
+        if (missingTypes.contains(DocumentType.REMITTANCE_ADVICE)) {
+            createUblDocumentSet(DocumentType.REMITTANCE_ADVICE, "ubl-remittance-advice-2026-0042.json",
+                    "Remittance advice REM-2026-0042", "Payment allocation for invoice INV-100045",
+                    "REM-2026-0042", "INBOUND");
+        }
+        if (missingTypes.contains(DocumentType.RECEIPT_ADVICE)) {
+            createUblDocumentSet(DocumentType.RECEIPT_ADVICE, "ubl-receipt-advice-2026-0042.json",
+                    "Receipt advice REC-2026-0042", "Receipt confirmation for despatch DES-2026-0042",
+                    "REC-2026-0042", "INBOUND");
+        }
         if (missingTypes.contains(DocumentType.CREDIT_NOTE)) {
             createUblDocumentSet(
                     DocumentType.CREDIT_NOTE,
@@ -167,7 +191,11 @@ public class DocumentSetSeeder {
     private String businessDocumentNumber(DocumentType type) {
         return switch (type) {
             case ORDER -> "PO-2026-0042";
+            case ORDER_RESPONSE -> "OR-2026-0042";
+            case DESPATCH_ADVICE -> "DES-2026-0042";
             case INVOICE -> "INV-100045";
+            case REMITTANCE_ADVICE -> "REM-2026-0042";
+            case RECEIPT_ADVICE -> "REC-2026-0042";
             case CREDIT_NOTE -> "CN-1007";
             default -> throw new IllegalArgumentException("No demo document number for " + type);
         };
@@ -247,10 +275,14 @@ public class DocumentSetSeeder {
         String rootName = ublRootName(type);
         String requiredFields = switch (type) {
             case ORDER -> "\"ID\", \"IssueDate\", \"BuyerCustomerParty\", \"SellerSupplierParty\", \"OrderLine\"";
+            case ORDER_RESPONSE -> "\"ID\", \"IssueDate\", \"OrderReference\", \"SellerSupplierParty\", \"BuyerCustomerParty\"";
+            case DESPATCH_ADVICE -> "\"ID\", \"IssueDate\", \"DespatchSupplierParty\", \"DeliveryCustomerParty\", \"DespatchLine\"";
             case INVOICE -> "\"ID\", \"IssueDate\", \"AccountingSupplierParty\", "
                     + "\"AccountingCustomerParty\", \"LegalMonetaryTotal\", \"InvoiceLine\"";
             case CREDIT_NOTE -> "\"ID\", \"IssueDate\", \"AccountingSupplierParty\", "
                     + "\"AccountingCustomerParty\", \"LegalMonetaryTotal\", \"CreditNoteLine\"";
+            case REMITTANCE_ADVICE -> "\"ID\", \"IssueDate\", \"AccountingCustomerParty\", \"AccountingSupplierParty\", \"RemittanceAdviceLine\"";
+            case RECEIPT_ADVICE -> "\"ID\", \"IssueDate\", \"DeliveryCustomerParty\", \"DespatchSupplierParty\", \"ReceiptLine\"";
             default -> throw new IllegalArgumentException("No UBL seed schema for " + type);
         };
 
@@ -283,7 +315,11 @@ public class DocumentSetSeeder {
     private String ublRootName(DocumentType type) {
         return switch (type) {
             case ORDER -> "Order";
+            case ORDER_RESPONSE -> "OrderResponse";
+            case DESPATCH_ADVICE -> "DespatchAdvice";
             case INVOICE -> "Invoice";
+            case REMITTANCE_ADVICE -> "RemittanceAdvice";
+            case RECEIPT_ADVICE -> "ReceiptAdvice";
             case CREDIT_NOTE -> "CreditNote";
             default -> throw new IllegalArgumentException("No UBL root for " + type);
         };

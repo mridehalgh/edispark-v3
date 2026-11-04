@@ -55,17 +55,22 @@ class DocumentSetSeederTest {
     }
 
     @Test
-    @DisplayName("creates three focused sets instead of placeholder data")
+    @DisplayName("creates the complete six-document workflow and credit-note follow-up")
     void createsSmallRealisticCatalogue() {
         seeder.seedTenantData();
 
-        assertThat(documentSets.findAll()).hasSize(3);
-        assertThat(schemas.findAll()).hasSize(3);
+        assertThat(documentSets.findAll()).hasSize(7);
+        assertThat(schemas.findAll()).hasSize(7);
         assertThat(documentSets.findAll())
                 .extracting(set -> set.metadata().get("businessDocumentNumber"))
-                .containsExactlyInAnyOrder("PO-2026-0042", "INV-100045", "CN-1007");
+                .containsExactlyInAnyOrder("PO-2026-0042", "OR-2026-0042", "DES-2026-0042",
+                        "INV-100045", "REM-2026-0042", "REC-2026-0042", "CN-1007");
         assertThat(directionOf("PO-2026-0042")).isEqualTo("INBOUND");
+        assertThat(directionOf("OR-2026-0042")).isEqualTo("OUTBOUND");
+        assertThat(directionOf("DES-2026-0042")).isEqualTo("OUTBOUND");
         assertThat(directionOf("INV-100045")).isEqualTo("OUTBOUND");
+        assertThat(directionOf("REM-2026-0042")).isEqualTo("INBOUND");
+        assertThat(directionOf("REC-2026-0042")).isEqualTo("INBOUND");
         assertThat(directionOf("CN-1007")).isEqualTo("OUTBOUND");
     }
 
@@ -89,7 +94,8 @@ class DocumentSetSeederTest {
 
         assertThat(documentSets.findAll())
                 .extracting(set -> set.metadata().get("businessDocumentNumber"))
-                .containsExactlyInAnyOrder("PO-2026-0042", "INV-100045", "CN-1007");
+                .containsExactlyInAnyOrder("PO-2026-0042", "OR-2026-0042", "DES-2026-0042",
+                        "INV-100045", "REM-2026-0042", "REC-2026-0042", "CN-1007");
     }
 
     @Test
@@ -101,11 +107,11 @@ class DocumentSetSeederTest {
         seeder.seedTenantData();
         seeder.seedTenantData();
 
-        assertThat(documentSets.findAll()).hasSize(3);
+        assertThat(documentSets.findAll()).hasSize(7);
         DocumentSet order = documentSets.findAll().stream()
                 .filter(set -> "PO-2026-0042".equals(set.metadata().get("businessDocumentNumber")))
                 .findFirst().orElseThrow();
-        assertThat(order.metadata()).containsEntry("fixtureVersion", "supplier-order-invoice-v3");
+        assertThat(order.metadata()).containsEntry("fixtureVersion", "six-document-workflow-v4");
         Document source = order.getAllDocuments().getFirst();
         assertThat(asString(source)).contains("BUY-WATER-750", "HERBAL-TEA-80", "OTR=8");
         assertThat(source.derivatives()).hasSize(1);

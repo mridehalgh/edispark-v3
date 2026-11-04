@@ -7,6 +7,7 @@ import com.edispark.exchange.domain.ExchangeStatus;
 import com.edispark.partnerships.domain.model.AgreementStatus;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
+import com.edispark.partnerships.domain.model.OutboundLossPolicy;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.repository.PartnershipRepository;
 import io.cottn.core.tenancy.TenantContext;
@@ -67,14 +68,29 @@ public final class ExchangeService {
         try {
             exchange.advance(ExchangeStatus.RESOLVING, "Active agreement revision resolved", clock.instant());
             exchange.advance(ExchangeStatus.TRANSFORMING, "Executing published mapping", clock.instant());
-            byte[] output = transformations.executePublished(capability, documents.content(descriptor.current()));
+            var transformation = transformations.executePublished(capability, documents.content(descriptor.current()));
             exchange.advance(ExchangeStatus.STORING, "Retaining generated representation", clock.instant());
             DocumentReference derivative = documents.retainDerivative(descriptor.current(), capability.standard().name(),
-                    output, capability.mappingRevisionId(), exchange.id());
+                    transformation.payload(), capability.mappingRevisionId(), exchange.id());
             exchange.generated(derivative);
-            exchange.advance(ExchangeStatus.QUEUING_TRANSPORT, "Submitting to AS2 connection", clock.instant());
+            DocumentReference report = documents.retainDerivative(descriptor.current(), "MAPPING_REPORT",
+                    transformation.report(), capability.mappingRevisionId(), exchange.id());
+            exchange.mappingEvidence(report, transformation.warnings());
+            if (!transformation.warnings().isEmpty()
+                    && capability.outboundLossPolicy() == OutboundLossPolicy.STRICT) {
+                exchange.advance(ExchangeStatus.NEEDS_REVIEW,
+                        "Mapping stopped before transport because populated source fields were not represented",
+                        clock.instant());
+                return exchanges.save(exchange);
+            }
+            if (!transformation.warnings().isEmpty()) {
+                exchange.advance(ExchangeStatus.QUEUING_TRANSPORT,
+                        "Mapping warnings accepted by the active agreement", clock.instant());
+            } else {
+                exchange.advance(ExchangeStatus.QUEUING_TRANSPORT, "Submitting to AS2 connection", clock.instant());
+            }
             UUID transfer = transport.submit(capability.as2ConnectionId(), exchange.idempotencyKey(),
-                    filename(descriptor.businessReference(), capability), contentType(capability), output, exchange.id(),
+                    filename(descriptor.businessReference(), capability), contentType(capability), transformation.payload(), exchange.id(),
                     exchange.agreementId(), exchange.agreementRevision(), exchange.capabilityId(),
                     exchange.sourceDocument(), capability.mappingRevisionId());
             exchange.queued(transfer, clock.instant());

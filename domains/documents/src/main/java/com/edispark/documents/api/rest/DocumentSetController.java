@@ -761,7 +761,8 @@ public class DocumentSetController {
         
         var relationResponses = document.relations().stream()
                 .map(relation -> new com.edispark.documents.api.dto.DocumentRelationResponse(
-                        relation.type(), relation.targetDocumentId().value()))
+                        relation.type(), relation.targetDocumentId().value(),
+                        relation.targetDocumentSetId() == null ? null : relation.targetDocumentSetId().value()))
                 .toList();
 
         return new DocumentResponse(

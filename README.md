@@ -85,6 +85,8 @@ The local runner provisions this development-only account on the first authentic
 
 When running `pnpm dev`, every page shows a floating **Local tools** dock in the lower-right corner. Open it to sign in with the test account and activate the automatically provisioned `EdiSpark Local` workspace. Once signed in, the same dock can run live MFT inbound and outbound simulations, including a two-message inbound EDIFACT order batch. Future local simulators should extend this dock instead of adding separate floating controls. You can also enter the credentials above manually.
 
+The Documents catalogue automatically repairs the order, response, shipment, invoice, receipt, remittance and credit-note links across their original file sets. Local simulator samples also recover business references from their retained UBL JSON and link only to an unambiguous counterpart belonging to the same retained partner identity. Independent orders and missing or ambiguous counterparts remain unlinked. This reconciliation preserves source content, document IDs and developer-created documents; no workspace reset is required.
+
 The button and its login route are development-only: the control is rendered only when `LOCAL_TEST_USER_BOOTSTRAP` is enabled, and the route returns HTTP 404 outside `next dev`. The predictable credential is enabled only by `tooling/scripts/local-environment.mjs`; do not enable `LOCAL_TEST_USER_BOOTSTRAP` in a deployed environment.
 
 Next.js development artifacts live in `apps/web/.next-dev`, separately from production builds in `apps/web/.next`. Running a web build while `pnpm dev` is active therefore cannot replace the chunks used by the dev server. Restart `pnpm dev` once after pulling a change to `next.config.mjs`.

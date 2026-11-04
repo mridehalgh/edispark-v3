@@ -5,8 +5,12 @@ import type {
 } from "@edispark/documents-client"
 import type { AuthorableDocumentType } from "./ubl-authoring"
 import type { SmartCopyDraft } from "./ubl-smart-copy"
+import type { WorkspaceSet } from "./document-workspace"
 
-export type DocumentSetsPage = PaginatedResponseDocumentSetResponse
+export type DocumentSetsPage = Omit<
+  PaginatedResponseDocumentSetResponse,
+  "items"
+> & { items?: WorkspaceSet[] }
 
 export interface DocumentSetDetail {
   documentSet: DocumentSetResponse
@@ -25,16 +29,22 @@ async function readJson<T>(response: Response): Promise<T> {
     return response.json() as Promise<T>
   }
 
-  const body = await response.json().catch(() => null) as BffErrorBody | null
+  const body = (await response.json().catch(() => null)) as BffErrorBody | null
   throw new Error(body?.error?.message ?? "The documents request failed.")
 }
 
 export async function getDocumentSets(
-  options: { limit?: number; nextToken?: string; signal?: AbortSignal } = {},
+  options: {
+    limit?: number
+    nextToken?: string
+    signal?: AbortSignal
+    workspace?: boolean
+  } = {},
 ) {
   const search = new URLSearchParams()
   if (options.limit) search.set("limit", String(options.limit))
   if (options.nextToken) search.set("nextToken", options.nextToken)
+  if (options.workspace) search.set("workspace", "true")
 
   const query = search.size ? `?${search.toString()}` : ""
   const response = await fetch(`/api/documents${query}`, {
@@ -46,7 +56,10 @@ export async function getDocumentSets(
   return readJson<DocumentSetsPage>(response)
 }
 
-export async function getDocumentSetDetail(setId: string, signal?: AbortSignal) {
+export async function getDocumentSetDetail(
+  setId: string,
+  signal?: AbortSignal,
+) {
   const response = await fetch(`/api/documents/${encodeURIComponent(setId)}`, {
     credentials: "include",
     headers: { Accept: "application/json" },
@@ -63,11 +76,14 @@ export async function getSmartCopyDraft(
   signal?: AbortSignal,
 ) {
   const search = new URLSearchParams({ sourceDocumentId, targetType })
-  const response = await fetch(`/api/documents/${encodeURIComponent(setId)}/smart-copy?${search}`, {
-    credentials: "include",
-    headers: { Accept: "application/json" },
-    signal,
-  })
+  const response = await fetch(
+    `/api/documents/${encodeURIComponent(setId)}/smart-copy?${search}`,
+    {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+      signal,
+    },
+  )
   return readJson<SmartCopyDraft>(response)
 }
 
@@ -93,8 +109,12 @@ export async function getDocumentVersionContent(
   })
 
   if (!response.ok) {
-    const body = await response.json().catch(() => null) as BffErrorBody | null
-    throw new Error(body?.error?.message ?? "Document content could not be loaded.")
+    const body = (await response
+      .json()
+      .catch(() => null)) as BffErrorBody | null
+    throw new Error(
+      body?.error?.message ?? "Document content could not be loaded.",
+    )
   }
 
   return response.blob()
@@ -122,8 +142,12 @@ export async function getDerivativeContent(
   })
 
   if (!response.ok) {
-    const body = await response.json().catch(() => null) as BffErrorBody | null
-    throw new Error(body?.error?.message ?? "Derivative content could not be loaded.")
+    const body = (await response
+      .json()
+      .catch(() => null)) as BffErrorBody | null
+    throw new Error(
+      body?.error?.message ?? "Derivative content could not be loaded.",
+    )
   }
 
   return response.blob()

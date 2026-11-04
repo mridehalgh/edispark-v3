@@ -10,6 +10,9 @@ import com.edispark.documents.application.handler.SchemaCommandHandler;
 import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.ContentRef;
 import com.edispark.documents.domain.model.DocumentSet;
+import com.edispark.documents.domain.model.Document;
+import com.edispark.documents.domain.model.DocumentRelation;
+import com.edispark.documents.domain.model.DocumentRelationType;
 import com.edispark.documents.domain.model.DocumentType;
 import com.edispark.documents.domain.model.Format;
 import com.edispark.documents.domain.model.Schema;
@@ -83,7 +86,8 @@ public class DocumentSetSeeder {
     void seedTenantData() {
         Set<DocumentType> missingTypes = missingSeedTypes();
         if (missingTypes.isEmpty()) {
-            log.info("Document demo catalogue is complete, skipping seeding");
+            reconcileLineage();
+            log.info("Document demo catalogue and lineage are complete");
             return;
         }
 
@@ -91,7 +95,46 @@ public class DocumentSetSeeder {
         removeStaleFixtures(missingTypes);
         createSchemas(missingTypes);
         createDocumentSets(missingTypes);
+        reconcileLineage();
         log.info("Document demo catalogue is complete");
+    }
+
+    private void reconcileLineage() {
+        Map<String, DocumentSet> fixtures = documentSetRepository.findAll().stream()
+                .filter(set -> CREATED_BY.equals(set.createdBy()))
+                .filter(set -> FIXTURE_VERSION.equals(set.metadata().get("fixtureVersion")))
+                .collect(java.util.stream.Collectors.toMap(
+                        set -> set.metadata().get("businessDocumentNumber"), set -> set));
+        link(fixtures, "OR-2026-0042", "PO-2026-0042", DocumentRelationType.RESPONDS_TO);
+        link(fixtures, "DES-2026-0042", "PO-2026-0042", DocumentRelationType.DESPATCHES);
+        link(fixtures, "INV-100045", "PO-2026-0042", DocumentRelationType.INVOICES);
+        link(fixtures, "REM-2026-0042", "INV-100045", DocumentRelationType.REMITS);
+        link(fixtures, "REC-2026-0042", "DES-2026-0042", DocumentRelationType.RECEIVES);
+        link(fixtures, "CN-1007", "INV-100045", DocumentRelationType.CORRECTS);
+    }
+
+    private void link(Map<String, DocumentSet> fixtures, String sourceNumber, String targetNumber,
+            DocumentRelationType type) {
+        DocumentSet source = fixtures.get(sourceNumber);
+        DocumentSet target = fixtures.get(targetNumber);
+        var document = fixtureDocument(source, sourceNumber);
+        var targetDocument = fixtureDocument(target, targetNumber);
+        if (document == null || targetDocument == null) return; // Preserve developer-edited fixture versions.
+        var relation = new DocumentRelation(type, targetDocument.id(), target.id());
+        if (document.relations().contains(relation)) return;
+        document.relations().stream()
+                .filter(existing -> existing.type() == type && existing.targetDocumentSetId() != null)
+                .toList().forEach(document::removeRelation);
+        document.addRelation(relation);
+        documentSetRepository.save(source);
+    }
+
+    private Document fixtureDocument(DocumentSet set, String number) {
+        DocumentType type = SEEDED_TYPES.stream().filter(candidate -> number.equals(businessDocumentNumber(candidate)))
+                .findFirst().orElseThrow();
+        return set.getAllDocuments().stream().filter(document -> document.type() == type)
+                .filter(document -> CREATED_BY.equals(document.getCurrentVersion().createdBy()))
+                .findFirst().orElse(null);
     }
 
     private Set<DocumentType> missingSeedTypes() {

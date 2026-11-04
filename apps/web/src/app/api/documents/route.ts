@@ -13,11 +13,17 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const requestedLimit = url.searchParams.get("limit")
-    const limit = requestedLimit === null ? DEFAULT_PAGE_SIZE : Number(requestedLimit)
+    const limit =
+      requestedLimit === null ? DEFAULT_PAGE_SIZE : Number(requestedLimit)
 
     if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE) {
       return Response.json(
-        { error: { code: "INVALID_PAGE_SIZE", message: "Page size must be between 1 and 100." } },
+        {
+          error: {
+            code: "INVALID_PAGE_SIZE",
+            message: "Page size must be between 1 and 100.",
+          },
+        },
         { status: 400 },
       )
     }
@@ -28,6 +34,28 @@ export async function GET(request: Request) {
       query: { limit, nextToken },
       throwOnError: true,
     })
+
+    // Metadata only: never fetch document content to populate the workspace list.
+    // Process sets sequentially to bound fan-out to one set's document count.
+    if (url.searchParams.get("workspace") === "true") {
+      const items = []
+      for (const set of data.items ?? []) {
+        const workspaceDocuments = []
+        for (const document of set.documents ?? []) {
+          if (!set.id || !document.id) continue
+          const { data: detail } = await client.getDocument({
+            path: { setId: set.id, docId: document.id },
+            throwOnError: true,
+          })
+          workspaceDocuments.push(detail)
+        }
+        items.push({ ...set, workspaceDocuments })
+      }
+      return Response.json(
+        { ...data, items },
+        { headers: { "Cache-Control": "private, no-store" } },
+      )
+    }
 
     return Response.json(data, {
       headers: { "Cache-Control": "private, no-store" },
@@ -66,22 +94,55 @@ export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: request.headers })
     if (!session) {
-      return Response.json({ error: { code: "UNAUTHENTICATED", message: "Sign in to create documents." } }, { status: 401 })
+      return Response.json(
+        {
+          error: {
+            code: "UNAUTHENTICATED",
+            message: "Sign in to create documents.",
+          },
+        },
+        { status: 401 },
+      )
     }
-    const body = await request.json() as AuthorDocumentRequest
-    if (!body.documentType || !AUTHORABLE_TYPES.has(body.documentType) || !body.content) {
-      return Response.json({ error: { code: "INVALID_DOCUMENT", message: "Choose a supported document type and complete its required fields." } }, { status: 400 })
+    const body = (await request.json()) as AuthorDocumentRequest
+    if (
+      !body.documentType ||
+      !AUTHORABLE_TYPES.has(body.documentType) ||
+      !body.content
+    ) {
+      return Response.json(
+        {
+          error: {
+            code: "INVALID_DOCUMENT",
+            message:
+              "Choose a supported document type and complete its required fields.",
+          },
+        },
+        { status: 400 },
+      )
     }
     const client = await createAuthenticatedDocumentsClient(request)
     const { data: schemas } = await client.listSchemas({ throwOnError: true })
     const expectedName = `OASIS UBL 2.1 ${SCHEMA_ROOTS[body.documentType]}`
     const schema = schemas.find((item) => item.name === expectedName)
-    const schemaVersion = schema?.versions?.find((item) => item.versionIdentifier === "2.1")
+    const schemaVersion = schema?.versions?.find(
+      (item) => item.versionIdentifier === "2.1",
+    )
     if (!schema?.id || !schemaVersion) {
-      return Response.json({ error: { code: "UBL_SCHEMA_UNAVAILABLE", message: `${expectedName} is not provisioned for this workspace.` } }, { status: 409 })
+      return Response.json(
+        {
+          error: {
+            code: "UBL_SCHEMA_UNAVAILABLE",
+            message: `${expectedName} is not provisioned for this workspace.`,
+          },
+        },
+        { status: 409 },
+      )
     }
 
-    const content = Buffer.from(JSON.stringify(body.content), "utf8").toString("base64")
+    const content = Buffer.from(JSON.stringify(body.content), "utf8").toString(
+      "base64",
+    )
     const createdBy = session.user.id
     if (body.related?.setId && body.related.documentId) {
       const { data } = await client.addDocument({
@@ -99,7 +160,10 @@ export async function POST(request: Request) {
         },
         throwOnError: true,
       })
-      return Response.json({ setId: body.related.setId, document: data }, { status: 201 })
+      return Response.json(
+        { setId: body.related.setId, document: data },
+        { status: 201 },
+      )
     }
 
     const { data } = await client.createDocumentSet({
@@ -115,7 +179,10 @@ export async function POST(request: Request) {
       },
       throwOnError: true,
     })
-    return Response.json({ setId: data.id, document: data.documents?.[0] }, { status: 201 })
+    return Response.json(
+      { setId: data.id, document: data.documents?.[0] },
+      { status: 201 },
+    )
   } catch (error) {
     return documentsErrorResponse(error)
   }

@@ -39,6 +39,64 @@ class DocumentSetSeederTest {
     private InMemoryContentStore content;
     private DocumentSetSeeder seeder;
 
+    @Test
+    void linksAllCatalogueDocumentsAndRepairsMissingLinksWithoutChangingSourceFiles() {
+        seeder.seedTenantData();
+        var order = fixture("PO-2026-0042");
+        var invoice = fixture("INV-100045");
+        var receipt = fixture("REC-2026-0042");
+        var remittance = fixture("REM-2026-0042");
+        var originalHash = invoice.getAllDocuments().getFirst().getCurrentVersion().contentHash();
+        assertThat(invoice.getAllDocuments().getFirst().relations()).singleElement().satisfies(relation -> {
+            assertThat(relation.targetDocumentSetId()).isEqualTo(order.id());
+            assertThat(relation.targetDocumentId()).isEqualTo(order.getAllDocuments().getFirst().id());
+        });
+        assertThat(receipt.getAllDocuments().getFirst().relations()).singleElement()
+                .satisfies(relation -> assertThat(relation.targetDocumentSetId()).isEqualTo(fixture("DES-2026-0042").id()));
+        var missing = remittance.getAllDocuments().getFirst();
+        List.copyOf(missing.relations()).forEach(missing::removeRelation);
+        documentSets.save(remittance);
+
+        seeder.seedTenantData();
+        seeder.seedTenantData();
+
+        assertThat(documentSets.findAll()).hasSize(7);
+        assertThat(fixture("REM-2026-0042").getAllDocuments().getFirst().relations()).hasSize(1);
+        assertThat(fixture("INV-100045").getAllDocuments().getFirst().getCurrentVersion().contentHash()).isEqualTo(originalHash);
+        assertThat(order.getAllDocuments().getFirst().derivatives()).hasSize(1);
+        Map.of("OR-2026-0042", "PO-2026-0042", "DES-2026-0042", "PO-2026-0042",
+                "INV-100045", "PO-2026-0042", "REM-2026-0042", "INV-100045",
+                "REC-2026-0042", "DES-2026-0042", "CN-1007", "INV-100045")
+                .forEach((source, target) -> assertThat(fixture(source).getAllDocuments().getFirst().relations())
+                        .singleElement().satisfies(relation -> assertThat(relation.targetDocumentSetId()).isEqualTo(fixture(target).id())));
+    }
+
+    @Test
+    void repairsLinksWhenAReferencedFixtureIsRecreatedAndLeavesDeveloperDataAlone() {
+        seeder.seedTenantData();
+        var developerSet = DocumentSet.create("developer", Map.of("businessDocumentNumber", "INV-100045"));
+        documentSets.save(developerSet);
+        var previous = fixture("INV-100045").id();
+        documentSets.delete(previous);
+
+        seeder.seedTenantData();
+        seeder.seedTenantData();
+
+        var current = fixture("INV-100045").id();
+        assertThat(current).isNotEqualTo(previous);
+        assertThat(fixture("REM-2026-0042").getAllDocuments().getFirst().relations()).singleElement()
+                .satisfies(relation -> assertThat(relation.targetDocumentSetId()).isEqualTo(current));
+        assertThat(documentSets.findById(developerSet.id())).isPresent();
+        assertThat(documentSets.findAll()).hasSize(8);
+    }
+
+    private DocumentSet fixture(String number) {
+        return documentSets.findAll().stream()
+                .filter(set -> "local-seeder".equals(set.createdBy()))
+                .filter(set -> number.equals(set.metadata().get("businessDocumentNumber")))
+                .findFirst().orElseThrow();
+    }
+
     @BeforeEach
     void setUp() {
         documentSets = new InMemoryDocumentSetRepository();

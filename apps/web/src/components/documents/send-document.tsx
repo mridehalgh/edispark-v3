@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { attentionReason } from '@/lib/attention-reason'
+import { DOCUMENT_EXCHANGE_UPDATED } from '@/components/documents/exchange-timeline'
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, cache: 'no-store' })
@@ -77,6 +78,7 @@ export function SendDocument({ documentSetId, documentId, lifecycleStatus = 'FIN
         }),
       })
       setExchange(result)
+      window.dispatchEvent(new Event(DOCUMENT_EXCHANGE_UPDATED))
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'The document could not be sent.')
     } finally {

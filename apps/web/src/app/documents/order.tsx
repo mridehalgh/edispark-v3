@@ -16,6 +16,7 @@ import { Link, useParams } from "react-router-dom"
 import { LayoutBody } from "@/components/layout/layout"
 import { CreateNextDocument } from "@/components/documents/create-next-document"
 import { DocumentAttention } from "@/components/documents/document-attention"
+import { DocumentActivity } from "@/components/documents/exchange-timeline"
 import { SendDocument } from "@/components/documents/send-document"
 import { DocumentTechnicalDetails } from "@/components/documents/document-technical-details"
 import { Button } from "@/components/ui/button"
@@ -280,6 +281,7 @@ export function OrderDocumentPage() {
         </div>
       </header>
       {setId && documentId ? <DocumentAttention documentSetId={setId} documentId={documentId} /> : null}
+      <a href="#document-activity" className="mt-3 inline-flex min-h-10 items-center text-sm font-medium text-primary hover:underline">View processing timeline ↓</a>
 
       <dl className="grid gap-x-8 gap-y-5 border-b py-5 sm:grid-cols-2 lg:grid-cols-4">
         <MetaItem label="Customer reference" value={order.customerReference ?? "Not supplied"} />
@@ -452,6 +454,7 @@ export function OrderDocumentPage() {
         )}
       </div>
 
+      {setId && documentId && <DocumentActivity key={`${setId}:${documentId}`} documentSetId={setId} documentId={documentId} />}
       <DocumentTechnicalDetails setId={setId} ublVersion={order.ublVersion} profileId={order.profileId} representation={representation} />
     </LayoutBody>
   )

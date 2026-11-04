@@ -178,7 +178,8 @@ export const zDocumentRelationResponse = z.object({
         'CORRECTS',
         'SUPERSEDES'
     ]).optional(),
-    targetDocumentId: z.uuid().optional()
+    targetDocumentId: z.uuid().optional(),
+    targetDocumentSetId: z.uuid().optional()
 });
 
 export const zDocumentVersionResponse = z.object({

@@ -164,6 +164,10 @@ public final class Document {
         }
     }
 
+    public void removeRelation(DocumentRelation relation) {
+        relations.remove(Objects.requireNonNull(relation, "Relation cannot be null"));
+    }
+
     private void requireStatus(DocumentLifecycleStatus required, String message) {
         if (lifecycleStatus != required) {
             throw new IllegalStateException(message);
@@ -335,7 +339,8 @@ public final class Document {
     }
 
     public Optional<DocumentId> relatedDocumentId() {
-        return relations.stream().findFirst().map(DocumentRelation::targetDocumentId);
+        return relations.stream().filter(relation -> relation.targetDocumentSetId() == null)
+                .findFirst().map(DocumentRelation::targetDocumentId);
     }
 
     public List<DocumentRelation> relations() {

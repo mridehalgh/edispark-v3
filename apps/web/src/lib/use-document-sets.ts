@@ -8,7 +8,7 @@ export type DocumentSetSummary = NonNullable<DocumentSetsPage["items"]>[number]
 
 const PAGE_SIZE = 20
 
-export function useDocumentSets() {
+export function useDocumentSets(workspace = false) {
   const [page, setPage] = useState<DocumentSetsPage | null>(null)
   const [documentSets, setDocumentSets] = useState<DocumentSetSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -21,21 +21,33 @@ export function useDocumentSets() {
     setLoading(true)
     setError(null)
 
-    void getDocumentSets({ limit: PAGE_SIZE, signal: controller.signal })
+    void getDocumentSets({
+      limit: PAGE_SIZE,
+      signal: controller.signal,
+      workspace,
+    })
       .then((response) => {
         setPage(response)
         setDocumentSets(response.items ?? [])
       })
       .catch((requestError: unknown) => {
-        if (requestError instanceof DOMException && requestError.name === "AbortError") return
-        setError(requestError instanceof Error ? requestError.message : "Document data could not be loaded.")
+        if (
+          requestError instanceof DOMException &&
+          requestError.name === "AbortError"
+        )
+          return
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Document data could not be loaded.",
+        )
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false)
       })
 
     return () => controller.abort()
-  }, [reloadKey])
+  }, [reloadKey, workspace])
 
   const loadNextPage = useCallback(async () => {
     if (!page?.nextToken || loadingMore) return
@@ -46,15 +58,20 @@ export function useDocumentSets() {
       const response = await getDocumentSets({
         limit: PAGE_SIZE,
         nextToken: page.nextToken,
+        workspace,
       })
       setPage(response)
       setDocumentSets((current) => [...current, ...(response.items ?? [])])
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "The next page could not be loaded.")
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "The next page could not be loaded.",
+      )
     } finally {
       setLoadingMore(false)
     }
-  }, [loadingMore, page?.nextToken])
+  }, [loadingMore, page?.nextToken, workspace])
 
   return {
     documentSets,

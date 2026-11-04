@@ -90,6 +90,7 @@ export type DerivativeResponse = {
 export type DocumentRelationResponse = {
     type?: 'RELATED_TO' | 'RESPONDS_TO' | 'DESPATCHES' | 'RECEIVES' | 'INVOICES' | 'REMITS' | 'CORRECTS' | 'SUPERSEDES';
     targetDocumentId?: string;
+    targetDocumentSetId?: string;
 };
 
 export type DocumentResponse = {

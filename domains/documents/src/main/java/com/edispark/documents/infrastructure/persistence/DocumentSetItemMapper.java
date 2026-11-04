@@ -114,11 +114,17 @@ public final class DocumentSetItemMapper {
 
         if (!document.relations().isEmpty()) {
             item.put("relations", AttributeValue.builder().l(document.relations().stream()
-                    .map(relation -> AttributeValue.builder().m(Map.of(
+                    .map(relation -> {
+                        Map<String, AttributeValue> fields = new HashMap<>(Map.of(
                             "type", AttributeValue.builder().s(relation.type().name()).build(),
                             "targetDocumentId", AttributeValue.builder()
-                                    .s(relation.targetDocumentId().toString()).build()))
-                            .build())
+                                    .s(relation.targetDocumentId().toString()).build()));
+                        if (relation.targetDocumentSetId() != null) {
+                            fields.put("targetDocumentSetId", AttributeValue.builder()
+                                    .s(relation.targetDocumentSetId().toString()).build());
+                        }
+                        return AttributeValue.builder().m(fields).build();
+                    })
                     .toList()).build());
         }
         
@@ -153,7 +159,9 @@ public final class DocumentSetItemMapper {
                         .map(value -> new com.edispark.documents.domain.model.DocumentRelation(
                                 com.edispark.documents.domain.model.DocumentRelationType.valueOf(
                                         value.m().get("type").s()),
-                                DocumentId.fromString(value.m().get("targetDocumentId").s())))
+                                DocumentId.fromString(value.m().get("targetDocumentId").s()),
+                                value.m().containsKey("targetDocumentSetId")
+                                        ? DocumentSetId.fromString(value.m().get("targetDocumentSetId").s()) : null))
                         .toList()
                 : relatedDocumentId == null ? List.<com.edispark.documents.domain.model.DocumentRelation>of()
                         : List.of(new com.edispark.documents.domain.model.DocumentRelation(

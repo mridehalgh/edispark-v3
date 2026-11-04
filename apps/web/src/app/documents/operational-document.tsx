@@ -6,6 +6,7 @@ import { Link, useParams } from "react-router-dom"
 
 import { DocumentTechnicalDetails } from "@/components/documents/document-technical-details"
 import { DocumentAttention } from "@/components/documents/document-attention"
+import { DocumentActivity } from "@/components/documents/exchange-timeline"
 import { CreateNextDocument } from "@/components/documents/create-next-document"
 import { SendDocument } from "@/components/documents/send-document"
 import { LayoutBody } from "@/components/layout/layout"
@@ -170,6 +171,7 @@ export function OperationalDocumentPage({ kind }: { kind: OperationalDocumentKin
         </div>
       </header>
       <DocumentAttention documentSetId={setId!} documentId={documentId!} />
+      <a href="#document-activity" className="mt-3 inline-flex min-h-10 items-center text-sm font-medium text-primary hover:underline">View processing timeline ↓</a>
       {labelError ? <p className="mt-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm text-destructive" role="alert"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{labelError}</p> : null}
 
       <section className="grid gap-6 border-b py-6 md:grid-cols-3" aria-label="Document summary">
@@ -185,6 +187,7 @@ export function OperationalDocumentPage({ kind }: { kind: OperationalDocumentKin
         {document.lines.length === 0 ? <p className="mt-3 text-sm text-muted-foreground">No line-level details were supplied.</p> : <div className="mt-4 overflow-x-auto rounded-lg border"><table className="w-full min-w-[48rem] text-left text-sm"><thead className="border-b bg-muted/55 text-xs text-muted-foreground"><tr><th className="px-4 py-2.5">Line</th><th className="px-4 py-2.5">Item or reference</th><th className="px-4 py-2.5">Quantity</th><th className="px-4 py-2.5">Difference</th><th className="px-4 py-2.5">Amount</th></tr></thead><tbody className="divide-y">{document.lines.map((line) => <tr key={line.id}><td className="px-4 py-3 font-mono text-xs">{line.id}</td><td className="px-4 py-3"><span className="block font-medium">{line.name ?? line.reference ?? "Line detail"}</span>{line.description && <span className="mt-1 block text-xs text-muted-foreground">{line.description}</span>}</td><td className="px-4 py-3 tabular-nums">{formatQuantity(line.quantity)}</td><td className="px-4 py-3 tabular-nums">{formatQuantity(line.secondaryQuantity)}</td><td className="px-4 py-3 tabular-nums">{formatMoney(line.balance ?? line.credit ?? line.debit, document.currency)}</td></tr>)}</tbody></table></div>}
       </section>
 
+      <DocumentActivity key={`${setId}:${documentId}`} documentSetId={setId!} documentId={documentId!} />
       <DocumentTechnicalDetails setId={setId!} representation={representation} />
     </LayoutBody>
   )

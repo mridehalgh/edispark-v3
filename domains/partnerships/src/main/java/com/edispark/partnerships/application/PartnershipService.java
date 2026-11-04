@@ -1,7 +1,12 @@
 package com.edispark.partnerships.application;
 
 import com.edispark.partnerships.domain.model.BusinessIdentity;
+import com.edispark.partnerships.domain.model.BusinessDocumentType;
+import com.edispark.partnerships.domain.model.DocumentFieldRule;
+import com.edispark.partnerships.domain.model.DocumentProfile;
+import com.edispark.partnerships.domain.model.DocumentProfileStatus;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
+import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.InboundFileFailurePolicy;
 import com.edispark.partnerships.domain.model.PartnerStatus;
 import com.edispark.partnerships.domain.model.QualificationReport;
@@ -113,6 +118,45 @@ public final class PartnershipService {
         return repository.saveAgreement(requireAgreement(agreementId).removeCapability(capabilityId, clock.instant()));
     }
 
+    public DocumentProfile createDocumentProfile(UUID partnerId, String name, ExchangeDirection direction,
+            BusinessDocumentType documentType, List<DocumentFieldRule> rules) {
+        TradingPartner partner = requirePartner(partnerId);
+        return repository.saveDocumentProfile(DocumentProfile.draft(tenant(), partner.id(), name, direction,
+                documentType, rules, clock.instant()));
+    }
+
+    public List<DocumentProfile> listDocumentProfiles(UUID partnerId) {
+        requirePartner(partnerId);
+        return repository.listDocumentProfiles(tenant(), partnerId);
+    }
+
+    public DocumentProfile updateDocumentProfile(UUID profileId, List<DocumentFieldRule> rules) {
+        return repository.saveDocumentProfile(requireDocumentProfile(profileId).revise(rules, clock.instant()));
+    }
+
+    public DocumentProfile publishDocumentProfile(UUID profileId) {
+        return repository.saveDocumentProfile(requireDocumentProfile(profileId).publish(clock.instant()));
+    }
+
+    public DocumentProfile createDocumentProfileRevision(UUID profileId) {
+        return repository.saveDocumentProfile(requireDocumentProfile(profileId).newRevision(clock.instant()));
+    }
+
+    public DocumentProfile archiveDocumentProfile(UUID profileId) {
+        boolean referenced = repository.listAgreements(tenant()).stream().flatMap(item -> item.capabilities().stream())
+                .anyMatch(item -> profileId.equals(item.documentProfileRevisionId()));
+        if (referenced) throw new IllegalStateException("Document profile revision is used by an agreement");
+        return repository.saveDocumentProfile(requireDocumentProfile(profileId).archive(clock.instant()));
+    }
+
+    public void deleteDocumentProfileDraft(UUID profileId) {
+        DocumentProfile profile = requireDocumentProfile(profileId);
+        if (profile.status() != DocumentProfileStatus.DRAFT) {
+            throw new IllegalStateException("Only an unused draft document profile can be deleted");
+        }
+        repository.deleteDocumentProfile(tenant(), profileId);
+    }
+
     public TradingAgreement qualify(UUID agreementId) {
         TradingAgreement agreement = requireAgreement(agreementId);
         List<String> checks = new ArrayList<>();
@@ -132,6 +176,7 @@ public final class PartnershipService {
                 failures.add("AS2 connection is not active: " + capability.as2ConnectionId());
             }
             validateStandardProfile(capability, failures);
+            validateDocumentProfile(capability, agreement.partnerId(), checks, failures);
         }
         QualificationReport report = new QualificationReport(failures.isEmpty(), checks, failures, clock.instant());
         return repository.saveAgreement(agreement.qualify(report, clock.instant()));
@@ -188,6 +233,7 @@ public final class PartnershipService {
 
     private TradingPartner requirePartner(UUID id) { return repository.findPartner(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Trading partner was not found")); }
     private TradingAgreement requireAgreement(UUID id) { return repository.findAgreement(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Trading agreement was not found")); }
+    private DocumentProfile requireDocumentProfile(UUID id) { return repository.findDocumentProfile(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Document profile was not found")); }
     private String tenant() { return TenantContext.getCurrentTenant().asString(); }
 
     private void ensureUniqueIdentities(UUID currentId, List<BusinessIdentity> identities) {
@@ -211,7 +257,14 @@ public final class PartnershipService {
     }
 
     private void validateStandardProfile(ExchangeCapability capability, List<String> failures) {
-        String expectedMessage = capability.documentType().name().equals("ORDER") ? "ORDERS" : "INVOIC";
+        String expectedMessage = switch (capability.documentType()) {
+            case ORDER -> "ORDERS";
+            case ORDER_RESPONSE -> "ORDRSP";
+            case DESPATCH_ADVICE -> "DESADV";
+            case INVOICE -> "INVOIC";
+            case REMITTANCE_ADVICE -> "REMADV";
+            case RECEIPT_ADVICE -> "RECADV";
+        };
         if (!expectedMessage.equalsIgnoreCase(capability.messageType())) {
             failures.add("Message type " + capability.messageType() + " does not match " + capability.documentType());
         }
@@ -220,6 +273,22 @@ public final class PartnershipService {
         }
         if (capability.standard().name().equals("TRADACOMS") && !"9".equals(capability.release())) {
             failures.add("TRADACOMS release is not qualified: " + capability.release());
+        }
+    }
+
+    private void validateDocumentProfile(ExchangeCapability capability, UUID partnerId, List<String> checks,
+            List<String> failures) {
+        if (capability.documentProfileRevisionId() == null) return;
+        checks.add("Published document profile " + capability.documentProfileRevisionId());
+        DocumentProfile profile = repository.findDocumentProfile(tenant(), capability.documentProfileRevisionId())
+                .orElse(null);
+        if (profile == null || profile.status() != DocumentProfileStatus.PUBLISHED) {
+            failures.add("Document profile is not published: " + capability.documentProfileRevisionId());
+            return;
+        }
+        if (!profile.partnerId().equals(partnerId) || profile.direction() != capability.direction()
+                || profile.documentType() != capability.documentType()) {
+            failures.add("Document profile does not match the capability partner, direction and document type");
         }
     }
 

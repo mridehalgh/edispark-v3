@@ -13,6 +13,8 @@ const documents = [
   ["ReceiptAdvice", "ReceiptLine", true, ["DespatchSupplierParty", "DeliveryCustomerParty", "Shipment"]],
 ]
 
+const aggregateSchema = JSON.parse(await readFile(resolve(schemaRoot, "common/UBL-CommonAggregateComponents-2.1.json"), "utf8"))
+
 for (const [root, line, lineRequired, displayed] of documents) {
   const path = resolve(schemaRoot, `maindoc/UBL-${root}-2.1.json`)
   const schema = JSON.parse(await readFile(path, "utf8"))
@@ -30,6 +32,17 @@ for (const [root, line, lineRequired, displayed] of documents) {
   assert.equal(definition.required.includes(line), lineRequired, `${root}.${line} required status changed`)
   for (const property of displayed) {
     assert.ok(definition.properties[property], `${root}.${property} is missing`)
+  }
+}
+
+for (const [definition, properties] of Object.entries({
+  DespatchLine: ["OrderLineReference"],
+  ReceiptLine: ["DespatchLineReference"],
+  RemittanceAdviceLine: ["BillingReference", "CreditLineAmount", "BalanceAmount"],
+  BillingReference: ["InvoiceDocumentReference"],
+})) {
+  for (const property of properties) {
+    assert.ok(aggregateSchema.definitions[definition]?.properties?.[property], `${definition}.${property} is missing`)
   }
 }
 

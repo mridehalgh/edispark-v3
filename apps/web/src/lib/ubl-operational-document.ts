@@ -12,6 +12,7 @@ import {
   type UblParty,
   type UblQuantity,
 } from "./ubl-common"
+import { hasValidSscc } from "./ubl-authoring"
 
 export type OperationalDocumentKind =
   | "ORDER_RESPONSE"
@@ -113,6 +114,8 @@ export interface OperationalDocumentViewModel {
   parties: OperationalParty[]
   lines: OperationalLine[]
   totals: Array<{ label: string; amount: UblMoney }>
+  handlingUnitCount: number
+  printableLabelCount: number
   populatedFields: PopulatedUblField[]
 }
 
@@ -191,6 +194,7 @@ export function parseOperationalDocument(
   }
 
   const fields: PopulatedUblField[] = []
+  const handlingUnits = entries(first(document, "Shipment"), "TransportHandlingUnit")
   collectFields(document, definition.root, fields)
   return {
     ok: true,
@@ -214,6 +218,8 @@ export function parseOperationalDocument(
         ...total(document, "TotalCreditAmount", "Total credit"),
         ...total(document, "TotalPaymentAmount", "Total payment"),
       ],
+      handlingUnitCount: handlingUnits.length,
+      printableLabelCount: handlingUnits.filter((unit) => hasValidSscc(text(unit, "TraceID") ?? "")).length,
       populatedFields: fields,
     },
   }

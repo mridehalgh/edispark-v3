@@ -1,6 +1,8 @@
 package com.edispark.transformations.api;
 
 import com.edispark.transformations.application.MappingService;
+import com.edispark.transformations.domain.BusinessCodeCatalog;
+import com.edispark.transformations.domain.BusinessCodeListDefinition;
 import com.edispark.transformations.domain.MappingNode;
 import com.edispark.transformations.domain.MappingRevision;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,9 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public final class MappingController {
     private final MappingService service;
+    private final BusinessCodeCatalog businessCodes = new BusinessCodeCatalog();
 
     @GetMapping @Operation(operationId = "listMappings", summary = "List visual mappings")
     public List<MappingRevision> list() { return service.list(); }
+
+    @GetMapping("/code-lists")
+    @Operation(operationId = "listBusinessCodeLists", summary = "List controlled business codes for mappings")
+    public List<BusinessCodeListDefinition> codeLists() { return businessCodes.list(); }
 
     @GetMapping("/{mappingId}") @Operation(operationId = "getMapping", summary = "Get a mapping revision")
     public MappingRevision get(@PathVariable UUID mappingId) { return service.get(mappingId); }

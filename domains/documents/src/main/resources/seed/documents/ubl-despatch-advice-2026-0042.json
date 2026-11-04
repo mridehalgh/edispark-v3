@@ -11,7 +11,10 @@
     "OrderReference": [{"ID": [{"_": "PO-2026-0042"}]}],
     "DespatchSupplierParty": [{"Party": [{"EndpointID": [{"_": "[tenant_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
     "DeliveryCustomerParty": [{"Party": [{"EndpointID": [{"_": "[partner_identifier]", "schemeID": "GLN"}], "PartyName": [{"Name": [{"_": "[name]"}]}]}]}],
-    "Shipment": [{"ID": [{"_": "SHIP-2026-0042"}], "GrossWeightMeasure": [{"_": 42.5, "unitCode": "KGM"}]}],
+    "Shipment": [{"ID": [{"_": "SHIP-2026-0042"}], "GrossWeightMeasure": [{"_": 42.5, "unitCode": "KGM"}], "TransportHandlingUnit": [
+      {"ID": [{"_": "PALLET-1"}], "TransportHandlingUnitTypeCode": [{"_": "PALLET"}], "TraceID": [{"_": "123456789012345675"}], "ShippingMarks": [{"_": "PO-2026-0042-A"}], "HandlingUnitDespatchLine": [{"ID": [{"_": "1-A"}], "DeliveredQuantity": [{"_": 28, "unitCode": "EA"}], "OrderLineReference": [{"LineID": [{"_": "1"}]}], "Item": [{"Name": [{"_": "Spark Water 750"}]}]}]},
+      {"ID": [{"_": "PALLET-2"}], "TransportHandlingUnitTypeCode": [{"_": "PALLET"}], "TraceID": [{"_": "123456789012345682"}], "ShippingMarks": [{"_": "PO-2026-0042-B"}], "HandlingUnitDespatchLine": [{"ID": [{"_": "1-B"}], "DeliveredQuantity": [{"_": 20, "unitCode": "EA"}], "OrderLineReference": [{"LineID": [{"_": "1"}]}], "Item": [{"Name": [{"_": "Spark Water 750"}]}]}]}
+    ]}],
     "DespatchLine": [{"ID": [{"_": "1"}], "DeliveredQuantity": [{"_": 48, "unitCode": "EA"}], "OrderLineReference": [{"LineID": [{"_": "1"}], "OrderReference": [{"ID": [{"_": "PO-2026-0042"}]}]}], "Item": [{"Name": [{"_": "Spark Water 750"}], "Description": [{"_": "Sparkling mineral water, 750 ml case"}]}]}]
   }]
 }

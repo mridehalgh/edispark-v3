@@ -28,7 +28,7 @@ export async function GET(request: Request, { params }: RouteContext) {
 
   try {
     const client = await createAuthenticatedDocumentsClient(request)
-    const { data } = await client.getDerivativeContent({
+    const { data, response } = await client.getDerivativeContent({
       path: {
         setId: params.setId,
         docId: params.documentId,
@@ -41,7 +41,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     return new Response(data, {
       headers: {
         "Cache-Control": "private, no-store",
-        "Content-Disposition": "inline",
+        "Content-Disposition": response.headers.get("content-disposition") ?? "attachment",
         "Content-Type": data.type || "application/octet-stream",
       },
     })

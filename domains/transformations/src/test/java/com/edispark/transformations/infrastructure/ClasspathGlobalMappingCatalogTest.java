@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.edispark.transformations.application.MappingRuntime;
 import com.edispark.transformations.domain.MappingScope;
 import com.edispark.transformations.domain.MappingStatus;
+import com.edispark.transformations.domain.MappingOperation;
+import com.edispark.transformations.domain.BusinessCodeSyntax;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
@@ -91,5 +93,36 @@ class ClasspathGlobalMappingCatalogTest {
             assertThat(ubl.at(mapping.name().contains("Invoice")
                     ? "/Invoice/0/InvoiceLine" : "/Order/0/OrderLine").size()).isGreaterThanOrEqualTo(8);
         }
+    }
+
+    @Test
+    void publishedMappingsUseControlledLookupsForCodedBusinessFields() {
+        assertThat(catalog.list()).allSatisfy(mapping -> {
+            assertThat(mapping.nodes()).anySatisfy(node -> {
+                assertThat(node.operation()).isEqualTo(MappingOperation.CODE_LOOKUP);
+                assertThat(node.codeMap()).isNotEmpty();
+            });
+            assertThat(mapping.nodes().stream()
+                    .filter(node -> node.targetPointer().endsWith("/unitCode"))
+                    .toList()).allSatisfy(node -> assertThat(node.operation()).isEqualTo(MappingOperation.CODE_LOOKUP));
+        });
+    }
+
+    @Test
+    void publishedCodeLookupsDeclareTheirSourceAndTargetStandards() {
+        assertThat(catalog.list()).allSatisfy(mapping -> mapping.nodes().stream()
+                .filter(node -> node.operation() == MappingOperation.CODE_LOOKUP)
+                .forEach(node -> {
+                    assertThat(node.codeList()).isNotNull();
+                    if (mapping.name().startsWith("UBL")) {
+                        assertThat(node.sourceSyntax()).isEqualTo(BusinessCodeSyntax.UBL_2_1);
+                        assertThat(node.targetSyntax()).isIn(
+                                BusinessCodeSyntax.EDIFACT_D96A, BusinessCodeSyntax.TRADACOMS_9);
+                    } else {
+                        assertThat(node.sourceSyntax()).isIn(
+                                BusinessCodeSyntax.EDIFACT_D96A, BusinessCodeSyntax.TRADACOMS_9);
+                        assertThat(node.targetSyntax()).isEqualTo(BusinessCodeSyntax.UBL_2_1);
+                    }
+                }));
     }
 }

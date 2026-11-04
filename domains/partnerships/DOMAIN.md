@@ -6,11 +6,13 @@ Trading Partner Management is the authoritative control plane for who a tenant e
 
 ## Overview
 
-The bounded context owns trading partners, business identities, partnerships, immutable agreement revisions, exchange capabilities, qualification evidence, and activation. It references published mapping revisions and MFT connections by opaque identifiers. It does not store document payloads, execute mappings, or manage AS2 certificates.
+The bounded context owns trading partners, business identities, partnerships, immutable agreement revisions, exchange capabilities, reusable document profile revisions, qualification evidence, and activation. It references published mapping revisions and MFT connections by opaque identifiers. It does not store document payloads, execute mappings, or manage AS2 certificates.
 
 ## Narrative
 
 An integration analyst creates a retailer, records its qualified business identifiers, and links one tenant business profile to the retailer through a partnership. Each agreement revision declares directional capabilities such as outbound UBL Invoice to EDIFACT INVOIC D96A over a particular AS2 connection. A revision remains a draft until every capability has a published mapping, schema, transport connection, unique routing key, and successful qualification evidence. Activation freezes the revision and publishes a last-known-good snapshot for exchange workers. Editing creates a new revision so historical exchanges remain reproducible.
+
+Retailers frequently require different fields, defaults, and code lists for the same document type. An analyst captures those expectations in a document profile, publishes an immutable revision, and pins it to a compatible exchange capability. Later changes create a new profile revision so an older document can still be understood against the exact rules used when it was authored and exchanged.
 
 Partner and agreement families have stable identities while every editable change receives a new revision identity. A qualified revision can activate immediately or at a scheduled instant. Live or historically referenced revisions are archived or superseded, never erased; only unused drafts can be hard-deleted. Usage endpoints explain blocking dependencies before destructive actions.
 

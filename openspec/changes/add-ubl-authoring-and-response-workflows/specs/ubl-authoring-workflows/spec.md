@@ -63,3 +63,64 @@ The system SHALL allow versioned inbound exchange capabilities to declare Manual
 - **WHEN** an analyst assigns a non-Manual response automation mode to an outbound capability
 - **THEN** the system rejects the invalid capability configuration
 
+### Requirement: Linked documents avoid unnecessary re-keying
+
+The system SHALL prefill a business-relevant next document from its directly selected source and typed-relation ancestors, SHALL prefer the nearest stage value, and SHALL preserve the correct OASIS order, despatch, invoice, and line references.
+
+#### Scenario: User creates a fulfilment document from an existing chain
+
+- **WHEN** a user creates a response, despatch, receipt, or invoice from a supported earlier document
+- **THEN** the form copies the relevant parties, identifiers, references, items, quantities, units, and available prices while showing their source documents
+
+#### Scenario: A nearer document omits an earlier commercial value
+
+- **WHEN** the directly selected document contains the current quantity but omits an item identifier or unit price available on an ancestor
+- **THEN** smart copy keeps the current quantity and fills the missing identifier or price from that ancestor
+
+#### Scenario: User creates a remittance from an invoice
+
+- **WHEN** a user creates a Remittance Advice from an Invoice
+- **THEN** the form creates an invoice-referenced payment allocation using the payable amount rather than inventing item quantities
+
+#### Scenario: Copied commercial values have not been reviewed
+
+- **WHEN** copied quantities, prices, or amounts are present and the user has not confirmed their review
+- **THEN** the form refuses to save the Draft and keeps every copied value editable
+
+### Requirement: Each supported document has a specialist business form
+
+The system SHALL expose document-specific authoring sections for all six supported OASIS UBL 2.1 document types while preserving one canonical UBL document model.
+
+#### Scenario: Supplier prepares a multi-pallet ASN
+
+- **WHEN** one order line is divided across several logistics units
+- **THEN** the Despatch Advice records separate handling units, SSCCs and line quantities whose allocations can be reconciled with the delivered quantity
+
+#### Scenario: Receiver records discrepancies
+
+- **WHEN** received goods are short, rejected or damaged
+- **THEN** the Receipt Advice records the affected quantity, reason and item traceability without replacing the related Despatch Advice
+
+### Requirement: Partner field requirements are immutable and reproducible
+
+The system SHALL manage reusable tenant-scoped partner document profile revisions and SHALL allow an exchange capability to pin a published profile matching its partner, direction and document type.
+
+#### Scenario: Analyst publishes retailer requirements
+
+- **WHEN** an analyst publishes a draft profile containing required fields, defaults and allowed codes
+- **THEN** that revision becomes immutable and can be selected by compatible agreement capabilities
+
+#### Scenario: Incomplete partner document is saved
+
+- **WHEN** an authored Draft does not yet satisfy its pinned profile
+- **THEN** saving remains available with readiness warnings while finalization and sending remain blocked
+
+### Requirement: Logistics labels derive from canonical handling units
+
+The system SHALL validate supplied SSCCs and render GS1 logistics labels as PDF and ZPL derivatives of the source document version.
+
+#### Scenario: User generates pallet labels
+
+- **WHEN** a Despatch Advice contains handling units with valid unique SSCCs
+- **THEN** the system produces downloadable A5 PDF and printer-ready ZPL labels linked to that document version
+

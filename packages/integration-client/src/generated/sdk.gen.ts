@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, PublishMappingData, PublishMappingResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
-import { zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zArchiveMappingRevisionResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zGetExchangeResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zPublishMappingResponse, zQualifyTradingAgreementResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zUpdateMappingDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
+import type { ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
+import { zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zGetExchangeResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zQualifyTradingAgreementResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -66,6 +66,22 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zUpdateTradingPartnerDraftResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/trading-partners/{partnerId}/draft',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Update a draft document profile
+     */
+    public updatePartnerDocumentProfileDraft<ThrowOnError extends boolean = false>(options: Options<UpdatePartnerDocumentProfileDraftData, ThrowOnError>): RequestResult<UpdatePartnerDocumentProfileDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).put<UpdatePartnerDocumentProfileDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zUpdatePartnerDocumentProfileDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/document-profiles/{profileId}/draft',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -159,6 +175,34 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * List reusable document profile revisions
+     */
+    public listPartnerDocumentProfiles<ThrowOnError extends boolean = false>(options: Options<ListPartnerDocumentProfilesData, ThrowOnError>): RequestResult<ListPartnerDocumentProfilesResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<ListPartnerDocumentProfilesResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zListPartnerDocumentProfilesResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}/document-profiles',
+            ...options
+        });
+    }
+
+    /**
+     * Create a draft document profile
+     */
+    public createPartnerDocumentProfile<ThrowOnError extends boolean = false>(options: Options<CreatePartnerDocumentProfileData, ThrowOnError>): RequestResult<CreatePartnerDocumentProfileResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreatePartnerDocumentProfileResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zCreatePartnerDocumentProfileResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/{partnerId}/document-profiles',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
      * Archive a partner revision
      */
     public archiveTradingPartnerRevision<ThrowOnError extends boolean = false>(options: Options<ArchiveTradingPartnerRevisionData, ThrowOnError>): RequestResult<ArchiveTradingPartnerRevisionResponses, unknown, ThrowOnError> {
@@ -199,6 +243,42 @@ export class IntegrationClient extends HeyApiClient {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
+        });
+    }
+
+    /**
+     * Create an editable profile revision
+     */
+    public createPartnerDocumentProfileRevision<ThrowOnError extends boolean = false>(options: Options<CreatePartnerDocumentProfileRevisionData, ThrowOnError>): RequestResult<CreatePartnerDocumentProfileRevisionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreatePartnerDocumentProfileRevisionResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zCreatePartnerDocumentProfileRevisionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/document-profiles/{profileId}/revisions',
+            ...options
+        });
+    }
+
+    /**
+     * Publish an immutable document profile revision
+     */
+    public publishPartnerDocumentProfile<ThrowOnError extends boolean = false>(options: Options<PublishPartnerDocumentProfileData, ThrowOnError>): RequestResult<PublishPartnerDocumentProfileResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<PublishPartnerDocumentProfileResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zPublishPartnerDocumentProfileResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/document-profiles/{profileId}/publish',
+            ...options
+        });
+    }
+
+    /**
+     * Archive an unused published profile revision
+     */
+    public archivePartnerDocumentProfile<ThrowOnError extends boolean = false>(options: Options<ArchivePartnerDocumentProfileData, ThrowOnError>): RequestResult<ArchivePartnerDocumentProfileResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ArchivePartnerDocumentProfileResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zArchivePartnerDocumentProfileResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/document-profiles/{profileId}/archive',
+            ...options
         });
     }
 
@@ -503,6 +583,18 @@ export class IntegrationClient extends HeyApiClient {
     }
 
     /**
+     * List controlled business codes for mappings
+     */
+    public listBusinessCodeLists<ThrowOnError extends boolean = false>(options?: Options<ListBusinessCodeListsData, ThrowOnError>): RequestResult<ListBusinessCodeListsResponses, unknown, ThrowOnError> {
+        return (options?.client ?? this.client).get<ListBusinessCodeListsResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zListBusinessCodeListsResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/code-lists',
+            ...options
+        });
+    }
+
+    /**
      * Get EDI exchange evidence
      */
     public getExchange<ThrowOnError extends boolean = false>(options: Options<GetExchangeData, ThrowOnError>): RequestResult<GetExchangeResponses, unknown, ThrowOnError> {
@@ -522,6 +614,18 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zListEligibleExchangeRoutesResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/exchanges/eligible-routes',
+            ...options
+        });
+    }
+
+    /**
+     * Delete an unused draft profile
+     */
+    public deletePartnerDocumentProfileDraft<ThrowOnError extends boolean = false>(options: Options<DeletePartnerDocumentProfileDraftData, ThrowOnError>): RequestResult<DeletePartnerDocumentProfileDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).delete<DeletePartnerDocumentProfileDraftResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zDeletePartnerDocumentProfileDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/trading-partners/document-profiles/{profileId}',
             ...options
         });
     }

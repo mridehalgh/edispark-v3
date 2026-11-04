@@ -45,5 +45,23 @@ describe("operational UBL document adapter", () => {
     expect(parsed.document.populatedFields.some((field) => field.path.includes("unitCode"))).toBe(true)
     expect(parsed.document.populatedFields.filter((field) => field.path.includes("ReceiptLine[")).length).toBeGreaterThan(1)
   })
+
+  it("reports only handling units with an SSCC as printable labels", () => {
+    const parsed = parseOperationalDocument({
+      _D: "urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2",
+      DespatchAdvice: [{
+        ID: [{ _: "DES-1" }], IssueDate: [{ _: "2026-11-04" }],
+        Shipment: [{ TransportHandlingUnit: [
+          { ID: [{ _: "PALLET-1" }], TraceID: [{ _: "123456789012345675" }] },
+          { ID: [{ _: "PALLET-2" }] },
+        ] }],
+      }],
+    }, "DESPATCH_ADVICE")
+
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.document.handlingUnitCount).toBe(2)
+    expect(parsed.document.printableLabelCount).toBe(1)
+  })
 })
 

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   try {
-    const client = await createAuthenticatedIntegrationClient(request)
+    const client = await createAuthenticatedIntegrationClient(request, 'member')
     const { data } = await client.listTradingPartners({ throwOnError: true })
     return Response.json(data, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {

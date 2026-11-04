@@ -3,6 +3,8 @@ import type {
   DocumentSetResponse,
   PaginatedResponseDocumentSetResponse,
 } from "@edispark/documents-client"
+import type { AuthorableDocumentType } from "./ubl-authoring"
+import type { SmartCopyDraft } from "./ubl-smart-copy"
 
 export type DocumentSetsPage = PaginatedResponseDocumentSetResponse
 
@@ -52,6 +54,21 @@ export async function getDocumentSetDetail(setId: string, signal?: AbortSignal) 
   })
 
   return readJson<DocumentSetDetail>(response)
+}
+
+export async function getSmartCopyDraft(
+  setId: string,
+  sourceDocumentId: string,
+  targetType: AuthorableDocumentType,
+  signal?: AbortSignal,
+) {
+  const search = new URLSearchParams({ sourceDocumentId, targetType })
+  const response = await fetch(`/api/documents/${encodeURIComponent(setId)}/smart-copy?${search}`, {
+    credentials: "include",
+    headers: { Accept: "application/json" },
+    signal,
+  })
+  return readJson<SmartCopyDraft>(response)
 }
 
 export async function getDocumentVersionContent(

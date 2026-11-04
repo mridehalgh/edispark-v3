@@ -1,5 +1,6 @@
 package com.edispark.partnerships.domain.repository;
 
+import com.edispark.partnerships.domain.model.DocumentProfile;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
 import java.util.List;
@@ -15,4 +16,8 @@ public interface PartnershipRepository {
     Optional<TradingAgreement> findAgreement(String tenantId, UUID id);
     List<TradingAgreement> listAgreements(String tenantId);
     void deleteAgreement(String tenantId, UUID id);
+    DocumentProfile saveDocumentProfile(DocumentProfile profile);
+    Optional<DocumentProfile> findDocumentProfile(String tenantId, UUID id);
+    List<DocumentProfile> listDocumentProfiles(String tenantId, UUID partnerId);
+    void deleteDocumentProfile(String tenantId, UUID id);
 }

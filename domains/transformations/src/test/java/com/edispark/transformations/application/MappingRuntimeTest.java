@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -35,5 +36,33 @@ class MappingRuntimeTest {
         var report = mapper.readTree(result.report());
         assertThat(report.path("mappingRevisionId").asText()).isEqualTo(mapping.id().toString());
         assertThat(report.path("warnings")).hasSize(1);
+    }
+
+    @Test
+    void translatesControlledBusinessCodesWhenProducingPartnerEdi() throws Exception {
+        var node = new MappingNode(UUID.randomUUID(), MappingOperation.CODE_LOOKUP, List.of("/line/unitCode"),
+                "/detail/uom", null, null, Map.of("EA", "EACH", "KGM", "KG"));
+        var mapping = MappingRevision.draft("tenant", "Order units to partner codes", UUID.randomUUID(),
+                UUID.randomUUID(), List.of(node), Instant.parse("2026-11-01T12:00:00Z"))
+                .publish("sha256", Instant.parse("2026-11-01T12:01:00Z"));
+
+        byte[] output = new MappingRuntime(mapper).execute(mapping,
+                "{\"line\":{\"unitCode\":\"KGM\"}}".getBytes(StandardCharsets.UTF_8));
+
+        assertThat(mapper.readTree(output).at("/detail/uom").asText()).isEqualTo("KG");
+    }
+
+    @Test
+    void rejectsUnmappedBusinessCodesRatherThanWritingInvalidEdi() {
+        var node = new MappingNode(UUID.randomUUID(), MappingOperation.CODE_LOOKUP, List.of("/line/unitCode"),
+                "/detail/uom", null, null, Map.of("EA", "EACH"));
+        var mapping = MappingRevision.draft("tenant", "Order units to partner codes", UUID.randomUUID(),
+                UUID.randomUUID(), List.of(node), Instant.parse("2026-11-01T12:00:00Z"))
+                .publish("sha256", Instant.parse("2026-11-01T12:01:00Z"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new MappingRuntime(mapper).execute(mapping,
+                "{\"line\":{\"unitCode\":\"BOX\"}}".getBytes(StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No code mapping for BOX");
     }
 }

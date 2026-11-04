@@ -9,12 +9,12 @@ import {
   MapPin,
   PackageOpen,
   RefreshCw,
-  Reply,
   Truck,
 } from "lucide-react"
 import { Link, useParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
+import { CreateNextDocument } from "@/components/documents/create-next-document"
 import { SendDocument } from "@/components/documents/send-document"
 import { DocumentTechnicalDetails } from "@/components/documents/document-technical-details"
 import { Button } from "@/components/ui/button"
@@ -182,12 +182,12 @@ export function OrderDocumentPage() {
           .sort((left, right) => (right.createdAt ?? "").localeCompare(left.createdAt ?? ""))
         derivatives.forEach((derivative) => {
           candidates.push({
-            label: "Generated UBL JSON",
+            label: "Prepared document",
             load: () => getDerivativeContent(setId, documentId, derivative.id!, controller.signal),
           })
         })
 
-        let lastReason = "No UBL JSON representation is available for this order."
+        let lastReason = "No readable version of this order is available."
         for (const candidate of candidates) {
           const blob = await candidate.load()
           const parsed = parseUblOrderJson(await blob.text())
@@ -275,7 +275,7 @@ export function OrderDocumentPage() {
               {formatMoney(totals.payable, order.currency)}
             </p>
           </>}
-          {setId && documentId && <div className="mt-3 flex flex-wrap justify-end gap-2"><Button asChild variant="outline"><Link to={`/documents/new?type=ORDER_RESPONSE&fromSet=${encodeURIComponent(setId)}&fromDocument=${encodeURIComponent(documentId)}`}><Reply className="mr-2 h-4 w-4" />Create response</Link></Button><SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
+          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="ORDER" /><SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
         </div>
       </header>
 

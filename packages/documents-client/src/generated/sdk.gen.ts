@@ -43,7 +43,7 @@ class HeyApiRegistry<T> {
         }
         return instance;
     }
-    
+
     set(value: T, key?: string): void {
         this.instances.set(key ?? this.defaultKey, value);
     }
@@ -51,7 +51,7 @@ class HeyApiRegistry<T> {
 
 export class DocumentsClient extends HeyApiClient {
     public static readonly __registry: HeyApiRegistry<DocumentsClient> = new HeyApiRegistry<DocumentsClient>();
-    
+
     constructor(args?: {
         client?: Client;
         key?: string;
@@ -59,7 +59,7 @@ export class DocumentsClient extends HeyApiClient {
         super(args);
         DocumentsClient.__registry.set(this, args?.key);
     }
-    
+
     /**
      * List schemas
      *
@@ -101,7 +101,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Add a schema version
      *
@@ -124,7 +124,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * List document sets
      *
@@ -143,7 +143,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Create a new document set
      *
@@ -166,7 +166,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Add a document to a set
      *
@@ -189,7 +189,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Add a document version
      *
@@ -212,7 +212,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Validate a document version
      *
@@ -231,7 +231,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Finalize a draft document
      *
@@ -272,7 +272,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Get all derivatives
      *
@@ -291,7 +291,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Create a derivative
      *
@@ -314,7 +314,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Cancel a document
      */
@@ -350,7 +350,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Get a schema
      *
@@ -369,7 +369,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Get a document
      *
@@ -388,7 +388,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Get a document version
      *
@@ -407,7 +407,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Get document version content
      *
@@ -426,7 +426,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Get derivative content
      *
@@ -445,7 +445,7 @@ export class DocumentsClient extends HeyApiClient {
             ...options
         });
     }
-    
+
     /**
      * Get a document set
      *

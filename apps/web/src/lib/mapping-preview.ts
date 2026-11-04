@@ -27,6 +27,7 @@ function evaluate(node: MappingNode, sources: unknown[]): unknown {
     case 'COALESCE': return sources.find((item) => item !== undefined && item !== null && item !== '')
     case 'UPPERCASE': return sources[0] === undefined ? undefined : String(sources[0]).toUpperCase()
     case 'LOWERCASE': return sources[0] === undefined ? undefined : String(sources[0]).toLowerCase()
+    case 'CODE_LOOKUP': return sources[0] === undefined ? undefined : node.codeMap?.[String(sources[0])]
     default: return sources[0]
   }
 }

@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "generate": "openapi-ts",
+    "generate": "openapi-ts && node scripts/normalize-generated.mjs",
     "typecheck": "tsc --project tsconfig.json"
   },
   "devDependencies": {

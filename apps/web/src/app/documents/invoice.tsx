@@ -12,6 +12,7 @@ import {
 import { Link, useParams } from "react-router-dom"
 
 import { LayoutBody } from "@/components/layout/layout"
+import { CreateNextDocument } from "@/components/documents/create-next-document"
 import { SendDocument } from "@/components/documents/send-document"
 import { DocumentTechnicalDetails } from "@/components/documents/document-technical-details"
 import { Button } from "@/components/ui/button"
@@ -182,12 +183,12 @@ export function InvoiceDocumentPage() {
           .sort((left, right) => (right.createdAt ?? "").localeCompare(left.createdAt ?? ""))
           .forEach((derivative) => {
             candidates.push({
-              label: "Generated UBL JSON",
+              label: "Prepared document",
               load: () => getDerivativeContent(setId, documentId, derivative.id!, controller.signal),
             })
           })
 
-        let lastReason = "No UBL JSON representation is available for this invoice."
+        let lastReason = "No readable version of this invoice is available."
         for (const candidate of candidates) {
           const parsed = parseUblInvoiceJson(await (await candidate.load()).text())
           if (parsed.ok) {
@@ -274,7 +275,7 @@ export function InvoiceDocumentPage() {
           {invoice.dueDate && (
             <p className="mt-1 text-xs text-muted-foreground">Due {formatDate(invoice.dueDate)}</p>
           )}
-          {setId && documentId && <SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} />}
+          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="INVOICE" /><SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
         </div>
       </header>
 

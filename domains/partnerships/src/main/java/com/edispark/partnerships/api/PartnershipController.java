@@ -4,6 +4,8 @@ import com.edispark.partnerships.application.PartnershipService;
 import com.edispark.partnerships.domain.model.AcknowledgementPolicy;
 import com.edispark.partnerships.domain.model.BatchingPolicy;
 import com.edispark.partnerships.domain.model.BusinessDocumentType;
+import com.edispark.partnerships.domain.model.DocumentFieldRule;
+import com.edispark.partnerships.domain.model.DocumentProfile;
 import com.edispark.partnerships.domain.model.OutboundLossPolicy;
 import com.edispark.partnerships.domain.model.BusinessIdentity;
 import com.edispark.partnerships.domain.model.EdiStandard;
@@ -86,6 +88,51 @@ public final class PartnershipController {
         return service.createAgreement(partnerId, request.name());
     }
 
+    @GetMapping("/{partnerId}/document-profiles")
+    @Operation(operationId = "listPartnerDocumentProfiles", summary = "List reusable document profile revisions")
+    public List<DocumentProfile> listDocumentProfiles(@PathVariable UUID partnerId) {
+        return service.listDocumentProfiles(partnerId);
+    }
+
+    @PostMapping("/{partnerId}/document-profiles") @ResponseStatus(HttpStatus.CREATED)
+    @Operation(operationId = "createPartnerDocumentProfile", summary = "Create a draft document profile")
+    public DocumentProfile createDocumentProfile(@PathVariable UUID partnerId,
+            @Valid @RequestBody DocumentProfileRequest request) {
+        return service.createDocumentProfile(partnerId, request.name(), request.direction(), request.documentType(),
+                request.fieldRules());
+    }
+
+    @PutMapping("/document-profiles/{profileId}/draft")
+    @Operation(operationId = "updatePartnerDocumentProfileDraft", summary = "Update a draft document profile")
+    public DocumentProfile updateDocumentProfile(@PathVariable UUID profileId,
+            @RequestBody List<@Valid DocumentFieldRule> fieldRules) {
+        return service.updateDocumentProfile(profileId, fieldRules);
+    }
+
+    @PostMapping("/document-profiles/{profileId}/publish")
+    @Operation(operationId = "publishPartnerDocumentProfile", summary = "Publish an immutable document profile revision")
+    public DocumentProfile publishDocumentProfile(@PathVariable UUID profileId) {
+        return service.publishDocumentProfile(profileId);
+    }
+
+    @PostMapping("/document-profiles/{profileId}/revisions") @ResponseStatus(HttpStatus.CREATED)
+    @Operation(operationId = "createPartnerDocumentProfileRevision", summary = "Create an editable profile revision")
+    public DocumentProfile reviseDocumentProfile(@PathVariable UUID profileId) {
+        return service.createDocumentProfileRevision(profileId);
+    }
+
+    @PostMapping("/document-profiles/{profileId}/archive")
+    @Operation(operationId = "archivePartnerDocumentProfile", summary = "Archive an unused published profile revision")
+    public DocumentProfile archiveDocumentProfile(@PathVariable UUID profileId) {
+        return service.archiveDocumentProfile(profileId);
+    }
+
+    @DeleteMapping("/document-profiles/{profileId}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(operationId = "deletePartnerDocumentProfileDraft", summary = "Delete an unused draft profile")
+    public void deleteDocumentProfile(@PathVariable UUID profileId) {
+        service.deleteDocumentProfileDraft(profileId);
+    }
+
     @GetMapping("/agreements/{agreementId}") @Operation(operationId = "getTradingAgreement", summary = "Get a trading agreement")
     public TradingAgreement getAgreement(@PathVariable UUID agreementId) { return service.getAgreement(agreementId); }
 
@@ -148,13 +195,17 @@ public final class PartnershipController {
             @NotNull UUID as2ConnectionId, @NotNull AcknowledgementPolicy acknowledgementPolicy,
             @NotNull BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy,
             WorkflowAutomationMode automationMode, WorkflowApprovalPolicy approvalPolicy,
-            BusinessDocumentType responseDocumentType) {
+            BusinessDocumentType responseDocumentType, UUID documentProfileRevisionId) {
         ExchangeCapability toDomain() { return toDomain(UUID.randomUUID()); }
         ExchangeCapability toDomain(UUID id) {
             return new ExchangeCapability(id, direction, documentType, standard, release, messageType,
                     sourceSchemaId, targetSchemaId, mappingRevisionId, as2ConnectionId, acknowledgementPolicy,
-                    batchingPolicy, outboundLossPolicy, automationMode, approvalPolicy, responseDocumentType);
+                    batchingPolicy, outboundLossPolicy, automationMode, approvalPolicy, responseDocumentType,
+                    documentProfileRevisionId);
         }
     }
+    public record DocumentProfileRequest(@NotBlank @Size(max = 120) String name,
+            @NotNull ExchangeDirection direction, @NotNull BusinessDocumentType documentType,
+            List<@Valid DocumentFieldRule> fieldRules) { }
     public record ActivationRequest(java.time.Instant effectiveAt) { }
 }

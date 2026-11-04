@@ -71,6 +71,7 @@ public class DocumentContentQueryService {
             case XML -> "application/xml";
             case JSON -> "application/json";
             case PDF -> "application/pdf";
+            case ZPL -> "application/vnd.zebra-zpl";
             case EDI -> "application/edi";
         };
     }
@@ -92,6 +93,7 @@ public class DocumentContentQueryService {
             case XML -> ".xml";
             case JSON -> ".json";
             case PDF -> ".pdf";
+            case ZPL -> ".zpl";
             case EDI -> ".edi";
         };
     }

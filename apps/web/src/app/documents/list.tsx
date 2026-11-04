@@ -127,7 +127,7 @@ export function DocumentsList() {
   return (
     <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
       <header className="mb-6 flex items-center justify-between gap-4">
-        <div><h1 className="text-2xl font-semibold tracking-tight">Documents</h1><p className="mt-1 text-sm text-muted-foreground">Canonical OASIS UBL documents and their partner exchanges.</p></div>
+        <div><h1 className="text-2xl font-semibold tracking-tight">Documents</h1><p className="mt-1 text-sm text-muted-foreground">Orders, deliveries, invoices and responses exchanged with your partners.</p></div>
         <Button asChild><Link to="/documents/new"><Plus className="mr-2 h-4 w-4" />Create document</Link></Button>
       </header>
 
@@ -244,7 +244,7 @@ export function DocumentsList() {
             <FileText className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
             <p className="mt-3 text-sm font-medium">No documents found</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {documents.length === 0 ? "Readable business documents appear here when transferred files are converted into UBL records." : "Try a different search term."}
+              {documents.length === 0 ? "Your business documents will appear here when they are received or created." : "Try a different search term."}
             </p>
           </div>
         )}

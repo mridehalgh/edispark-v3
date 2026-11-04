@@ -8,7 +8,7 @@ public record ExchangeCapability(UUID id, ExchangeDirection direction, BusinessD
         UUID mappingRevisionId, UUID as2ConnectionId, AcknowledgementPolicy acknowledgementPolicy,
         BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy,
         WorkflowAutomationMode automationMode, WorkflowApprovalPolicy approvalPolicy,
-        BusinessDocumentType responseDocumentType) {
+        BusinessDocumentType responseDocumentType, UUID documentProfileRevisionId) {
     public ExchangeCapability {
         Objects.requireNonNull(id);
         Objects.requireNonNull(direction);
@@ -41,7 +41,7 @@ public record ExchangeCapability(UUID id, ExchangeDirection direction, BusinessD
             BatchingPolicy batchingPolicy) {
         this(id, direction, documentType, standard, release, messageType, sourceSchemaId, targetSchemaId,
                 mappingRevisionId, as2ConnectionId, acknowledgementPolicy, batchingPolicy, OutboundLossPolicy.STRICT,
-                WorkflowAutomationMode.MANUAL, WorkflowApprovalPolicy.NONE, null);
+                WorkflowAutomationMode.MANUAL, WorkflowApprovalPolicy.NONE, null, null);
     }
 
     public ExchangeCapability(UUID id, ExchangeDirection direction, BusinessDocumentType documentType,
@@ -50,7 +50,18 @@ public record ExchangeCapability(UUID id, ExchangeDirection direction, BusinessD
             BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy) {
         this(id, direction, documentType, standard, release, messageType, sourceSchemaId, targetSchemaId,
                 mappingRevisionId, as2ConnectionId, acknowledgementPolicy, batchingPolicy, outboundLossPolicy,
-                WorkflowAutomationMode.MANUAL, WorkflowApprovalPolicy.NONE, null);
+                WorkflowAutomationMode.MANUAL, WorkflowApprovalPolicy.NONE, null, null);
+    }
+
+    public ExchangeCapability(UUID id, ExchangeDirection direction, BusinessDocumentType documentType,
+            EdiStandard standard, String release, String messageType, UUID sourceSchemaId, UUID targetSchemaId,
+            UUID mappingRevisionId, UUID as2ConnectionId, AcknowledgementPolicy acknowledgementPolicy,
+            BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy,
+            WorkflowAutomationMode automationMode, WorkflowApprovalPolicy approvalPolicy,
+            BusinessDocumentType responseDocumentType) {
+        this(id, direction, documentType, standard, release, messageType, sourceSchemaId, targetSchemaId,
+                mappingRevisionId, as2ConnectionId, acknowledgementPolicy, batchingPolicy, outboundLossPolicy,
+                automationMode, approvalPolicy, responseDocumentType, null);
     }
 
     public String routingKey() {

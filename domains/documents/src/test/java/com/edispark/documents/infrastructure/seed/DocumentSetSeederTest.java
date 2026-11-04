@@ -111,12 +111,31 @@ class DocumentSetSeederTest {
         DocumentSet order = documentSets.findAll().stream()
                 .filter(set -> "PO-2026-0042".equals(set.metadata().get("businessDocumentNumber")))
                 .findFirst().orElseThrow();
-        assertThat(order.metadata()).containsEntry("fixtureVersion", "six-document-workflow-v4");
+        assertThat(order.metadata()).containsEntry("fixtureVersion", "six-document-workflow-v5");
         Document source = order.getAllDocuments().getFirst();
         assertThat(asString(source)).contains("BUY-WATER-750", "HERBAL-TEA-80", "OTR=8");
         assertThat(source.derivatives()).hasSize(1);
         assertThat(asString(source.derivatives().getFirst()))
                 .contains("CommodityClassification", "PaymentTerms", "AllowanceCharge");
+    }
+
+    @Test
+    @DisplayName("upgrades the previous despatch fixture to the printable pallet-label sample")
+    void upgradesDespatchFixtureWithoutSsccs() {
+        documentSets.save(DocumentSet.create("local-seeder", Map.of(
+                "businessDocumentNumber", "DES-2026-0042",
+                "fixtureVersion", "six-document-workflow-v4",
+                "name", "Older despatch sample")));
+
+        seeder.seedTenantData();
+        seeder.seedTenantData();
+
+        DocumentSet despatch = documentSets.findAll().stream()
+                .filter(set -> "DES-2026-0042".equals(set.metadata().get("businessDocumentNumber")))
+                .findFirst().orElseThrow();
+        assertThat(despatch.metadata()).containsEntry("fixtureVersion", "six-document-workflow-v5");
+        assertThat(asString(despatch.getAllDocuments().getFirst()))
+                .contains("TransportHandlingUnit", "TraceID", "123456789012345675");
     }
 
     @Test

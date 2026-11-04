@@ -25,4 +25,16 @@ describe('mapping preview', () => {
       { id: '1', operation: 'COPY', sourcePointers: ['/id'], targetPointer: '/Order/0/ID/0/_' },
     ])).toEqual({ Order: [{ ID: [{ _: 'PO-42' }] }] })
   })
+
+  it('previews partner code translations from the immutable mapping rule', () => {
+    expect(previewMapping({ line: { unitCode: 'KGM' } }, [
+      {
+        id: '1',
+        operation: 'CODE_LOOKUP',
+        sourcePointers: ['/line/unitCode'],
+        targetPointer: '/detail/uom',
+        codeMap: { EA: 'EACH', KGM: 'KG' },
+      },
+    ])).toEqual({ detail: { uom: 'KG' } })
+  })
 })

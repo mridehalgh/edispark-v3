@@ -103,8 +103,18 @@ public final class MappingRuntime {
                     .collect(java.util.stream.Collectors.joining(node.separator() == null ? "" : node.separator())));
             case UPPERCASE -> mapper.getNodeFactory().textNode(first(values, node).asText().toUpperCase(java.util.Locale.ROOT));
             case LOWERCASE -> mapper.getNodeFactory().textNode(first(values, node).asText().toLowerCase(java.util.Locale.ROOT));
+            case CODE_LOOKUP -> codeLookup(values, node);
             case CONSTANT -> throw new IllegalStateException("Handled above");
         };
+    }
+
+    private JsonNode codeLookup(List<JsonNode> values, MappingNode node) {
+        String sourceCode = first(values, node).asText();
+        String targetCode = node.codeMap().get(sourceCode);
+        if (targetCode == null) {
+            throw new IllegalArgumentException("No code mapping for " + sourceCode + " in mapping node " + node.id());
+        }
+        return mapper.getNodeFactory().textNode(targetCode);
     }
 
     private JsonNode first(List<JsonNode> values, MappingNode node) {

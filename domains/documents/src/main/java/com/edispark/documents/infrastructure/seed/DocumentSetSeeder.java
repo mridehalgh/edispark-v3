@@ -52,7 +52,7 @@ import java.util.Set;
 public class DocumentSetSeeder {
 
     private static final String CREATED_BY = "local-seeder";
-    private static final String FIXTURE_VERSION = "six-document-workflow-v4";
+    private static final String FIXTURE_VERSION = "six-document-workflow-v5";
     private static final String RESOURCE_ROOT = "/seed/documents/";
     private static final VersionIdentifier INITIAL_VERSION = VersionIdentifier.of("2.1");
     private static final List<DocumentType> SEEDED_TYPES = List.of(

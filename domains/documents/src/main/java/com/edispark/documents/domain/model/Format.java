@@ -7,5 +7,6 @@ public enum Format {
     XML,
     JSON,
     PDF,
-    EDI
+    EDI,
+    ZPL
 }

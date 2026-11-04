@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input'
 import { previewMapping } from '@/lib/mapping-preview'
 import { cn } from '@/lib/utils'
 
-const OPERATIONS: NonNullable<MappingNode['operation']>[] = ['COPY', 'CONSTANT', 'CONCAT', 'COALESCE', 'UPPERCASE', 'LOWERCASE']
 const DEFAULT_INPUT = JSON.stringify({
   _D: 'urn:oasis:names:specification:ubl:schema:xsd:Order-2',
   _A: 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',
@@ -46,6 +45,46 @@ function leafPointers(value: unknown, base = ''): string[] {
 
 function JsonPane({ value, label }: { value: string; label: string }) {
   return <div className="h-full overflow-auto bg-[oklch(0.18_0.035_270)] p-4 text-[0.75rem] leading-6 text-[oklch(0.91_0.02_270)]" aria-label={label}><pre className="font-mono whitespace-pre-wrap break-words">{value}</pre></div>
+}
+
+function CodeMapEditor({ node, editable, onChange }: {
+  node: MappingNode
+  editable: boolean
+  onChange: (codeMap: Record<string, string>) => void
+}) {
+  const syntaxLabel = (syntax?: string) => syntax?.replaceAll('_', ' ').replace('D96A', 'D.96A')
+  const listLabel = node.codeList?.replaceAll('_', ' ').toLocaleLowerCase()
+
+  return <label className="grid gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">
+    <span className="flex flex-wrap items-baseline justify-between gap-2">
+      <span>Code translations</span>
+      {node.codeList && node.sourceSyntax && node.targetSyntax && (
+        <span className="font-normal text-muted-foreground/80">
+          {listLabel} · {syntaxLabel(node.sourceSyntax)} → {syntaxLabel(node.targetSyntax)}
+        </span>
+      )}
+    </span>
+    <textarea
+      key={JSON.stringify(node.codeMap)}
+      defaultValue={JSON.stringify(node.codeMap ?? {}, null, 2)}
+      disabled={!editable}
+      rows={5}
+      onBlur={(event) => {
+        try {
+          const parsed = JSON.parse(event.currentTarget.value) as unknown
+          if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object'
+            || Object.values(parsed).some((value) => typeof value !== 'string')) throw new Error('invalid')
+          event.currentTarget.setCustomValidity('')
+          onChange(parsed as Record<string, string>)
+        } catch {
+          event.currentTarget.setCustomValidity('Enter a JSON object containing source and target code strings.')
+          event.currentTarget.reportValidity()
+        }
+      }}
+      className="rounded-md border bg-background p-2 font-mono text-xs text-foreground disabled:opacity-70"
+      aria-label="Code translations as JSON"
+    />
+  </label>
 }
 
 export function MappingWorkspacePage() {
@@ -154,7 +193,7 @@ export function MappingWorkspacePage() {
 
       <main className={cn('min-h-0 bg-background', activePane !== 'mapping' && 'hidden xl:block')} aria-labelledby="rules-title">
         <div className="flex items-center justify-between border-b px-4 py-3"><h2 id="rules-title" className="text-sm font-semibold">Rules</h2>{editable && <Button size="sm" variant="outline" onClick={addNode} className="gap-2"><Plus className="h-4 w-4" />Add field</Button>}</div>
-        <div className="max-h-[calc(100vh-13rem)] overflow-y-auto divide-y">{nodes.map((node, index) => <article key={node.id ?? index} onClick={() => setActiveNodeId(node.id)} className={cn('px-4 py-3 transition-colors', activeNodeId === node.id ? 'bg-accent/75' : 'hover:bg-muted/30')}><div className="mb-2 flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums">{index + 1}</span><span className="truncate font-mono text-xs font-medium text-primary">{node.targetPointer}</span></div>{editable && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(event) => { event.stopPropagation(); removeNode(node.id) }} aria-label={`Remove rule ${index + 1}`}><Trash2 className="h-4 w-4" /></Button>}</div><div className="grid gap-2 sm:grid-cols-[8.5rem_1fr]"><label className="grid gap-1 text-xs font-medium text-muted-foreground">Operation<select disabled={!editable} value={node.operation} onChange={(event) => updateNode(node.id, { operation: event.target.value as MappingNode['operation'] })} className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"><option value="COPY">Copy value</option><option value="CONSTANT">Fixed value</option><option value="CONCAT">Join values</option><option value="COALESCE">First available</option><option value="UPPERCASE">Uppercase</option><option value="LOWERCASE">Lowercase</option></select></label><label className="grid gap-1 text-xs font-medium text-muted-foreground">{node.operation === 'CONSTANT' ? 'Fixed value' : 'Source JSON pointer'}<Input disabled={!editable} value={node.operation === 'CONSTANT' ? node.constant ?? '' : node.sourcePointers?.[0] ?? ''} onChange={(event) => updateNode(node.id, node.operation === 'CONSTANT' ? { constant: event.target.value } : { sourcePointers: [event.target.value] })} className="h-9 font-mono text-xs text-foreground" /></label><label className="grid gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">Target JSON pointer<Input disabled={!editable} value={node.targetPointer ?? ''} onChange={(event) => updateNode(node.id, { targetPointer: event.target.value })} className="h-9 font-mono text-xs text-foreground" /></label></div></article>)}{nodes.length === 0 && <div className="px-6 py-16 text-center"><Braces className="mx-auto h-6 w-6 text-muted-foreground" /><p className="mt-3 text-sm font-medium">No rules</p>{editable && <Button size="sm" className="mt-4" onClick={addNode}>Add field</Button>}</div>}</div>
+        <div className="max-h-[calc(100vh-13rem)] overflow-y-auto divide-y">{nodes.map((node, index) => <article key={node.id ?? index} onClick={() => setActiveNodeId(node.id)} className={cn('px-4 py-3 transition-colors', activeNodeId === node.id ? 'bg-accent/75' : 'hover:bg-muted/30')}><div className="mb-2 flex items-center justify-between gap-3"><div className="flex min-w-0 items-center gap-2"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums">{index + 1}</span><span className="truncate font-mono text-xs font-medium text-primary">{node.targetPointer}</span></div>{editable && <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(event) => { event.stopPropagation(); removeNode(node.id) }} aria-label={`Remove rule ${index + 1}`}><Trash2 className="h-4 w-4" /></Button>}</div><div className="grid gap-2 sm:grid-cols-[8.5rem_1fr]"><label className="grid gap-1 text-xs font-medium text-muted-foreground">Operation<select disabled={!editable} value={node.operation} onChange={(event) => updateNode(node.id, { operation: event.target.value as MappingNode['operation'], ...(event.target.value === 'CODE_LOOKUP' && !node.codeMap ? { codeMap: {} } : {}) })} className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"><option value="COPY">Copy value</option><option value="CONSTANT">Fixed value</option><option value="CONCAT">Join values</option><option value="COALESCE">First available</option><option value="UPPERCASE">Uppercase</option><option value="LOWERCASE">Lowercase</option><option value="CODE_LOOKUP">Translate code</option></select></label><label className="grid gap-1 text-xs font-medium text-muted-foreground">{node.operation === 'CONSTANT' ? 'Fixed value' : 'Source JSON pointer'}<Input disabled={!editable} value={node.operation === 'CONSTANT' ? node.constant ?? '' : node.sourcePointers?.[0] ?? ''} onChange={(event) => updateNode(node.id, node.operation === 'CONSTANT' ? { constant: event.target.value } : { sourcePointers: [event.target.value] })} className="h-9 font-mono text-xs text-foreground" /></label><label className="grid gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">Target JSON pointer<Input disabled={!editable} value={node.targetPointer ?? ''} onChange={(event) => updateNode(node.id, { targetPointer: event.target.value })} className="h-9 font-mono text-xs text-foreground" /></label>{node.operation === 'CODE_LOOKUP' && <CodeMapEditor node={node} editable={editable} onChange={(codeMap) => updateNode(node.id, { codeMap })} />}</div></article>)}{nodes.length === 0 && <div className="px-6 py-16 text-center"><Braces className="mx-auto h-6 w-6 text-muted-foreground" /><p className="mt-3 text-sm font-medium">No rules</p>{editable && <Button size="sm" className="mt-4" onClick={addNode}>Add field</Button>}</div>}</div>
       </main>
 
       <aside className={cn('min-h-0 border-l bg-[oklch(0.18_0.035_270)]', activePane !== 'output' && 'hidden xl:block')} aria-labelledby="output-title"><div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white"><h2 id="output-title" className="text-sm font-semibold">Output</h2><Braces className="h-4 w-4 text-[oklch(0.88_0.13_155)]" /></div><div className="h-[calc(100vh-12.25rem)]"><JsonPane value={previewText} label="Generated document rule output" /></div></aside>

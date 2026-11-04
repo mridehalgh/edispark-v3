@@ -1,6 +1,6 @@
 "use client"
 
-import type { ExchangeResponse, MappingRevision, TradingAgreement, TradingPartner } from "@edispark/integration-client"
+import type { DocumentFieldRule, DocumentProfile, ExchangeResponse, MappingRevision, TradingAgreement, TradingPartner } from "@edispark/integration-client"
 import type { As2ConnectionDetailsResponse, CertificateResponse, PartnerResponse, TransferResponse } from "@edispark/mft-client"
 import { ArrowLeft, ArrowRight, Copy, Download, Edit3, FileText, Pause, Plug, Plus, RefreshCw, Send, Trash2, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -8,6 +8,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom"
 
 import { AdminEmptyState, AdminNotice, AdminPage, AdminPageHeader } from "@/components/admin/admin-page"
 import { PartnerRevisionEditor } from "@/components/trading-network/partner-revision-editor"
+import { DocumentProfileEditor } from "@/components/trading-network/document-profile-editor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,9 +24,10 @@ type PartnerData = {
   transfers: TransferResponse[]
   mappings: MappingRevision[]
   connectionDetails: As2ConnectionDetailsResponse[]
+  documentProfiles: DocumentProfile[]
 }
 
-const EMPTY_DATA: PartnerData = { partners: [], agreements: [], exchanges: [], connections: [], certificates: [], transfers: [], mappings: [], connectionDetails: [] }
+const EMPTY_DATA: PartnerData = { partners: [], agreements: [], exchanges: [], connections: [], certificates: [], transfers: [], mappings: [], connectionDetails: [], documentProfiles: [] }
 const PARTNER_TAB_CLASS = "min-h-10 shrink-0 justify-start rounded-md px-3 text-muted-foreground shadow-none data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=active]:shadow-none lg:w-full"
 
 async function readApi<T>(url: string, init?: RequestInit): Promise<T> {
@@ -62,6 +64,7 @@ export function PartnerPage() {
   const [notice, setNotice] = useState<string>()
   const [addingConnection, setAddingConnection] = useState(false)
   const [addingDocument, setAddingDocument] = useState(false)
+  const [addingProfile, setAddingProfile] = useState(false)
   const [sendingFile, setSendingFile] = useState(false)
   const [documentDirection, setDocumentDirection] = useState<"ALL" | "OUTBOUND" | "INBOUND">("ALL")
   const requestedView = searchParams.get("view")
@@ -77,7 +80,7 @@ export function PartnerPage() {
   const refresh = useCallback(async () => {
     setError(undefined)
     try {
-      const [partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails] = await Promise.all([
+      const [partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails, documentProfiles] = await Promise.all([
         readApi<TradingPartner[]>("/api/integration/partners"),
         readApi<TradingAgreement[]>("/api/integration/agreements"),
         readApi<ExchangeResponse[]>("/api/integration/exchanges"),
@@ -86,14 +89,15 @@ export function PartnerPage() {
         readApi<TransferResponse[]>("/api/mft/transfers"),
         readApi<MappingRevision[]>("/api/integration/mappings"),
         readApi<As2ConnectionDetailsResponse[]>("/api/mft/connection-details"),
+        partnerId ? readApi<DocumentProfile[]>(`/api/integration/partners/${partnerId}/document-profiles`) : Promise.resolve([]),
       ])
-      setData({ partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails })
+      setData({ partners, agreements, exchanges, connections, certificates, transfers, mappings, connectionDetails, documentProfiles })
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "The partner could not be loaded.")
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [partnerId])
 
   useEffect(() => { void refresh() }, [refresh])
 
@@ -257,6 +261,7 @@ export function PartnerPage() {
     const automationMode = String(form.get("automationMode") || "MANUAL")
     const approvalPolicy = String(form.get("approvalPolicy") || "NONE")
     const responseDocumentType = String(form.get("responseDocumentType") || "") || undefined
+    const documentProfileRevisionId = String(form.get("documentProfileRevisionId") || "") || undefined
     const search = [direction === "INBOUND" ? "inbound" : "outbound", documentType.toLowerCase(), standard.toLowerCase()]
     const mapping = data.mappings.find((item) => item.status === "PUBLISHED" && search.every((term) => item.name?.toLowerCase().includes(term)))
       ?? data.mappings.find((item) => item.status === "PUBLISHED" && item.name?.toLowerCase().includes(standard.toLowerCase()) && item.name?.toLowerCase().includes(documentType.toLowerCase()))
@@ -264,8 +269,36 @@ export function PartnerPage() {
     await perform(`/api/integration/agreements/${agreement.id}/capabilities`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ direction, documentType, standard, release: standard === "EDIFACT" ? "D96A" : "9", messageType: ({ ORDER: "ORDERS", ORDER_RESPONSE: "ORDRSP", DESPATCH_ADVICE: "DESADV", INVOICE: "INVOIC", REMITTANCE_ADVICE: "REMADV", RECEIPT_ADVICE: "RECADV" } as const)[documentType], sourceSchemaId: mapping.sourceSchemaId, targetSchemaId: mapping.targetSchemaId, mappingRevisionId: mapping.id, as2ConnectionId: connection.id, acknowledgementPolicy: "TRANSPORT_ONLY", batchingPolicy: "INDIVIDUAL", automationMode: direction === "INBOUND" ? automationMode : "MANUAL", approvalPolicy: direction === "INBOUND" ? approvalPolicy : "NONE", responseDocumentType: direction === "INBOUND" ? responseDocumentType : undefined }),
+      body: JSON.stringify({ direction, documentType, standard, release: standard === "EDIFACT" ? "D96A" : "9", messageType: ({ ORDER: "ORDERS", ORDER_RESPONSE: "ORDRSP", DESPATCH_ADVICE: "DESADV", INVOICE: "INVOIC", REMITTANCE_ADVICE: "REMADV", RECEIPT_ADVICE: "RECADV" } as const)[documentType], sourceSchemaId: mapping.sourceSchemaId, targetSchemaId: mapping.targetSchemaId, mappingRevisionId: mapping.id, as2ConnectionId: connection.id, acknowledgementPolicy: "TRANSPORT_ONLY", batchingPolicy: "INDIVIDUAL", automationMode: direction === "INBOUND" ? automationMode : "MANUAL", approvalPolicy: direction === "INBOUND" ? approvalPolicy : "NONE", responseDocumentType: direction === "INBOUND" ? responseDocumentType : undefined, documentProfileRevisionId }),
     }, "Document exchange added.")
+  }
+
+  async function createDocumentProfile(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!partner?.id) return
+    const form = new FormData(event.currentTarget)
+    const created = await perform(`/api/integration/partners/${partner.id}/document-profiles`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+        name: form.get("name"), direction: form.get("direction"), documentType: form.get("documentType"), fieldRules: [],
+      }),
+    }, "Document profile created.")
+    if (created) setAddingProfile(false)
+  }
+
+  async function saveDocumentProfile(profile: DocumentProfile, rules: DocumentFieldRule[]) {
+    if (!profile.id) return
+    await perform(`/api/integration/document-profiles/${profile.id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rules) }, "Partner requirements saved.")
+  }
+
+  async function publishDocumentProfile(profile: DocumentProfile, rules: DocumentFieldRule[]) {
+    if (!profile.id) return
+    const saved = await perform(`/api/integration/document-profiles/${profile.id}/draft`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rules) }, "Partner requirements saved.")
+    if (saved) await profileAction(profile, "publish")
+  }
+
+  async function profileAction(profile: DocumentProfile, action: "publish" | "revisions") {
+    if (!profile.id) return
+    await perform(`/api/integration/document-profiles/${profile.id}/${action}`, { method: "POST" }, action === "publish" ? "Partner requirements published." : "New version ready to edit.")
   }
 
   async function changeDocumentStatus(action: "qualify" | "activate" | "suspend") {
@@ -363,7 +396,7 @@ export function PartnerPage() {
 
         <TabsContent value="documents" className="mt-4 lg:mt-0">
       <section className="border-t" aria-labelledby="documents-title">
-        <header className="flex flex-wrap items-center gap-3 border-b py-3"><FileText className="h-4 w-4 text-primary" aria-hidden="true" /><div><h2 id="documents-title" className="text-base font-semibold">Documents</h2><p className="mt-0.5 text-sm text-muted-foreground">Each route says who sends the document, its EDI format, and the exact document rule used to translate its fields.</p></div>{agreement ? <Badge variant="secondary">{agreement.status === "ACTIVE" ? "On" : stateLabel(agreement.status)}</Badge> : null}<div className="ml-auto flex gap-2">{agreement?.status === "DRAFT" ? <Button size="sm" variant="ghost" onClick={() => void discardDocumentEdit()} disabled={busy}><Trash2 className="mr-2 h-4 w-4" />Discard</Button> : null}{agreement?.status === "DRAFT" || agreement?.status === "QUALIFYING" ? <><Button size="sm" variant="ghost" onClick={() => void changeDocumentStatus("qualify")} disabled={busy || !capabilities.length}>Check</Button>{agreement.status === "QUALIFYING" && agreement.qualification?.passed ? <Button size="sm" onClick={() => void changeDocumentStatus("activate")} disabled={busy}>Turn on</Button> : null}</> : null}{agreement?.status === "ACTIVE" ? <Button size="sm" variant="ghost" onClick={() => void changeDocumentStatus("suspend")} disabled={busy}>Pause</Button> : null}<Button size="sm" variant="outline" onClick={() => void editDocuments()} disabled={busy}>{addingDocument ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}{agreement?.status === "ACTIVE" ? "Edit" : "Add"}</Button></div></header>
+        <header className="flex flex-wrap items-center gap-3 border-b py-3"><FileText className="h-4 w-4 text-primary" aria-hidden="true" /><div><h2 id="documents-title" className="text-base font-semibold">Documents</h2><p className="mt-0.5 text-sm text-muted-foreground">Choose which documents you exchange and what should happen when each one arrives.</p></div>{agreement ? <Badge variant="secondary">{agreement.status === "ACTIVE" ? "On" : stateLabel(agreement.status)}</Badge> : null}<div className="ml-auto flex gap-2">{agreement?.status === "DRAFT" ? <Button size="sm" variant="ghost" onClick={() => void discardDocumentEdit()} disabled={busy}><Trash2 className="mr-2 h-4 w-4" />Discard</Button> : null}{agreement?.status === "DRAFT" || agreement?.status === "QUALIFYING" ? <><Button size="sm" variant="ghost" onClick={() => void changeDocumentStatus("qualify")} disabled={busy || !capabilities.length}>Check</Button>{agreement.status === "QUALIFYING" && agreement.qualification?.passed ? <Button size="sm" onClick={() => void changeDocumentStatus("activate")} disabled={busy}>Turn on</Button> : null}</> : null}{agreement?.status === "ACTIVE" ? <Button size="sm" variant="ghost" onClick={() => void changeDocumentStatus("suspend")} disabled={busy}>Pause</Button> : null}<Button size="sm" variant="outline" onClick={() => void editDocuments()} disabled={busy}>{addingDocument ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}{agreement?.status === "ACTIVE" ? "Edit" : "Add"}</Button></div></header>
         {capabilities.length ? <div className="flex items-center gap-1 border-b py-2" aria-label="Filter document routes by direction">{([['ALL', 'All'], ['OUTBOUND', 'Send'], ['INBOUND', 'Receive']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={documentDirection === value} onClick={() => setDocumentDirection(value)} className={cn("min-h-9 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", documentDirection === value && "bg-accent text-primary")}>{label}</button>)}</div> : null}
         {visibleCapabilities.length ? <div>{(['OUTBOUND', 'INBOUND'] as const).map((direction) => {
           const routes = visibleCapabilities.filter((item) => item.direction === direction)
@@ -372,17 +405,24 @@ export function PartnerPage() {
           return <div key={direction} className="border-b last:border-b-0">
             <div className="flex items-center gap-2 bg-muted/30 px-3 py-2 text-sm font-medium"><span>{outbound ? 'Your organisation' : partner?.displayName}</span><ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" /><span>{outbound ? partner?.displayName : 'Your organisation'}</span><span className="ml-auto text-xs font-normal text-muted-foreground">{routes.length} {routes.length === 1 ? 'route' : 'routes'}</span></div>
             <div className="divide-y">{routes.map((capability, index) => {
-              const rule = data.mappings.find((mapping) => mapping.id === capability.mappingRevisionId)
-              return <div key={capability.id ?? index} className="grid min-h-16 items-center gap-3 px-3 py-3 text-sm sm:grid-cols-[8rem_10rem_minmax(15rem,1fr)_auto]">
+              const profile = data.documentProfiles.find((item) => item.id === capability.documentProfileRevisionId)
+              const workflow = capability.automationMode === "AUTO_SEND" ? "Validate and send automatically" : capability.automationMode === "APPROVAL_REQUIRED" ? "Prepare and request approval" : capability.automationMode === "AUTO_DRAFT" ? "Prepare a response draft" : outbound ? "Send when approved" : "Create a work item"
+              return <div key={capability.id ?? index} className="grid min-h-16 items-center gap-3 px-3 py-3 text-sm lg:grid-cols-[8rem_8rem_minmax(12rem,1fr)_minmax(12rem,1fr)_auto]">
                 <span className="font-medium capitalize">{capability.documentType?.toLowerCase()}</span>
                 <span className="text-muted-foreground">{capability.standard} {capability.release}</span>
-                {rule?.id ? <Button asChild variant="ghost" className="h-auto justify-start px-0 py-1 text-left"><Link to={`/organisation/document-rules/${rule.id}`}><span className="min-w-0"><span className="block truncate font-medium">{rule.name}</span><span className="block text-xs font-normal text-muted-foreground">Document rule · revision {rule.revision ?? 1}</span></span></Link></Button> : <span className="text-xs text-muted-foreground">No document rule</span>}
+                <span className="text-muted-foreground">{workflow}</span>
+                <span className="min-w-0"><span className="block truncate font-medium">{profile?.name ?? "No extra requirements"}</span><span className="block text-xs text-muted-foreground">{profile ? `Version ${profile.revision}` : "Usual document details"}</span></span>
                 {agreement?.status === "DRAFT" || agreement?.status === "QUALIFYING" ? <Button variant="ghost" size="icon" onClick={() => void removeDocument(capability.id)} disabled={busy} aria-label="Remove document route"><Trash2 className="h-4 w-4" /></Button> : null}
               </div>
             })}</div>
           </div>
         })}</div> : capabilities.length ? <AdminEmptyState title="No routes in this direction" /> : <AdminEmptyState title="No document routes" />}
-        {addingDocument && agreement && agreement.status !== "ACTIVE" ? <form onSubmit={addDocument} className="grid gap-3 border-t bg-muted/20 p-4 md:grid-cols-3"><label className="grid gap-1.5 text-sm font-medium">Direction<select name="direction" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="INBOUND">Receive</option><option value="OUTBOUND">Send</option></select></label><label className="grid gap-1.5 text-sm font-medium">Document<select name="documentType" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="ORDER">Order</option><option value="ORDER_RESPONSE">Order response</option><option value="DESPATCH_ADVICE">Despatch advice</option><option value="INVOICE">Invoice</option><option value="REMITTANCE_ADVICE">Remittance advice</option><option value="RECEIPT_ADVICE">Receipt advice</option></select></label><label className="grid gap-1.5 text-sm font-medium">Format<select name="standard" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="EDIFACT">EDIFACT D96A</option><option value="TRADACOMS">TRADACOMS 9</option></select></label><label className="grid gap-1.5 text-sm font-medium">When received<select name="automationMode" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="MANUAL">Create a work item</option><option value="AUTO_DRAFT">Prepare a response draft</option><option value="APPROVAL_REQUIRED">Draft and request approval</option><option value="AUTO_SEND">Validate and send automatically</option></select></label><label className="grid gap-1.5 text-sm font-medium">Approval<select name="approvalPolicy" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="NONE">No approval</option><option value="AUTHORIZED_MEMBER">One authorised member</option><option value="FOUR_EYES">Two different members</option></select></label><label className="grid gap-1.5 text-sm font-medium">Response document<select name="responseDocumentType" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="">No automatic response</option><option value="ORDER_RESPONSE">Order response</option><option value="DESPATCH_ADVICE">Despatch advice</option><option value="INVOICE">Invoice</option><option value="REMITTANCE_ADVICE">Remittance advice</option><option value="RECEIPT_ADVICE">Receipt advice</option></select></label><div className="flex justify-end md:col-span-3"><Button disabled={busy || !connection}>Add document route</Button></div></form> : null}
+        {addingDocument && agreement && agreement.status !== "ACTIVE" ? <form onSubmit={addDocument} className="grid gap-3 border-t bg-muted/20 p-4 md:grid-cols-3"><label className="grid gap-1.5 text-sm font-medium">Direction<select name="direction" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="INBOUND">Receive</option><option value="OUTBOUND">Send</option></select></label><label className="grid gap-1.5 text-sm font-medium">Document<select name="documentType" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="ORDER">Order</option><option value="ORDER_RESPONSE">Order response</option><option value="DESPATCH_ADVICE">Despatch advice</option><option value="INVOICE">Invoice</option><option value="REMITTANCE_ADVICE">Remittance advice</option><option value="RECEIPT_ADVICE">Receipt advice</option></select></label><label className="grid gap-1.5 text-sm font-medium">File type used by partner<select name="standard" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="EDIFACT">EDIFACT D96A</option><option value="TRADACOMS">TRADACOMS 9</option></select></label><label className="grid gap-1.5 text-sm font-medium">Partner requirements<select name="documentProfileRevisionId" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="">No extra requirements</option>{data.documentProfiles.filter((profile) => profile.status === "PUBLISHED").map((profile) => <option key={profile.id} value={profile.id}>{profile.name} · {profile.documentType?.toLowerCase().replaceAll("_", " ")}</option>)}</select></label><label className="grid gap-1.5 text-sm font-medium">When received<select name="automationMode" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="MANUAL">Create a work item</option><option value="AUTO_DRAFT">Prepare a response draft</option><option value="APPROVAL_REQUIRED">Draft and request approval</option><option value="AUTO_SEND">Check and send automatically</option></select></label><label className="grid gap-1.5 text-sm font-medium">Approval<select name="approvalPolicy" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="NONE">No approval</option><option value="AUTHORIZED_MEMBER">One authorised member</option><option value="FOUR_EYES">Two different members</option></select></label><label className="grid gap-1.5 text-sm font-medium">Response document<select name="responseDocumentType" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="">No automatic response</option><option value="ORDER_RESPONSE">Order response</option><option value="DESPATCH_ADVICE">Despatch advice</option><option value="INVOICE">Invoice</option><option value="REMITTANCE_ADVICE">Remittance advice</option><option value="RECEIPT_ADVICE">Receipt advice</option></select></label><div className="flex justify-end md:col-span-3"><Button disabled={busy || !connection}>Add document</Button></div></form> : null}
+        <div className="mt-8 border-t">
+          <header className="flex flex-wrap items-center gap-3 border-b py-4"><div><h3 className="text-base font-semibold">Partner requirements</h3><p className="mt-0.5 max-w-3xl text-sm text-muted-foreground">Configure only the extra information this partner asks for.</p></div><Button className="ml-auto" type="button" size="sm" variant="outline" onClick={() => setAddingProfile((value) => !value)}>{addingProfile ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}{addingProfile ? "Cancel" : "New requirements"}</Button></header>
+          {addingProfile ? <form onSubmit={createDocumentProfile} className="grid gap-3 border-b bg-muted/20 p-4 sm:grid-cols-3"><label className="grid gap-1.5 text-sm font-medium">Name<Input name="name" required placeholder="ASN requirements" /></label><label className="grid gap-1.5 text-sm font-medium">Direction<select name="direction" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="OUTBOUND">Documents we send</option><option value="INBOUND">Documents we receive</option></select></label><label className="grid gap-1.5 text-sm font-medium">Document<select name="documentType" className="h-10 rounded-md border bg-background px-3 text-sm"><option value="ORDER">Order</option><option value="ORDER_RESPONSE">Order response</option><option value="DESPATCH_ADVICE">Despatch advice</option><option value="INVOICE">Invoice</option><option value="REMITTANCE_ADVICE">Remittance advice</option><option value="RECEIPT_ADVICE">Receipt advice</option></select></label><div className="flex justify-end sm:col-span-3"><Button disabled={busy}>Create draft</Button></div></form> : null}
+          {data.documentProfiles.length ? data.documentProfiles.toSorted((left, right) => (right.revision ?? 0) - (left.revision ?? 0)).map((profile) => <DocumentProfileEditor key={profile.id} profile={profile} busy={busy} onSave={saveDocumentProfile} onPublish={publishDocumentProfile} onRevise={(item) => profileAction(item, "revisions")} />) : <AdminEmptyState title="No extra requirements" />}
+        </div>
       </section>
         </TabsContent>
 

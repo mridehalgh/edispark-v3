@@ -53,6 +53,7 @@ requireProperties(invoice, [
   "InvoiceTypeCode",
   "BuyerReference",
   "OrderReference",
+  "DespatchDocumentReference",
   "DocumentCurrencyCode",
   "TaxCurrencyCode",
   "UBLVersionID",

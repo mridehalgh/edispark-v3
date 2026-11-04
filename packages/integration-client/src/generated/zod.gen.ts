@@ -36,6 +36,48 @@ export const zTradingPartner = z.object({
     inboundFileFailurePolicy: z.enum(['REJECT_FILE', 'KEEP_VALID_MESSAGES']).optional()
 });
 
+export const zDocumentFieldRule = z.object({
+    fieldKey: z.string().optional(),
+    requirement: z.enum([
+        'REQUIRED',
+        'OPTIONAL',
+        'HIDDEN'
+    ]).optional(),
+    defaultValue: z.string().optional(),
+    fixedValue: z.string().optional(),
+    allowedValues: z.array(z.string()).optional(),
+    minimum: z.number().optional(),
+    maximum: z.number().optional(),
+    pattern: z.string().optional(),
+    message: z.string().optional()
+});
+
+export const zDocumentProfile = z.object({
+    id: z.uuid().optional(),
+    familyId: z.uuid().optional(),
+    tenantId: z.string().optional(),
+    partnerId: z.uuid().optional(),
+    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    name: z.string().optional(),
+    direction: z.enum(['INBOUND', 'OUTBOUND']).optional(),
+    documentType: z.enum([
+        'ORDER',
+        'ORDER_RESPONSE',
+        'DESPATCH_ADVICE',
+        'INVOICE',
+        'REMITTANCE_ADVICE',
+        'RECEIPT_ADVICE'
+    ]).optional(),
+    status: z.enum([
+        'DRAFT',
+        'PUBLISHED',
+        'ARCHIVED'
+    ]).optional(),
+    fieldRules: z.array(zDocumentFieldRule).optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional()
+});
+
 export const zCapabilityRequest = z.object({
     direction: z.enum(['INBOUND', 'OUTBOUND']),
     documentType: z.enum([
@@ -78,7 +120,8 @@ export const zCapabilityRequest = z.object({
         'INVOICE',
         'REMITTANCE_ADVICE',
         'RECEIPT_ADVICE'
-    ]).optional()
+    ]).optional(),
+    documentProfileRevisionId: z.uuid().optional()
 });
 
 export const zExchangeCapability = z.object({
@@ -124,7 +167,8 @@ export const zExchangeCapability = z.object({
         'INVOICE',
         'REMITTANCE_ADVICE',
         'RECEIPT_ADVICE'
-    ]).optional()
+    ]).optional(),
+    documentProfileRevisionId: z.uuid().optional()
 });
 
 export const zQualificationReport = z.object({
@@ -170,12 +214,34 @@ export const zMappingNode = z.object({
         'CONCAT',
         'COALESCE',
         'UPPERCASE',
-        'LOWERCASE'
+        'LOWERCASE',
+        'CODE_LOOKUP'
     ]).optional(),
     sourcePointers: z.array(z.string()).optional(),
     targetPointer: z.string().optional(),
     constant: z.string().optional(),
-    separator: z.string().optional()
+    separator: z.string().optional(),
+    codeMap: z.record(z.string(), z.string()).optional(),
+    codeList: z.enum([
+        'UNIT_OF_MEASURE',
+        'WEIGHT_UNIT',
+        'CURRENCY',
+        'COUNTRY',
+        'PAYMENT_MEANS',
+        'TAX_CATEGORY',
+        'ORDER_RESPONSE',
+        'HANDLING_UNIT_TYPE'
+    ]).optional(),
+    sourceSyntax: z.enum([
+        'UBL_2_1',
+        'EDIFACT_D96A',
+        'TRADACOMS_9'
+    ]).optional(),
+    targetSyntax: z.enum([
+        'UBL_2_1',
+        'EDIFACT_D96A',
+        'TRADACOMS_9'
+    ]).optional()
 });
 
 export const zUpdateMappingRequest = z.object({
@@ -217,6 +283,20 @@ export const zMappingRevision = z.object({
     vendor: z.string().optional(),
     sample: zMappingSample.optional(),
     derivedFromMappingId: z.uuid().optional()
+});
+
+export const zDocumentProfileRequest = z.object({
+    name: z.string().min(0).max(120),
+    direction: z.enum(['INBOUND', 'OUTBOUND']),
+    documentType: z.enum([
+        'ORDER',
+        'ORDER_RESPONSE',
+        'DESPATCH_ADVICE',
+        'INVOICE',
+        'REMITTANCE_ADVICE',
+        'RECEIPT_ADVICE'
+    ]),
+    fieldRules: z.array(zDocumentFieldRule).optional()
 });
 
 export const zCreateAgreementRequest = z.object({
@@ -334,6 +414,29 @@ export const zUsage = z.object({
     dependencies: z.array(zDependency).optional()
 });
 
+export const zBusinessCode = z.object({
+    code: z.string().optional(),
+    label: z.string().optional(),
+    representations: z.record(z.string(), z.string()).optional()
+});
+
+export const zBusinessCodeListDefinition = z.object({
+    id: z.enum([
+        'UNIT_OF_MEASURE',
+        'WEIGHT_UNIT',
+        'CURRENCY',
+        'COUNTRY',
+        'PAYMENT_MEANS',
+        'TAX_CATEGORY',
+        'ORDER_RESPONSE',
+        'HANDLING_UNIT_TYPE'
+    ]).optional(),
+    authority: z.string().optional(),
+    version: z.string().optional(),
+    partnerExtensionsAllowed: z.boolean().optional(),
+    values: z.array(zBusinessCode).optional()
+});
+
 export const zEligibleRoute = z.object({
     agreementId: z.uuid().optional(),
     agreementRevision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
@@ -352,6 +455,17 @@ export const zUpdateTradingPartnerDraftPath = z.object({
  * OK
  */
 export const zUpdateTradingPartnerDraftResponse = zTradingPartner;
+
+export const zUpdatePartnerDocumentProfileDraftBody = z.array(zDocumentFieldRule);
+
+export const zUpdatePartnerDocumentProfileDraftPath = z.object({
+    profileId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zUpdatePartnerDocumentProfileDraftResponse = zDocumentProfile;
 
 export const zRemoveExchangeCapabilityPath = z.object({
     agreementId: z.uuid(),
@@ -407,6 +521,26 @@ export const zCreateTradingPartnerRevisionPath = z.object({
  */
 export const zCreateTradingPartnerRevisionResponse = zTradingPartner;
 
+export const zListPartnerDocumentProfilesPath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zListPartnerDocumentProfilesResponse = z.array(zDocumentProfile);
+
+export const zCreatePartnerDocumentProfileBody = zDocumentProfileRequest;
+
+export const zCreatePartnerDocumentProfilePath = z.object({
+    partnerId: z.uuid()
+});
+
+/**
+ * Created
+ */
+export const zCreatePartnerDocumentProfileResponse = zDocumentProfile;
+
 export const zArchiveTradingPartnerRevisionPath = z.object({
     partnerId: z.uuid()
 });
@@ -437,6 +571,33 @@ export const zActivateTradingPartnerRevisionPath = z.object({
  * OK
  */
 export const zActivateTradingPartnerRevisionResponse = zTradingPartner;
+
+export const zCreatePartnerDocumentProfileRevisionPath = z.object({
+    profileId: z.uuid()
+});
+
+/**
+ * Created
+ */
+export const zCreatePartnerDocumentProfileRevisionResponse = zDocumentProfile;
+
+export const zPublishPartnerDocumentProfilePath = z.object({
+    profileId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zPublishPartnerDocumentProfileResponse = zDocumentProfile;
+
+export const zArchivePartnerDocumentProfilePath = z.object({
+    profileId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zArchivePartnerDocumentProfileResponse = zDocumentProfile;
 
 export const zSuspendTradingAgreementPath = z.object({
     agreementId: z.uuid()
@@ -637,6 +798,11 @@ export const zGetMappingUsagePath = z.object({
  */
 export const zGetMappingUsageResponse = zUsage;
 
+/**
+ * OK
+ */
+export const zListBusinessCodeListsResponse = z.array(zBusinessCodeListDefinition);
+
 export const zGetExchangePath = z.object({
     exchangeId: z.uuid()
 });
@@ -655,3 +821,12 @@ export const zListEligibleExchangeRoutesQuery = z.object({
  * OK
  */
 export const zListEligibleExchangeRoutesResponse = z.array(zEligibleRoute);
+
+export const zDeletePartnerDocumentProfileDraftPath = z.object({
+    profileId: z.uuid()
+});
+
+/**
+ * No Content
+ */
+export const zDeletePartnerDocumentProfileDraftResponse = z.void();

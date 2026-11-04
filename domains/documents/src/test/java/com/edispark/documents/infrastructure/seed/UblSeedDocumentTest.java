@@ -98,6 +98,9 @@ class UblSeedDocumentTest {
                 .getDespatchAdvice().getFirst();
         assertThat(advice.getId().getFirst().get__()).isEqualTo("DES-2026-0042");
         assertThat(advice.getDespatchLine()).hasSize(1);
+        assertThat(advice.getShipment().getFirst().getTransportHandlingUnit()).hasSize(2);
+        assertThat(advice.getShipment().getFirst().getTransportHandlingUnit().getFirst().getTraceID().getFirst().get__())
+                .isEqualTo("123456789012345675");
     }
 
     @Test

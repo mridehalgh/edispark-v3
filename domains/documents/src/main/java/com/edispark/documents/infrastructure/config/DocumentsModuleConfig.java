@@ -16,7 +16,9 @@ import com.edispark.documents.infrastructure.persistence.TenantScopedDocumentSet
 import com.edispark.documents.infrastructure.persistence.TenantScopedSchemaRepository;
 import com.edispark.documents.infrastructure.storage.FileSystemContentStore;
 import com.edispark.documents.infrastructure.transformation.NoOpTransformer;
+import com.edispark.documents.infrastructure.transformation.Gs1LogisticsLabelTransformer;
 import com.edispark.documents.infrastructure.validation.NoOpValidator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -194,8 +196,9 @@ public class DocumentsModuleConfig {
      */
     @Bean
     @ConditionalOnMissingBean
-    public List<DocumentTransformer> documentTransformers() {
+    public List<DocumentTransformer> documentTransformers(ObjectMapper objectMapper) {
         return List.of(
+                new Gs1LogisticsLabelTransformer(objectMapper),
                 new NoOpTransformer()
                 // TODO: Add XmlToJsonTransformer, JsonToXmlTransformer when implemented
         );

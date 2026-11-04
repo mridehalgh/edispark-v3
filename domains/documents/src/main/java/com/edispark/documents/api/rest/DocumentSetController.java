@@ -479,7 +479,7 @@ public class DocumentSetController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(content.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        safeInlineContentDisposition(content.fileName()))
+                        safeContentDisposition(content.fileName(), true))
                 .header("X-Document-Set-Id", setId.toString())
                 .header("X-Document-Id", docId.toString())
                 .header("X-Document-Version", Integer.toString(versionNumber))
@@ -622,7 +622,7 @@ public class DocumentSetController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(content.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        safeInlineContentDisposition(content.fileName()))
+                        safeContentDisposition(content.fileName(), content.format() == Format.PDF))
                 .header("X-Document-Set-Id", setId.toString())
                 .header("X-Document-Id", docId.toString())
                 .header("X-Derivative-Id", derivativeId.toString())
@@ -631,9 +631,9 @@ public class DocumentSetController {
                 .body(content.bytes());
     }
 
-    private static String safeInlineContentDisposition(String fileName) {
+    private static String safeContentDisposition(String fileName, boolean inline) {
         String safeFileName = fileName.replaceAll("[\\p{Cntrl}\\\\/\"]", "_");
-        return ContentDisposition.inline()
+        return (inline ? ContentDisposition.inline() : ContentDisposition.attachment())
                 .filename(safeFileName, StandardCharsets.UTF_8)
                 .build()
                 .toString();

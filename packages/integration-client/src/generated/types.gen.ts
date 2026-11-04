@@ -31,6 +31,33 @@ export type TradingPartner = {
     inboundFileFailurePolicy?: 'REJECT_FILE' | 'KEEP_VALID_MESSAGES';
 };
 
+export type DocumentFieldRule = {
+    fieldKey?: string;
+    requirement?: 'REQUIRED' | 'OPTIONAL' | 'HIDDEN';
+    defaultValue?: string;
+    fixedValue?: string;
+    allowedValues?: Array<string>;
+    minimum?: number;
+    maximum?: number;
+    pattern?: string;
+    message?: string;
+};
+
+export type DocumentProfile = {
+    id?: string;
+    familyId?: string;
+    tenantId?: string;
+    partnerId?: string;
+    revision?: number;
+    name?: string;
+    direction?: 'INBOUND' | 'OUTBOUND';
+    documentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
+    status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+    fieldRules?: Array<DocumentFieldRule>;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
 export type CapabilityRequest = {
     direction: 'INBOUND' | 'OUTBOUND';
     documentType: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
@@ -47,6 +74,7 @@ export type CapabilityRequest = {
     automationMode?: 'MANUAL' | 'AUTO_DRAFT' | 'APPROVAL_REQUIRED' | 'AUTO_SEND';
     approvalPolicy?: 'NONE' | 'AUTHORIZED_MEMBER' | 'FOUR_EYES';
     responseDocumentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
+    documentProfileRevisionId?: string;
 };
 
 export type ExchangeCapability = {
@@ -66,6 +94,7 @@ export type ExchangeCapability = {
     automationMode?: 'MANUAL' | 'AUTO_DRAFT' | 'APPROVAL_REQUIRED' | 'AUTO_SEND';
     approvalPolicy?: 'NONE' | 'AUTHORIZED_MEMBER' | 'FOUR_EYES';
     responseDocumentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
+    documentProfileRevisionId?: string;
 };
 
 export type QualificationReport = {
@@ -96,11 +125,17 @@ export type TradingAgreement = {
 
 export type MappingNode = {
     id?: string;
-    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE';
+    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE' | 'CODE_LOOKUP';
     sourcePointers?: Array<string>;
     targetPointer?: string;
     constant?: string;
     separator?: string;
+    codeMap?: {
+        [key: string]: string;
+    };
+    codeList?: 'UNIT_OF_MEASURE' | 'WEIGHT_UNIT' | 'CURRENCY' | 'COUNTRY' | 'PAYMENT_MEANS' | 'TAX_CATEGORY' | 'ORDER_RESPONSE' | 'HANDLING_UNIT_TYPE';
+    sourceSyntax?: 'UBL_2_1' | 'EDIFACT_D96A' | 'TRADACOMS_9';
+    targetSyntax?: 'UBL_2_1' | 'EDIFACT_D96A' | 'TRADACOMS_9';
 };
 
 export type UpdateMappingRequest = {
@@ -136,6 +171,13 @@ export type MappingSample = {
     targetFormat?: string;
     targetDocument?: string;
     targetRaw?: string;
+};
+
+export type DocumentProfileRequest = {
+    name: string;
+    direction: 'INBOUND' | 'OUTBOUND';
+    documentType: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
+    fieldRules?: Array<DocumentFieldRule>;
 };
 
 export type CreateAgreementRequest = {
@@ -229,6 +271,22 @@ export type Usage = {
     dependencies?: Array<Dependency>;
 };
 
+export type BusinessCode = {
+    code?: string;
+    label?: string;
+    representations?: {
+        [key: string]: string;
+    };
+};
+
+export type BusinessCodeListDefinition = {
+    id?: 'UNIT_OF_MEASURE' | 'WEIGHT_UNIT' | 'CURRENCY' | 'COUNTRY' | 'PAYMENT_MEANS' | 'TAX_CATEGORY' | 'ORDER_RESPONSE' | 'HANDLING_UNIT_TYPE';
+    authority?: string;
+    version?: string;
+    partnerExtensionsAllowed?: boolean;
+    values?: Array<BusinessCode>;
+};
+
 export type EligibleRoute = {
     agreementId?: string;
     agreementRevision?: number;
@@ -254,6 +312,24 @@ export type UpdateTradingPartnerDraftResponses = {
 };
 
 export type UpdateTradingPartnerDraftResponse = UpdateTradingPartnerDraftResponses[keyof UpdateTradingPartnerDraftResponses];
+
+export type UpdatePartnerDocumentProfileDraftData = {
+    body: Array<DocumentFieldRule>;
+    path: {
+        profileId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/document-profiles/{profileId}/draft';
+};
+
+export type UpdatePartnerDocumentProfileDraftResponses = {
+    /**
+     * OK
+     */
+    200: DocumentProfile;
+};
+
+export type UpdatePartnerDocumentProfileDraftResponse = UpdatePartnerDocumentProfileDraftResponses[keyof UpdatePartnerDocumentProfileDraftResponses];
 
 export type RemoveExchangeCapabilityData = {
     body?: never;
@@ -361,6 +437,42 @@ export type CreateTradingPartnerRevisionResponses = {
 
 export type CreateTradingPartnerRevisionResponse = CreateTradingPartnerRevisionResponses[keyof CreateTradingPartnerRevisionResponses];
 
+export type ListPartnerDocumentProfilesData = {
+    body?: never;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}/document-profiles';
+};
+
+export type ListPartnerDocumentProfilesResponses = {
+    /**
+     * OK
+     */
+    200: Array<DocumentProfile>;
+};
+
+export type ListPartnerDocumentProfilesResponse = ListPartnerDocumentProfilesResponses[keyof ListPartnerDocumentProfilesResponses];
+
+export type CreatePartnerDocumentProfileData = {
+    body: DocumentProfileRequest;
+    path: {
+        partnerId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/{partnerId}/document-profiles';
+};
+
+export type CreatePartnerDocumentProfileResponses = {
+    /**
+     * Created
+     */
+    201: DocumentProfile;
+};
+
+export type CreatePartnerDocumentProfileResponse = CreatePartnerDocumentProfileResponses[keyof CreatePartnerDocumentProfileResponses];
+
 export type ArchiveTradingPartnerRevisionData = {
     body?: never;
     path: {
@@ -414,6 +526,60 @@ export type ActivateTradingPartnerRevisionResponses = {
 };
 
 export type ActivateTradingPartnerRevisionResponse = ActivateTradingPartnerRevisionResponses[keyof ActivateTradingPartnerRevisionResponses];
+
+export type CreatePartnerDocumentProfileRevisionData = {
+    body?: never;
+    path: {
+        profileId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/document-profiles/{profileId}/revisions';
+};
+
+export type CreatePartnerDocumentProfileRevisionResponses = {
+    /**
+     * Created
+     */
+    201: DocumentProfile;
+};
+
+export type CreatePartnerDocumentProfileRevisionResponse = CreatePartnerDocumentProfileRevisionResponses[keyof CreatePartnerDocumentProfileRevisionResponses];
+
+export type PublishPartnerDocumentProfileData = {
+    body?: never;
+    path: {
+        profileId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/document-profiles/{profileId}/publish';
+};
+
+export type PublishPartnerDocumentProfileResponses = {
+    /**
+     * OK
+     */
+    200: DocumentProfile;
+};
+
+export type PublishPartnerDocumentProfileResponse = PublishPartnerDocumentProfileResponses[keyof PublishPartnerDocumentProfileResponses];
+
+export type ArchivePartnerDocumentProfileData = {
+    body?: never;
+    path: {
+        profileId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/document-profiles/{profileId}/archive';
+};
+
+export type ArchivePartnerDocumentProfileResponses = {
+    /**
+     * OK
+     */
+    200: DocumentProfile;
+};
+
+export type ArchivePartnerDocumentProfileResponse = ArchivePartnerDocumentProfileResponses[keyof ArchivePartnerDocumentProfileResponses];
 
 export type SuspendTradingAgreementData = {
     body?: never;
@@ -819,6 +985,22 @@ export type GetMappingUsageResponses = {
 
 export type GetMappingUsageResponse = GetMappingUsageResponses[keyof GetMappingUsageResponses];
 
+export type ListBusinessCodeListsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/mappings/code-lists';
+};
+
+export type ListBusinessCodeListsResponses = {
+    /**
+     * OK
+     */
+    200: Array<BusinessCodeListDefinition>;
+};
+
+export type ListBusinessCodeListsResponse = ListBusinessCodeListsResponses[keyof ListBusinessCodeListsResponses];
+
 export type GetExchangeData = {
     body?: never;
     path: {
@@ -855,3 +1037,21 @@ export type ListEligibleExchangeRoutesResponses = {
 };
 
 export type ListEligibleExchangeRoutesResponse = ListEligibleExchangeRoutesResponses[keyof ListEligibleExchangeRoutesResponses];
+
+export type DeletePartnerDocumentProfileDraftData = {
+    body?: never;
+    path: {
+        profileId: string;
+    };
+    query?: never;
+    url: '/api/trading-partners/document-profiles/{profileId}';
+};
+
+export type DeletePartnerDocumentProfileDraftResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeletePartnerDocumentProfileDraftResponse = DeletePartnerDocumentProfileDraftResponses[keyof DeletePartnerDocumentProfileDraftResponses];

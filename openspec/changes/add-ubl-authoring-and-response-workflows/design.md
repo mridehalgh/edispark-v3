@@ -24,3 +24,11 @@ The BFF derives `createdBy` from the authenticated session, resolves schemas thr
 ## Compatibility
 
 DynamoDB records without lifecycle or typed relations load as Final with a `RELATED_TO` relation when the legacy field exists. Old capability records and constructors default to Manual workflow and strict outbound-loss handling.
+
+## Specialist forms and partner profiles
+
+The six document forms share canonical UBL builders and accessible field primitives but expose document-specific business sections. Despatch and Receipt Advice model shipment handling units explicitly, including SSCC, package data, traceability, and quantities from one order line allocated across several pallets. Incomplete values remain valid Draft work; OASIS and published partner requirements gate finalization and exchange.
+
+Partner document profiles are reusable, tenant-scoped revision families owned by Partnerships. Draft revisions can be edited, published revisions are immutable, and an exchange capability may pin a published revision matching its partner, direction, and document type. Profiles use stable semantic field keys rather than array indexes and support required, optional, hidden, default, fixed, code-list, range, and pattern rules without executable scripts.
+
+GS1 logistics labels are document derivatives generated from UBL `TransportHandlingUnit` values. EdiSpark validates supplied 18-digit SSCCs and renders A5 PDF and printer-ready ZPL; SSCC allocation remains with the tenant's ERP or WMS.

@@ -1,5 +1,6 @@
 package com.edispark.integrationapplication.persistence;
 
+import com.edispark.partnerships.domain.model.DocumentProfile;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
 import com.edispark.partnerships.domain.repository.PartnershipRepository;
@@ -37,6 +38,21 @@ final class DynamoPartnershipRepository implements PartnershipRepository {
         return store.list(tenantId, "AGREEMENT#").stream().map(value -> read(value, TradingAgreement.class)).toList();
     }
     @Override public void deleteAgreement(String tenantId, UUID id) { store.delete(tenantId, "AGREEMENT#" + id); }
+    @Override public DocumentProfile saveDocumentProfile(DocumentProfile profile) {
+        store.put(profile.tenantId(), "DOCUMENT_PROFILE#" + profile.id(), "DOCUMENT_PROFILE", write(profile));
+        return profile;
+    }
+    @Override public Optional<DocumentProfile> findDocumentProfile(String tenantId, UUID id) {
+        return store.get(tenantId, "DOCUMENT_PROFILE#" + id).map(value -> read(value, DocumentProfile.class));
+    }
+    @Override public List<DocumentProfile> listDocumentProfiles(String tenantId, UUID partnerId) {
+        return store.list(tenantId, "DOCUMENT_PROFILE#").stream()
+                .map(value -> read(value, DocumentProfile.class))
+                .filter(item -> item.partnerId().equals(partnerId)).toList();
+    }
+    @Override public void deleteDocumentProfile(String tenantId, UUID id) {
+        store.delete(tenantId, "DOCUMENT_PROFILE#" + id);
+    }
     private String write(Object value) { try { return json.writeValueAsString(value); } catch (Exception e) { throw new IllegalStateException("Could not serialize partnership", e); } }
     private <T> T read(String value, Class<T> type) { try { return json.readValue(value, type); } catch (Exception e) { throw new IllegalStateException("Could not read partnership", e); } }
 }

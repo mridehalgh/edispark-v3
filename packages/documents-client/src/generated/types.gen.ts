@@ -44,7 +44,7 @@ export type CreateDocumentSetRequest = {
     metadata?: {
         [key: string]: string;
     };
-    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
     lifecycleStatus?: 'DRAFT' | 'FINAL' | 'CANCELLED';
 };
 
@@ -73,14 +73,14 @@ export type AddDocumentRequest = {
     createdBy: string;
     relatedDocumentId?: string;
     relationType?: 'RELATED_TO' | 'RESPONDS_TO' | 'DESPATCHES' | 'RECEIVES' | 'INVOICES' | 'REMITS' | 'CORRECTS' | 'SUPERSEDES';
-    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
     lifecycleStatus?: 'DRAFT' | 'FINAL' | 'CANCELLED';
 };
 
 export type DerivativeResponse = {
     id?: string;
     sourceVersionId?: string;
-    targetFormat?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    targetFormat?: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
     contentHash?: string;
     transformationMethod?: string;
     variantKey?: string;
@@ -109,7 +109,7 @@ export type DocumentVersionResponse = {
     contentHash?: string;
     createdAt?: string;
     createdBy?: string;
-    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
     parseStatus?: string;
     messageType?: string;
     parseErrors?: Array<string>;
@@ -123,7 +123,7 @@ export type SchemaRefResponse = {
 export type AddVersionRequest = {
     content: string;
     createdBy: string;
-    format?: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    format?: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
 };
 
 export type ValidationErrorResponse = {
@@ -144,7 +144,7 @@ export type ValidationWarningResponse = {
 
 export type CreateDerivativeRequest = {
     sourceVersionNumber?: number;
-    targetFormat: 'XML' | 'JSON' | 'PDF' | 'EDI';
+    targetFormat: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
 };
 
 export type PaginatedResponseDocumentSetResponse = {
@@ -439,7 +439,7 @@ export type StoreExternalDerivativeData = {
     };
     query: {
         sourceVersionNumber: number;
-        format: 'XML' | 'JSON' | 'PDF' | 'EDI';
+        format: 'XML' | 'JSON' | 'PDF' | 'EDI' | 'ZPL';
         variantKey: string;
     };
     url: '/api/document-sets/{setId}/documents/{docId}/external-derivatives';

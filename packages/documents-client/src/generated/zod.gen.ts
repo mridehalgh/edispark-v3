@@ -65,7 +65,8 @@ export const zCreateDocumentSetRequest = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ]).optional(),
     lifecycleStatus: z.enum([
         'DRAFT',
@@ -140,7 +141,8 @@ export const zAddDocumentRequest = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ]).optional(),
     lifecycleStatus: z.enum([
         'DRAFT',
@@ -156,7 +158,8 @@ export const zDerivativeResponse = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ]).optional(),
     contentHash: z.string().optional(),
     transformationMethod: z.string().optional(),
@@ -188,7 +191,8 @@ export const zDocumentVersionResponse = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ]).optional(),
     parseStatus: z.string().optional(),
     messageType: z.string().optional(),
@@ -235,7 +239,8 @@ export const zAddVersionRequest = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ]).optional()
 });
 
@@ -261,7 +266,8 @@ export const zCreateDerivativeRequest = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ])
 });
 
@@ -375,7 +381,8 @@ export const zStoreExternalDerivativeQuery = z.object({
         'XML',
         'JSON',
         'PDF',
-        'EDI'
+        'EDI',
+        'ZPL'
     ]),
     variantKey: z.string()
 });

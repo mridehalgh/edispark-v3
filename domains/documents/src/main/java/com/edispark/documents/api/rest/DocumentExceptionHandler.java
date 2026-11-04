@@ -18,6 +18,8 @@ import com.edispark.documents.domain.model.SchemaInUseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,7 +33,8 @@ import java.util.Map;
  * <p>Maps domain exceptions to appropriate HTTP responses with consistent error structure.
  * This handler is scoped to the DocumentSetController and SchemaController classes.</p>
  */
-@ControllerAdvice
+@ControllerAdvice(basePackageClasses = DocumentSetController.class)
+@Order(Ordered.HIGHEST_PRECEDENCE)
 @Slf4j
 public class DocumentExceptionHandler {
 

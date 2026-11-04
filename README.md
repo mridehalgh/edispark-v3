@@ -31,6 +31,8 @@ The repository is organized by responsibility rather than framework:
 
 The intended shape is a modular monolith: each domain owns its API and persistence ports, while `edispark-api` composes those modules into one process and one Spring context. Business rules stay outside the composition root, controllers, and UI code.
 
+Cross-module communication uses direct Java application ports for synchronous work and durable messaging only when the delivery semantics require it. See the [modular monolith integration pattern](docs/architecture/modular-monolith-integration.md) for the decision guide covering in-process adapters, SQS, EventBridge, SNS and future service extraction.
+
 ## Prerequisites
 
 - Java 21 or newer; CI compiles against Java 21

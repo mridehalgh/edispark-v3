@@ -4,7 +4,7 @@
 
 **What We Are**
 
-EdiSpark is a modern, multi-tenant EDI SaaS product serving customers from SMB to Enterprise. It is built as part of a composable architecture, meaning each capability is exposed as an independent, API-first service that customers and partners can integrate into their own technology stacks. There is no monolithic integration platform — instead, bounded domains (parsing, validation, routing, document management, partner management) are independently deployable and composable.
+EdiSpark is a modern, multi-tenant EDI SaaS product serving customers from SMB to Enterprise. It is built as a composable architecture, meaning each capability is exposed through an API-first contract that customers and partners can integrate into their own technology stacks. Internally, bounded domains such as parsing, validation, routing, document management and partner management remain isolated modules composed into one Spring Boot deployment by default. A module is extracted into a separate service only when scaling, security, ownership or failure-isolation requirements justify the distributed-systems cost.
 
 The product targets businesses that exchange EDI documents with their trading partners and need a reliable, observable, and low-friction way to do so — without the complexity and cost of traditional EDI middleware.
 
@@ -12,8 +12,8 @@ The product targets businesses that exchange EDI documents with their trading pa
 
 - **Target market**: SMB to Enterprise customers who send and receive EDI with retailers, suppliers, logistics providers, and other trading partners
 - **Delivery model**: Multi-tenant SaaS with tenant-level data isolation, encryption, and configuration
-- **Architecture style**: Composable, API-first, event-driven — customers integrate EdiSpark capabilities into their own workflows rather than adopting a closed platform
-- **Deployment**: Cloud-native on AWS, serverless-first, with a control plane for tenant management and an application plane for business processing
+- **Architecture style**: Composable, API-first, event-driven modular monolith — customers integrate EdiSpark capabilities into their own workflows rather than adopting a closed platform
+- **Deployment**: One Spring Boot application plane by default, cloud-native on AWS, with separately managed control-plane concerns and deliberate extraction seams
 
 **Problem Statement**
 
@@ -140,6 +140,7 @@ rule or specification conflicts with the implemented project.
 |---|---|
 | Java implementation and module design | `coding-standards.md`, `java-spring-boot.md`, `ddd-java.md`, `multi-maven-project-best-practices.md` |
 | Domain modules and REST ownership | `domain-documentation.md`, `module-controller-ownership.md` |
+| Cross-module calls, queues or events | `module-integration-patterns.md`, `resilience-and-retry-patterns.md` |
 | Spring Boot applications | `spring-boot-application-best-practices.md` |
 | Reusable Spring libraries | `spring-boot-library-best-practices.md` |
 | DynamoDB persistence or pagination | `dynamodb-query-patterns.md`, `dynamodb-single-table.md` |

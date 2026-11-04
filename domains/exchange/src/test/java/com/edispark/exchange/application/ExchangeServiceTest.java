@@ -25,20 +25,24 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ExchangeServiceTest {
     private static final String TENANT = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Instant NOW = Instant.parse("2026-11-01T12:00:00Z");
 
-    @Test
-    void retainsTheGeneratedRepresentationAndQueuesTransportExactlyOncePerIdempotencyKey() {
+    @ParameterizedTest
+    @EnumSource(EdiStandard.class)
+    void retainsEdiAndMappingEvidenceForEveryStandard(EdiStandard standard) {
         var partnerships = new InMemoryPartnershipRepository();
-        var capability = capability();
+        var capability = capability(standard, OutboundLossPolicy.STRICT);
         var agreement = agreement(capability);
         partnerships.saveAgreement(agreement);
         var transports = new AtomicInteger();
@@ -67,6 +71,9 @@ class ExchangeServiceTest {
             assertThat(first.mftTransferId()).isNotNull();
             assertThat(transports).hasValue(1);
             assertThat(documents.retained).hasValue(2);
+            assertThat(documents.retainedArtifacts).containsExactly(
+                    DocumentAcl.GeneratedArtifact.EDI_PAYLOAD,
+                    DocumentAcl.GeneratedArtifact.MAPPING_REPORT);
         });
     }
 
@@ -160,8 +167,13 @@ class ExchangeServiceTest {
     }
 
     private ExchangeCapability capability(OutboundLossPolicy lossPolicy) {
+        return capability(EdiStandard.EDIFACT, lossPolicy);
+    }
+
+    private ExchangeCapability capability(EdiStandard standard, OutboundLossPolicy lossPolicy) {
         return new ExchangeCapability(UUID.randomUUID(), ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER,
-                EdiStandard.EDIFACT, "D96A", "ORDERS", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                standard, standard == EdiStandard.EDIFACT ? "D96A" : "9", "ORDERS", UUID.randomUUID(),
+                UUID.randomUUID(), UUID.randomUUID(),
                 UUID.randomUUID(), AcknowledgementPolicy.TRANSPORT_ONLY, BatchingPolicy.INDIVIDUAL, lossPolicy);
     }
 
@@ -199,6 +211,7 @@ class ExchangeServiceTest {
 
     private static final class DocumentProbe implements DocumentAcl {
         private final AtomicInteger retained = new AtomicInteger();
+        private final List<GeneratedArtifact> retainedArtifacts = new ArrayList<>();
         @Override public DocumentDescriptor describe(UUID documentSetId, UUID documentId) {
             return new DocumentDescriptor(new DocumentReference(documentSetId, documentId, UUID.randomUUID(), "source-hash"),
                     BusinessDocumentType.ORDER, "UBL_2_1_JSON", "PO-1001");
@@ -206,9 +219,10 @@ class ExchangeServiceTest {
         @Override public byte[] content(DocumentReference reference) {
             return "{\"Order\":[]}".getBytes(StandardCharsets.UTF_8);
         }
-        @Override public DocumentReference retainDerivative(DocumentReference source, String format, byte[] content,
-                                                              UUID mappingRevisionId, UUID exchangeId) {
+        @Override public DocumentReference retainDerivative(DocumentReference source, GeneratedArtifact artifact,
+                                                              byte[] content, UUID mappingRevisionId, UUID exchangeId) {
             retained.incrementAndGet();
+            retainedArtifacts.add(artifact);
             return new DocumentReference(source.documentSetId(), source.documentId(), UUID.randomUUID(), "edi-hash");
         }
     }

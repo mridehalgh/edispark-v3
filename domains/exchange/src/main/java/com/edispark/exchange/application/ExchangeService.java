@@ -70,10 +70,12 @@ public final class ExchangeService {
             exchange.advance(ExchangeStatus.TRANSFORMING, "Executing published mapping", clock.instant());
             var transformation = transformations.executePublished(capability, documents.content(descriptor.current()));
             exchange.advance(ExchangeStatus.STORING, "Retaining generated representation", clock.instant());
-            DocumentReference derivative = documents.retainDerivative(descriptor.current(), capability.standard().name(),
+            DocumentReference derivative = documents.retainDerivative(descriptor.current(),
+                    DocumentAcl.GeneratedArtifact.EDI_PAYLOAD,
                     transformation.payload(), capability.mappingRevisionId(), exchange.id());
             exchange.generated(derivative);
-            DocumentReference report = documents.retainDerivative(descriptor.current(), "MAPPING_REPORT",
+            DocumentReference report = documents.retainDerivative(descriptor.current(),
+                    DocumentAcl.GeneratedArtifact.MAPPING_REPORT,
                     transformation.report(), capability.mappingRevisionId(), exchange.id());
             exchange.mappingEvidence(report, transformation.warnings());
             if (!transformation.warnings().isEmpty()

@@ -55,15 +55,19 @@ final class InProcessDocumentAcl implements DocumentAcl {
     }
 
     @Override
-    public DocumentReference retainDerivative(DocumentReference source, String format, byte[] bytes,
+    public DocumentReference retainDerivative(DocumentReference source, GeneratedArtifact artifact, byte[] bytes,
             UUID mappingRevisionId, UUID exchangeId) {
         Document document = document(source.documentSetId(), source.documentId());
         Derivative derivative = commands.handle(new StoreExternalDerivativeCommand(
                 new DocumentSetId(source.documentSetId()), new DocumentId(source.documentId()),
-                document.getCurrentVersion().versionNumber(), Content.of(bytes, Format.valueOf(format)),
+                document.getCurrentVersion().versionNumber(), Content.of(bytes, storageFormat(artifact)),
                 mappingRevisionId.toString()));
         return new DocumentReference(source.documentSetId(), source.documentId(), derivative.id().value(),
                 derivative.contentHash().toFullString());
+    }
+
+    static Format storageFormat(GeneratedArtifact artifact) {
+        return Format.valueOf(artifact.documentFormat());
     }
 
     private Document document(UUID setId, UUID documentId) {

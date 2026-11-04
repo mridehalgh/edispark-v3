@@ -43,7 +43,8 @@ public final class HttpDocumentAcl implements DocumentAcl {
                     .retrieve().body(byte[].class);
     }
 
-    @Override public DocumentReference retainDerivative(DocumentReference source, String format, byte[] content,
+    @Override public DocumentReference retainDerivative(DocumentReference source, GeneratedArtifact artifact,
+                                                         byte[] content,
                                                          UUID mappingRevisionId, UUID exchangeId) {
         DocumentResponse response = document(source.documentSetId(), source.documentId());
         VersionResponse version = required(response.currentVersion(), "Document has no current version");
@@ -51,7 +52,8 @@ public final class HttpDocumentAcl implements DocumentAcl {
         body.part("file", new NamedBytes(content, "exchange-" + exchangeId + ".edi"), MediaType.APPLICATION_OCTET_STREAM);
         DerivativeResponse derivative = documents.post()
                 .uri(builder -> builder.path("/api/document-sets/{setId}/documents/{documentId}/external-derivatives")
-                        .queryParam("sourceVersionNumber", version.versionNumber()).queryParam("format", "EDI")
+                        .queryParam("sourceVersionNumber", version.versionNumber())
+                        .queryParam("format", artifact.documentFormat())
                         .queryParam("variantKey", mappingRevisionId).build(source.documentSetId(), source.documentId()))
                 .contentType(MediaType.MULTIPART_FORM_DATA).body(body.build()).retrieve().body(DerivativeResponse.class);
         DerivativeResponse required = required(derivative, "Documents did not return the generated derivative");

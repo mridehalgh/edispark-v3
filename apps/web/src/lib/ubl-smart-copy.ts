@@ -39,11 +39,16 @@ export interface SmartCopySource {
 }
 
 export interface SmartCopyDraft {
+  partnerId?: string
   values: Omit<AuthoringValues, "documentType" | "id" | "issueDate" | "note">
   sources: SmartCopySource[]
   provenance: Record<string, string>
   warnings: string[]
   requiresCommercialReview: boolean
+}
+
+export interface SmartCopyContext {
+  partnerId?: string
 }
 
 interface NormalizedLine {
@@ -230,7 +235,11 @@ function partyValue(partyValue: UblParty | undefined) {
   }
 }
 
-export function buildSmartCopyDraft(targetType: AuthorableDocumentType, inputs: SmartCopySourceInput[]): SmartCopyDraft {
+export function buildSmartCopyDraft(
+  targetType: AuthorableDocumentType,
+  inputs: SmartCopySourceInput[],
+  context: SmartCopyContext = {},
+): SmartCopyDraft {
   if (inputs.length === 0) throw new Error("At least one source document is required.")
   if (!smartCopyTransitions[inputs[0].type].includes(targetType)) {
     throw new Error(`${targetType} cannot be created from ${inputs[0].type}.`)
@@ -277,6 +286,7 @@ export function buildSmartCopyDraft(targetType: AuthorableDocumentType, inputs: 
   normalizedLines.forEach((line, index) => { provenance[`lines.${index}`] = line.sourceId })
   if (lines.length === 0) warnings.push("No commercial lines could be copied from the selected document chain.")
   return {
+    partnerId: context.partnerId,
     values: {
       references: { order: order?.value, despatch: despatch?.value, invoice: invoice?.value },
       senderName: sender.name,

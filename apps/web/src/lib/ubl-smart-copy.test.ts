@@ -35,9 +35,14 @@ describe("UBL smart copy", () => {
   )
 
   it("orients parties and copies order values into a response", () => {
-    const draft = buildSmartCopyDraft("ORDER_RESPONSE", [{ documentId: "order", type: "ORDER", content: order() }])
+    const draft = buildSmartCopyDraft(
+      "ORDER_RESPONSE",
+      [{ documentId: "order", type: "ORDER", content: order() }],
+      { partnerId: "d9c01ea5-f555-4c6d-9c87-1465ea78ac05" },
+    )
     expect(draft.values).toMatchObject({ senderName: "Seller", senderEndpoint: "SELLER", recipientName: "Buyer", recipientEndpoint: "BUYER", currency: "GBP", references: { order: "PO-1" } })
     expect(draft.values.lines[0]).toMatchObject({ itemName: "Widget", itemIdentifier: "SKU-1", quantity: "8", unitCode: "EA", unitPrice: "4.25", orderLineReference: "10" })
+    expect(draft.partnerId).toBe("d9c01ea5-f555-4c6d-9c87-1465ea78ac05")
     expect(draft.requiresCommercialReview).toBe(true)
   })
 

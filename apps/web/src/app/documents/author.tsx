@@ -110,6 +110,7 @@ export function AuthorDocumentPage() {
   }, [advancedFields, documentType, selectedProfile])
 
   function applyDraft(draft: SmartCopyDraft) {
+    setPartnerId(draft.partnerId ?? "")
     setReferences(draft.values.references)
     setSenderName(draft.values.senderName)
     setSenderEndpoint(draft.values.senderEndpoint)
@@ -147,6 +148,8 @@ export function AuthorDocumentPage() {
 
   function startBlank() {
     setSmartCopy(undefined)
+    setPartnerId("")
+    setProfileId("")
     setReferences(blankReferences())
     setSenderName("")
     setSenderEndpoint("")

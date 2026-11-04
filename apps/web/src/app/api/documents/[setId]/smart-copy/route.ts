@@ -1,10 +1,13 @@
 import type { DocumentResponse } from "@edispark/documents-client"
+import type { TradingAgreement } from "@edispark/integration-client"
 
 import {
   createAuthenticatedDocumentsClient,
   documentsErrorResponse,
   isUuid,
 } from "@/lib/documents-server"
+import { createAuthenticatedIntegrationClient } from "@/lib/integration-server"
+import { resolveSmartCopyTradingPartner } from "@/lib/smart-copy-partner"
 import {
   buildSmartCopyDraft,
   isCanonicalSmartCopyContent,
@@ -123,7 +126,23 @@ export async function GET(request: Request, { params }: RouteContext) {
         unavailableAncestors += 1
       }
     }
-    const draft = buildSmartCopyDraft(targetType, inputs)
+    let agreements: TradingAgreement[] = []
+    let partnerResolutionUnavailable = false
+    if (!documentSet.metadata?.partnerId && documentSet.metadata?.mftPartnerId) {
+      try {
+        const integration = await createAuthenticatedIntegrationClient(request, "member")
+        agreements = (await integration.listTradingAgreements({ throwOnError: true })).data
+      } catch {
+        partnerResolutionUnavailable = true
+      }
+    }
+    const retainedPartnerId = resolveSmartCopyTradingPartner(documentSet.metadata, agreements)
+    const draft = buildSmartCopyDraft(targetType, inputs, {
+      partnerId: retainedPartnerId && isUuid(retainedPartnerId) ? retainedPartnerId : undefined,
+    })
+    if (partnerResolutionUnavailable || (documentSet.metadata?.mftPartnerId && !retainedPartnerId)) {
+      draft.warnings.push("The trading partner could not be resolved from the retained connection; choose it before saving.")
+    }
     if (unavailableAncestors > 0) draft.warnings.push(`${unavailableAncestors} earlier chain ${unavailableAncestors === 1 ? "document was" : "documents were"} unavailable, so only retained values were copied.`)
     return Response.json(draft, {
       headers: { "Cache-Control": "private, no-store" },

@@ -29,6 +29,7 @@
         <module>apps/documents-api</module>
         <module>apps/mft-api</module>
         <module>apps/integration-api</module>
+        <module>apps/edispark-api</module>
         <module>tooling/as2-simulator</module>
     </modules>
 

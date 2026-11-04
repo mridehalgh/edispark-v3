@@ -209,13 +209,6 @@ export const zPaginatedResponseDocumentSetResponse = z.object({
     nextUrl: z.string().optional()
 });
 
-export const zApiError = z.object({
-    code: z.string(),
-    message: z.string(),
-    timestamp: z.iso.datetime(),
-    details: z.record(z.string(), z.record(z.string(), z.unknown()))
-});
-
 export const zCreateSchemaBody = zCreateSchemaRequest;
 
 /**

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.edispark</groupId>
+    <artifactId>edispark-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>edispark-api</artifactId>
+  <name>EdiSpark API</name>
+  <description>Single Spring Boot composition root for all EdiSpark bounded contexts</description>
+  <dependencies>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency>
+    <dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>${springdoc.version}</version></dependency>
+    <dependency><groupId>com.edispark</groupId><artifactId>documents-api</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.edispark</groupId><artifactId>mft-api</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.edispark</groupId><artifactId>integration-api</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><scope>provided</scope></dependency>
+    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
+  </dependencies>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId></plugin>
+    <plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId><version>${spring.boot.version}</version><executions><execution><goals><goal>repackage</goal></goals></execution></executions></plugin>
+  </plugins></build>
+  <profiles>
+    <profile><id>local-dev</id><dependencies>
+      <dependency><groupId>com.edispark</groupId><artifactId>local-runtime</artifactId><version>${project.version}</version><scope>runtime</scope></dependency>
+    </dependencies></profile>
+    <profile>
+      <id>openapi-export</id>
+      <build><plugins>
+        <plugin>
+          <groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId>
+          <configuration>
+            <jmxPort>19001</jmxPort>
+            <jvmArguments>-Dspring.application.admin.enabled=true -Dspring.profiles.active=local,openapi-export -Dserver.port=18080 -Dedispark.internal.token=openapi-export</jvmArguments>
+          </configuration>
+          <executions>
+            <execution><id>start-edispark-openapi</id><phase>pre-integration-test</phase><goals><goal>start</goal></goals></execution>
+            <execution><id>stop-edispark-openapi</id><phase>post-integration-test</phase><goals><goal>stop</goal></goals></execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.springdoc</groupId><artifactId>springdoc-openapi-maven-plugin</artifactId><version>1.5</version>
+          <executions>
+            <execution><id>export-documents-contract</id><phase>integration-test</phase><goals><goal>generate</goal></goals><configuration><apiDocsUrl>http://localhost:18080/api-docs/documents</apiDocsUrl><outputDir>${project.basedir}/../../contracts/documents</outputDir><outputFileName>openapi.json</outputFileName></configuration></execution>
+            <execution><id>export-mft-contract</id><phase>integration-test</phase><goals><goal>generate</goal></goals><configuration><apiDocsUrl>http://localhost:18080/api-docs/mft</apiDocsUrl><outputDir>${project.basedir}/../../contracts/mft</outputDir><outputFileName>openapi.json</outputFileName></configuration></execution>
+            <execution><id>export-integration-contract</id><phase>integration-test</phase><goals><goal>generate</goal></goals><configuration><apiDocsUrl>http://localhost:18080/api-docs/integration</apiDocsUrl><outputDir>${project.basedir}/../../contracts/integration</outputDir><outputFileName>openapi.json</outputFileName></configuration></execution>
+          </executions>
+        </plugin>
+      </plugins></build>
+    </profile>
+  </profiles>
+</project>

@@ -98,8 +98,8 @@ resource "aws_security_group" "load_balancer" {
   }
   egress {
     protocol    = "tcp"
-    from_port   = 8081
-    to_port     = 8081
+    from_port   = 8080
+    to_port     = 8080
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = local.tags
@@ -112,8 +112,8 @@ resource "aws_security_group" "service" {
   vpc_id      = var.vpc_id
   ingress {
     protocol        = "tcp"
-    from_port       = 8081
-    to_port         = 8081
+    from_port       = 8080
+    to_port         = 8080
     security_groups = [aws_security_group.load_balancer[0].id]
   }
   egress {
@@ -138,7 +138,7 @@ resource "aws_lb" "this" {
 resource "aws_lb_target_group" "service" {
   count       = var.enable_service ? 1 : 0
   name        = substr("${var.name}-api", 0, 32)
-  port        = 8081
+  port        = 8080
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = var.vpc_id
@@ -180,10 +180,10 @@ resource "aws_ecs_task_definition" "service" {
     cpu_architecture        = "ARM64"
   }
   container_definitions = jsonencode([{
-    name                   = "mft-api"
+    name                   = "edispark-api"
     image                  = var.container_image
     essential              = true
-    portMappings           = [{ containerPort = 8081, protocol = "tcp" }]
+    portMappings           = [{ containerPort = 8080, protocol = "tcp" }]
     environment            = [for name, value in local.service_environment : { name = name, value = value }]
     readonlyRootFilesystem = true
     linuxParameters        = { initProcessEnabled = true }
@@ -196,7 +196,7 @@ resource "aws_ecs_task_definition" "service" {
       }
     }
     healthCheck = {
-      command     = ["CMD-SHELL", "wget -q -O - http://localhost:8081/actuator/health || exit 1"]
+      command     = ["CMD-SHELL", "wget -q -O - http://localhost:8080/actuator/health || exit 1"]
       interval    = 30
       timeout     = 5
       retries     = 3
@@ -236,8 +236,8 @@ resource "aws_ecs_service" "this" {
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.service[0].arn
-    container_name   = "mft-api"
-    container_port   = 8081
+    container_name   = "edispark-api"
+    container_port   = 8080
   }
   depends_on = [aws_lb_listener.https]
   tags       = local.tags

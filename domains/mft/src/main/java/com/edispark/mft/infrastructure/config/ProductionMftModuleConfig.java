@@ -33,6 +33,7 @@ import java.time.Clock;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -65,19 +66,21 @@ public class ProductionMftModuleConfig {
     }
 
     @Bean
-    MftRepository mftRepository(DynamoDbClient dynamoDb,
+    MftRepository mftRepository(@Qualifier("mftDynamoDbClient") DynamoDbClient dynamoDb,
             @Value("${mft.aws.metadata-table}") String tableName) {
         return new DynamoDbMftRepository(dynamoDb, tableName);
     }
 
     @Bean
-    TenantBranchKeyResolver mftTenantBranchKeyResolver(DynamoDbClient dynamoDb,
+    TenantBranchKeyResolver mftTenantBranchKeyResolver(
+            @Qualifier("mftDynamoDbClient") DynamoDbClient dynamoDb,
             @Value("${mft.aws.metadata-table}") String tableName) {
         return new DynamoDbTenantBranchKeyResolver(dynamoDb, tableName);
     }
 
     @Bean
-    TenantCipher mftTenantCipher(DynamoDbClient dynamoDb, KmsClient kms, TenantBranchKeyResolver branchKeys,
+    TenantCipher mftTenantCipher(@Qualifier("mftDynamoDbClient") DynamoDbClient dynamoDb,
+            @Qualifier("mftKmsClient") KmsClient kms, TenantBranchKeyResolver branchKeys,
             @Value("${mft.aws.key-store-table}") String keyStoreTable,
             @Value("${mft.aws.key-store-logical-name}") String logicalName,
             @Value("${mft.aws.root-kms-key-arn}") String rootKeyArn,
@@ -87,20 +90,15 @@ public class ProductionMftModuleConfig {
     }
 
     @Bean
-    PayloadStore mftPayloadStore(S3Client s3, TenantCipher cipher,
+    PayloadStore mftPayloadStore(@Qualifier("mftS3Client") S3Client s3, TenantCipher cipher,
             @Value("${mft.aws.payload-bucket}") String bucket) {
         return new S3EncryptedPayloadStore(s3, cipher, bucket);
     }
 
     @Bean
-    SecretStore mftSecretStore(S3Client s3, TenantCipher cipher,
+    SecretStore mftSecretStore(@Qualifier("mftS3Client") S3Client s3, TenantCipher cipher,
             @Value("${mft.aws.payload-bucket}") String bucket) {
         return new S3EncryptedSecretStore(s3, cipher, bucket);
-    }
-
-    @Bean
-    Clock mftClock() {
-        return Clock.systemUTC();
     }
 
     @Bean
@@ -137,7 +135,7 @@ public class ProductionMftModuleConfig {
     }
 
     @Bean
-    KmsAs2Identity mftKmsAs2Identity(KmsClient kms, Clock clock,
+    KmsAs2Identity mftKmsAs2Identity(@Qualifier("mftKmsClient") KmsClient kms, Clock clock,
             @Value("${mft.as2.kms.signing-key-arn}") String signingKeyArn,
             @Value("${mft.as2.kms.decryption-key-arn}") String decryptionKeyArn,
             @Value("${mft.as2.kms.signing-certificate:}") String signingCertificate,
@@ -151,7 +149,7 @@ public class ProductionMftModuleConfig {
     }
 
     @Bean
-    KmsCmsCodec mftKmsCmsCodec(KmsClient kms, KmsAs2Identity identity) {
+    KmsCmsCodec mftKmsCmsCodec(@Qualifier("mftKmsClient") KmsClient kms, KmsAs2Identity identity) {
         return new KmsCmsCodec(kms, identity.signingKeyId(), identity.decryptionKeyId(),
                 identity.signingCertificate());
     }

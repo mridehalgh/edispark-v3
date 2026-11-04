@@ -2,7 +2,7 @@
 
 This local-only peer uses the same `phase2` protocol library as the MFT service. It receives signed,
 encrypted, compressed AS2 messages at `http://localhost:8082/as2`, returns a signed synchronous MDN,
-and can send files back to `http://localhost:8081/as2`.
+and can send files back to the unified API at `http://localhost:8080/as2`.
 
 1. Run `pnpm mft:lab:certs` once. The command creates disposable certificates under
    `.local/as2-simulator` and prints the random PKCS#12 password.

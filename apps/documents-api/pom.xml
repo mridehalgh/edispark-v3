@@ -15,7 +15,7 @@
     <packaging>jar</packaging>
 
     <name>Documents API</name>
-    <description>Spring Boot composition root for the Documents bounded context</description>
+    <description>Documents HTTP and runtime adapters for the unified EdiSpark application</description>
 
     <dependencies>
         <!-- Spring Boot Starter Web (full Spring Boot with auto-configuration) -->
@@ -87,84 +87,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
-            <!-- Spring Boot Maven Plugin for executable JAR packaging -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>local-dev</id>
-            <dependencies>
-                <dependency>
-                    <groupId>com.edispark</groupId>
-                    <artifactId>local-runtime</artifactId>
-                    <version>${project.version}</version>
-                    <scope>runtime</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>openapi-export</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-maven-plugin</artifactId>
-                        <configuration>
-                            <jmxPort>19001</jmxPort>
-                            <jvmArguments>-Dspring.application.admin.enabled=true -Dspring.profiles.active=local,openapi-export -Dserver.port=18080</jvmArguments>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>start-openapi-export-app</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>stop-openapi-export-app</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.springdoc</groupId>
-                        <artifactId>springdoc-openapi-maven-plugin</artifactId>
-                        <version>1.5</version>
-                        <executions>
-                            <execution>
-                                <id>export-openapi-contract</id>
-                                <phase>integration-test</phase>
-                                <goals>
-                                    <goal>generate</goal>
-                                </goals>
-                                <configuration>
-                                    <apiDocsUrl>http://localhost:18080/api-docs</apiDocsUrl>
-                                    <outputDir>${project.basedir}/../../contracts/documents</outputDir>
-                                    <outputFileName>openapi.json</outputFileName>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>

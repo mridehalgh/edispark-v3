@@ -16,25 +16,9 @@ const coordinator = coordinate([api])
 try {
   await waitForEndpoint({
     child: api,
-    label: "Documents API",
+    label: "EdiSpark API",
     timeout: API_READY_TIMEOUT_MS,
-    url: new URL("/actuator/health", env.DOCUMENTS_API_URL).toString(),
-  })
-  const mftApi = start("pnpm", ["dev:mft-api"], { cwd, env: childEnvironment })
-  coordinator.add(mftApi)
-  await waitForEndpoint({
-    child: mftApi,
-    label: "MFT API",
-    timeout: API_READY_TIMEOUT_MS,
-    url: new URL("/actuator/health", env.MFT_API_URL).toString(),
-  })
-  const integrationApi = start("pnpm", ["dev:integration-api"], { cwd, env: childEnvironment })
-  coordinator.add(integrationApi)
-  await waitForEndpoint({
-    child: integrationApi,
-    label: "Integration API",
-    timeout: API_READY_TIMEOUT_MS,
-    url: new URL("/actuator/health", env.INTEGRATION_API_URL).toString(),
+    url: new URL("/actuator/health", env.EDISPARK_API_URL).toString(),
   })
   const simulator = start("pnpm", ["dev:as2-simulator"], { cwd, env: childEnvironment })
   coordinator.add(simulator)

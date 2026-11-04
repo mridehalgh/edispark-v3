@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -24,7 +25,8 @@ final class IntegrationDynamoStore {
     private final DynamoDbClient dynamo;
     private final String table;
 
-    IntegrationDynamoStore(DynamoDbClient dynamo, @Value("${integration.aws.metadata-table}") String table) {
+    IntegrationDynamoStore(@Qualifier("integrationDynamoDb") DynamoDbClient dynamo,
+            @Value("${integration.aws.metadata-table}") String table) {
         if (table == null || table.isBlank()) throw new IllegalStateException("INTEGRATION_METADATA_TABLE is required");
         this.dynamo = dynamo;
         this.table = table;

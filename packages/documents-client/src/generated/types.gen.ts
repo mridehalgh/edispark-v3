@@ -144,17 +144,6 @@ export type PaginatedResponseDocumentSetResponse = {
     nextUrl?: string;
 };
 
-export type ApiError = {
-    code: string;
-    message: string;
-    timestamp: string;
-    details: {
-        [key: string]: {
-            [key: string]: unknown;
-        };
-    };
-};
-
 export type CreateSchemaData = {
     body: CreateSchemaRequest;
     path?: never;
@@ -166,7 +155,7 @@ export type CreateSchemaErrors = {
     /**
      * Invalid request data
      */
-    400: ApiError;
+    400: SchemaResponse;
 };
 
 export type CreateSchemaError = CreateSchemaErrors[keyof CreateSchemaErrors];
@@ -196,11 +185,11 @@ export type AddSchemaVersionErrors = {
     /**
      * Invalid request data
      */
-    400: ApiError;
+    400: SchemaVersionResponse;
     /**
      * Schema not found
      */
-    404: ApiError;
+    404: SchemaVersionResponse;
 };
 
 export type AddSchemaVersionError = AddSchemaVersionErrors[keyof AddSchemaVersionErrors];
@@ -234,7 +223,7 @@ export type ListDocumentSetsErrors = {
     /**
      * Invalid limit or pagination token
      */
-    400: ApiError;
+    400: PaginatedResponseDocumentSetResponse;
 };
 
 export type ListDocumentSetsError = ListDocumentSetsErrors[keyof ListDocumentSetsErrors];
@@ -259,11 +248,11 @@ export type CreateDocumentSetErrors = {
     /**
      * Invalid request data
      */
-    400: ApiError;
+    400: DocumentSetResponse;
     /**
      * Schema not found
      */
-    404: ApiError;
+    404: DocumentSetResponse;
 };
 
 export type CreateDocumentSetError = CreateDocumentSetErrors[keyof CreateDocumentSetErrors];
@@ -293,11 +282,11 @@ export type AddDocumentErrors = {
     /**
      * Invalid request data
      */
-    400: ApiError;
+    400: DocumentResponse;
     /**
      * Document set or schema not found
      */
-    404: ApiError;
+    404: DocumentResponse;
 };
 
 export type AddDocumentError = AddDocumentErrors[keyof AddDocumentErrors];
@@ -331,11 +320,11 @@ export type AddDocumentVersionErrors = {
     /**
      * Invalid request data
      */
-    400: ApiError;
+    400: DocumentVersionResponse;
     /**
      * Document set or document not found
      */
-    404: ApiError;
+    404: DocumentVersionResponse;
 };
 
 export type AddDocumentVersionError = AddDocumentVersionErrors[keyof AddDocumentVersionErrors];
@@ -373,11 +362,11 @@ export type ValidateDocumentVersionErrors = {
     /**
      * Document set, document, or version not found
      */
-    404: ApiError;
+    404: ValidationResultResponse;
     /**
      * Document is invalid
      */
-    422: ApiError;
+    422: ValidationResultResponse;
 };
 
 export type ValidateDocumentVersionError = ValidateDocumentVersionErrors[keyof ValidateDocumentVersionErrors];
@@ -436,7 +425,7 @@ export type ListDerivativesErrors = {
     /**
      * Document set or document not found
      */
-    404: ApiError;
+    404: Array<DerivativeResponse>;
 };
 
 export type ListDerivativesError = ListDerivativesErrors[keyof ListDerivativesErrors];
@@ -470,11 +459,11 @@ export type CreateDerivativeErrors = {
     /**
      * Invalid request data or duplicate derivative
      */
-    400: ApiError;
+    400: DerivativeResponse;
     /**
      * Document set, document, or version not found
      */
-    404: ApiError;
+    404: DerivativeResponse;
 };
 
 export type CreateDerivativeError = CreateDerivativeErrors[keyof CreateDerivativeErrors];
@@ -508,7 +497,7 @@ export type GetSchemaVersionErrors = {
     /**
      * Schema or schema version not found
      */
-    404: ApiError;
+    404: SchemaVersionResponse;
 };
 
 export type GetSchemaVersionError = GetSchemaVersionErrors[keyof GetSchemaVersionErrors];
@@ -538,7 +527,7 @@ export type GetSchemaErrors = {
     /**
      * Schema not found
      */
-    404: ApiError;
+    404: SchemaResponse;
 };
 
 export type GetSchemaError = GetSchemaErrors[keyof GetSchemaErrors];
@@ -572,7 +561,7 @@ export type GetDocumentErrors = {
     /**
      * Document set or document not found
      */
-    404: ApiError;
+    404: DocumentResponse;
 };
 
 export type GetDocumentError = GetDocumentErrors[keyof GetDocumentErrors];
@@ -610,7 +599,7 @@ export type GetDocumentVersionErrors = {
     /**
      * Document set, document, or version not found
      */
-    404: ApiError;
+    404: DocumentVersionResponse;
 };
 
 export type GetDocumentVersionError = GetDocumentVersionErrors[keyof GetDocumentVersionErrors];
@@ -648,7 +637,7 @@ export type GetDocumentVersionContentErrors = {
     /**
      * Document set, document, version, or content not found
      */
-    404: ApiError;
+    404: string;
 };
 
 export type GetDocumentVersionContentError = GetDocumentVersionContentErrors[keyof GetDocumentVersionContentErrors];
@@ -686,7 +675,7 @@ export type GetDerivativeContentErrors = {
     /**
      * Document set, document, derivative, or content not found
      */
-    404: ApiError;
+    404: string;
 };
 
 export type GetDerivativeContentError = GetDerivativeContentErrors[keyof GetDerivativeContentErrors];
@@ -716,7 +705,7 @@ export type GetDocumentSetErrors = {
     /**
      * Document set not found
      */
-    404: ApiError;
+    404: DocumentSetResponse;
 };
 
 export type GetDocumentSetError = GetDocumentSetErrors[keyof GetDocumentSetErrors];

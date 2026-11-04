@@ -56,7 +56,7 @@ All generated material stays below `.local`, is ignored by Git, and must not con
 
 ## Running and verification
 
-Run `pnpm dev`. The runner starts the Documents API, MFT API, AS2 partner simulator, and web application in dependency order. Open **Local tools** in the lower-right corner to sign in as the deterministic local user. `/mft` immediately shows the partner, certificates, and five transfer scenarios. `/mft/docs` explains the production model; `http://localhost:8081/actuator/health` checks the MFT API.
+Run `pnpm dev`. The runner starts the unified EdiSpark API, AS2 partner simulator, and web application in dependency order. Open **Local tools** in the lower-right corner to sign in as the deterministic local user. `/mft` immediately shows the partners, certificates, and seven transfer scenarios. `/mft/docs` explains the production model; `http://localhost:8080/actuator/health` checks the API.
 
 Once authenticated, the shared development dock provides two live exchanges:
 
@@ -69,11 +69,11 @@ The advertised URLs and algorithms are deployment configuration rather than brow
 
 | Environment variable | Local default |
 |---|---|
-| `MFT_PUBLIC_AS2_URL` | `http://localhost:8081/as2` |
-| `MFT_PUBLIC_AS2_MDN_URL` | `http://localhost:8081/as2/mdn` |
-| `MFT_SUPPORTED_ENCRYPTION_ALGORITHMS` | `AES128-GCM` |
+| `MFT_PUBLIC_AS2_URL` | `http://localhost:8080/as2` |
+| `MFT_PUBLIC_AS2_MDN_URL` | `http://localhost:8080/as2/mdn` |
+| `MFT_SUPPORTED_ENCRYPTION_ALGORITHMS` | `AES256-CBC` |
 | `MFT_SUPPORTED_SIGNATURE_ALGORITHMS` | `SHA-256` |
-| `MFT_KEY_ENCRYPTION_ALGORITHM` | `RSA-OAEP` |
+| `MFT_KEY_ENCRYPTION_ALGORITHM` | `RSA-OAEP-SHA256` |
 
 Production values must be the externally reachable endpoints and the algorithms actually enabled by the deployed AS2/KMS adapter. The local `phase2` bridge uses one disposable identity certificate. The KMS-native production profile remains defined by separate signing and encryption certificates, both of which must be shared during retailer onboarding once that adapter is implemented.
 

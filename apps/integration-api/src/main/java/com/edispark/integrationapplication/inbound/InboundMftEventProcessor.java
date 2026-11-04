@@ -23,14 +23,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
-import org.springframework.web.client.RestClient;
 
 @Component
 @Profile("!openapi-export")
@@ -40,27 +34,19 @@ public final class InboundMftEventProcessor {
     private final ExchangeRepository exchanges;
     private final InboundEdiTranslator translator;
     private final MappingService mappings;
-    private final RestClient mft;
-    private final RestClient documents;
+    private final InboundModuleAccess modules;
     private final Clock clock;
-    private final String internalToken;
 
     public InboundMftEventProcessor(PartnershipRepository partnerships, ExchangeRepository exchanges,
             InboundEdiTranslator translator,
             MappingService mappings,
-            @Qualifier("mftRestClient") RestClient mft, @Qualifier("documentsRestClient") RestClient documents,
-            Clock clock, @Value("${edispark.internal.token}") String internalToken) {
+            InboundModuleAccess modules, Clock clock) {
         this.partnerships = partnerships;
         this.exchanges = exchanges;
         this.translator = translator;
         this.mappings = mappings;
-        this.mft = mft;
-        this.documents = documents;
+        this.modules = modules;
         this.clock = clock;
-        if (internalToken == null || internalToken.isBlank()) {
-            throw new IllegalStateException("Internal service token is required");
-        }
-        this.internalToken = internalToken;
     }
 
     public Result process(InboundMftPayloadEvent event) {
@@ -116,9 +102,7 @@ public final class InboundMftEventProcessor {
     }
 
     private byte[] fetch(InboundMftPayloadEvent event) {
-        byte[] payload = mft.get().uri("/internal/mft/transfers/{id}/content", event.transferId())
-                .header("X-EdiSpark-Internal-Token", internalToken)
-                .header("X-EdiSpark-Tenant-Id", event.tenantId()).retrieve().body(byte[].class);
+        byte[] payload = modules.payload(event);
         if (payload == null || payload.length != event.size()) {
             throw new IllegalArgumentException("Retained MFT payload size does not match its event");
         }
@@ -184,23 +168,11 @@ public final class InboundMftEventProcessor {
     private MessageResult store(InboundMftPayloadEvent event, byte[] payload, Prepared prepared) {
         InboundEdiTranslator.Translation translation = prepared.translation();
         byte[] raw = translation.messageCount() == 1 ? payload : translation.rawMessage();
-        MultipartBodyBuilder body = new MultipartBodyBuilder();
-        body.part("raw", new NamedBytes(raw, messageFilename(event.filename(), translation)),
-                MediaType.APPLICATION_OCTET_STREAM);
-        body.part("canonical", new NamedBytes(prepared.canonical(), "canonical.json"), MediaType.APPLICATION_JSON);
-        Stored response = documents.post().uri(builder -> builder.path("/internal/documents/inbound-mft")
-                        .queryParam("transferId", event.transferId()).queryParam("partnerId", event.partnerId())
-                        .queryParam("messageId", event.messageId()).queryParam("filename", event.filename())
-                        .queryParam("messageOrdinal", translation.messageOrdinal())
-                        .queryParam("messageCount", translation.messageCount())
-                        .queryParam("sourceMessageReference", translation.sourceMessageReference())
-                        .queryParam("standard", translation.standard()).queryParam("messageType", translation.messageType())
-                        .queryParam("documentType", translation.documentType())
-                        .queryParam("receivedAt", event.receivedAt()).build())
-                .header("X-EdiSpark-Internal-Token", internalToken)
-                .header("X-EdiSpark-Tenant-Id", event.tenantId())
-                .contentType(MediaType.MULTIPART_FORM_DATA).body(body.build()).retrieve().body(Stored.class);
-        if (response == null) throw new IllegalStateException("Documents did not acknowledge inbound ingestion");
+        InboundModuleAccess.StoredDocument response = modules.store(new InboundModuleAccess.InboundDocument(
+                event.transferId(), event.partnerId(), event.messageId(), messageFilename(event.filename(), translation),
+                translation.standard().name(), translation.messageType(), translation.documentType(), event.receivedAt(),
+                raw, prepared.canonical(), translation.messageOrdinal(), translation.messageCount(),
+                translation.sourceMessageReference()));
         DocumentReference source = new DocumentReference(response.documentSetId(), response.documentId(),
                 response.sourceVersionId(), response.sourceSha256());
         DocumentReference canonicalDocument = new DocumentReference(response.documentSetId(), response.documentId(),
@@ -263,15 +235,8 @@ public final class InboundMftEventProcessor {
 
     private record Route(TradingAgreement agreement, ExchangeCapability capability) { }
     private record Prepared(InboundEdiTranslator.Translation translation, Route route, byte[] canonical) { }
-    private record Stored(UUID documentSetId, UUID documentId, UUID sourceVersionId, String sourceSha256,
-                          UUID canonicalDerivativeId, String canonicalSha256) { }
     public enum MessageStatus { STORED, NEEDS_REVIEW }
     public record MessageResult(int messageOrdinal, String sourceMessageReference, UUID exchangeId,
                                 UUID documentSetId, UUID documentId, MessageStatus status) { }
     public record Result(List<MessageResult> messages, int storedCount, int reviewCount) { }
-    private static final class NamedBytes extends ByteArrayResource {
-        private final String filename;
-        private NamedBytes(byte[] bytes, String filename) { super(bytes); this.filename = filename; }
-        @Override public String getFilename() { return filename; }
-    }
 }

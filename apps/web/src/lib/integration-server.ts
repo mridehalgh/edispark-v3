@@ -5,7 +5,7 @@ import { IntegrationClientError, createIntegrationClient } from '@edispark/integ
 import { canManageOrganization } from '@/lib/access'
 import { auth, getRequestAccess } from '@/lib/auth'
 
-const DEFAULT_INTEGRATION_API_URL = 'http://localhost:8083'
+const DEFAULT_INTEGRATION_API_URL = 'http://localhost:8080'
 
 export class IntegrationBffError extends Error {
   constructor(readonly status: number, readonly code: string, message: string) {

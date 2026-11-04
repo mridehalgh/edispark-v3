@@ -4,6 +4,7 @@ import com.edispark.partnerships.application.AgreementSnapshotPublisher;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
@@ -16,7 +17,8 @@ final class EventBridgeAgreementSnapshotPublisher implements AgreementSnapshotPu
     private final EventBridgeClient events;
     private final ObjectMapper json;
     private final String eventBus;
-    EventBridgeAgreementSnapshotPublisher(EventBridgeClient events, ObjectMapper json,
+    EventBridgeAgreementSnapshotPublisher(@Qualifier("integrationEventBridge") EventBridgeClient events,
+            ObjectMapper json,
             @Value("${integration.aws.event-bus}") String eventBus) {
         if (eventBus == null || eventBus.isBlank()) throw new IllegalStateException("INTEGRATION_EVENT_BUS is required");
         this.events = events; this.json = json; this.eventBus = eventBus;

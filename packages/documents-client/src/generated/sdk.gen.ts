@@ -51,7 +51,7 @@ class HeyApiRegistry<T> {
 
 export class DocumentsClient extends HeyApiClient {
     public static readonly __registry: HeyApiRegistry<DocumentsClient> = new HeyApiRegistry<DocumentsClient>();
-    
+
     constructor(args?: {
         client?: Client;
         key?: string;
@@ -59,7 +59,7 @@ export class DocumentsClient extends HeyApiClient {
         super(args);
         DocumentsClient.__registry.set(this, args?.key);
     }
-    
+
     /**
      * Create a new schema
      *
@@ -82,7 +82,7 @@ export class DocumentsClient extends HeyApiClient {
             }
         });
     }
-    
+
     /**
      * Add a schema version
      *

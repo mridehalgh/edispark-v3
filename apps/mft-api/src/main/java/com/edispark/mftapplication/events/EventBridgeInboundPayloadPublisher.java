@@ -5,6 +5,7 @@ import com.edispark.mft.application.InboundPayloadReceived;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -24,7 +25,8 @@ public class EventBridgeInboundPayloadPublisher {
     }
 
     @Bean
-    InboundPayloadEventPublisher inboundPayloadEventPublisher(EventBridgeClient client, ObjectMapper mapper,
+    InboundPayloadEventPublisher inboundPayloadEventPublisher(
+            @Qualifier("mftEventBridge") EventBridgeClient client, ObjectMapper mapper,
             @Value("${mft.events.bus-name}") String eventBus) {
         return event -> {
             try {

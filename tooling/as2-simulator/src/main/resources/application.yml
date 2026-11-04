@@ -14,7 +14,7 @@ simulator:
   sender-alias: ${AS2_SIMULATOR_SENDER_ALIAS:SIMULATOR}
   receiver-id: ${AS2_SIMULATOR_RECEIVER_ID:EDISPARK}
   receiver-certificate: ${AS2_SIMULATOR_RECEIVER_CERT:./.local/as2-simulator/edispark.cer}
-  receiver-url: ${AS2_SIMULATOR_RECEIVER_URL:http://localhost:8081/as2}
+  receiver-url: ${AS2_SIMULATOR_RECEIVER_URL:http://localhost:8080/as2}
 management:
   endpoints:
     web:

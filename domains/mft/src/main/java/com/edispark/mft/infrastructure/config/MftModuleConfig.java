@@ -45,12 +45,6 @@ public class MftModuleConfig {
 
     @Bean
     @ConditionalOnMissingBean
-    Clock mftClock() {
-        return Clock.systemUTC();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
     SecretStore mftSecretStore(
             @Value("${mft.secrets.directory:./.local/mft/secrets}") String directory,
             @Value("${mft.secrets.master-key-file:./.local/mft/master.key}") String masterKeyFile) throws IOException {
@@ -65,11 +59,11 @@ public class MftModuleConfig {
     @Bean
     ConnectionDetailsService mftConnectionDetailsService(
             MftRepository repository,
-            @Value("${mft.as2.public-inbound-url:http://localhost:8081/as2}") URI inboundUrl,
-            @Value("${mft.as2.public-async-mdn-url:http://localhost:8081/as2/mdn}") URI asynchronousMdnUrl,
-            @Value("${mft.as2.supported-encryption-algorithms:AES128-GCM}") String encryptionAlgorithms,
+            @Value("${mft.as2.public-inbound-url:http://localhost:8080/as2}") URI inboundUrl,
+            @Value("${mft.as2.public-async-mdn-url:http://localhost:8080/as2/mdn}") URI asynchronousMdnUrl,
+            @Value("${mft.as2.supported-encryption-algorithms:AES256-CBC}") String encryptionAlgorithms,
             @Value("${mft.as2.supported-signature-algorithms:SHA-256}") String signatureAlgorithms,
-            @Value("${mft.as2.key-encryption-algorithm:RSA-OAEP}") String keyEncryptionAlgorithm) {
+            @Value("${mft.as2.key-encryption-algorithm:RSA-OAEP-SHA256}") String keyEncryptionAlgorithm) {
         return new ConnectionDetailsService(repository, inboundUrl, asynchronousMdnUrl,
                 commaSeparated(encryptionAlgorithms), commaSeparated(signatureAlgorithms), keyEncryptionAlgorithm,
                 certificate -> new As2EncryptionCertificateProvider.PublicCertificate(certificate.name(),
@@ -79,7 +73,7 @@ public class MftModuleConfig {
     @Bean
     As2ExchangePort as2ExchangePort(
             @Value("${mft.as2.allow-private-networks:false}") boolean allowPrivateNetworks,
-            @Value("${mft.as2.async-mdn-url:http://localhost:8081/as2/mdn}") String asyncMdnUrl,
+            @Value("${mft.as2.async-mdn-url:http://localhost:8080/as2/mdn}") String asyncMdnUrl,
             CertificateService certificateService) {
         return new Phase2As2ExchangeAdapter(allowPrivateNetworks, asyncMdnUrl, certificateService);
     }

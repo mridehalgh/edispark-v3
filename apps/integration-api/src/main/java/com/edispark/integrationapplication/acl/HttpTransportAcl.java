@@ -8,9 +8,11 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestClient;
 
 @Component
+@Profile("distributed")
 public final class HttpTransportAcl implements TransportAcl {
     private final RestClient mft;
     public HttpTransportAcl(@Qualifier("mftRestClient") RestClient mft) { this.mft = mft; }

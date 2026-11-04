@@ -8,8 +8,8 @@ The repository is organized by responsibility rather than framework:
 
 | Path | Purpose |
 |---|---|
-| `apps/documents-api` | Spring Boot composition root, HTTP security, OpenAPI, and runtime configuration |
-| `apps/mft-api` | AS2/MFT Spring Boot composition root and public protocol endpoint |
+| `apps/edispark-api` | Single Spring Boot composition root, security, OpenAPI, and runtime configuration |
+| `apps/documents-api`, `apps/mft-api`, `apps/integration-api` | Non-executable HTTP and infrastructure adapter libraries loaded by `edispark-api` |
 | `apps/web` | Next.js UI, Better Auth server, and API-facing web routes |
 | `domains/documents` | Documents domain, application services, REST ownership, and DynamoDB persistence |
 | `domains/mft` | Partner, certificate, transfer, MDN evidence, retry, and AS2 adapters |
@@ -29,7 +29,7 @@ The repository is organized by responsibility rather than framework:
 | `docs/specs` | Migrated feature requirements, designs, and task records |
 | `openspec` | Active proposal workflow |
 
-The intended shape is composable services: each domain owns its API and persistence ports, while application modules compose independently deployable processes. Business rules stay outside controllers and UI code.
+The intended shape is a modular monolith: each domain owns its API and persistence ports, while `edispark-api` composes those modules into one process and one Spring context. Business rules stay outside the composition root, controllers, and UI code.
 
 ## Prerequisites
 
@@ -50,7 +50,7 @@ pnpm dev
 
 The first start compiles and installs the local Maven modules, so it can take around a minute. Later starts reuse compiled output. The runner waits for the Java APIs and AS2 simulator health checks before launching Next.js, then warms the local JWKS route before printing `EdiSpark local stack is ready.` This prevents the first page load from racing service builds or Next.js route compilation. Stop the complete stack with `Ctrl+C`.
 
-Before launching, the development runner terminates any processes listening on its configured local ports (3000, 8000, 8080, 8081, and 8082 by default) and verifies that each port is free. This prevents Next.js from silently selecting another port and keeps service URLs deterministic. The service-specific commands perform equivalent cleanup for their ports. Save or stop unrelated work using those ports before running these commands because its process will be terminated.
+Before launching, the development runner terminates any processes listening on its configured local ports (3000, 8000, 8080, and 8082 by default) and verifies that each port is free. This prevents Next.js from silently selecting another port and keeps service URLs deterministic. Save or stop unrelated work using those ports before running these commands because its process will be terminated.
 
 `pnpm dev` starts:
 
@@ -59,16 +59,13 @@ Before launching, the development runner terminates any processes listening on i
 | Web application | http://localhost:3000 |
 | Better Auth health | http://localhost:3000/api/auth/ok |
 | Local JWKS | http://localhost:3000/api/auth/jwks |
-| Documents API | http://localhost:8080 |
+| EdiSpark API | http://localhost:8080 |
 | API health | http://localhost:8080/actuator/health |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| OpenAPI JSON | http://localhost:8080/api-docs |
+| Combined Swagger UI | http://localhost:8080/swagger-ui.html |
+| Combined OpenAPI JSON | http://localhost:8080/api-docs |
 | MFT control plane | http://localhost:3000/mft |
 | MFT documentation site | http://localhost:3000/mft/docs |
-| MFT API | http://localhost:8081 |
-| MFT health | http://localhost:8081/actuator/health |
-| MFT Swagger UI | http://localhost:8081/swagger-ui.html |
-| MFT OpenAPI JSON | http://localhost:8081/api-docs |
+| AS2 receiver | http://localhost:8080/as2 |
 | AS2 partner simulator | http://localhost:8082 |
 | Simulator health | http://localhost:8082/actuator/health |
 | Embedded DynamoDB | http://localhost:8000 |
@@ -102,8 +99,7 @@ The local MFT adapter behaves like a small Hierarchical-keyring test double: it 
 |---|---|
 | `pnpm dev` | Run the complete local stack |
 | `pnpm dev:web` | Run only Next.js with local auth settings |
-| `pnpm dev:api` | Build dependencies and run only the Spring API with embedded DynamoDB |
-| `pnpm dev:mft-api` | Build dependencies and run only the local MFT API |
+| `pnpm dev:api` | Build dependencies and run the complete modular API |
 | `pnpm dev:as2-simulator` | Run only the local AS2 trading-partner peer |
 | `pnpm mft:lab:certs` | Generate disposable local AS2 lab certificates |
 | `pnpm local:reset` | Delete generated `.local/` auth, settings, and DynamoDB state |
@@ -133,13 +129,13 @@ The local runner supplies safe defaults; copying an environment file is not requ
 | `LOCAL_TEST_USER_PASSWORD` | `EdiSpark-Local-2026!` | Local-only predictable test password |
 | `LOCAL_MEMBER_USER_EMAIL` | `operations@edispark.test` | Local operations persona |
 | `LOCAL_MEMBER_USER_PASSWORD` | `EdiSpark-Member-2026!` | Local-only operations password |
-| `DOCUMENTS_API_URL` | `http://localhost:8080` | Server-only API URL used by Next.js |
-| `MFT_API_URL` | `http://localhost:8081` | Server-only MFT API URL used by Next.js |
+| `EDISPARK_API_URL` | `http://localhost:8080` | Canonical server-only URL for the unified API |
+| `DOCUMENTS_API_URL`, `MFT_API_URL` | `http://localhost:8080` | Compatibility aliases used by the existing Next.js BFF clients |
 | `AS2_SIMULATOR_URL` | `http://localhost:8082` | Server-only local simulator URL used by the development BFF |
 | `MFT_ALLOW_PRIVATE_NETWORKS` | `true` locally | Allows the loopback simulator; keep `false` in production |
 | `MFT_LOCAL_DEMO_SEED_ENABLED` | `true` locally | Reconciles the complete MFT demo fixture on startup |
-| `MFT_PUBLIC_AS2_URL` | `http://localhost:8081/as2` | Externally reachable AS2 receiving URL shared with retailers |
-| `MFT_PUBLIC_AS2_MDN_URL` | `http://localhost:8081/as2/mdn` | Externally reachable asynchronous MDN URL shared with retailers |
+| `MFT_PUBLIC_AS2_URL` | `http://localhost:8080/as2` | Externally reachable AS2 receiving URL shared with retailers |
+| `MFT_PUBLIC_AS2_MDN_URL` | `http://localhost:8080/as2/mdn` | Externally reachable asynchronous MDN URL shared with retailers |
 | `MFT_SUPPORTED_ENCRYPTION_ALGORITHMS` | `AES128-GCM` | Comma-separated content-encryption algorithms advertised to partners |
 | `MFT_SUPPORTED_SIGNATURE_ALGORITHMS` | `SHA-256` | Comma-separated signature algorithms advertised to partners |
 | `MFT_KEY_ENCRYPTION_ALGORITHM` | `RSA-OAEP` | Required public-key transport advertised to partners |
@@ -157,7 +153,7 @@ The production MFT design does not allow private AS2 keys in the application dat
 
 ## Contracts
 
-The Documents API is the source of truth for `contracts/documents/openapi.json`. After changing a controller or DTO, run:
+The combined EdiSpark API is the source of truth for all exported OpenAPI contracts. After changing a controller or DTO, run the relevant sync command:
 
 ```bash
 pnpm contracts:sync:documents
@@ -170,7 +166,7 @@ Commit the API change, exported contract, and generated client together. The web
 
 - **A local port cannot be released:** the runner first requests graceful shutdown and then forces the owning process to stop if necessary. If cleanup still fails, check whether the listener belongs to another user or requires elevated permission.
 - **The API does not become ready:** `pnpm dev` waits up to two minutes for `http://localhost:8080/actuator/health` before starting Next.js. Check the Java output for the first startup failure.
-- **The MFT control plane says the service is unavailable:** use `pnpm dev`, which now starts and checks the MFT API, or run `pnpm dev:mft-api` beside an already running web app. Verify `http://localhost:8081/actuator/health`.
+- **An API area says the service is unavailable:** use `pnpm dev`, or run `pnpm dev:api` beside an already running web app. Verify `http://localhost:8080/actuator/health`.
 - **Authentication or JWKS fails:** verify `http://localhost:3000/api/auth/ok` first, then reset generated state with `pnpm local:reset` and restart.
 - **Local data is inconsistent:** stop the stack, run `pnpm local:reset`, and run `pnpm dev`. Reset removes all generated local users, workspaces, keys, and documents.
 - **DynamoDB native-library errors:** run `./mvnw -B -pl tooling/local-runtime -am clean package -DskipTests`, then restart the API.

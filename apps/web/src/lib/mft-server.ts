@@ -5,7 +5,7 @@ import { MftClientError, createMftClient } from "@edispark/mft-client"
 import { canManageOrganization } from "@/lib/access"
 import { auth, getRequestAccess } from "@/lib/auth"
 
-const DEFAULT_MFT_API_URL = "http://localhost:8081"
+const DEFAULT_MFT_API_URL = "http://localhost:8080"
 
 export class MftBffError extends Error {
   constructor(readonly status: number, readonly code: string, message: string) {
@@ -46,7 +46,7 @@ export function mftErrorResponse(error: unknown) {
   }
   console.error("MFT API request failed", error)
   const message = process.env.NODE_ENV === "development"
-    ? "The MFT API is not reachable. Start it with `pnpm dev:mft-api`, or run the complete stack with `pnpm dev`."
+    ? "The EdiSpark API is not reachable. Start it with `pnpm dev:api`, or run the complete stack with `pnpm dev`."
     : "The MFT service is unavailable. Try again shortly."
   return Response.json(
     { error: { code: "MFT_API_UNAVAILABLE", message } },

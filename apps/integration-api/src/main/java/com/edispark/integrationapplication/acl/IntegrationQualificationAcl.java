@@ -7,9 +7,11 @@ import java.util.Arrays;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.client.RestClient;
 
 @Component
+@Profile("distributed")
 public final class IntegrationQualificationAcl implements QualificationAcl {
     private final MappingService mappings;
     private final RestClient mft;

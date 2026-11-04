@@ -1,14 +1,16 @@
 server:
-  port: ${MFT_SERVER_PORT:8081}
+  port: ${EDISPARK_SERVER_PORT:8080}
   error:
     include-message: never
+    include-binding-errors: never
+
 spring:
   application:
-    name: mft-api
+    name: edispark-api
   servlet:
     multipart:
-      max-file-size: ${MFT_MAX_FILE_SIZE:100MB}
-      max-request-size: ${MFT_MAX_REQUEST_SIZE:101MB}
+      max-file-size: ${EDISPARK_MAX_FILE_SIZE:100MB}
+      max-request-size: ${EDISPARK_MAX_REQUEST_SIZE:101MB}
   security:
     oauth2:
       resourceserver:
@@ -19,6 +21,26 @@ spring:
             - ${AUTH_JWS_ALGORITHM:ES256}
           audiences:
             - ${AUTH_AUDIENCE:http://localhost:3000}
+  web:
+    resources:
+      add-mappings: false
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+documents:
+  dynamodb:
+    table-name: ${DOCUMENTS_TABLE_NAME:edispark-documents-dev}
+  seed:
+    tenant-id: ${LOCAL_SEED_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
+  content:
+    local:
+      directory: ${DOCUMENTS_CONTENT_DIR:./.local/documents/content}
+    s3:
+      enabled: ${DOCUMENTS_S3_ENABLED:false}
+      bucket-name: ${DOCUMENTS_S3_BUCKET:}
+
 mft:
   aws:
     region: ${AWS_REGION:eu-west-2}
@@ -45,9 +67,9 @@ mft:
       partner-requests-per-minute: ${MFT_AS2_PARTNER_REQUESTS_PER_MINUTE:600}
     allow-private-networks: ${MFT_ALLOW_PRIVATE_NETWORKS:false}
     allow-legacy-crypto: ${MFT_ALLOW_LEGACY_CRYPTO:false}
-    async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8081/as2/mdn}
-    public-inbound-url: ${MFT_PUBLIC_AS2_URL:http://localhost:8081/as2}
-    public-async-mdn-url: ${MFT_PUBLIC_AS2_MDN_URL:http://localhost:8081/as2/mdn}
+    async-mdn-url: ${MFT_ASYNC_MDN_URL:http://localhost:8080/as2/mdn}
+    public-inbound-url: ${MFT_PUBLIC_AS2_URL:http://localhost:8080/as2}
+    public-async-mdn-url: ${MFT_PUBLIC_AS2_MDN_URL:http://localhost:8080/as2/mdn}
     supported-encryption-algorithms: ${MFT_SUPPORTED_ENCRYPTION_ALGORITHMS:AES256-CBC}
     supported-signature-algorithms: ${MFT_SUPPORTED_SIGNATURE_ALGORITHMS:SHA-256}
     key-encryption-algorithm: ${MFT_KEY_ENCRYPTION_ALGORITHM:RSA-OAEP-SHA256}
@@ -63,23 +85,59 @@ mft:
   local-demo:
     enabled: ${MFT_LOCAL_DEMO_SEED_ENABLED:true}
     tenant-id: ${LOCAL_SEED_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
-    identity-path: ${MFT_LOCAL_IDENTITY_PATH:../../.local/as2-simulator/edispark.p12}
-    partner-certificate-path: ${MFT_LOCAL_PARTNER_CERTIFICATE_PATH:../../.local/as2-simulator/simulator.cer}
-    password-file: ${MFT_LOCAL_IDENTITY_PASSWORD_FILE:../../.local/as2-simulator/password.txt}
+    identity-path: ${MFT_LOCAL_IDENTITY_PATH:./.local/as2-simulator/edispark.p12}
+    partner-certificate-path: ${MFT_LOCAL_PARTNER_CERTIFICATE_PATH:./.local/as2-simulator/simulator.cer}
+    password-file: ${MFT_LOCAL_IDENTITY_PASSWORD_FILE:./.local/as2-simulator/password.txt}
     partner-endpoint: ${MFT_LOCAL_PARTNER_ENDPOINT:http://localhost:8082/as2}
-    partner-id-file: ${MFT_LOCAL_DEMO_PARTNER_ID_FILE:../../.local/mft-demo-partner-id}
-    tradacoms-partner-id-file: ${MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE:../../.local/mft-demo-tradacoms-partner-id}
+    partner-id-file: ${MFT_LOCAL_DEMO_PARTNER_ID_FILE:./.local/mft-demo-partner-id}
+    tradacoms-partner-id-file: ${MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE:./.local/mft-demo-tradacoms-partner-id}
+
+integration:
+  aws:
+    region: ${AWS_REGION:eu-west-2}
+    metadata-table: ${INTEGRATION_METADATA_TABLE:}
+    event-bus: ${INTEGRATION_EVENT_BUS:}
+  dependency-timeout: ${INTEGRATION_DEPENDENCY_TIMEOUT:30s}
+  local-demo:
+    enabled: ${INTEGRATION_LOCAL_DEMO_SEED_ENABLED:true}
+    tenant-id: ${LOCAL_SEED_TENANT_ID:2OnHVzeAJKwm0ThFLcy1HfLHGPm}
+    mft-partner-id-file: ${MFT_LOCAL_DEMO_PARTNER_ID_FILE:./.local/mft-demo-partner-id}
+    mft-tradacoms-partner-id-file: ${MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE:./.local/mft-demo-tradacoms-partner-id}
+  inbound:
+    queue-url: ${INTEGRATION_INBOUND_MFT_QUEUE_URL:}
+
+aws:
+  region: ${AWS_REGION:eu-west-2}
+
+dynamodb:
+  local:
+    endpoint: ${DYNAMODB_LOCAL_ENDPOINT:http://localhost:8000}
+    embedded: ${DYNAMODB_LOCAL_EMBEDDED:true}
+    data-directory: ${DYNAMODB_LOCAL_DATA_DIR:.local/dynamodb}
+    native-library-path: ${DYNAMODB_LOCAL_NATIVE_DIR:tooling/local-runtime/target/dependencies}
+
+edispark:
+  internal:
+    token: ${EDISPARK_INTERNAL_TOKEN:}
+
 springdoc:
   api-docs:
     path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  show-actuator: false
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
-edispark:
-  internal:
-    token: ${EDISPARK_INTERNAL_TOKEN:}
+  endpoint:
+    health:
+      show-details: when-authorized
+
 logging:
   level:
-    com.edispark.mft: INFO
+    root: INFO
+    com.edispark: INFO
+    software.amazon.awssdk: WARN

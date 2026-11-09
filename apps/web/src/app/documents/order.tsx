@@ -277,7 +277,7 @@ export function OrderDocumentPage() {
               {formatMoney(totals.payable, order.currency)}
             </p>
           </>}
-          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="ORDER" /><SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
+          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="ORDER" /><SendDocument key={documentId} documentType="ORDER" documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
         </div>
       </header>
       {setId && documentId ? <DocumentAttention documentSetId={setId} documentId={documentId} /> : null}

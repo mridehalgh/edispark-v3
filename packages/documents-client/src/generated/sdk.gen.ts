@@ -4,8 +4,8 @@ import * as z from 'zod';
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CancelDocumentData, CancelDocumentResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, FinalizeDocumentData, FinalizeDocumentResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, ListSchemasData, ListSchemasResponses, StoreExternalDerivativeData, StoreExternalDerivativeResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
-import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCancelDocumentPath, zCancelDocumentResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateSchemaBody, zCreateSchemaResponse, zFinalizeDocumentPath, zFinalizeDocumentResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zListSchemasResponse, zStoreExternalDerivativeBody, zStoreExternalDerivativePath, zStoreExternalDerivativeQuery, zStoreExternalDerivativeResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
+import type { AddDocumentData, AddDocumentErrors, AddDocumentResponses, AddDocumentVersionData, AddDocumentVersionErrors, AddDocumentVersionResponses, AddSchemaVersionData, AddSchemaVersionErrors, AddSchemaVersionResponses, CancelDocumentData, CancelDocumentResponses, CreateDerivativeData, CreateDerivativeErrors, CreateDerivativeResponses, CreateDocumentCorrectionData, CreateDocumentCorrectionResponses, CreateDocumentSetData, CreateDocumentSetErrors, CreateDocumentSetResponses, CreateRelatedDocumentDraftData, CreateRelatedDocumentDraftResponses, CreateSchemaData, CreateSchemaErrors, CreateSchemaResponses, FinalizeDocumentData, FinalizeDocumentResponses, GetDerivativeContentData, GetDerivativeContentErrors, GetDerivativeContentResponses, GetDocumentData, GetDocumentErrors, GetDocumentResponses, GetDocumentSetData, GetDocumentSetErrors, GetDocumentSetResponses, GetDocumentVersionContentData, GetDocumentVersionContentErrors, GetDocumentVersionContentResponses, GetDocumentVersionData, GetDocumentVersionErrors, GetDocumentVersionResponses, GetSchemaData, GetSchemaErrors, GetSchemaResponses, GetSchemaVersionData, GetSchemaVersionErrors, GetSchemaVersionResponses, ListDerivativesData, ListDerivativesErrors, ListDerivativesResponses, ListDocumentSetsData, ListDocumentSetsErrors, ListDocumentSetsResponses, ListSchemasData, ListSchemasResponses, StoreExternalDerivativeData, StoreExternalDerivativeResponses, ValidateDocumentVersionData, ValidateDocumentVersionErrors, ValidateDocumentVersionResponses } from './types.gen';
+import { zAddDocumentBody, zAddDocumentPath, zAddDocumentResponse, zAddDocumentVersionBody, zAddDocumentVersionPath, zAddDocumentVersionResponse, zAddSchemaVersionBody, zAddSchemaVersionPath, zAddSchemaVersionResponse, zCancelDocumentPath, zCancelDocumentResponse, zCreateDerivativeBody, zCreateDerivativePath, zCreateDerivativeResponse, zCreateDocumentCorrectionBody, zCreateDocumentCorrectionPath, zCreateDocumentCorrectionResponse, zCreateDocumentSetBody, zCreateDocumentSetResponse, zCreateRelatedDocumentDraftBody, zCreateRelatedDocumentDraftPath, zCreateRelatedDocumentDraftQuery, zCreateRelatedDocumentDraftResponse, zCreateSchemaBody, zCreateSchemaResponse, zFinalizeDocumentPath, zFinalizeDocumentResponse, zGetDerivativeContentPath, zGetDerivativeContentResponse, zGetDocumentPath, zGetDocumentResponse, zGetDocumentSetPath, zGetDocumentSetResponse, zGetDocumentVersionContentPath, zGetDocumentVersionContentResponse, zGetDocumentVersionPath, zGetDocumentVersionResponse, zGetSchemaPath, zGetSchemaResponse, zGetSchemaVersionPath, zGetSchemaVersionResponse, zListDerivativesPath, zListDerivativesResponse, zListDocumentSetsQuery, zListDocumentSetsResponse, zListSchemasResponse, zStoreExternalDerivativeBody, zStoreExternalDerivativePath, zStoreExternalDerivativeQuery, zStoreExternalDerivativeResponse, zValidateDocumentVersionPath, zValidateDocumentVersionResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -233,6 +233,27 @@ export class DocumentsClient extends HeyApiClient {
     }
 
     /**
+     * Create a linked business draft with its own partner metadata
+     */
+    public createRelatedDocumentDraft<ThrowOnError extends boolean = false>(options: Options<CreateRelatedDocumentDraftData, ThrowOnError>): RequestResult<CreateRelatedDocumentDraftResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateRelatedDocumentDraftResponses, unknown, ThrowOnError>({
+            requestValidator: async (data) => await z.object({
+                body: zCreateRelatedDocumentDraftBody,
+                path: zCreateRelatedDocumentDraftPath,
+                query: zCreateRelatedDocumentDraftQuery.optional()
+            }).parseAsync(data),
+            responseValidator: async (data) => await zCreateRelatedDocumentDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/document-sets/{setId}/documents/{docId}/related',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
      * Finalize a draft document
      *
      * Validates the current version against its OASIS UBL schema and marks it final.
@@ -307,6 +328,27 @@ export class DocumentsClient extends HeyApiClient {
             responseValidator: async (data) => await zCreateDerivativeResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/document-sets/{setId}/documents/{docId}/derivatives',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Create a linked correction draft
+     */
+    public createDocumentCorrection<ThrowOnError extends boolean = false>(options: Options<CreateDocumentCorrectionData, ThrowOnError>): RequestResult<CreateDocumentCorrectionResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateDocumentCorrectionResponses, unknown, ThrowOnError>({
+            requestValidator: async (data) => await z.object({
+                body: zCreateDocumentCorrectionBody,
+                path: zCreateDocumentCorrectionPath,
+                query: z.never().optional()
+            }).parseAsync(data),
+            responseValidator: async (data) => await zCreateDocumentCorrectionResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/document-sets/{setId}/documents/{docId}/corrections',
             ...options,
             headers: {
                 'Content-Type': 'application/json',

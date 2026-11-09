@@ -13,6 +13,8 @@ import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.ContentRef;
 import com.edispark.documents.domain.model.Derivative;
 import com.edispark.documents.domain.model.Document;
+import com.edispark.documents.domain.model.DocumentId;
+import com.edispark.documents.domain.model.DocumentSetId;
 import com.edispark.documents.domain.model.DocumentLifecycleStatus;
 import com.edispark.documents.domain.model.DocumentRelation;
 import com.edispark.documents.domain.model.DocumentSet;
@@ -85,6 +87,27 @@ public class DocumentSetCommandHandler {
      * @throws SchemaVersionNotFoundException if the referenced schema version does not exist
      */
     public DocumentSet handle(CreateDocumentSetCommand command) {
+        return create(command, List.of());
+    }
+
+    /** A correction is a new draft with its own partner metadata and an immutable source link. */
+    public DocumentSet createCorrection(DocumentSetId sourceSetId, DocumentId sourceId, CreateDocumentSetCommand command) {
+        DocumentSet sourceSet = documentSetRepository.findById(sourceSetId)
+                .orElseThrow(() -> new IllegalArgumentException("Source document set was not found"));
+        Document source = sourceSet.getDocument(sourceId)
+                .orElseThrow(() -> new IllegalArgumentException("Source document was not found"));
+        if (source.type() != command.initialDocumentType() || command.lifecycleStatus() != DocumentLifecycleStatus.DRAFT) {
+            throw new IllegalArgumentException("A correction must be a draft of the same document type");
+        }
+        if (source.getCurrentVersion().format() != Format.JSON) throw new IllegalArgumentException("Create corrections from the canonical business document");
+        byte[] retained = contentStore.retrieve(source.getCurrentVersion().contentRef().hash()).orElseThrow();
+        var corrected = new CreateDocumentSetCommand(command.initialDocumentType(), command.schemaRef(),
+                CorrectionContent.merge(retained, command.initialContent()), command.createdBy(), command.metadata(), DocumentLifecycleStatus.DRAFT);
+        return create(corrected, List.of(new DocumentRelation(
+                com.edispark.documents.domain.model.DocumentRelationType.CORRECTS, sourceId, sourceSetId)));
+    }
+
+    private DocumentSet create(CreateDocumentSetCommand command, List<DocumentRelation> relations) {
         // Validate schema exists
         validateSchemaVersionExists(command.schemaRef().schemaId(), command.schemaRef().version());
 
@@ -105,6 +128,8 @@ public class DocumentSetCommandHandler {
                 null,
                 List.of());
 
+        relations.forEach(documentSet.getAllDocuments().getFirst()::addRelation);
+
         if (command.lifecycleStatus() == DocumentLifecycleStatus.DRAFT) {
             documentSet.getAllDocuments().getFirst().markDraft();
         }
@@ -113,6 +138,15 @@ public class DocumentSetCommandHandler {
         documentSetRepository.save(documentSet);
 
         return documentSet;
+    }
+
+    public DocumentSet createRelatedDraft(DocumentSetId sourceSetId, DocumentId sourceId, CreateDocumentSetCommand command,
+            com.edispark.documents.domain.model.DocumentRelationType relation) {
+        if (relation == com.edispark.documents.domain.model.DocumentRelationType.CORRECTS) return createCorrection(sourceSetId, sourceId, command);
+        var source = documentSetRepository.findById(sourceSetId).flatMap(set -> set.getDocument(sourceId))
+                .orElseThrow(() -> new IllegalArgumentException("Source document was not found"));
+        if (command.lifecycleStatus() != DocumentLifecycleStatus.DRAFT) throw new IllegalArgumentException("Related authoring creates a draft");
+        return create(command, List.of(new DocumentRelation(relation, source.id(), sourceSetId)));
     }
 
     /**
@@ -351,6 +385,21 @@ public class DocumentSetCommandHandler {
         document.finalizeDocument();
         documentSetRepository.save(documentSet);
         return document;
+    }
+
+    /** Validates a retained canonical representation, including JSON derivatives of inbound EDI. */
+    public ValidationResult validateCanonical(com.edispark.documents.domain.model.DocumentType type, byte[] bytes) {
+        String root = switch (type) {
+            case ORDER -> "Order"; case ORDER_RESPONSE -> "OrderResponse"; case INVOICE -> "Invoice";
+            case DESPATCH_ADVICE -> "DespatchAdvice"; case RECEIPT_ADVICE -> "ReceiptAdvice";
+            case REMITTANCE_ADVICE -> "RemittanceAdvice"; case CREDIT_NOTE -> "CreditNote";
+            default -> null;
+        };
+        if (root == null) return ValidationResult.failure(List.of(com.edispark.documents.domain.model.ValidationError.of(
+                "/", "Validation is unavailable for this document type.", "VALIDATION_UNAVAILABLE")));
+        String schema = "{\"type\":\"object\",\"required\":[\"" + root + "\"],\"properties\":{\"" + root + "\":{}}}";
+        return findValidator(Format.JSON, SchemaFormat.JSON_SCHEMA).validate(Content.of(bytes, Format.JSON),
+                Content.of(schema.getBytes(java.nio.charset.StandardCharsets.UTF_8), Format.JSON));
     }
 
     public Document handle(CancelDocumentCommand command) {

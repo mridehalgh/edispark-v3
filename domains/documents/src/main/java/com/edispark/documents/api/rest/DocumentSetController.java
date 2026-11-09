@@ -61,6 +61,7 @@ import com.edispark.documents.application.query.DocumentSetQueryHandler;
 import com.edispark.documents.application.query.RetrievedContent;
 import com.edispark.documents.application.query.ListDocumentSetsQuery;
 import com.edispark.documents.domain.model.Content;
+import com.edispark.documents.domain.model.DocumentLifecycleStatus;
 import com.edispark.documents.domain.model.Derivative;
 import com.edispark.documents.domain.model.DerivativeId;
 import com.edispark.documents.domain.model.Document;
@@ -204,6 +205,35 @@ public class DocumentSetController {
         DocumentSetResponse response = mapToResponse(documentSet);
         
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{setId}/documents/{docId}/corrections")
+    @Operation(operationId = "createDocumentCorrection", summary = "Create a linked correction draft")
+    @ApiResponse(responseCode = "201", description = "Linked correction draft created")
+    public ResponseEntity<DocumentSetResponse> createDocumentCorrection(
+            @PathVariable("setId") UUID setId, @PathVariable("docId") UUID docId,
+            @Valid @RequestBody CreateDocumentSetRequest request) {
+        var command = new CreateDocumentSetCommand(request.documentType(),
+                SchemaVersionRef.of(new SchemaId(request.schemaId()), VersionIdentifier.of(request.schemaVersion())),
+                Content.of(Base64.getDecoder().decode(request.content()), request.format() == null ? Format.JSON : request.format()),
+                request.createdBy(), request.metadata(), DocumentLifecycleStatus.DRAFT);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(commandHandler.createCorrection(
+                new DocumentSetId(setId), new DocumentId(docId), command)));
+    }
+
+    @PostMapping("/{setId}/documents/{docId}/related")
+    @Operation(operationId = "createRelatedDocumentDraft", summary = "Create a linked business draft with its own partner metadata")
+    @ApiResponse(responseCode = "201", description = "Linked draft created")
+    public ResponseEntity<DocumentSetResponse> createRelatedDocumentDraft(
+            @PathVariable("setId") UUID setId, @PathVariable("docId") UUID docId,
+            @RequestParam(name = "relationType", defaultValue = "RELATED_TO") com.edispark.documents.domain.model.DocumentRelationType relationType,
+            @Valid @RequestBody CreateDocumentSetRequest request) {
+        var command = new CreateDocumentSetCommand(request.documentType(),
+                SchemaVersionRef.of(new SchemaId(request.schemaId()), VersionIdentifier.of(request.schemaVersion())),
+                Content.of(Base64.getDecoder().decode(request.content()), request.format() == null ? Format.JSON : request.format()),
+                request.createdBy(), request.metadata(), DocumentLifecycleStatus.DRAFT);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(commandHandler.createRelatedDraft(
+                new DocumentSetId(setId), new DocumentId(docId), command, relationType)));
     }
 
     /**

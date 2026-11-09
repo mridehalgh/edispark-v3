@@ -38,13 +38,44 @@ class ExchangeServiceTest {
     private static final String TENANT = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Instant NOW = Instant.parse("2026-11-01T12:00:00Z");
 
+    @Test
+    void readinessIsReadOnlyAndSendingRevalidatesInsteadOfTrustingAnEarlierPass() {
+        var partnerships = new InMemoryPartnershipRepository();
+        var capability = capability();
+        var agreement = agreement(capability);
+        saveAgreement(partnerships, agreement);
+        var documents = new DocumentProbe();
+        var exchanges = new InMemoryExchangeRepository();
+        var transformations = new AtomicInteger();
+        var transports = new AtomicInteger();
+        var service = new ExchangeService(exchanges, partnerships, documents, (route, bytes) -> {
+            transformations.incrementAndGet();
+            return new TransformationAcl.Result(new byte[]{1}, new byte[]{2}, List.of());
+        }, (a, b, c, d, e, f, g, h, i, j, k) -> { transports.incrementAndGet(); return UUID.randomUUID(); }, Clock.fixed(NOW, ZoneOffset.UTC));
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var setId = UUID.randomUUID(); var docId = UUID.randomUUID();
+            assertThat(service.checkReadiness(agreement.id(), capability.id(), setId, docId).ready()).isTrue();
+            assertThat(service.list()).isEmpty();
+            assertThat(documents.retained).hasValue(0);
+            documents.issues = List.of(ReadinessIssue.document("SCHEMA_REQUIRED", "/Order/0", "Add the required field."));
+            var result = service.submitOutbound(new ExchangeService.SubmitOutbound(agreement.id(), capability.id(), setId, docId, "fresh-check"));
+            assertThat(result.status()).isEqualTo(ExchangeStatus.NEEDS_REVIEW);
+            assertThat(result.generatedDocument()).isNull();
+            assertThat(result.stages()).extracting(stage -> stage.status()).containsExactly(
+                    ExchangeStatus.RECEIVED, ExchangeStatus.RESOLVING, ExchangeStatus.VALIDATING, ExchangeStatus.NEEDS_REVIEW);
+            assertThat(result.warnings()).extracting(ExchangeWarning::code).containsExactly("SCHEMA_REQUIRED");
+            assertThat(transformations).hasValue(1);
+            assertThat(transports).hasValue(0);
+        });
+    }
+
     @ParameterizedTest
     @EnumSource(EdiStandard.class)
     void retainsEdiAndMappingEvidenceForEveryStandard(EdiStandard standard) {
         var partnerships = new InMemoryPartnershipRepository();
         var capability = capability(standard, OutboundLossPolicy.STRICT);
         var agreement = agreement(capability);
-        partnerships.saveAgreement(agreement);
+        saveAgreement(partnerships, agreement);
         var transports = new AtomicInteger();
         var documents = new DocumentProbe();
         var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, documents,
@@ -84,11 +115,12 @@ class ExchangeServiceTest {
         var result = submitWithWarning(OutboundLossPolicy.STRICT, warning);
 
         assertThat(result.exchange().status()).isEqualTo(ExchangeStatus.NEEDS_REVIEW);
-        assertThat(result.exchange().generatedDocument()).isNotNull();
+        assertThat(result.exchange().generatedDocument()).isNull();
         assertThat(result.exchange().mappingReport()).isNotNull();
-        assertThat(result.exchange().warnings()).containsExactly(warning);
+        assertThat(result.exchange().warnings()).extracting(ExchangeWarning::code).containsExactly(warning.code());
         assertThat(result.transports()).hasValue(0);
-        assertThat(result.documents().retained).hasValue(2);
+        assertThat(result.documents().retained).hasValue(1);
+        assertThat(result.documents().retainedArtifacts).containsExactly(DocumentAcl.GeneratedArtifact.VALIDATION_REPORT);
     }
 
     @Test
@@ -109,7 +141,7 @@ class ExchangeServiceTest {
         var partnerships = new InMemoryPartnershipRepository();
         var capability = capability();
         var agreement = agreement(capability);
-        partnerships.saveAgreement(agreement);
+        saveAgreement(partnerships, agreement);
         var attempts = new AtomicInteger();
         var transports = new AtomicInteger();
         var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, new DocumentProbe(),
@@ -180,7 +212,7 @@ class ExchangeServiceTest {
     private WarningSubmission submitWithWarning(OutboundLossPolicy policy, ExchangeWarning warning) {
         var partnerships = new InMemoryPartnershipRepository();
         var capability = capability(policy);
-        partnerships.saveAgreement(agreement(capability));
+        saveAgreement(partnerships, agreement(capability));
         var transports = new AtomicInteger();
         var documents = new DocumentProbe();
         var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, documents,
@@ -209,9 +241,17 @@ class ExchangeServiceTest {
                 NOW.minusSeconds(180), NOW.minusSeconds(60));
     }
 
+    private void saveAgreement(InMemoryPartnershipRepository repository, TradingAgreement agreement) {
+        repository.savePartner(new com.edispark.partnerships.domain.model.TradingPartner(agreement.partnerId(), TENANT,
+                "Test partner", List.of(), com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE, NOW, NOW));
+        repository.saveAgreement(agreement);
+    }
+
     private static final class DocumentProbe implements DocumentAcl {
         private final AtomicInteger retained = new AtomicInteger();
         private final List<GeneratedArtifact> retainedArtifacts = new ArrayList<>();
+        private List<ReadinessIssue> issues = List.of();
+        @Override public List<ReadinessIssue> validate(DocumentDescriptor descriptor) { return issues; }
         @Override public DocumentDescriptor describe(UUID documentSetId, UUID documentId) {
             return new DocumentDescriptor(new DocumentReference(documentSetId, documentId, UUID.randomUUID(), "source-hash"),
                     BusinessDocumentType.ORDER, "UBL_2_1_JSON", "PO-1001");

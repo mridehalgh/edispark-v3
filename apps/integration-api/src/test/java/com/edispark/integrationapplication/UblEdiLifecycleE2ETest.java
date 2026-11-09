@@ -35,23 +35,41 @@ class UblEdiLifecycleE2ETest {
 
     @ParameterizedTest(name = "{0} {1}")
     @MethodSource("lifecycleDocuments")
-    void sendsAndReceivesEveryOrderToInvoiceLifecycleFile(EdiStandard standard, BusinessDocumentType type) throws Exception {
-        String messageType = messageType(type);
-        MappingRevision outbound = mapping("OUTBOUND", standard, type);
-        byte[] sent = writer.write(capability(standard, type, messageType),
-                mappingRuntime.execute(outbound, ublDocument(type)));
+    void historicalMappingsExposeCoverageGapsBeforeSending(EdiStandard standard, BusinessDocumentType type) throws Exception {
+        var result = mappingRuntime.executeDetailed(mapping("OUTBOUND", standard, type), ublDocument(type));
+        assertThat(result.warnings()).as("Historical mappings must not silently approve richer source fixtures").isNotEmpty();
+        assertThat(MAPPER.readTree(result.report()).path("warnings")).hasSize(result.warnings().size());
+    }
 
-        InboundEdiTranslator.Translation received = reader.translate(sent);
-        byte[] receivedUbl = mappingRuntime.execute(mapping("INBOUND", standard, type), received.mappingInputJson());
-
-        assertThat(received.standard()).isEqualTo(standard);
-        assertThat(received.release()).isEqualTo(standard == EdiStandard.EDIFACT ? "D96A" : "9");
-        assertThat(received.messageType()).isEqualTo(messageType);
-        assertThat(received.documentType()).isEqualTo(type);
-        assertThat(new String(sent, StandardCharsets.US_ASCII))
-                .contains(new String(received.rawMessage(), StandardCharsets.US_ASCII));
-        assertThat(MAPPER.readTree(receivedUbl).at("/" + rootName(type) + "/0/ID/0/_").asText())
-                .isEqualTo(documentId(type));
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(EdiStandard.class)
+    void aReviewedRepeatedMappingCarriesAllTwelveLinesIntoTheTransportRepresentation(EdiStandard standard) throws Exception {
+        var source = MAPPER.createObjectNode();
+        var document = source.putArray("OrderResponse").addObject();
+        document.putArray("ID").addObject().put("_", "OR-repeat-12");
+        document.putArray("IssueDate").addObject().put("_", "2026-11-04");
+        document.putArray("OrderReference").addObject().putArray("ID").addObject().put("_", "PO-repeat-12");
+        document.putArray("SellerSupplierParty").addObject().putArray("Party").addObject().putArray("EndpointID").addObject().put("_", "5012345678901");
+        document.putArray("BuyerCustomerParty").addObject().putArray("Party").addObject().putArray("EndpointID").addObject().put("_", "5098765432109");
+        var lines = document.putArray("OrderLine");
+        for (int index = 1; index <= 12; index++) {
+            var line = lines.addObject().putArray("LineItem").addObject();
+            line.putArray("ID").addObject().put("_", String.valueOf(index));
+            line.putArray("Quantity").addObject().put("_", index).put("unitCode", "EA");
+        }
+        var original = mapping("OUTBOUND", standard, BusinessDocumentType.ORDER_RESPONSE);
+        var repeatedNodes = original.nodes().stream().map(node -> new com.edispark.transformations.domain.MappingNode(
+                node.id(), node.operation(), node.sourcePointers().stream().map(path -> path.replace("/OrderLine/0/", "/OrderLine/*/")).toList(),
+                node.targetPointer().replace("/lines/0/", "/lines/*/"), node.constant(), node.separator(), node.codeMap(),
+                node.codeList(), node.sourceSyntax(), node.targetSyntax())).toList();
+        var reviewed = original.forkForTenant("test-tenant", Instant.now()).revise(repeatedNodes);
+        var result = mappingRuntime.executeDetailed(reviewed, MAPPER.writeValueAsBytes(source));
+        assertThat(result.warnings()).isEmpty();
+        assertThat(MAPPER.readTree(result.output()).path("lines")).hasSize(12);
+        byte[] sent = writer.write(capability(standard, BusinessDocumentType.ORDER_RESPONSE, "ORDRSP"), result.output());
+        var received = reader.translate(sent);
+        assertThat(MAPPER.readTree(received.mappingInputJson()).path("lines")).hasSize(12);
+        assertThat(original.nodes()).noneMatch(node -> node.sourcePointers().stream().anyMatch(path -> path.contains("/*/")));
     }
 
     private static Stream<Arguments> lifecycleDocuments() {

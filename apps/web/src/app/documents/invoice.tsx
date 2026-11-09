@@ -277,7 +277,7 @@ export function InvoiceDocumentPage() {
           {invoice.dueDate && (
             <p className="mt-1 text-xs text-muted-foreground">Due {formatDate(invoice.dueDate)}</p>
           )}
-          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="INVOICE" /><SendDocument documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
+          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="INVOICE" /><SendDocument key={documentId} documentType="INVOICE" documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
         </div>
       </header>
       {setId && documentId ? <DocumentAttention documentSetId={setId} documentId={documentId} /> : null}

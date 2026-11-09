@@ -17,6 +17,32 @@ class MappingRuntimeTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
+    void repeatsEveryLineAndKeepsUnexpectedFieldsVisible() throws Exception {
+        var mapping = MappingRevision.draft("tenant", "Repeated lines", UUID.randomUUID(), UUID.randomUUID(),
+                List.of(new MappingNode(UUID.randomUUID(), MappingOperation.COPY, List.of("/items/*/id"), "/lines/*/id", null, null),
+                        new MappingNode(UUID.randomUUID(), MappingOperation.OPTIONAL_COPY, List.of("/items/*/name"), "/lines/*/name", null, null)), Instant.now());
+        var source = mapper.createObjectNode();
+        var items = source.putArray("items");
+        for (int i = 0; i < 12; i++) items.addObject().put("id", String.valueOf(i)).put("unreviewed", "value");
+        var result = new MappingRuntime(mapper).executeDetailed(mapping, mapper.writeValueAsBytes(source));
+        assertThat(mapper.readTree(result.output()).path("lines")).hasSize(12);
+        assertThat(mapper.readTree(result.output()).at("/lines/11/id").asText()).isEqualTo("11");
+        assertThat(result.warnings()).hasSize(12);
+    }
+
+    @Test
+    void intentionalOmissionsRequireAReasonAndRemainInEvidence() throws Exception {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new MappingNode(UUID.randomUUID(), MappingOperation.OMIT,
+                List.of("/note"), "/reviewed", "", null)).hasMessageContaining("business reason");
+        var mapping = MappingRevision.draft("tenant", "Reviewed omission", UUID.randomUUID(), UUID.randomUUID(),
+                List.of(new MappingNode(UUID.randomUUID(), MappingOperation.OMIT, List.of("/note"), "/reviewed",
+                        "Partner receives this note separately under the agreement", null)), Instant.now());
+        var result = new MappingRuntime(mapper).executeDetailed(mapping, "{\"note\":\"value\"}".getBytes(StandardCharsets.UTF_8));
+        assertThat(result.warnings()).isEmpty();
+        assertThat(mapper.readTree(result.report()).path("reviewedOmissions")).hasSize(1);
+    }
+
+    @Test
     void reportsPopulatedSourceLeavesThatThePublishedRevisionDoesNotConsume() throws Exception {
         var node = new MappingNode(UUID.randomUUID(), MappingOperation.COPY, List.of("/document/id"),
                 "/message/reference", null, null);

@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { documentFieldLabel } from "@/lib/document-field-label"
 import {
   documentExchanges,
   duration,
@@ -38,6 +39,7 @@ function MappingFinding({
 }) {
   return (
     <li className="text-sm">
+      <p className="font-medium">{documentFieldLabel(warning.sourcePath)}</p>
       <p className="max-w-[70ch] break-words leading-5">
         {warning.message ?? "A mapping finding was recorded."}
       </p>
@@ -74,7 +76,7 @@ function ExchangeEvidence({ exchange }: { exchange: ExchangeResponse }) {
       {Boolean(exchange.warnings?.length) && (
         <div className="rounded-md bg-muted p-3">
           <h4 className="text-sm font-semibold">
-            Mapping findings · {exchange.warnings!.length}
+            Validation and mapping findings · {exchange.warnings!.length}
           </h4>
           <ul className="mt-2 space-y-3">
             {exchange.warnings!.slice(0, 3).map((warning, index) => (
@@ -100,7 +102,7 @@ function ExchangeEvidence({ exchange }: { exchange: ExchangeResponse }) {
           to={`/files/${exchange.mappingReport.documentSetId}`}
           className="inline-flex min-h-10 items-center text-sm font-medium text-primary hover:underline"
         >
-          Open full mapping report ↗
+          Open full validation and mapping evidence ↗
         </Link>
       )}
       {fields.length > 0 && (

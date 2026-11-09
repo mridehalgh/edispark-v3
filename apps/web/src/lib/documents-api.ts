@@ -74,8 +74,10 @@ export async function getSmartCopyDraft(
   sourceDocumentId: string,
   targetType: AuthorableDocumentType,
   signal?: AbortSignal,
+  correction = false,
 ) {
   const search = new URLSearchParams({ sourceDocumentId, targetType })
+  if (correction) search.set("mode", "correct")
   const response = await fetch(
     `/api/documents/${encodeURIComponent(setId)}/smart-copy?${search}`,
     {

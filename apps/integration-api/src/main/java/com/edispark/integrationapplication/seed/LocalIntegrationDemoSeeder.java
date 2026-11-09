@@ -164,7 +164,24 @@ public final class LocalIntegrationDemoSeeder {
                         ORDER_SOURCE_SCHEMA, EDIFACT_ORDER_SCHEMA, MappingStatus.DRAFT, orderNodes(), null, now, null),
                 new MappingRevision(SCHEDULED_MAPPING, targetTenantId, "Scheduled invoice mapping", 1,
                         INVOICE_SOURCE_SCHEMA, EDIFACT_INVOICE_SCHEMA, MappingStatus.SCHEDULED, invoiceNodes(), HASH,
-                        now, null, SCHEDULED_MAPPING, Instant.parse("2099-01-01T09:00:00Z"), null, 1));
+                        now, null, SCHEDULED_MAPPING, Instant.parse("2099-01-01T09:00:00Z"), null, 1),
+                new MappingRevision(stableId("readiness:order-response:repeated-lines"), targetTenantId,
+                        "Order response readiness review — every line", 1,
+                        UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac16"),
+                        UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac34"), MappingStatus.DRAFT,
+                        responseReviewNodes(), null, now, null));
+    }
+
+    private List<MappingNode> responseReviewNodes() {
+        var nodes = new ArrayList<>(nodes("/OrderResponse/0/ID/0/_", "/OrderResponse/0/IssueDate/0/_",
+                "/OrderResponse/0/SellerSupplierParty/0/Party/0/EndpointID/0/_",
+                "/OrderResponse/0/BuyerCustomerParty/0/Party/0/EndpointID/0/_"));
+        nodes.add(copy("/OrderResponse/0/OrderReference/0/ID/0/_", "/document/orderReference"));
+        String line = "/OrderResponse/0/OrderLine/*/LineItem/0";
+        nodes.add(copy(line + "/ID/0/_", "/lines/*/id"));
+        nodes.add(copy(line + "/Quantity/0/_", "/lines/*/quantity"));
+        nodes.add(copy(line + "/Quantity/0/unitCode", "/lines/*/unitCode"));
+        return List.copyOf(nodes);
     }
 
     private List<MappingNode> orderNodes() {

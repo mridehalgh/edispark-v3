@@ -2,12 +2,24 @@ import type { MappingNode } from '@edispark/integration-client'
 
 export function previewMapping(input: unknown, nodes: MappingNode[]): unknown {
   const output: Record<string, unknown> = {}
-  for (const node of nodes) {
-    if (!node.targetPointer) continue
+  function apply(node: MappingNode) {
+    if (!node.targetPointer || node.operation === 'OMIT') return
+    const repeated = node.sourcePointers?.find((pointer) => pointer.includes('/*/'))
+    if (repeated) {
+      const collection = readPointer(input, repeated.slice(0, repeated.indexOf('/*/')))
+      if (!Array.isArray(collection)) return
+      if (collection.length > 10000) throw new Error('Repeated mapping exceeds 10000 items')
+      collection.forEach((_, index) => apply({ ...node,
+        sourcePointers: node.sourcePointers?.map((path) => path.replace('/*/', `/${index}/`)),
+        targetPointer: node.targetPointer!.replace('/*/', `/${index}/`),
+      }))
+      return
+    }
     const sources = (node.sourcePointers ?? []).map((pointer) => readPointer(input, pointer))
     const value = evaluate(node, sources)
     if (value !== undefined) writePointer(output, node.targetPointer, value)
   }
+  nodes.forEach(apply)
   return output
 }
 
@@ -27,7 +39,8 @@ function evaluate(node: MappingNode, sources: unknown[]): unknown {
     case 'COALESCE': return sources.find((item) => item !== undefined && item !== null && item !== '')
     case 'UPPERCASE': return sources[0] === undefined ? undefined : String(sources[0]).toUpperCase()
     case 'LOWERCASE': return sources[0] === undefined ? undefined : String(sources[0]).toLowerCase()
-    case 'CODE_LOOKUP': return sources[0] === undefined ? undefined : node.codeMap?.[String(sources[0])]
+    case 'CODE_LOOKUP':
+    case 'OPTIONAL_CODE_LOOKUP': return sources[0] === undefined ? undefined : node.codeMap?.[String(sources[0])]
     default: return sources[0]
   }
 }

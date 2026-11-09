@@ -133,7 +133,7 @@ export type TradingAgreement = {
 
 export type MappingNode = {
     id?: string;
-    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE' | 'CODE_LOOKUP';
+    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE' | 'CODE_LOOKUP' | 'OPTIONAL_COPY' | 'OPTIONAL_CODE_LOOKUP' | 'OMIT';
     sourcePointers?: Array<string>;
     targetPointer?: string;
     constant?: string;
@@ -324,6 +324,34 @@ export type ExchangeWarning = {
     sourcePath?: string;
     disposition?: string;
     message?: string;
+};
+
+export type ReadinessRequest = {
+    agreementId: string;
+    capabilityId: string;
+    documentSetId: string;
+    documentId: string;
+};
+
+export type ReadinessIssue = {
+    code?: string;
+    path?: string;
+    message?: string;
+    owner?: string;
+    severity?: string;
+    action?: string;
+};
+
+export type ReadinessReport = {
+    ready?: boolean;
+    checkedAt?: string;
+    sourceDocument?: DocumentReference;
+    agreementId?: string;
+    agreementRevision?: number;
+    capabilityId?: string;
+    mappingRevisionId?: string;
+    documentProfileRevisionId?: string;
+    issues?: Array<ReadinessIssue>;
 };
 
 export type Dependency = {
@@ -992,6 +1020,22 @@ export type SubmitOutboundExchangeResponses = {
 };
 
 export type SubmitOutboundExchangeResponse = SubmitOutboundExchangeResponses[keyof SubmitOutboundExchangeResponses];
+
+export type CheckExchangeReadinessData = {
+    body: ReadinessRequest;
+    path?: never;
+    query?: never;
+    url: '/api/exchanges/readiness';
+};
+
+export type CheckExchangeReadinessResponses = {
+    /**
+     * OK
+     */
+    200: ReadinessReport;
+};
+
+export type CheckExchangeReadinessResponse = CheckExchangeReadinessResponses[keyof CheckExchangeReadinessResponses];
 
 export type DeleteTradingPartnerDraftData = {
     body?: never;

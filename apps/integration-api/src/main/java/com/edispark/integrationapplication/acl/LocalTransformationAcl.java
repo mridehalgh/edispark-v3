@@ -22,6 +22,9 @@ public final class LocalTransformationAcl implements TransformationAcl {
         if (mapping.status() != MappingStatus.PUBLISHED) {
             throw new IllegalArgumentException("Published mapping was not found");
         }
+        if (!mapping.sourceSchemaId().equals(capability.sourceSchemaId()) || !mapping.targetSchemaId().equals(capability.targetSchemaId())) {
+            throw new IllegalArgumentException("The pinned mapping does not match the route's source and target schemas.");
+        }
         var result = runtime.executeDetailed(mapping, canonicalContent);
         return new Result(edi.write(capability, result.output()), result.report(), result.warnings().stream()
                 .map(warning -> new ExchangeWarning(warning.code(), warning.sourcePath(), warning.disposition(),

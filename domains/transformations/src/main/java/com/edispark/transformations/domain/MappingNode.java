@@ -19,10 +19,13 @@ public record MappingNode(UUID id, MappingOperation operation, List<String> sour
         if (operation == MappingOperation.CONSTANT && constant == null) {
             throw new IllegalArgumentException("constant is required for CONSTANT");
         }
+        if (operation == MappingOperation.OMIT && (constant == null || constant.isBlank())) {
+            throw new IllegalArgumentException("An intentional omission requires a recorded business reason");
+        }
         if (operation != MappingOperation.CONSTANT && sourcePointers.isEmpty()) {
             throw new IllegalArgumentException("At least one source pointer is required");
         }
-        if (operation == MappingOperation.CODE_LOOKUP && codeMap.isEmpty()) {
+        if ((operation == MappingOperation.CODE_LOOKUP || operation == MappingOperation.OPTIONAL_CODE_LOOKUP) && codeMap.isEmpty()) {
             throw new IllegalArgumentException("codeMap is required for CODE_LOOKUP");
         }
         boolean hasCodeMetadata = codeList != null || sourceSyntax != null || targetSyntax != null;

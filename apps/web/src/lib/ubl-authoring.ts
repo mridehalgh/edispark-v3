@@ -353,8 +353,8 @@ export function buildUblDocument(values: AuthoringValues) {
   const specialist = values.specialist
   if (specialist) {
     if (values.documentType === "ORDER_RESPONSE" && specialist.responseCode) {
-      document.ResponseCode = value(specialist.responseCode)
-      if (specialist.responseDescription.trim()) document.Description = value(specialist.responseDescription.trim())
+      document.OrderResponseCode = value(specialist.responseCode)
+      if (specialist.responseDescription.trim()) document.Note = value([values.note.trim(), specialist.responseDescription.trim()].filter(Boolean).join("\n"))
     }
     const mappedDelivery = delivery(specialist)
     if (!["DESPATCH_ADVICE", "RECEIPT_ADVICE"].includes(values.documentType) && Object.keys(mappedDelivery).length) {

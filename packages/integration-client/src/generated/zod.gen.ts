@@ -231,7 +231,10 @@ export const zMappingNode = z.object({
         'COALESCE',
         'UPPERCASE',
         'LOWERCASE',
-        'CODE_LOOKUP'
+        'CODE_LOOKUP',
+        'OPTIONAL_COPY',
+        'OPTIONAL_CODE_LOOKUP',
+        'OMIT'
     ]).optional(),
     sourcePointers: z.array(z.string()).optional(),
     targetPointer: z.string().optional(),
@@ -483,6 +486,34 @@ export const zExchangeResponse = z.object({
     sourceMessageReference: z.string().optional(),
     mappingReport: zDocumentReference.optional(),
     warnings: z.array(zExchangeWarning).optional()
+});
+
+export const zReadinessRequest = z.object({
+    agreementId: z.uuid(),
+    capabilityId: z.uuid(),
+    documentSetId: z.uuid(),
+    documentId: z.uuid()
+});
+
+export const zReadinessIssue = z.object({
+    code: z.string().optional(),
+    path: z.string().optional(),
+    message: z.string().optional(),
+    owner: z.string().optional(),
+    severity: z.string().optional(),
+    action: z.string().optional()
+});
+
+export const zReadinessReport = z.object({
+    ready: z.boolean().optional(),
+    checkedAt: z.iso.datetime().optional(),
+    sourceDocument: zDocumentReference.optional(),
+    agreementId: z.uuid().optional(),
+    agreementRevision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    capabilityId: z.uuid().optional(),
+    mappingRevisionId: z.uuid().optional(),
+    documentProfileRevisionId: z.uuid().optional(),
+    issues: z.array(zReadinessIssue).optional()
 });
 
 export const zDependency = z.object({
@@ -848,6 +879,13 @@ export const zSubmitOutboundExchangeBody = zSubmitExchangeRequest;
  * Accepted
  */
 export const zSubmitOutboundExchangeResponse = zExchangeResponse;
+
+export const zCheckExchangeReadinessBody = zReadinessRequest;
+
+/**
+ * OK
+ */
+export const zCheckExchangeReadinessResponse = zReadinessReport;
 
 export const zDeleteTradingPartnerDraftPath = z.object({
     partnerId: z.uuid()

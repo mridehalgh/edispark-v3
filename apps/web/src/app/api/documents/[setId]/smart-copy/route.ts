@@ -146,7 +146,8 @@ export async function GET(request: Request, { params }: RouteContext) {
         { status: 404 },
       )
     }
-    if (!smartCopyTransitions[primary.type].includes(targetType)) {
+    const correction = url.searchParams.get("mode") === "correct" && primary.type === targetType
+    if (!correction && !smartCopyTransitions[primary.type].includes(targetType)) {
       return Response.json(
         {
           error: {
@@ -246,6 +247,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       agreements,
     )
     const draft = buildSmartCopyDraft(targetType, inputs, {
+      correction,
       partnerId:
         retainedPartnerId && isUuid(retainedPartnerId)
           ? retainedPartnerId

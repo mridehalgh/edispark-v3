@@ -32,12 +32,13 @@ class EdiPayloadWriterTest {
         assertThat(result).contains("CUX+2:GBP:9'", "LIN+1++05012345000017:EN'", "QTY+21:12:KGM'",
                 "PRI+AAA:4.5'", "MOA+203:54.0'");
         assertThat(result).containsPattern("UNZ\\+1\\+[A-F0-9]{12}'$");
+        assertThat(result).doesNotContain("[name]", "[delivery_location]", "TOD+5++DAP", "PAT+1", "DTM+2:");
     }
 
     @Test
     void createsATradacomsOrdersEnvelope() {
         String result = new String(writer.write(capability(EdiStandard.TRADACOMS, "9", "ORDERS"),
-                json()), StandardCharsets.US_ASCII);
+                targetJson(BusinessDocumentType.ORDER)), StandardCharsets.US_ASCII);
 
         assertThat(result).startsWith("STX=ANA:1+5012345678901+5098765432109+261101:123400+");
         assertThat(result).contains("MHD=1+ORDHDR:9'", "FIL=PO-1001+1'", "ORD=PO-1001++GBP'",
@@ -63,7 +64,7 @@ class EdiPayloadWriterTest {
         String messageType = messageType(type);
 
         String result = new String(writer.write(capability(type, EdiStandard.TRADACOMS, "9", messageType),
-                json()), StandardCharsets.US_ASCII);
+                targetJson(type)), StandardCharsets.US_ASCII);
 
         assertThat(result).startsWith("STX=").contains("MHD=2+" + messageType + ":9'")
                 .contains("MTR=").endsWith("END=2'");
@@ -77,6 +78,36 @@ class EdiPayloadWriterTest {
                 + "\"name\":\"Coffee beans\",\"price\":4.50,\"lineExtension\":54.00}],"
                 + "\"totals\":{\"lineExtension\":54.00,\"payable\":64.80}}")
                 .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private byte[] targetJson(BusinessDocumentType type) {
+        try {
+            var json = new ObjectMapper();
+            var root = json.readTree(json());
+            if (type != BusinessDocumentType.ORDER) ((com.fasterxml.jackson.databind.node.ObjectNode) root.path("document")).remove("currency");
+            if (type != BusinessDocumentType.INVOICE) ((com.fasterxml.jackson.databind.node.ObjectNode) root.path("lines").path(0)).remove("lineExtension");
+            return json.writeValueAsBytes(root);
+        } catch (Exception exception) { throw new AssertionError(exception); }
+    }
+
+    @Test void rejectsMappedValuesThatWouldPreviouslyHaveBeenSilentlyLost() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> writer.write(capability(EdiStandard.TRADACOMS, "9", "ORDERS"), json()))
+                .hasMessageContaining("cannot represent mapped field /lines/*/lineExtension");
+        var unicode = new String(json(), StandardCharsets.UTF_8).replace("Coffee beans", "Coffee €");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> writer.write(capability(EdiStandard.EDIFACT, "D96A", "ORDERS"), unicode.getBytes(StandardCharsets.UTF_8)))
+                .hasMessageContaining("without data loss");
+    }
+
+    @Test void tradacomsMessageControlCountIncludesEveryLineAndEscapes() throws Exception {
+        var json = new ObjectMapper(); var tree = json.readTree(targetJson(BusinessDocumentType.ORDER));
+        var lines = (com.fasterxml.jackson.databind.node.ArrayNode) tree.path("lines");
+        var template = lines.path(0).deepCopy();
+        for (int index = 1; index < 12; index++) lines.add(template.deepCopy());
+        String result = new String(writer.write(capability(EdiStandard.TRADACOMS, "9", "ORDERS"), json.writeValueAsBytes(tree)), StandardCharsets.US_ASCII);
+        String body = result.substring(result.indexOf("MHD=2+"), result.indexOf("END=2'"));
+        long count = body.chars().filter(value -> value == '\'').count();
+        assertThat(body).endsWith("MTR=" + count + "'");
+        assertThat(body.split("OLD=", -1)).hasSize(13);
     }
 
     private ExchangeCapability capability(EdiStandard standard, String release, String messageType) {

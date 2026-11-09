@@ -36,7 +36,20 @@ final class InProcessDocumentAcl implements DocumentAcl {
         Document document = document(setId, documentId);
         Representation representation = canonical(document);
         return new DocumentDescriptor(reference(setId, documentId, representation),
-                BusinessDocumentType.valueOf(document.type().name()), "UBL_2_1_JSON", documentId.toString());
+                BusinessDocumentType.valueOf(document.type().name()), "UBL_2_1_JSON", documentId.toString(),
+                document.lifecycleStatus().name(), metadataId(setId, "partnerId"), metadataId(setId, "mftPartnerId"));
+    }
+
+    private UUID metadataId(UUID setId, String field) {
+        String value = sets.findById(new DocumentSetId(setId)).orElseThrow().metadata().get(field);
+        try { return value == null ? null : UUID.fromString(value); }
+        catch (IllegalArgumentException exception) { throw new IllegalArgumentException("The retained partner reference is invalid. Create a corrected draft and select its partner."); }
+    }
+
+    @Override public java.util.List<com.edispark.exchange.application.ReadinessIssue> validate(DocumentDescriptor descriptor) {
+        return commands.validateCanonical(com.edispark.documents.domain.model.DocumentType.valueOf(descriptor.type().name()),
+                content(descriptor.current())).errors().stream().map(error -> com.edispark.exchange.application.ReadinessIssue.document(
+                        error.code(), error.path(), error.message())).toList();
     }
 
     @Override
@@ -58,10 +71,11 @@ final class InProcessDocumentAcl implements DocumentAcl {
     public DocumentReference retainDerivative(DocumentReference source, GeneratedArtifact artifact, byte[] bytes,
             UUID mappingRevisionId, UUID exchangeId) {
         Document document = document(source.documentSetId(), source.documentId());
+        content(source);
         Derivative derivative = commands.handle(new StoreExternalDerivativeCommand(
                 new DocumentSetId(source.documentSetId()), new DocumentId(source.documentId()),
                 document.getCurrentVersion().versionNumber(), Content.of(bytes, storageFormat(artifact)),
-                mappingRevisionId.toString()));
+                artifact == GeneratedArtifact.VALIDATION_REPORT ? "validation:" + exchangeId : mappingRevisionId.toString()));
         return new DocumentReference(source.documentSetId(), source.documentId(), derivative.id().value(),
                 derivative.contentHash().toFullString());
     }
@@ -80,7 +94,9 @@ final class InProcessDocumentAcl implements DocumentAcl {
         DocumentVersion version = document.getCurrentVersion();
         if (version.format() == Format.JSON) return new Representation(version, null);
         Derivative derivative = document.derivatives().stream()
-                .filter(item -> item.targetFormat() == Format.JSON).findFirst()
+                .filter(item -> item.targetFormat() == Format.JSON && item.sourceVersionId().equals(version.id()))
+                .filter(item -> item.variantKey().equals("canonical") || item.variantKey().equals("default"))
+                .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Document has no canonical JSON representation"));
         return new Representation(version, derivative);
     }

@@ -38,7 +38,7 @@ final class LocalIntegrationDemoSeederTest {
             assertThat(issuer.defaultIssuer()).isTrue();
             assertThat(issuer.nextSerial()).isEqualTo(1);
         });
-        assertThat(mappings.list(TENANT_ID)).hasSize(2);
+        assertThat(mappings.list(TENANT_ID)).hasSize(3);
         assertThat(partnerships.listPartners(TENANT_ID)).extracting(item -> item.status().name())
                 .containsExactlyInAnyOrder("ACTIVE", "ACTIVE", "DRAFT");
         assertThat(partnerships.listPartners(TENANT_ID)).extracting(item -> item.displayName())
@@ -52,7 +52,7 @@ final class LocalIntegrationDemoSeederTest {
                 .allSatisfy(item -> assertThat(item.inboundFileFailurePolicy())
                         .isEqualTo(InboundFileFailurePolicy.REJECT_FILE));
         assertThat(mappings.list(TENANT_ID)).extracting(item -> item.status().name())
-                .containsExactlyInAnyOrder("DRAFT", "SCHEDULED");
+                .containsExactlyInAnyOrder("DRAFT", "DRAFT", "SCHEDULED");
         assertThat(partnerships.listAgreements(TENANT_ID).stream()
                 .filter(agreement -> agreement.status().name().equals("ACTIVE")))
                 .allSatisfy(agreement -> {
@@ -88,5 +88,14 @@ final class LocalIntegrationDemoSeederTest {
                         "TRADACOMS:9:INBOUND:RECEIPT_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac57");
         assertThat(mappings.list(TENANT_ID).stream().flatMap(mapping -> mapping.nodes().stream())
                 .map(node -> node.id()).sorted().toList()).isEqualTo(firstMappingNodes);
+        var reviewDraft = mappings.list(TENANT_ID).stream()
+                .filter(mapping -> mapping.name().startsWith("Order response readiness review")).findFirst().orElseThrow();
+        mappings.delete(TENANT_ID, reviewDraft.id());
+        seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
+        assertThat(mappings.find(TENANT_ID, reviewDraft.id()).orElseThrow().nodes()).isEqualTo(reviewDraft.nodes());
+        var edited = reviewDraft.revise(reviewDraft.nodes().subList(0, 2));
+        mappings.save(edited);
+        seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
+        assertThat(mappings.find(TENANT_ID, reviewDraft.id()).orElseThrow().nodes()).isEqualTo(edited.nodes());
     }
 }

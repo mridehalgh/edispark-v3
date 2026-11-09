@@ -46,6 +46,13 @@ public final class ExchangeController {
                 request.idempotencyKey())));
     }
 
+    @PostMapping("/readiness")
+    @Operation(operationId = "checkExchangeReadiness", summary = "Validate an exact document version against a selected partner route without sending")
+    public ExchangeService.ReadinessReport readiness(@Valid @RequestBody ReadinessRequest request) {
+        return service.checkReadiness(request.agreementId(), request.capabilityId(), request.documentSetId(), request.documentId());
+    }
+    public record ReadinessRequest(@NotNull UUID agreementId, @NotNull UUID capabilityId, @NotNull UUID documentSetId, @NotNull UUID documentId) {}
+
     @GetMapping @Operation(operationId = "listExchanges", summary = "List EDI exchanges")
     public List<ExchangeResponse> list() { return service.list().stream().map(ExchangeResponse::from).toList(); }
 

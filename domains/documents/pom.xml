@@ -18,6 +18,11 @@
     <description>Documents bounded context - manages business documents, versioning, schemas, and transformations</description>
 
     <dependencies>
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.5.9</version>
+        </dependency>
         <!-- Support/common module for pagination -->
         <dependency>
             <groupId>com.edispark</groupId>
@@ -193,6 +198,10 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource><directory>src/main/resources</directory></resource>
+            <resource><directory>../../vendor/ubl/2.1/json-schema</directory><targetPath>ubl/2.1/json-schema</targetPath></resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

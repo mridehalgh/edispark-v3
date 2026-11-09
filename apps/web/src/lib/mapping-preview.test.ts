@@ -3,6 +3,17 @@ import { describe, expect, it } from 'vitest'
 import { previewMapping, readPointer } from './mapping-preview'
 
 describe('mapping preview', () => {
+  it('previews every repeated line while keeping reviewed omissions out of the target', () => {
+    const input = { items: Array.from({ length: 12 }, (_, index) => ({ id: index + 1 })), note: 'retained in evidence' }
+    const result = previewMapping(input, [
+      { id: '1', operation: 'COPY', sourcePointers: ['/items/*/id'], targetPointer: '/lines/*/id' },
+      { id: '2', operation: 'OPTIONAL_COPY', sourcePointers: ['/items/*/name'], targetPointer: '/lines/*/name' },
+      { id: '3', operation: 'OMIT', sourcePointers: ['/note'], targetPointer: '/review', constant: 'Partner receives the note separately' },
+    ]) as { lines: Array<{ id: number }> }
+    expect(result.lines).toHaveLength(12)
+    expect(result.lines[11].id).toBe(12)
+    expect(result).not.toHaveProperty('review')
+  })
   it('builds nested output from copy and transformation operations', () => {
     const input = { order: { id: 'po-42', buyer: { name: 'Example retailer' } } }
 

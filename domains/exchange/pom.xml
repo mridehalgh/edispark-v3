@@ -5,6 +5,7 @@
   <artifactId>exchange-domain</artifactId><name>Exchange Domain</name>
   <description>Durable agreement-driven inbound and outbound EDI orchestration</description>
   <dependencies>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>tenancy</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>partnerships-domain</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>org.springframework</groupId><artifactId>spring-web</artifactId></dependency>

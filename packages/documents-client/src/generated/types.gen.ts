@@ -411,6 +411,27 @@ export type ValidateDocumentVersionResponses = {
 
 export type ValidateDocumentVersionResponse = ValidateDocumentVersionResponses[keyof ValidateDocumentVersionResponses];
 
+export type CreateRelatedDocumentDraftData = {
+    body: CreateDocumentSetRequest;
+    path: {
+        setId: string;
+        docId: string;
+    };
+    query?: {
+        relationType?: 'RELATED_TO' | 'RESPONDS_TO' | 'DESPATCHES' | 'RECEIVES' | 'INVOICES' | 'REMITS' | 'CORRECTS' | 'SUPERSEDES';
+    };
+    url: '/api/document-sets/{setId}/documents/{docId}/related';
+};
+
+export type CreateRelatedDocumentDraftResponses = {
+    /**
+     * Linked draft created
+     */
+    201: DocumentSetResponse;
+};
+
+export type CreateRelatedDocumentDraftResponse = CreateRelatedDocumentDraftResponses[keyof CreateRelatedDocumentDraftResponses];
+
 export type FinalizeDocumentData = {
     body?: never;
     path: {
@@ -526,6 +547,25 @@ export type CreateDerivativeResponses = {
 };
 
 export type CreateDerivativeResponse = CreateDerivativeResponses[keyof CreateDerivativeResponses];
+
+export type CreateDocumentCorrectionData = {
+    body: CreateDocumentSetRequest;
+    path: {
+        setId: string;
+        docId: string;
+    };
+    query?: never;
+    url: '/api/document-sets/{setId}/documents/{docId}/corrections';
+};
+
+export type CreateDocumentCorrectionResponses = {
+    /**
+     * Linked correction draft created
+     */
+    201: DocumentSetResponse;
+};
+
+export type CreateDocumentCorrectionResponse = CreateDocumentCorrectionResponses[keyof CreateDocumentCorrectionResponses];
 
 export type CancelDocumentData = {
     body?: never;

@@ -6,6 +6,12 @@ The goal is not a large synthetic database. The goal is a small, safe set of con
 
 ## Workspace identity
 
+Outbound readiness now validates the current canonical UBL against the bundled OASIS schema graph, the exact active partner route and pinned profile, and mapping coverage before retaining delivery EDI or submitting transport. A readiness check creates no files or exchanges; Send repeats it and records validation evidence on failure. Existing final documents and published mappings remain historical records and may now correctly require review.
+
+The stable tenant draft `readiness:order-response:repeated-lines` (deterministic UUID) demonstrates repeated order-response lines for TRADACOMS. It is deliberately unpublished: populated fields outside its eight base rules must be mapped or explicitly omitted with a business reason and passing fixture before publication. The reconciler restores it when absent and preserves user edits. Existing global revision 1 definitions and active agreement pins are unchanged.
+
+The Documents send panel separates schema finalization from partner readiness and directs document owners to a linked correction draft and administrators to an immutable mapping revision. Correction drafts have their own partner metadata, retain fields outside the business form, and link across sets with `CORRECTS`. The original bytes and exchange history are preserved. Regression coverage: `JsonSchemaDocumentValidatorTest`, `CorrectionContentTest`, `ExchangeServiceTest`, `MappingRuntimeTest`, `MappingServiceTest`, `EdiPayloadWriterTest`, and `LocalIntegrationDemoSeederTest`.
+
 | Concern | Stable identity | Owner |
 |---|---|---|
 | Better Auth administrator | `local@edispark.test`, owner | `apps/web/src/lib/auth.ts` |

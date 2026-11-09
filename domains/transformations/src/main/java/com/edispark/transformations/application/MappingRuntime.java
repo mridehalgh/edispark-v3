@@ -32,14 +32,18 @@ public final class MappingRuntime {
         try {
             JsonNode source = mapper.readTree(input);
             ObjectNode target = mapper.createObjectNode();
-            for (MappingNode node : mapping.nodes()) write(target, node.targetPointer(), value(source, node));
+            List<String> consumed = new ArrayList<>();
+            for (MappingNode node : mapping.nodes()) apply(source, target, node, consumed);
             byte[] output = mapper.writeValueAsBytes(target);
             if (output.length > MAX_OUTPUT_BYTES) throw new IllegalArgumentException("Mapping output exceeds 25 MiB");
-            List<MappingWarning> warnings = unmappedWarnings(source, mapping);
+            List<MappingWarning> warnings = unmappedWarnings(source, consumed);
             ObjectNode report = mapper.createObjectNode();
             report.put("mappingRevisionId", mapping.id().toString());
             report.put("mappingFamilyId", mapping.familyId().toString());
             report.put("mappingRevision", mapping.revision());
+            report.put("mappingHash", mapping.contentHash());
+            report.set("reviewedOmissions", mapper.valueToTree(mapping.nodes().stream().filter(node -> node.operation() == MappingOperation.OMIT)
+                    .map(node -> java.util.Map.of("paths", node.sourcePointers(), "reason", node.constant())).toList()));
             report.put("mappingName", mapping.name());
             report.put("sourceSchemaId", mapping.sourceSchemaId().toString());
             report.put("targetSchemaId", mapping.targetSchemaId().toString());
@@ -52,17 +56,59 @@ public final class MappingRuntime {
         }
     }
 
-    private List<MappingWarning> unmappedWarnings(JsonNode source, MappingRevision mapping) {
+    private List<MappingWarning> unmappedWarnings(JsonNode source, List<String> mapped) {
         Set<String> leaves = new LinkedHashSet<>();
         collectLeaves(source, "", leaves);
-        List<String> mapped = mapping.nodes().stream().flatMap(node -> node.sourcePointers().stream()).toList();
         return leaves.stream()
                 .filter(path -> !path.equals("/_D") && !path.equals("/_A") && !path.equals("/_B"))
-                .filter(path -> mapped.stream().noneMatch(pointer -> path.equals(pointer) || path.startsWith(pointer + "/")))
+                .filter(path -> mapped.stream().noneMatch(pointer -> covers(pointer, path)))
                 .map(path -> new MappingWarning("SOURCE_FIELD_UNMAPPED", path, "SOURCE_ONLY",
                         "The populated source field has no mapping in this revision."))
                 .toList();
     }
+
+    private boolean covers(String pointer, String path) {
+        String[] pattern = pointer.split("/"), actual = path.split("/");
+        if (pattern.length > actual.length) return false;
+        for (int index = 0; index < pattern.length; index++) {
+            if (pattern[index].equals("*")) { if (!actual[index].matches("\\d+")) return false; }
+            else if (!pattern[index].equals(actual[index])) return false;
+        }
+        return true;
+    }
+
+    private void apply(JsonNode source, ObjectNode target, MappingNode node, List<String> consumed) {
+        if (node.operation() == MappingOperation.OMIT) { consumed.addAll(node.sourcePointers()); return; }
+        String repeated = node.sourcePointers().stream().filter(pointer -> pointer.contains("/*/")).findFirst().orElse(null);
+        if (repeated == null) {
+            if (node.targetPointer().contains("/*/")) throw new IllegalArgumentException("A repeated target requires an aligned source collection");
+            if (optional(node) && node.sourcePointers().stream().allMatch(pointer -> source.at(pointer).isMissingNode() || source.at(pointer).isNull())) return;
+            write(target, node.targetPointer(), value(source, node));
+            if (node.operation() != MappingOperation.CONSTANT) {
+                var available = node.sourcePointers().stream().filter(pointer -> !source.at(pointer).isMissingNode() && !source.at(pointer).isNull());
+                consumed.addAll(node.operation() == MappingOperation.CONCAT ? available.toList() : available.limit(1).toList());
+            }
+            return;
+        }
+        if (repeated.indexOf("/*/") != repeated.lastIndexOf("/*/") || !node.targetPointer().contains("/*/")) {
+            throw new IllegalArgumentException("Repeated mapping requires one aligned source and target collection");
+        }
+        JsonNode collection = source.at(repeated.substring(0, repeated.indexOf("/*/")));
+        if (!collection.isArray()) {
+            if (optional(node)) return;
+            throw new IllegalArgumentException("The mapping's repeated source collection is missing");
+        }
+        if (collection.size() > 10000) throw new IllegalArgumentException("Repeated mapping exceeds 10000 items");
+        for (int index = 0; index < collection.size(); index++) {
+            String replacement = "/" + index + "/";
+            MappingNode expanded = new MappingNode(node.id(), node.operation(), node.sourcePointers().stream()
+                    .map(pointer -> pointer.replace("/*/", replacement)).toList(), node.targetPointer().replace("/*/", replacement),
+                    node.constant(), node.separator(), node.codeMap(), node.codeList(), node.sourceSyntax(), node.targetSyntax());
+            apply(source, target, expanded, consumed);
+        }
+    }
+
+    private boolean optional(MappingNode node) { return node.operation() == MappingOperation.OPTIONAL_COPY || node.operation() == MappingOperation.OPTIONAL_CODE_LOOKUP; }
 
     private void collectLeaves(JsonNode value, String path, Set<String> output) {
         if (value == null || value.isNull() || value.isMissingNode()) return;
@@ -97,14 +143,15 @@ public final class MappingRuntime {
             if (!value.isMissingNode() && !value.isNull()) values.add(value);
         }
         return switch (node.operation()) {
-            case COPY -> first(values, node);
+            case COPY, OPTIONAL_COPY -> first(values, node);
             case COALESCE -> first(values, node);
             case CONCAT -> mapper.getNodeFactory().textNode(values.stream().map(JsonNode::asText)
                     .collect(java.util.stream.Collectors.joining(node.separator() == null ? "" : node.separator())));
             case UPPERCASE -> mapper.getNodeFactory().textNode(first(values, node).asText().toUpperCase(java.util.Locale.ROOT));
             case LOWERCASE -> mapper.getNodeFactory().textNode(first(values, node).asText().toLowerCase(java.util.Locale.ROOT));
-            case CODE_LOOKUP -> codeLookup(values, node);
+            case CODE_LOOKUP, OPTIONAL_CODE_LOOKUP -> codeLookup(values, node);
             case CONSTANT -> throw new IllegalStateException("Handled above");
+            case OMIT -> throw new IllegalStateException("Omissions do not emit target values");
         };
     }
 
@@ -147,6 +194,7 @@ public final class MappingRuntime {
         if (parent instanceof ObjectNode object) return object.get(part);
         if (parent instanceof ArrayNode array && numeric(part)) {
             int index = Integer.parseInt(part);
+            if (index > 10000) throw new IllegalArgumentException("Mapping target array exceeds 10000 items");
             return index < array.size() ? array.get(index) : null;
         }
         throw new IllegalArgumentException("Mapping target path crosses an incompatible JSON container");

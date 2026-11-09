@@ -144,24 +144,48 @@ export async function POST(request: Request) {
       "base64",
     )
     const createdBy = session.user.id
-    if (body.related?.setId && body.related.documentId) {
-      const { data } = await client.addDocument({
-        path: { setId: body.related.setId },
+    if (
+      body.related?.relationType === "CORRECTS" &&
+      body.related.setId &&
+      body.related.documentId
+    ) {
+      const { data } = await client.createDocumentCorrection({
+        path: { setId: body.related.setId, docId: body.related.documentId },
         body: {
           documentType: body.documentType as never,
           schemaId: schema.id,
           schemaVersion: "2.1",
           content,
           createdBy,
-          relatedDocumentId: body.related.documentId,
-          relationType: (body.related.relationType ?? "RELATED_TO") as never,
+          metadata: body.metadata,
           format: "JSON",
           lifecycleStatus: "DRAFT",
         },
         throwOnError: true,
       })
       return Response.json(
-        { setId: body.related.setId, document: data },
+        { setId: data.id, document: data.documents?.[0] },
+        { status: 201 },
+      )
+    }
+    if (body.related?.setId && body.related.documentId) {
+      const { data } = await client.createRelatedDocumentDraft({
+        path: { setId: body.related.setId, docId: body.related.documentId },
+        query: { relationType: (body.related.relationType ?? "RELATED_TO") as never },
+        body: {
+          documentType: body.documentType as never,
+          schemaId: schema.id,
+          schemaVersion: "2.1",
+          content,
+          createdBy,
+          metadata: body.metadata,
+          format: "JSON",
+          lifecycleStatus: "DRAFT",
+        },
+        throwOnError: true,
+      })
+      return Response.json(
+        { setId: data.id, document: data.documents?.[0] },
         { status: 201 },
       )
     }

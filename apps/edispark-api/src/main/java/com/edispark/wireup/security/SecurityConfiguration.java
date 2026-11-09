@@ -20,8 +20,15 @@ public class SecurityConfiguration {
                         .requestMatchers("/api-docs", "/api-docs/**", "/swagger-ui/**", "/actuator/health",
                                 "/as2/**", "/internal/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/document-sets/**", "/api/schemas/**",
-                                "/api/exchanges/**").hasAnyAuthority("ROLE_member", "ROLE_admin", "ROLE_owner")
+                                "/api/exchanges/**", "/api/trading-partners", "/api/trading-partners/agreements",
+                                "/api/trading-partners/*/document-profiles")
+                                .hasAnyAuthority("ROLE_member", "ROLE_admin", "ROLE_owner")
                         .requestMatchers(HttpMethod.POST, "/api/mft/transfers",
+                                "/api/exchanges", "/api/exchanges/readiness", "/api/document-sets",
+                                "/api/document-sets/*/documents/*/corrections",
+                                "/api/document-sets/*/documents/*/related",
+                                "/api/document-sets/*/documents/*/finalize",
+                                "/api/document-sets/*/documents/*/versions/*/validate",
                                 "/api/document-sets/*/documents/*/external-derivatives")
                                 .hasAnyAuthority("ROLE_member", "ROLE_admin", "ROLE_owner")
                         .requestMatchers("/api/**").hasAnyAuthority("ROLE_admin", "ROLE_owner")

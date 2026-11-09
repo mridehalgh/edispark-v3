@@ -29,6 +29,7 @@ public final class EdiPayloadWriter {
     public byte[] write(ExchangeCapability capability, byte[] mappedJson) {
         try {
             JsonNode document = mapper.readTree(mappedJson);
+            validateModel(capability, document);
             String payload = capability.standard() == EdiStandard.EDIFACT
                     ? edifact(capability, document) : tradacoms(capability, document);
             return payload.getBytes(StandardCharsets.US_ASCII);
@@ -101,23 +102,22 @@ public final class EdiPayloadWriter {
     }
 
     private void addEdifactParties(List<String> message, String sender, String receiver) {
-        message.add("NAD+SU+" + edi(sender) + "::9++[name]+++++GB");
-        message.add("NAD+BY+" + edi(receiver) + "::9++[name]+++++GB");
+        message.add("NAD+SU+" + edi(sender) + "::9");
+        message.add("NAD+BY+" + edi(receiver) + "::9");
     }
 
     private void addEdifactDocumentRequirements(List<String> message, JsonNode document,
             BusinessDocumentType type, String issueDate) {
         if (type == BusinessDocumentType.ORDER) {
-            String requestedDate = text(document, "/delivery/requestedDate", issueDate);
+            String requestedDate = text(document, "/delivery/requestedDate", "");
             if (!requestedDate.isBlank()) message.add("DTM+2:" + edi(requestedDate.replace("-", "")) + ":102");
-            message.add("NAD+DP+" + edi(text(document, "/delivery/locationId", "[delivery_location]"))
-                    + "::92++[name]+++++GB");
-            message.add("TOD+5++" + edi(text(document, "/delivery/terms", "DAP")));
-            message.add("PAT+1++5:3:D:30");
+            String location = text(document, "/delivery/locationId", "");
+            if (!location.isBlank()) message.add("NAD+DP+" + edi(location) + "::92");
+            String terms = text(document, "/delivery/terms", "");
+            if (!terms.isBlank()) message.add("TOD+5++" + edi(terms));
         } else if (type == BusinessDocumentType.INVOICE) {
-            String dueDate = text(document, "/document/dueDate", issueDate);
+            String dueDate = text(document, "/document/dueDate", "");
             if (!dueDate.isBlank()) message.add("DTM+13:" + edi(dueDate.replace("-", "")) + ":102");
-            message.add("PAT+1++5:3:D:30");
         }
     }
 
@@ -133,6 +133,8 @@ public final class EdiPayloadWriter {
         addEdifactItemIdentifiers(message, line);
         String name = text(line, "/name", text(line, "/description", ""));
         if (!name.isBlank()) message.add("IMD+F++:::" + edi(name));
+        String description = text(line, "/description", "");
+        if (!description.isBlank() && !description.equals(name)) message.add("IMD+F++:::" + edi(description));
         message.add("QTY+" + quantityQualifier(type) + ':' + edi(text(line, "/quantity", "0")) + ':'
                 + edi(text(line, "/unitCode", "")));
         addSegment(message, "PRI+AAA:", line, "/price");
@@ -185,15 +187,16 @@ public final class EdiPayloadWriter {
             result.append("ORD=").append(edi(text(document, "/document/orderReference", reference))).append("'");
         }
         if (capability.documentType() == BusinessDocumentType.ORDER) {
-            result.append("CLO=").append(edi(text(document, "/delivery/locationId", "[delivery_location]")))
-                    .append(":[name]'");
-            result.append("DIN=").append(edi(tradacomsDate(document))).append("++DAP'");
+            String location = text(document, "/delivery/locationId", "");
+            if (!location.isBlank()) result.append("CLO=").append(edi(location)).append("'");
         }
         if (invoice) result.append("ODD=").append(edi(text(document, "/document/orderReference", reference)))
                 .append("'");
         addTradacomsLines(result, document, invoice);
         addTradacomsTotals(result, document, invoice);
-        result.append("MTR=").append(invoice ? "7" : "6").append("'");
+        int start = result.indexOf("MHD=2+");
+        long segments = segmentCount(result.substring(start));
+        result.append("MTR=").append(segments + 1).append("'");
     }
 
     private void addTradacomsLines(StringBuilder result, JsonNode document, boolean invoice) {
@@ -279,8 +282,79 @@ public final class EdiPayloadWriter {
 
     private String edi(String value) {
         if (value == null) return "";
-        String ascii = value.replaceAll("[^\\x20-\\x7E]", "").strip();
-        if (ascii.length() > 70) ascii = ascii.substring(0, 70);
+        if (!value.matches("[\\x20-\\x7E]*") || value.length() > 70) {
+            throw new IllegalArgumentException("A mapped EDI value cannot be represented without data loss. Review its character set or length.");
+        }
+        String ascii = value;
         return ascii.replace("?", "??").replace("+", "?+").replace(":", "?:").replace("'", "?'");
+    }
+
+    private void validateModel(ExchangeCapability capability, JsonNode model) {
+        String expectedMessage = switch (capability.documentType()) {
+            case ORDER -> "ORDERS"; case ORDER_RESPONSE -> "ORDRSP"; case DESPATCH_ADVICE -> "DESADV";
+            case INVOICE -> "INVOIC"; case REMITTANCE_ADVICE -> "REMADV"; case RECEIPT_ADVICE -> "RECADV";
+        };
+        if (!capability.messageType().equals(expectedMessage)) throw new IllegalArgumentException("Target message type does not match the business document.");
+        if (!(capability.standard() == EdiStandard.EDIFACT && capability.release().equals("D96A"))
+                && !(capability.standard() == EdiStandard.TRADACOMS && capability.release().equals("9"))) {
+            throw new IllegalArgumentException("Target validation is unavailable for this EDI release.");
+        }
+        for (String field : List.of("/document/id", "/document/issueDate", "/parties/sender", "/parties/receiver")) {
+            if (text(model, field, "").isBlank()) throw new IllegalArgumentException("Required target field is missing: " + field);
+        }
+        try { java.time.LocalDate.parse(text(model, "/document/issueDate", "")); }
+        catch (java.time.DateTimeException exception) { throw new IllegalArgumentException("The target issue date is invalid."); }
+        if (!model.path("lines").isArray() || model.path("lines").isEmpty()) throw new IllegalArgumentException("The target document must contain its document lines.");
+        for (JsonNode line : model.path("lines")) {
+            if (capability.standard() == EdiStandard.TRADACOMS && line.has("name") && line.has("description")
+                    && !text(line, "/name", "").equals(text(line, "/description", ""))) {
+                throw new IllegalArgumentException("This target cannot carry separate item names and descriptions. Review an explicit mapping decision.");
+            }
+            if (text(line, "/id", "").isBlank()) throw new IllegalArgumentException("Every target line needs an identifier.");
+            if (capability.documentType() != BusinessDocumentType.REMITTANCE_ADVICE
+                    && (text(line, "/quantity", "").isBlank() || text(line, "/unitCode", "").isBlank())) {
+                throw new IllegalArgumentException("Every target line needs a quantity and unit.");
+            }
+        }
+        verifySupportedFields(model, "", capability);
+    }
+
+    private long segmentCount(String value) {
+        long count = 0;
+        for (int index = 0; index < value.length(); index++) {
+            if (value.charAt(index) == '?') index++;
+            else if (value.charAt(index) == '\'') count++;
+        }
+        return count;
+    }
+
+    /** A successful JSON mapping must not hide fields that this target encoder never emits. */
+    private void verifySupportedFields(JsonNode node, String path, ExchangeCapability capability) {
+        if (node.isObject()) { node.fields().forEachRemaining(entry -> verifySupportedFields(entry.getValue(), path + "/" + entry.getKey(), capability)); return; }
+        if (node.isArray()) { for (JsonNode child : node) verifySupportedFields(child, path + "/*", capability); return; }
+        if (node.isNull() || node.asText().isBlank()) return;
+        var common = java.util.Set.of("/document/id", "/document/issueDate", "/document/currency", "/document/orderReference",
+                "/parties/sender", "/parties/receiver", "/lines/*/id", "/lines/*/quantity", "/lines/*/unitCode",
+                "/lines/*/gtin", "/lines/*/buyerItemId", "/lines/*/sellerItemId", "/lines/*/name", "/lines/*/description",
+                "/lines/*/price", "/lines/*/lineExtension", "/totals/lineExtension", "/totals/payable", "/tax/amount");
+        var extra = capability.standard() == EdiStandard.EDIFACT
+                ? java.util.Set.of("/document/dueDate", "/delivery/requestedDate", "/delivery/locationId", "/delivery/terms",
+                        "/document/totalPaymentAmount", "/totals/taxExclusive", "/lines/*/taxCategory", "/lines/*/taxPercent")
+                : java.util.Set.of("/document/totalPaymentAmount", "/delivery/locationId", "/totals/allowance");
+        boolean tradacoms = capability.standard() == EdiStandard.TRADACOMS;
+        boolean invoice = capability.documentType() == BusinessDocumentType.INVOICE;
+        boolean order = capability.documentType() == BusinessDocumentType.ORDER;
+        boolean response = capability.documentType() == BusinessDocumentType.ORDER_RESPONSE;
+        boolean unused = tradacoms && path.equals("/document/currency") && !order
+                || tradacoms && path.equals("/lines/*/lineExtension") && !invoice
+                || tradacoms && path.equals("/tax/amount") && !invoice
+                || tradacoms && path.equals("/document/orderReference") && !invoice && !response
+                || !tradacoms && path.equals("/document/orderReference") && order
+                || !tradacoms && path.equals("/document/dueDate") && !invoice
+                || path.startsWith("/delivery/") && !order
+                || path.startsWith("/lines/*/tax") && !invoice
+                || path.equals("/document/totalPaymentAmount") && capability.documentType() != BusinessDocumentType.REMITTANCE_ADVICE;
+        if (unused || !common.contains(path) && !extra.contains(path)) throw new IllegalArgumentException(
+                "The target encoder cannot represent mapped field " + path + ". Map it to a supported field or review an explicit omission.");
     }
 }

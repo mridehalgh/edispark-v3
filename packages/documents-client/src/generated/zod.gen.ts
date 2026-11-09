@@ -357,6 +357,31 @@ export const zValidateDocumentVersionPath = z.object({
  */
 export const zValidateDocumentVersionResponse = zValidationResultResponse;
 
+export const zCreateRelatedDocumentDraftBody = zCreateDocumentSetRequest;
+
+export const zCreateRelatedDocumentDraftPath = z.object({
+    setId: z.uuid(),
+    docId: z.uuid()
+});
+
+export const zCreateRelatedDocumentDraftQuery = z.object({
+    relationType: z.enum([
+        'RELATED_TO',
+        'RESPONDS_TO',
+        'DESPATCHES',
+        'RECEIVES',
+        'INVOICES',
+        'REMITS',
+        'CORRECTS',
+        'SUPERSEDES'
+    ]).optional().default('RELATED_TO')
+});
+
+/**
+ * Linked draft created
+ */
+export const zCreateRelatedDocumentDraftResponse = zDocumentSetResponse;
+
 export const zFinalizeDocumentPath = z.object({
     setId: z.uuid(),
     docId: z.uuid()
@@ -414,6 +439,18 @@ export const zCreateDerivativePath = z.object({
  * Derivative created successfully
  */
 export const zCreateDerivativeResponse = zDerivativeResponse;
+
+export const zCreateDocumentCorrectionBody = zCreateDocumentSetRequest;
+
+export const zCreateDocumentCorrectionPath = z.object({
+    setId: z.uuid(),
+    docId: z.uuid()
+});
+
+/**
+ * Linked correction draft created
+ */
+export const zCreateDocumentCorrectionResponse = zDocumentSetResponse;
 
 export const zCancelDocumentPath = z.object({
     setId: z.uuid(),

@@ -17,7 +17,6 @@ import com.edispark.documents.infrastructure.persistence.TenantScopedSchemaRepos
 import com.edispark.documents.infrastructure.storage.FileSystemContentStore;
 import com.edispark.documents.infrastructure.transformation.NoOpTransformer;
 import com.edispark.documents.infrastructure.transformation.Gs1LogisticsLabelTransformer;
-import com.edispark.documents.infrastructure.validation.NoOpValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -177,15 +176,15 @@ public class DocumentsModuleConfig {
 
     /**
      * Document validator implementations.
-     * Currently provides only the NoOp validator as a stub.
+     * Offline JSON schema validation with a fail-closed fallback for unsupported formats.
      * Add format-specific validators (XsdValidator, JsonSchemaValidator) as needed.
      */
     @Bean
     @ConditionalOnMissingBean
     public List<DocumentValidator> documentValidators() {
         return List.of(
-                new NoOpValidator()
-                // TODO: Add XsdValidator, JsonSchemaValidator when implemented
+                new com.edispark.documents.infrastructure.validation.JsonSchemaDocumentValidator(),
+                new com.edispark.documents.infrastructure.validation.UnavailableDocumentValidator()
         );
     }
 

@@ -49,9 +49,12 @@ public final class MappingService {
     }
 
     public TestResult test(UUID id, byte[] input, byte[] expected) {
-        byte[] output = runtime.execute(require(id), input);
+        var execution = runtime.executeDetailed(require(id), input);
+        byte[] output = execution.output();
         boolean matches = expected == null || java.util.Arrays.equals(normalize(expected), normalize(output));
-        return new TestResult(matches, output, matches ? List.of() : List.of("Output did not match the expected fixture"));
+        return new TestResult(matches && execution.warnings().isEmpty(), output,
+                !matches ? List.of("Output did not match the expected fixture") : execution.warnings().stream()
+                        .map(warning -> warning.sourcePath() + ": " + warning.message()).toList());
     }
 
     public byte[] executePublished(UUID id, byte[] input) {

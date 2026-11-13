@@ -94,9 +94,11 @@ class KmsAs2CryptoTest {
 
         KmsCmsCodec.SignedContent signed = codec.signWithMic(
                 codec.payload(edi, "application/edifact", "order.edi"));
+        var originalSigned = codec.encode(signed.content());
         var encoded = codec.encode(codec.encrypt(signed.content(), decryptionCertificate));
         var decrypted = codec.decrypt(codec.parse(encoded.contentType(), encoded.bytes()));
-        var originalSigned = codec.encode(signed.content());
+        assertThat(codec.encode(signed.content()).bytes()).as("signed MIME must remain stable after encryption")
+                .isEqualTo(originalSigned.bytes());
         var decryptedSigned = codec.encode(decrypted);
         assertThat(decryptedSigned.bytes()).as("encrypted transport must preserve signed MIME bytes")
                 .isEqualTo(originalSigned.bytes());

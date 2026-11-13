@@ -5,64 +5,131 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  backend:
+    name: Backend tests and architecture
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-java
+      # Bound both reactor concurrency and test forks to prevent JVM oversubscription.
+      - name: Verify every Maven module
+        run: ./mvnw -B -T 2 --no-transfer-progress verify -Dsurefire.forkCount=1
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          fetch-depth: 0
+          name: backend-test-reports
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 7
 
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-          cache-dependency-path: |
-            pom.xml
-            */pom.xml
-            */*/pom.xml
-            .mvn/wrapper/maven-wrapper.properties
-
-      - name: Cache Maven wrapper
+  frontend:
+    name: Frontend ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [checks, build]
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node
+      - name: Restore Next.js compiler cache
+        if: matrix.task == 'build'
         uses: actions/cache@v4
         with:
-          path: ~/.m2/wrapper
-          key: ${{ runner.os }}-maven-wrapper-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}
-
-      - name: Make Maven wrapper executable
-        run: chmod +x mvnw
-
-      - name: Export OpenAPI contract
-        run: ./mvnw -B -T 1C --no-transfer-progress -pl apps/documents-api -am -Popenapi-export verify
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: pnpm
-
-      - name: Enable pnpm
-        run: corepack enable
-
-      - name: Install frontend tooling
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify generated SDK is current and type-safe
-        run: pnpm contracts:check
-
-      - name: Detect breaking API changes
-        if: github.event_name == 'pull_request'
+          path: apps/web/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+      - name: Check tooling, frontend behavior and types
+        if: matrix.task == 'checks'
         run: |
-          base_contract=/tmp/documents-openapi-base.json
-          if git show "origin/${{ github.base_ref }}:contracts/documents/openapi.json" > "$base_contract"; then
-            docker run --rm -v "$PWD:/workspace:ro" -v /tmp:/baseline:ro tufin/oasdiff:latest breaking \
-              /baseline/documents-openapi-base.json \
-              /workspace/contracts/documents/openapi.json
-          else
-            echo "No base Documents API contract exists; skipping breaking-change comparison."
-          fi
+          pnpm test:tooling
+          pnpm --filter @edispark/web test
+          pnpm --filter @edispark/web typecheck
+      - name: Build production frontend
+        if: matrix.task == 'build'
+        # Build-time auth initialization needs a secret, but CI needs no deployment credentials.
+        # Generate a disposable value for this process; never upload this database or environment.
+        shell: bash
+        run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" BETTER_AUTH_DATABASE_PATH="$RUNNER_TEMP/ci-auth.db" pnpm --filter @edispark/web build
+
+  contracts:
+    name: API contracts and generated SDKs
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-java
+      - uses: ./.github/actions/setup-node
+      # The composed application exports all three APIs with one Spring startup.
+      # Backend tests run independently; do not repeat them in this job.
+      - name: Export all API contracts once
+        run: ./mvnw -B -T 2 --no-transfer-progress -pl apps/edispark-api -am -Popenapi-export verify -DskipTests
+      - name: Validate contracts and detect generated SDK drift
+        run: pnpm contracts:check
+      - name: Fetch the exact pull request baseline
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
+      - name: Detect breaking changes in every API
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$BASE_SHA^{commit}"
+          baseline_dir="$RUNNER_TEMP/api-baseline"
+          mkdir -p "$baseline_dir"
+          for module in documents mft integration; do
+            contract="contracts/$module/openapi.json"
+            if git cat-file -e "$BASE_SHA:$contract" 2>/dev/null; then
+              git show "$BASE_SHA:$contract" > "$baseline_dir/$module.json"
+              docker run --rm -v "$PWD:/workspace:ro" -v "$baseline_dir:/baseline:ro" tufin/oasdiff:latest breaking \
+                "/baseline/$module.json" "/workspace/$contract"
+            else
+              echo "No baseline contract for $module; treating it as a new API."
+            fi
+          done
+      - name: Upload exported contracts for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exported-api-contracts
+          path: contracts/*/openapi.json
+          retention-days: 7
+
+  # Preserve the original required check name; failed/skipped dependencies must fail this gate.
+  build:
+    needs: [backend, frontend, contracts]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require all CI checks to pass
+        env:
+          BACKEND_RESULT: ${{ needs.backend.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          CONTRACTS_RESULT: ${{ needs.contracts.result }}
+        run: |
+          test "$BACKEND_RESULT" = success
+          test "$FRONTEND_RESULT" = success
+          test "$CONTRACTS_RESULT" = success

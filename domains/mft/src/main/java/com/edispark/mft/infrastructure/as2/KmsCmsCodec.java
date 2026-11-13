@@ -64,7 +64,10 @@ public final class KmsCmsCodec {
             MimeBodyPart result = new MimeBodyPart();
             result.setContent(signed);
             result.setHeader("Content-Type", signed.getContentType());
-            return result;
+            // CMS output is streamed lazily. Freeze the signed entity once so later MIME
+            // serialization/encryption cannot regenerate its signature or normalize its headers.
+            EncodedBody encoded = encode(result);
+            return parse(encoded.contentType(), encoded.bytes());
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to create KMS-signed CMS content", exception);
         }

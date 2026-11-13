@@ -33,6 +33,11 @@ The intended shape is a modular monolith: each domain owns its API and persisten
 
 Cross-module communication uses direct Java application ports for synchronous work and durable messaging only when the delivery semantics require it. See the [modular monolith integration pattern](docs/architecture/modular-monolith-integration.md) for the decision guide covering in-process adapters, SQS, EventBridge, SNS and future service extraction.
 
+## Continuous integration
+
+CI runs backend verification, frontend checks, the production build and API contract validation concurrently.
+See [CI jobs, caches and local verification](docs/ci.md).
+
 ## Prerequisites
 
 - Java 21 or newer; CI compiles against Java 21

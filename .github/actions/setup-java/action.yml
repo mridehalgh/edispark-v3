@@ -1,0 +1,17 @@
+name: Set up workspace Java tooling
+description: Java 21 and dependency caches shared by the isolated Java CI jobs.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '21'
+        cache: maven
+        cache-dependency-path: |
+          **/pom.xml
+          .mvn/wrapper/maven-wrapper.properties
+    - uses: actions/cache@v4
+      with:
+        path: ~/.m2/wrapper
+        key: ${{ runner.os }}-maven-wrapper-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}

@@ -15,6 +15,7 @@ import type {
   AuthoringLine,
   AuthoringReferences,
   AuthoringValues,
+  AuthoringSpecialistValues,
 } from "./ubl-authoring"
 
 export const smartCopyTransitions: Record<
@@ -63,6 +64,8 @@ export interface SmartCopyContext {
 
 interface NormalizedLine {
   id: string
+  responseCode?: string
+  standardItemIdentifier?: string
   orderLineReference?: string
   despatchLineReference?: string
   itemName?: string
@@ -150,6 +153,7 @@ function itemDetails(item: unknown) {
   return {
     itemName: text(item, "Name") ?? text(item, "Description"),
     itemIdentifier: seller ?? buyer ?? standard,
+    standardItemIdentifier: standard,
   }
 }
 
@@ -185,6 +189,7 @@ function parseLine(
     money(line, "CreditLineAmount") ?? money(line, "LineExtensionAmount")
   return {
     id: text(line, "ID") ?? String(index + 1),
+    responseCode: type === "ORDER_RESPONSE" ? text(line, "LineStatusCode") : undefined,
     orderLineReference: text(orderLine, "LineID"),
     despatchLineReference: text(despatchLine, "LineID"),
     ...itemDetails(item),
@@ -281,6 +286,8 @@ function mergeLines(documents: NormalizedDocument[], warnings: string[]) {
         "despatchLineReference",
         "itemName",
         "itemIdentifier",
+        "standardItemIdentifier",
+        "responseCode",
         "quantity",
         "unitCode",
         "unitPrice",
@@ -321,6 +328,7 @@ function partyValue(partyValue: UblParty | undefined) {
   return {
     name: partyValue?.name ?? partyValue?.legalName ?? "",
     endpoint: partyValue?.endpointId ?? partyValue?.identifiers[0] ?? "",
+    scheme: partyValue?.endpointScheme,
   }
 }
 
@@ -375,9 +383,11 @@ export function buildSmartCopyDraft(
         ]
       : mergeLines(documents, warnings)
   const lines: AuthoringLine[] = normalizedLines.map((line, index) => ({
-    id: String(index + 1),
+    id: context.correction ? line.id : String(index + 1),
     itemName: line.itemName ?? "",
     itemIdentifier: line.itemIdentifier ?? "",
+    standardItemIdentifier: line.standardItemIdentifier,
+    responseCode: line.responseCode,
     quantity: line.quantity ?? "0",
     unitCode: line.unitCode ?? "EA",
     unitPrice: line.unitPrice ?? "0.00",
@@ -428,6 +438,7 @@ export function buildSmartCopyDraft(
         }
       : {}),
     values: {
+      ...(targetType === "ORDER_RESPONSE" ? { specialist: responseDetails(inputs[0]) } : {}),
       references: {
         order: order?.value,
         despatch: despatch?.value,
@@ -435,8 +446,10 @@ export function buildSmartCopyDraft(
       },
       senderName: sender.name,
       senderEndpoint: sender.endpoint,
+      senderEndpointScheme: sender.scheme,
       recipientName: recipient.name,
       recipientEndpoint: recipient.endpoint,
+      recipientEndpointScheme: recipient.scheme,
       currency: currency?.value ?? "GBP",
       lines:
         lines.length > 0
@@ -461,5 +474,23 @@ export function buildSmartCopyDraft(
         line.amount !== undefined ||
         line.unitPrice !== undefined,
     ),
+  }
+}
+
+function responseDetails(input: SmartCopySourceInput): AuthoringSpecialistValues {
+  const document = first(input.content, roots[input.type])
+  const order = first(document, "OrderReference")
+  const delivery = first(document, "Delivery")
+  return {
+    responseCode: text(document, "OrderResponseCode") ?? "AP", responseDescription: "",
+    requestedDeliveryDate: "", actualDeliveryDate: "",
+    deliveryAddress: { line1: "", city: "", postcode: "", countryCode: "" },
+    paymentMeansCode: "", paymentDueDate: "", paymentTerms: "", paymentAccountId: "",
+    taxCategory: "", taxPercent: "", taxAmount: "", allowanceAmount: "", allowanceReason: "",
+    shipmentId: "", trackingId: "", carrierName: "", vehicleId: "", grossWeight: "", weightUnit: "KGM", handlingUnits: [],
+    bqVendorNumber: text(first(document, "SellerSupplierParty"), "CustomerAssignedAccountID") ?? "",
+    bqOrderVersion: text(first(order, "DocumentReference"), "VersionID") ?? text(first(document, "AdditionalDocumentReference"), "VersionID") ?? "",
+    bqLocationReference: text(first(delivery, "DeliveryLocation"), "ID") ?? "",
+    promisedDeliveryDate: text(first(delivery, "PromisedDeliveryPeriod"), "StartDate") ?? "",
   }
 }

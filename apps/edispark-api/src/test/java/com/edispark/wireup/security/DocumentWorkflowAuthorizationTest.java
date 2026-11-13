@@ -44,7 +44,7 @@ class DocumentWorkflowAuthorizationTest {
     }
 
     @Test void mappingAndPartnerConfigurationRemainRestrictedToAdministrators() throws Exception {
-        for (String path : new String[]{"/api/mappings/mapping/revisions", "/api/mappings/mapping/publish", "/api/trading-partners"}) {
+        for (String path : new String[]{"/api/mappings/mapping/revisions", "/api/mappings/mapping/publish", "/api/mappings/mapping/test-retained-source", "/api/trading-partners"}) {
             mvc.perform(post(path).header("Authorization", "Bearer member")).andExpect(status().isForbidden());
             mvc.perform(post(path).header("Authorization", "Bearer admin")).andExpect(status().isOk());
         }

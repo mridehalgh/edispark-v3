@@ -13,6 +13,8 @@
     <dependency><groupId>com.edispark</groupId><artifactId>partnerships-domain</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>transformations-domain</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>exchange-domain</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.edispark</groupId><artifactId>edifact</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.edispark</groupId><artifactId>tradacoms-parser</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>documents-domain</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <dependency><groupId>software.amazon.awssdk</groupId><artifactId>dynamodb</artifactId><version>${aws.sdk.version}</version></dependency>
     <dependency><groupId>software.amazon.awssdk</groupId><artifactId>eventbridge</artifactId><version>${aws.sdk.version}</version></dependency>

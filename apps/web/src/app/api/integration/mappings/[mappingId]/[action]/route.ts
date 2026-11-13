@@ -2,7 +2,7 @@ import type { PublishMappingRequest, UpdateMappingRequest } from '@edispark/inte
 
 import { createAuthenticatedIntegrationClient, integrationErrorResponse, isIntegrationResourceId } from '@/lib/integration-server'
 
-const ACTIONS = ['draft', 'test', 'publish', 'revisions', 'archive'] as const
+const ACTIONS = ['draft', 'test', 'test-retained-source', 'publish', 'revisions', 'archive'] as const
 
 export async function POST(request: Request, context: { params: { mappingId: string; action: string } }) {
   const { mappingId, action } = context.params
@@ -17,6 +17,8 @@ export async function POST(request: Request, context: { params: { mappingId: str
         ? await client.archiveMappingRevision({ path: { mappingId }, throwOnError: true })
         : action === 'test'
           ? await client.testMapping({ body: await request.json(), path: { mappingId }, throwOnError: true })
+          : action === 'test-retained-source'
+            ? await client.testMappingRetainedSource({ body: await request.json(), path: { mappingId }, throwOnError: true })
           : await client.publishMapping({ body: await request.json() as PublishMappingRequest, path: { mappingId }, throwOnError: true })
     return Response.json(result.data)
   } catch (error) {

@@ -41,35 +41,24 @@ class UblEdiLifecycleE2ETest {
         assertThat(MAPPER.readTree(result.report()).path("warnings")).hasSize(result.warnings().size());
     }
 
-    @ParameterizedTest
-    @org.junit.jupiter.params.provider.EnumSource(EdiStandard.class)
-    void aReviewedRepeatedMappingCarriesAllTwelveLinesIntoTheTransportRepresentation(EdiStandard standard) throws Exception {
-        var source = MAPPER.createObjectNode();
-        var document = source.putArray("OrderResponse").addObject();
-        document.putArray("ID").addObject().put("_", "OR-repeat-12");
-        document.putArray("IssueDate").addObject().put("_", "2026-11-04");
-        document.putArray("OrderReference").addObject().putArray("ID").addObject().put("_", "PO-repeat-12");
-        document.putArray("SellerSupplierParty").addObject().putArray("Party").addObject().putArray("EndpointID").addObject().put("_", "5012345678901");
-        document.putArray("BuyerCustomerParty").addObject().putArray("Party").addObject().putArray("EndpointID").addObject().put("_", "5098765432109");
-        var lines = document.putArray("OrderLine");
-        for (int index = 1; index <= 12; index++) {
-            var line = lines.addObject().putArray("LineItem").addObject();
-            line.putArray("ID").addObject().put("_", String.valueOf(index));
-            line.putArray("Quantity").addObject().put("_", index).put("unitCode", "EA");
+    @org.junit.jupiter.api.Test
+    void aQualifiedCoreMappingCarriesAllTwelveLinesIntoTheTransportRepresentation() throws Exception {
+        var mapping = mappings.find(UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac60")).orElseThrow();
+        var source = MAPPER.readTree(mapping.sample().sourceDocument());
+        var lines = (com.fasterxml.jackson.databind.node.ArrayNode) source.at("/OrderResponse/0/OrderLine");
+        for (int index = 9; index <= 12; index++) {
+            var line = lines.get(0).deepCopy();
+            ((com.fasterxml.jackson.databind.node.ObjectNode) line.at("/LineItem/0/ID/0")).put("_", "" + index);
+            ((com.fasterxml.jackson.databind.node.ObjectNode) line.at("/LineItem/0/Quantity/0")).put("_", index);
+            lines.add(line);
         }
-        var original = mapping("OUTBOUND", standard, BusinessDocumentType.ORDER_RESPONSE);
-        var repeatedNodes = original.nodes().stream().map(node -> new com.edispark.transformations.domain.MappingNode(
-                node.id(), node.operation(), node.sourcePointers().stream().map(path -> path.replace("/OrderLine/0/", "/OrderLine/*/")).toList(),
-                node.targetPointer().replace("/lines/0/", "/lines/*/"), node.constant(), node.separator(), node.codeMap(),
-                node.codeList(), node.sourceSyntax(), node.targetSyntax())).toList();
-        var reviewed = original.forkForTenant("test-tenant", Instant.now()).revise(repeatedNodes);
-        var result = mappingRuntime.executeDetailed(reviewed, MAPPER.writeValueAsBytes(source));
+        var result = mappingRuntime.executeDetailed(mapping, MAPPER.writeValueAsBytes(source));
         assertThat(result.warnings()).isEmpty();
         assertThat(MAPPER.readTree(result.output()).path("lines")).hasSize(12);
-        byte[] sent = writer.write(capability(standard, BusinessDocumentType.ORDER_RESPONSE, "ORDRSP"), result.output());
+        byte[] sent = writer.write(capability(EdiStandard.EDIFACT, BusinessDocumentType.ORDER_RESPONSE, "ORDRSP"), result.output());
+        assertThat(new com.edispark.edifact.OrderResponseD96a().validateBytes(new String(sent, StandardCharsets.US_ASCII)).valid()).isTrue();
         var received = reader.translate(sent);
         assertThat(MAPPER.readTree(received.mappingInputJson()).path("lines")).hasSize(12);
-        assertThat(original.nodes()).noneMatch(node -> node.sourcePointers().stream().anyMatch(path -> path.contains("/*/")));
     }
 
     private static Stream<Arguments> lifecycleDocuments() {

@@ -178,7 +178,8 @@ export type MappingRevision = {
     vendor?: string;
     sample?: MappingSample;
     derivedFromMappingId?: string;
-    compatibility?: MappingCompatibility;
+    targetValidationEvidence?: TargetValidationEvidence;
+    readonly compatibility?: MappingCompatibility;
 };
 
 export type MappingSample = {
@@ -188,6 +189,13 @@ export type MappingSample = {
     targetFormat?: string;
     targetDocument?: string;
     targetRaw?: string;
+};
+
+export type TargetValidationEvidence = {
+    ruleSet?: string;
+    ruleFingerprint?: string;
+    mappingHash?: string;
+    fixtureHashes?: Array<string>;
 };
 
 export type DocumentProfileRequest = {
@@ -271,6 +279,26 @@ export type TestResult = {
     passed?: boolean;
     output?: string;
     failures?: Array<string>;
+};
+
+export type RetainedSourceRequest = {
+    documentSetId: string;
+    documentId: string;
+    representationId: string;
+    contentHash: string;
+};
+
+export type Reference = {
+    documentSetId?: string;
+    documentId?: string;
+    representationId?: string;
+    contentHash?: string;
+};
+
+export type Result = {
+    source?: Reference;
+    input?: string;
+    test?: TestResult;
 };
 
 export type PublishMappingRequest = {
@@ -387,6 +415,29 @@ export type EligibleRoute = {
     partnerId?: string;
     agreementName?: string;
     capability?: ExchangeCapability;
+};
+
+export type MappingRevisionWritable = {
+    id?: string;
+    tenantId?: string;
+    name?: string;
+    revision?: number;
+    sourceSchemaId?: string;
+    targetSchemaId?: string;
+    status?: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'RETIRED' | 'ARCHIVED';
+    nodes?: Array<MappingNode>;
+    contentHash?: string;
+    createdAt?: string;
+    publishedAt?: string;
+    familyId?: string;
+    scheduledAt?: string;
+    archivedAt?: string;
+    version?: number;
+    scope?: 'GLOBAL' | 'TENANT';
+    vendor?: string;
+    sample?: MappingSample;
+    derivedFromMappingId?: string;
+    targetValidationEvidence?: TargetValidationEvidence;
 };
 
 export type UpdateTradingPartnerDraftData = {
@@ -934,6 +985,24 @@ export type TestMappingResponses = {
 };
 
 export type TestMappingResponse = TestMappingResponses[keyof TestMappingResponses];
+
+export type TestMappingRetainedSourceData = {
+    body: RetainedSourceRequest;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}/test-retained-source';
+};
+
+export type TestMappingRetainedSourceResponses = {
+    /**
+     * OK
+     */
+    200: Result;
+};
+
+export type TestMappingRetainedSourceResponse = TestMappingRetainedSourceResponses[keyof TestMappingRetainedSourceResponses];
 
 export type CreateMappingRevisionData = {
     body?: never;

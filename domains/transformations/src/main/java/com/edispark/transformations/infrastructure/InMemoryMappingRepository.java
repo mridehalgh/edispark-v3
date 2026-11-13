@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile({"local", "openapi-export"})
+@Profile("openapi-export")
 public final class InMemoryMappingRepository implements MappingRepository {
     private final Map<UUID, MappingRevision> mappings = new ConcurrentHashMap<>();
     @Override public MappingRevision save(MappingRevision mapping) { mappings.put(mapping.id(), mapping); return mapping; }

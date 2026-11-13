@@ -1,0 +1,90 @@
+{
+  "contract": "edispark.ordrsp.d96a.core.v1",
+  "sourceVersion": "2.1",
+  "document": {
+    "id": "OR-42",
+    "issueDate": "2026-11-04",
+    "orderReference": "PO-42",
+    "currency": "GBP",
+    "function": "29"
+  },
+  "parties": {
+    "sender": "SUPPLIER",
+    "senderAgency": "91",
+    "senderName": "Supplier",
+    "senderLegalName": "Legal Supplier",
+    "receiver": "BUYER",
+    "receiverAgency": "91",
+    "receiverName": "Buyer",
+    "receiverLegalName": "Legal Buyer"
+  },
+  "delivery": {
+    "country": "GB"
+  },
+  "lines": [
+    {
+      "id": "1",
+      "quantity": 1,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 1",
+      "sellerItemId": "SKU-1"
+    },
+    {
+      "id": "2",
+      "quantity": 2,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 2",
+      "sellerItemId": "SKU-2"
+    },
+    {
+      "id": "3",
+      "quantity": 3,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 3",
+      "sellerItemId": "SKU-3"
+    },
+    {
+      "id": "4",
+      "quantity": 4,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 4",
+      "sellerItemId": "SKU-4"
+    },
+    {
+      "id": "5",
+      "quantity": 5,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 5",
+      "sellerItemId": "SKU-5"
+    },
+    {
+      "id": "6",
+      "quantity": 6,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 6",
+      "sellerItemId": "SKU-6"
+    },
+    {
+      "id": "7",
+      "quantity": 7,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 7",
+      "sellerItemId": "SKU-7"
+    },
+    {
+      "id": "8",
+      "quantity": 8,
+      "unitCode": "EA",
+      "action": "5",
+      "name": "Product 8",
+      "sellerItemId": "SKU-8"
+    }
+  ]
+}

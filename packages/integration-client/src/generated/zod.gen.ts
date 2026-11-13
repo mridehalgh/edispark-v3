@@ -284,6 +284,13 @@ export const zMappingSample = z.object({
     targetRaw: z.string().optional()
 });
 
+export const zTargetValidationEvidence = z.object({
+    ruleSet: z.string().optional(),
+    ruleFingerprint: z.string().optional(),
+    mappingHash: z.string().optional(),
+    fixtureHashes: z.array(z.string()).optional()
+});
+
 export const zMappingRevision = z.object({
     id: z.uuid().optional(),
     tenantId: z.string().optional(),
@@ -310,7 +317,8 @@ export const zMappingRevision = z.object({
     vendor: z.string().optional(),
     sample: zMappingSample.optional(),
     derivedFromMappingId: z.uuid().optional(),
-    compatibility: zMappingCompatibility.optional()
+    targetValidationEvidence: zTargetValidationEvidence.optional(),
+    compatibility: zMappingCompatibility.readonly().optional()
 });
 
 export const zDocumentProfileRequest = z.object({
@@ -409,6 +417,26 @@ export const zTestResult = z.object({
     passed: z.boolean().optional(),
     output: z.string().optional(),
     failures: z.array(z.string()).optional()
+});
+
+export const zRetainedSourceRequest = z.object({
+    documentSetId: z.uuid(),
+    documentId: z.uuid(),
+    representationId: z.uuid(),
+    contentHash: z.string().min(1).regex(/sha-256:[a-f0-9]{64}/)
+});
+
+export const zReference = z.object({
+    documentSetId: z.uuid().optional(),
+    documentId: z.uuid().optional(),
+    representationId: z.uuid().optional(),
+    contentHash: z.string().optional()
+});
+
+export const zResult = z.object({
+    source: zReference.optional(),
+    input: z.string().optional(),
+    test: zTestResult.optional()
 });
 
 export const zPublishMappingRequest = z.object({
@@ -556,6 +584,35 @@ export const zEligibleRoute = z.object({
     partnerId: z.uuid().optional(),
     agreementName: z.string().optional(),
     capability: zExchangeCapability.optional()
+});
+
+export const zMappingRevisionWritable = z.object({
+    id: z.uuid().optional(),
+    tenantId: z.string().optional(),
+    name: z.string().optional(),
+    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    sourceSchemaId: z.uuid().optional(),
+    targetSchemaId: z.uuid().optional(),
+    status: z.enum([
+        'DRAFT',
+        'SCHEDULED',
+        'PUBLISHED',
+        'RETIRED',
+        'ARCHIVED'
+    ]).optional(),
+    nodes: z.array(zMappingNode).optional(),
+    contentHash: z.string().optional(),
+    createdAt: z.iso.datetime().optional(),
+    publishedAt: z.iso.datetime().optional(),
+    familyId: z.uuid().optional(),
+    scheduledAt: z.iso.datetime().optional(),
+    archivedAt: z.iso.datetime().optional(),
+    version: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    scope: z.enum(['GLOBAL', 'TENANT']).optional(),
+    vendor: z.string().optional(),
+    sample: zMappingSample.optional(),
+    derivedFromMappingId: z.uuid().optional(),
+    targetValidationEvidence: zTargetValidationEvidence.optional()
 });
 
 export const zUpdateTradingPartnerDraftBody = zCreatePartnerRequest;
@@ -838,6 +895,17 @@ export const zTestMappingPath = z.object({
  * OK
  */
 export const zTestMappingResponse = zTestResult;
+
+export const zTestMappingRetainedSourceBody = zRetainedSourceRequest;
+
+export const zTestMappingRetainedSourcePath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zTestMappingRetainedSourceResponse = zResult;
 
 export const zCreateMappingRevisionPath = z.object({
     mappingId: z.uuid()

@@ -39,7 +39,7 @@ import {
 } from "@/lib/ubl-authoring"
 import type { SmartCopyDraft } from "@/lib/ubl-smart-copy"
 import { authoringCatalog } from "@/lib/ubl-authoring-catalog"
-import { CURRENCIES, QUANTITY_UNITS } from "@/lib/business-code-lists"
+import { CURRENCIES, QUANTITY_UNITS, ENDPOINT_SCHEMES, ORDER_RESPONSE_LINE_CODES } from "@/lib/business-code-lists"
 import { cn } from "@/lib/utils"
 
 const documentTypes = Object.keys(
@@ -89,7 +89,7 @@ function blankReferences(): AuthoringReferences {
 
 function blankSpecialist(): AuthoringSpecialistValues {
   return {
-    responseCode: "AB",
+    responseCode: "AP",
     responseDescription: "",
     requestedDeliveryDate: "",
     promisedDeliveryDate: "",
@@ -128,8 +128,10 @@ export function AuthorDocumentPage() {
     useState<AuthoringReferences>(blankReferences)
   const [senderName, setSenderName] = useState("")
   const [senderEndpoint, setSenderEndpoint] = useState("")
+  const [senderEndpointScheme, setSenderEndpointScheme] = useState("GLN")
   const [recipientName, setRecipientName] = useState("")
   const [recipientEndpoint, setRecipientEndpoint] = useState("")
+  const [recipientEndpointScheme, setRecipientEndpointScheme] = useState("GLN")
   const [currency, setCurrency] = useState("GBP")
   const [lines, setLines] = useState<AuthoringLine[]>([newLine(0)])
   const [specialist, setSpecialist] =
@@ -237,10 +239,13 @@ export function AuthorDocumentPage() {
     setReferences(draft.values.references)
     setSenderName(draft.values.senderName)
     setSenderEndpoint(draft.values.senderEndpoint)
+    setSenderEndpointScheme(draft.values.senderEndpointScheme ?? "GLN")
     setRecipientName(draft.values.recipientName)
     setRecipientEndpoint(draft.values.recipientEndpoint)
+    setRecipientEndpointScheme(draft.values.recipientEndpointScheme ?? "GLN")
     setCurrency(draft.values.currency)
     setLines(draft.values.lines)
+    if (draft.values.specialist) setSpecialist((current) => ({ ...current, ...draft.values.specialist }))
     if (draft.correction?.responseCode)
       setSpecialist((current) => ({
         ...current,
@@ -463,8 +468,10 @@ export function AuthorDocumentPage() {
       references,
       senderName,
       senderEndpoint,
+      senderEndpointScheme,
       recipientName,
       recipientEndpoint,
+      recipientEndpointScheme,
       currency,
       note: String(form.get("note") ?? ""),
       lines,
@@ -882,7 +889,7 @@ export function AuthorDocumentPage() {
                 </Field>
                 <Field
                   label="Electronic address"
-                  hint="Usually a GLN for retail EDI."
+                  hint="Use the identifier and scheme agreed with this partner."
                 >
                   <Input
                     value={senderEndpoint}
@@ -893,6 +900,9 @@ export function AuthorDocumentPage() {
                     required
                     placeholder="[partner_identifier]"
                   />
+                </Field>
+                <Field label="Identifier scheme" hint="GLNs need 13 digits and a valid check digit. Sample placeholders use a supplier-assigned identifier.">
+                  <BusinessCodeSelect value={senderEndpointScheme} options={ENDPOINT_SCHEMES} required onChange={(value) => { setSenderEndpointScheme(value); markEdited("sender") }} />
                 </Field>
               </fieldset>
               <fieldset className="grid gap-4 border-t pt-4">
@@ -920,7 +930,7 @@ export function AuthorDocumentPage() {
                 </Field>
                 <Field
                   label="Electronic address"
-                  hint="Usually a GLN for retail EDI."
+                  hint="Use the identifier and scheme agreed with this partner."
                 >
                   <Input
                     value={recipientEndpoint}
@@ -931,6 +941,9 @@ export function AuthorDocumentPage() {
                     required
                     placeholder="[tenant_identifier]"
                   />
+                </Field>
+                <Field label="Identifier scheme" hint="Keep the recipient's agreed identification scheme when correcting a document.">
+                  <BusinessCodeSelect value={recipientEndpointScheme} options={ENDPOINT_SCHEMES} required onChange={(value) => { setRecipientEndpointScheme(value); markEdited("recipient") }} />
                 </Field>
               </fieldset>
             </div>
@@ -1065,7 +1078,12 @@ export function AuthorDocumentPage() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="mt-2 grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-[5rem_minmax(12rem,2fr)_minmax(10rem,1fr)_minmax(7rem,.75fr)_minmax(10rem,1fr)_minmax(7rem,.75fr)_2.5rem] 2xl:items-end">
+                    <div className={cn("mt-2 grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:items-end",
+                      documentType !== "ORDER_RESPONSE" && "2xl:grid-cols-[5rem_minmax(12rem,2fr)_minmax(10rem,1fr)_minmax(7rem,.75fr)_minmax(10rem,1fr)_minmax(7rem,.75fr)_2.5rem]")}>
+                      {documentType === "ORDER_RESPONSE" && <Field label="Line decision">
+                        <BusinessCodeSelect value={line.responseCode ?? "Accepted"} options={ORDER_RESPONSE_LINE_CODES}
+                          required onChange={(value) => updateLine(index, "responseCode", value)} />
+                      </Field>}
                       <Field label="Line number">
                         <Input
                           className="min-w-0"
@@ -1124,7 +1142,11 @@ export function AuthorDocumentPage() {
                           }
                         />
                       </Field>
-                      <Field label="Unit price">
+                      {documentType === "ORDER_RESPONSE" ? <Field label="EAN / GTIN">
+                        <Input value={line.standardItemIdentifier ?? ""} inputMode="numeric"
+                          onChange={(event) => updateLine(index, "standardItemIdentifier", event.target.value)}
+                          aria-label={`EAN or GTIN for line ${line.id}`} />
+                      </Field> : <Field label="Unit price">
                         <Input
                           className="min-w-0"
                           type="number"
@@ -1136,7 +1158,7 @@ export function AuthorDocumentPage() {
                           }
                           required
                         />
-                      </Field>
+                      </Field>}
                       <Button
                         className="self-end"
                         type="button"

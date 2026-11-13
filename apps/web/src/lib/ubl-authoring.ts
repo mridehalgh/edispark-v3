@@ -10,6 +10,7 @@ export interface AuthoringLine {
   id: string
   itemName: string
   itemIdentifier: string
+  standardItemIdentifier?: string
   quantity: string
   unitCode: string
   unitPrice: string
@@ -128,6 +129,9 @@ export function hasValidSscc(value: string) {
 }
 
 export interface AuthoringSpecialistValues {
+  bqVendorNumber?: string
+  bqOrderVersion?: string
+  bqLocationReference?: string
   responseCode: string
   responseDescription: string
   requestedDeliveryDate: string
@@ -166,8 +170,10 @@ export interface AuthoringValues {
   references: AuthoringReferences
   senderName: string
   senderEndpoint: string
+  senderEndpointScheme?: string
   recipientName: string
   recipientEndpoint: string
+  recipientEndpointScheme?: string
   currency: string
   note: string
   lines: AuthoringLine[]
@@ -207,9 +213,9 @@ const aggregateNamespace = "urn:oasis:names:specification:ubl:schema:xsd:CommonA
 const basicNamespace = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
 const value = (item: string | number | boolean) => [{ _: item }]
 
-function party(name: string, endpoint: string) {
+function party(name: string, endpoint: string, scheme = "GLN") {
   return [{ Party: [{
-    EndpointID: [{ _: endpoint, schemeID: "GLN" }],
+    EndpointID: [{ _: endpoint, schemeID: scheme }],
     PartyName: [{ Name: value(name) }],
     PartyLegalEntity: [{ RegistrationName: value(name) }],
   }] }]
@@ -226,6 +232,7 @@ function item(line: AuthoringLine) {
     SellersItemIdentification: [{ ID: value(line.itemIdentifier) }],
   }
   const instances: Record<string, unknown>[] = []
+  if (line.standardItemIdentifier?.trim()) result.StandardItemIdentification = [{ ID: value(line.standardItemIdentifier.trim()) }]
   const serials = line.serialNumbers?.split(",").map((entry) => entry.trim()).filter(Boolean) ?? []
   serials.forEach((serial) => instances.push({ SerialID: value(serial) }))
   if (line.lotNumber?.trim() || line.expiryDate?.trim()) {
@@ -278,6 +285,7 @@ function address(valueToMap: AuthoringAddress) {
 
 function delivery(specialist: AuthoringSpecialistValues) {
   const result: Record<string, unknown> = {}
+  if (specialist.bqLocationReference?.trim()) result.DeliveryLocation = [{ ID: value(specialist.bqLocationReference.trim()) }]
   if (specialist.actualDeliveryDate) result.ActualDeliveryDate = value(specialist.actualDeliveryDate)
   if (specialist.requestedDeliveryDate) result.RequestedDeliveryPeriod = [{ StartDate: value(specialist.requestedDeliveryDate) }]
   if (specialist.promisedDeliveryDate) result.PromisedDeliveryPeriod = [{ StartDate: value(specialist.promisedDeliveryDate) }]
@@ -337,8 +345,8 @@ export function buildUblDocument(values: AuthoringValues) {
     UBLVersionID: value("2.1"),
     ID: value(values.id),
     IssueDate: value(values.issueDate),
-    [definition.senderKey]: party(values.senderName, values.senderEndpoint),
-    [definition.recipientKey]: party(values.recipientName, values.recipientEndpoint),
+    [definition.senderKey]: party(values.senderName, values.senderEndpoint, values.senderEndpointScheme),
+    [definition.recipientKey]: party(values.recipientName, values.recipientEndpoint, values.recipientEndpointScheme),
     [definition.lineKey]: values.lines.map((line) => lineValue(values.documentType, line, values.currency)),
   }
   if (values.documentType !== "DESPATCH_ADVICE" && values.documentType !== "RECEIPT_ADVICE") {
@@ -354,6 +362,14 @@ export function buildUblDocument(values: AuthoringValues) {
   if (specialist) {
     if (values.documentType === "ORDER_RESPONSE" && specialist.responseCode) {
       document.OrderResponseCode = value(specialist.responseCode)
+      if (specialist.bqVendorNumber?.trim()) {
+        (document.SellerSupplierParty as Record<string, unknown>[])[0].CustomerAssignedAccountID = value(specialist.bqVendorNumber.trim())
+      }
+      if (specialist.bqOrderVersion?.trim() && values.references.order?.trim()) {
+        (document.OrderReference as Record<string, unknown>[])[0].DocumentReference = [{
+          ID: value(values.references.order.trim()), VersionID: value(specialist.bqOrderVersion.trim()),
+        }]
+      }
       if (specialist.responseDescription.trim()) document.Note = value([values.note.trim(), specialist.responseDescription.trim()].filter(Boolean).join("\n"))
     }
     const mappedDelivery = delivery(specialist)

@@ -24,6 +24,42 @@ class MappingServiceTest {
     private static final String TENANT = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
 
     @Test
+    void rejectsStructurallyMatchingOrderResponseFixturesWhenTargetRulesAreUnavailable() {
+        var mapper = new ObjectMapper();
+        var service = new MappingService(new InMemoryMappingRepository(), new MappingRuntime(mapper), mapper,
+                CLOCK, new ClasspathGlobalMappingCatalog());
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var node = new MappingNode(UUID.randomUUID(), MappingOperation.COPY, List.of("/id"), "/document/id", null, null);
+            var draft = service.create("Response", UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac16"),
+                    UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac30"), List.of(node));
+            var input = bytes("{\"id\":\"OR-42\"}");
+            assertThat(service.test(draft.id(), input, null).failures()).anyMatch(failure -> failure.contains("TARGET_RULES_UNAVAILABLE"));
+            assertThatThrownBy(() -> service.publish(draft.id(), List.of(new MappingService.Fixture("response", input, null))))
+                    .hasMessageContaining("fixture failed");
+            assertThat(service.get(draft.id()).status()).isEqualTo(MappingStatus.DRAFT);
+        });
+    }
+
+    @Test
+    void retainsTargetRuleAndFixtureHashesAtPublicationAndClearsEvidenceOnRevision() {
+        var mapper = new ObjectMapper();
+        TargetContractValidator validator = (source, target, input, output) ->
+                new TargetContractValidator.Result("D96A-CORE/1", "rules-hash", List.of());
+        var service = new MappingService(new InMemoryMappingRepository(), new MappingRuntime(mapper), mapper,
+                CLOCK, new ClasspathGlobalMappingCatalog(), validator);
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var node = new MappingNode(UUID.randomUUID(), MappingOperation.COPY, List.of("/id"), "/document/id", null, null);
+            var draft = service.create("Response", UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac16"),
+                    UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac30"), List.of(node));
+            var published = service.publish(draft.id(), List.of(new MappingService.Fixture("response", bytes("{\"id\":\"OR-42\"}"), null)));
+            assertThat(published.targetValidationEvidence().ruleFingerprint()).isEqualTo("rules-hash");
+            assertThat(published.targetValidationEvidence().mappingHash()).isEqualTo(published.contentHash());
+            assertThat(published.targetValidationEvidence().fixtureHashes()).singleElement().asString().hasSize(64);
+            assertThat(service.createRevision(published.id()).targetValidationEvidence()).isNull();
+        });
+    }
+
+    @Test
     void publishesOnlyAfterAFixturePassesAndThenBecomesImmutable() {
         ObjectMapper mapper = new ObjectMapper();
         var service = new MappingService(new InMemoryMappingRepository(), new MappingRuntime(mapper), mapper,

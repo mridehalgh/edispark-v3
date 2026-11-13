@@ -87,6 +87,12 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
                         sample("Parsed TRADACOMS INVOIC 9", invoiceModel, resource("tradacoms-invoic-9.edi"),
                                 "UBL Invoice 2.1 JSON", ublInvoice, null))));
         published.addAll(operationalMappings());
+        published.add(BqAcknowledgementMapping.create(sample("UBL Order Response 2.1 JSON",
+                resource("ubl-bq-ack-v14.json"), null, "B&Q ACK v1.4 full acceptance",
+                resource("bq-ack-v14-model.json"), resource("bq-ack-v14.edi"))));
+        published.add(OrderResponseCoreMapping.create(sample("UBL Order Response 2.1 JSON",
+                resource("ubl-order-response-core-v2.json"), null, "EDIFACT D96A core demo model",
+                resource("order-response-core-v2-model.json"), resource("edifact-ordrsp-core-v2.edi"))));
         mappings = List.copyOf(published);
     }
 

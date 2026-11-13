@@ -1,6 +1,8 @@
 package com.edispark.transformations.api;
 
 import com.edispark.transformations.application.MappingService;
+import com.edispark.transformations.application.MappingRecoveryService;
+import com.edispark.transformations.application.RetainedMappingSource;
 import com.edispark.transformations.domain.BusinessCodeCatalog;
 import com.edispark.transformations.domain.BusinessCodeListDefinition;
 import com.edispark.transformations.domain.MappingNode;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public final class MappingController {
     private final MappingService service;
+    private final MappingRecoveryService recovery;
     private final BusinessCodeCatalog businessCodes = new BusinessCodeCatalog();
 
     @GetMapping @Operation(operationId = "listMappings", summary = "List visual mappings")
@@ -59,10 +62,17 @@ public final class MappingController {
         return service.test(mappingId, bytes(request.input()), request.expected() == null ? null : bytes(request.expected()));
     }
 
+    @PostMapping("/{mappingId}/test-retained-source")
+    @Operation(operationId = "testMappingRetainedSource", summary = "Test a mapping using the exact authorized retained document")
+    public MappingRecoveryService.Result testRetained(@PathVariable UUID mappingId, @Valid @RequestBody RetainedSourceRequest request) {
+        return recovery.test(mappingId, new RetainedMappingSource.Reference(request.documentSetId(), request.documentId(),
+                request.representationId(), request.contentHash()));
+    }
+
     @PostMapping("/{mappingId}/publish") @Operation(operationId = "publishMapping", summary = "Publish an immutable mapping revision")
     public MappingRevision publish(@PathVariable UUID mappingId, @Valid @RequestBody PublishMappingRequest request) {
         return service.publish(mappingId, request.fixtures().stream()
-                .map(item -> new MappingService.Fixture(item.name(), bytes(item.input()), bytes(item.expected()))).toList(),
+                .map(item -> new MappingService.Fixture(item.name(), bytes(item.input()), item.expected() == null ? null : bytes(item.expected()))).toList(),
                 request.effectiveAt());
     }
 
@@ -88,6 +98,8 @@ public final class MappingController {
                                        @NotNull UUID targetSchemaId, @NotEmpty List<@Valid MappingNode> nodes) { }
     public record UpdateMappingRequest(@NotEmpty List<@Valid MappingNode> nodes) { }
     public record MappingFixtureRequest(@NotBlank String name, @NotBlank String input, String expected) { }
+    public record RetainedSourceRequest(@NotNull UUID documentSetId, @NotNull UUID documentId,
+            @NotNull UUID representationId, @NotBlank @jakarta.validation.constraints.Pattern(regexp = "sha-256:[a-f0-9]{64}") String contentHash) { }
     public record PublishMappingRequest(@NotEmpty List<@Valid MappingFixtureRequest> fixtures,
                                         java.time.Instant effectiveAt) { }
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildSmartCopyDraft, smartCopyTransitions } from "./ubl-smart-copy"
+import { buildUblDocument } from "./ubl-authoring"
 
 const v = (value: string | number) => [{ _: value }]
 const party = (name: string, endpoint: string) => [{ Party: [{ EndpointID: [{ _: endpoint, schemeID: "GLN" }], PartyName: [{ Name: v(name) }] }] }]
@@ -26,6 +27,30 @@ function receipt() {
 }
 
 describe("UBL smart copy", () => {
+  it("keeps B&Q references, original line IDs and EANs editable through a correction", () => {
+    const source: any = response()
+    const root = source.OrderResponse[0]
+    root.OrderResponseCode = v("AP")
+    root.SellerSupplierParty[0].CustomerAssignedAccountID = v("0000001")
+    root.OrderReference[0].DocumentReference = [{ ID: v("PO-1"), VersionID: v("0002") }]
+    root.Delivery = [{ DeliveryLocation: [{ ID: v("SO-42") }], PromisedDeliveryPeriod: [{ StartDate: v("2026-11-14") }] }]
+    root.OrderLine[0].LineItem[0].Item[0].StandardItemIdentification = [{ ID: v("0000000000000") }]
+    const draft = buildSmartCopyDraft("ORDER_RESPONSE", [{ documentId: "response", type: "ORDER_RESPONSE", content: source }], { correction: true })
+    const rebuilt: any = buildUblDocument({ ...draft.values, documentType: "ORDER_RESPONSE", id: "OR-2", issueDate: "2026-11-09", note: "" })
+    expect(rebuilt.OrderResponse[0]).toMatchObject({
+      SellerSupplierParty: [{ CustomerAssignedAccountID: v("0000001") }],
+      OrderReference: [{ DocumentReference: [{ ID: v("PO-1"), VersionID: v("0002") }] }],
+      Delivery: [{ DeliveryLocation: [{ ID: v("SO-42") }], PromisedDeliveryPeriod: [{ StartDate: v("2026-11-14") }] }],
+      OrderLine: [{ LineItem: [{ ID: v("10"), Item: [{ StandardItemIdentification: [{ ID: v("0000000000000") }] }] }] }],
+    })
+  })
+  it("retains an agreed identifier scheme through copying and authoring a response", () => {
+    const original = order()
+    original.Order[0].SellerSupplierParty[0].Party[0].EndpointID[0].schemeID = "ZZZ"
+    const draft = buildSmartCopyDraft("ORDER_RESPONSE", [{ documentId: "order", type: "ORDER", content: original }])
+    const result = buildUblDocument({ ...draft.values, documentType: "ORDER_RESPONSE", id: "OR-1", issueDate: "2026-11-04", note: "" }) as any
+    expect(result.OrderResponse[0].SellerSupplierParty[0].Party[0].EndpointID[0]).toEqual({ _: "SELLER", schemeID: "ZZZ" })
+  })
   it.each(Object.entries(smartCopyTransitions).flatMap(([source, targets]) => targets.map((target) => [source, target]))) (
     "supports the business transition %s to %s",
     (source, target) => {

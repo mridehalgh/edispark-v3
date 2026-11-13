@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 @Component
-@Profile("!local & !openapi-export")
+@Profile("!openapi-export")
 final class IntegrationDynamoStore {
     private final DynamoDbClient dynamo;
     private final String table;
@@ -106,10 +106,11 @@ final class IntegrationDynamoStore {
         List<String> results = new ArrayList<>();
         Map<String, AttributeValue> cursor = Map.of();
         do {
-            var response = dynamo.query(QueryRequest.builder().tableName(table).consistentRead(true)
+            var query = QueryRequest.builder().tableName(table).consistentRead(true)
                     .keyConditionExpression("pk = :pk AND begins_with(sk, :prefix)")
-                    .expressionAttributeValues(Map.of(":pk", text(pk(tenantId)), ":prefix", text(prefix)))
-                    .exclusiveStartKey(cursor).build());
+                    .expressionAttributeValues(Map.of(":pk", text(pk(tenantId)), ":prefix", text(prefix)));
+            if (cursor != null && !cursor.isEmpty()) query.exclusiveStartKey(cursor);
+            var response = dynamo.query(query.build());
             response.items().stream().map(item -> item.get("data").s()).forEach(results::add);
             cursor = response.lastEvaluatedKey();
         } while (cursor != null && !cursor.isEmpty());

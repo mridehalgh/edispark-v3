@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile({"local", "openapi-export"})
+@Profile("openapi-export")
 public final class InMemoryExchangeRepository implements ExchangeRepository {
     private final Map<UUID, EdiExchange> exchanges = new ConcurrentHashMap<>();
     private final Map<String, UUID> idempotency = new ConcurrentHashMap<>();

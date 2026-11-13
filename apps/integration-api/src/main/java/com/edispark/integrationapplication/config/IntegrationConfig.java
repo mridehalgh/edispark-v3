@@ -14,6 +14,10 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 
 @Configuration
 public class IntegrationConfig {
+    @Bean @Profile("openapi-export")
+    com.edispark.exchange.application.OutboundControlAllocator exportControlAllocator() {
+        return com.edispark.exchange.application.OutboundControlAllocator.unavailable();
+    }
     @Bean ObjectMapper integrationObjectMapper() {
         return new ObjectMapper().registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

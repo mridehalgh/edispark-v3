@@ -11,8 +11,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = {"com.edispark.transformations.api", "com.edispark.partnerships.api",
+        "com.edispark.exchange.api", "com.edispark.integrationapplication"})
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 public class IntegrationExceptionHandler {
+    @ExceptionHandler(com.edispark.transformations.application.RetainedSourceChanged.class)
+    ResponseEntity<ActionableErrorBody> staleSource(com.edispark.transformations.application.RetainedSourceChanged exception,
+            HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ActionableErrorBody.of("DOCUMENT_SOURCE_CHANGED",
+                exception.getMessage(), "SOURCE_VALIDATION", false,
+                "Return to the document and run readiness again to load its current source.", correlationId(request)));
+    }
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ActionableErrorBody> invalid(IllegalArgumentException exception, HttpServletRequest request) {
         String message = safeMessage(exception, "The integration configuration is invalid");

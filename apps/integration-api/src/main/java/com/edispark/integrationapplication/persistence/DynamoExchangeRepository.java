@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile("!local & !openapi-export")
+@Profile("!openapi-export")
 final class DynamoExchangeRepository implements ExchangeRepository {
     private final IntegrationDynamoStore store;
     private final ObjectMapper json;

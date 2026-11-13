@@ -46,6 +46,7 @@ public final class ExchangeService {
                         .filter(capability -> capability.direction() == ExchangeDirection.OUTBOUND)
                         .filter(capability -> capability.documentType() == document.type())
                         .filter(capability -> document.partnerId() != null || document.connectionId() == null || capability.as2ConnectionId().equals(document.connectionId()))
+                        .filter(capability -> currentTargetQualification(agreement, capability))
                         .map(capability -> new EligibleRoute(agreement.id(), agreement.revision(), agreement.partnerId(),
                                 agreement.name(), capability)))
                 .toList();
@@ -91,7 +92,7 @@ public final class ExchangeService {
                 return exchanges.save(exchange);
             }
             exchange.advance(ExchangeStatus.TRANSFORMING, "Preparing delivery from the validated mapping output", clock.instant());
-            var transformation = checked.transformation();
+            var transformation = transformations.prepareForDispatch(capability, documents.content(descriptor.current()), exchange.id(), checked.transformation());
             exchange.advance(ExchangeStatus.STORING, "Retaining generated representation", clock.instant());
             DocumentReference derivative = documents.retainDerivative(descriptor.current(),
                     DocumentAcl.GeneratedArtifact.EDI_PAYLOAD,
@@ -156,6 +157,8 @@ public final class ExchangeService {
             issues.add(ReadinessIssue.configuration("PARTNER_MISMATCH", "The selected route does not belong to this document's retained trading partner."));
         }
         issues.addAll(documents.validate(descriptor));
+        if (!currentTargetQualification(agreement, capability)) issues.add(ReadinessIssue.configuration("TARGET_QUALIFICATION_STALE",
+                "The selected route has no current target validation proof. Ask an administrator to publish a tested mapping and requalify the agreement."));
         byte[] canonical = documents.content(descriptor.current());
         if (capability.documentProfileRevisionId() != null) {
             var profile = partnerships.findDocumentProfile(tenant(), capability.documentProfileRevisionId()).orElse(null);
@@ -171,6 +174,8 @@ public final class ExchangeService {
                 for (var warning : transformed.warnings()) issues.add(new ReadinessIssue(warning.code(), warning.sourcePath(), warning.message(),
                         "MAPPING", capability.outboundLossPolicy() == OutboundLossPolicy.STRICT ? "ERROR" : "WARNING",
                         "Ask a mapping administrator to cover this field or document a reviewed omission in a new mapping revision."));
+            } catch (ReadinessFailure exception) {
+                issues.addAll(exception.issues());
             } catch (IllegalArgumentException exception) {
                 issues.add(new ReadinessIssue("MAPPING_VALIDATION_FAILED", "/", exception.getMessage(), "MAPPING", "ERROR", "Review the selected mapping and its target EDI requirements."));
             } catch (RuntimeException exception) { issues.add(ReadinessIssue.configuration("VALIDATION_UNAVAILABLE", "Partner readiness could not be completed. Nothing has been approved for delivery.")); }
@@ -183,8 +188,45 @@ public final class ExchangeService {
             int agreementRevision, UUID capabilityId, UUID mappingRevisionId, UUID documentProfileRevisionId, List<ReadinessIssue> issues) {}
     private record Prepared(ReadinessReport report, TransformationAcl.Result transformation) {}
 
-    public List<EdiExchange> list() { return exchanges.list(tenant()); }
-    public EdiExchange get(UUID id) { return exchanges.find(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Exchange was not found")); }
+    private boolean currentTargetQualification(TradingAgreement agreement, ExchangeCapability capability) {
+        var evidence = transformations.qualification(capability);
+        return evidence.valid() && (evidence.identity().isEmpty() || agreement.qualification() != null
+                && agreement.qualification().passed() && agreement.qualification().checks().contains(evidence.identity()));
+    }
+
+    public List<EdiExchange> list() { return exchanges.list(tenant()).stream().map(this::refreshReceipt).toList(); }
+    public EdiExchange get(UUID id) { return refreshReceipt(exchanges.find(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Exchange was not found"))); }
+
+    /** Reconciles a durable MFT fact, so a missed notification cannot strand the read projection. */
+    private EdiExchange refreshReceipt(EdiExchange exchange) {
+        if (exchange.direction() != ExchangeDirection.OUTBOUND || exchange.status() != ExchangeStatus.AWAITING_RECEIPT
+                || exchange.mftTransferId() == null) return exchange;
+        try {
+            var receipt = transport.receipt(exchange.mftTransferId(), exchange.id());
+            if (receipt.outcome() == TransportAcl.Outcome.PENDING) return exchange;
+            var next = ExchangeStatus.valueOf(receipt.outcome().name());
+            String detail = receipt.detail();
+            if (next == ExchangeStatus.DELIVERED && requiresFunctionalAcknowledgement(exchange)) {
+                next = ExchangeStatus.AWAITING_RECEIPT;
+                detail = "AS2 transport receipt verified; awaiting functional acknowledgement. Business acceptance is not yet recorded.";
+            }
+            if (exchange.stages().getLast().detail().equals(detail)) return exchange;
+            var at = receipt.recordedAt() == null || receipt.recordedAt().isBefore(exchange.updatedAt())
+                    ? exchange.updatedAt() : receipt.recordedAt();
+            exchange.advance(next, detail, at);
+            return exchanges.save(exchange);
+        } catch (RuntimeException exception) {
+            // Keep the persisted pending state; an unavailable receipt must not approve or poison another exchange.
+            return exchange;
+        }
+    }
+
+    private boolean requiresFunctionalAcknowledgement(EdiExchange exchange) {
+        return partnerships.findAgreement(tenant(), exchange.agreementId()).stream()
+                .flatMap(agreement -> agreement.capabilities().stream()).filter(cap -> cap.id().equals(exchange.capabilityId()))
+                .map(cap -> cap.acknowledgementPolicy() == com.edispark.partnerships.domain.model.AcknowledgementPolicy.FUNCTIONAL)
+                .findFirst().orElse(true);
+    }
 
     private String filename(String reference, ExchangeCapability capability) {
         String safe = reference == null ? "document" : reference.replaceAll("[^A-Za-z0-9._-]", "_");

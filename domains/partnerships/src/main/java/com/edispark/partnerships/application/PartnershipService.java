@@ -207,6 +207,12 @@ public final class PartnershipService {
             }
             validateStandardProfile(capability, failures);
             validateDocumentProfile(capability, agreement.partnerId(), checks, failures);
+            if (requiresTargetEvidence(capability)) {
+                var evidence = qualification.targetRuleEvidence(capability.mappingRevisionId());
+                if (evidence == null || !evidence.valid()) {
+                    failures.addAll(evidence == null ? List.of("Target qualification is unavailable for Order Response.") : evidence.failures());
+                } else checks.add(evidence.identity());
+            }
         }
         QualificationReport report = new QualificationReport(failures.isEmpty(), checks, failures, clock.instant());
         return repository.saveAgreement(agreement.qualify(report, clock.instant()));
@@ -218,6 +224,7 @@ public final class PartnershipService {
 
     public TradingAgreement activate(UUID agreementId, Instant effectiveAt) {
         TradingAgreement candidate = requireAgreement(agreementId);
+        validateCurrentTargetEvidence(candidate);
         Instant now = clock.instant();
         if (effectiveAt != null && effectiveAt.isAfter(now)) {
             return repository.saveAgreement(candidate.schedule(effectiveAt, now));
@@ -229,6 +236,21 @@ public final class PartnershipService {
         TradingAgreement active = repository.saveAgreement(candidate.activate(now));
         snapshots.publish(active);
         return active;
+    }
+
+    private boolean requiresTargetEvidence(ExchangeCapability capability) {
+        return capability.direction() == ExchangeDirection.OUTBOUND && capability.documentType() == BusinessDocumentType.ORDER_RESPONSE;
+    }
+
+    private void validateCurrentTargetEvidence(TradingAgreement agreement) {
+        for (var capability : agreement.capabilities()) {
+            if (!requiresTargetEvidence(capability)) continue;
+            var current = qualification.targetRuleEvidence(capability.mappingRevisionId());
+            if (current == null || !current.valid() || agreement.qualification() == null
+                    || !agreement.qualification().checks().contains(current.identity())) {
+                throw new IllegalStateException("Order Response qualification is missing or stale. Requalify this agreement before activation.");
+            }
+        }
     }
 
     public TradingAgreement suspend(UUID agreementId) {

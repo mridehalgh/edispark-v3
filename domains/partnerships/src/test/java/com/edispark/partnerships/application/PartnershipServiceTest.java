@@ -30,6 +30,24 @@ class PartnershipServiceTest {
     private static final String TENANT = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-01T12:00:00Z"), ZoneOffset.UTC);
 
+    @Test void changedTargetRulesRequireRequalificationBeforeActivation() {
+        var probe = new QualificationProbe(); probe.ready = true;
+        var service = new PartnershipService(new InMemoryPartnershipRepository(), probe, ignored -> { }, CLOCK);
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var partner = service.createPartner("Example Retailer", List.of(new BusinessIdentity("ZZZ", "RETAILER")));
+            var agreement = service.createAgreement(partner.id(), "Response route");
+            var base = capability();
+            service.addCapability(agreement.id(), new ExchangeCapability(base.id(), base.direction(), BusinessDocumentType.ORDER_RESPONSE,
+                    base.standard(), base.release(), "ORDRSP", base.sourceSchemaId(), base.targetSchemaId(), base.mappingRevisionId(),
+                    base.as2ConnectionId(), base.acknowledgementPolicy(), base.batchingPolicy()));
+            assertThat(service.qualify(agreement.id()).qualification().checks()).contains("rules-1");
+            probe.ruleIdentity = "rules-2";
+            assertThatThrownBy(() -> service.activate(agreement.id())).hasMessageContaining("stale");
+            assertThat(service.qualify(agreement.id()).qualification().checks()).contains("rules-2");
+            assertThat(service.activate(agreement.id()).status()).isEqualTo(AgreementStatus.ACTIVE);
+        });
+    }
+
     @Test
     void activatesOnlyAfterEveryMappingAndTransportConnectionQualifies() {
         var repository = new InMemoryPartnershipRepository();
@@ -149,6 +167,8 @@ class PartnershipServiceTest {
 
     private static final class QualificationProbe implements QualificationAcl {
         private boolean ready;
+        private String ruleIdentity = "rules-1";
+        @Override public RuleEvidence targetRuleEvidence(UUID id) { return new RuleEvidence(ready, ruleIdentity, ready ? List.of() : List.of("Missing target proof")); }
         @Override public boolean publishedMappingMatches(UUID mappingRevisionId, UUID sourceSchemaId, UUID targetSchemaId) { return ready; }
         @Override public boolean activeAs2ConnectionExists(UUID connectionId) { return ready; }
     }

@@ -1,0 +1,550 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:OrderResponse-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "OrderResponse": [
+    {
+      "UBLVersionID": [
+        {
+          "_": "2.1"
+        }
+      ],
+      "ID": [
+        {
+          "_": "BQ-ACK-BLOCKED-42"
+        }
+      ],
+      "IssueDate": [
+        {
+          "_": "2026-11-04"
+        }
+      ],
+      "OrderResponseCode": [
+        {
+          "_": "AP"
+        }
+      ],
+      "OrderReference": [
+        {
+          "ID": [
+            {
+              "_": "PO-42"
+            }
+          ],
+          "DocumentReference": [
+            {
+              "ID": [
+                {
+                  "_": "PO-42"
+                }
+              ],
+              "VersionID": [
+                {
+                  "_": "0001"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "DocumentCurrencyCode": [
+        {
+          "_": "GBP"
+        }
+      ],
+      "SellerSupplierParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "0000000000000",
+                  "schemeID": "GLN"
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "Demo Supplier"
+                    }
+                  ]
+                }
+              ],
+              "PartyLegalEntity": [
+                {
+                  "RegistrationName": [
+                    {
+                      "_": "Demo Supplier Legal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "BuyerCustomerParty": [
+        {
+          "Party": [
+            {
+              "EndpointID": [
+                {
+                  "_": "5013546018962",
+                  "schemeID": "GLN"
+                }
+              ],
+              "PartyName": [
+                {
+                  "Name": [
+                    {
+                      "_": "B&Q LTD"
+                    }
+                  ]
+                }
+              ],
+              "PartyLegalEntity": [
+                {
+                  "RegistrationName": [
+                    {
+                      "_": "B&Q LTD"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "Delivery": [
+        {
+          "DeliveryAddress": [
+            {
+              "Country": [
+                {
+                  "IdentificationCode": [
+                    {
+                      "_": "GB"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "DeliveryLocation": [
+            {
+              "ID": [
+                {
+                  "_": "SO-42"
+                }
+              ]
+            }
+          ],
+          "PromisedDeliveryPeriod": [
+            {
+              "StartDate": [
+                {
+                  "_": "2026-11-14"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "OrderLine": [
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "1"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 1,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 1"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-1"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "2"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 2,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 2"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-2"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "3"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 3,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 3"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-3"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "4"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 4,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 4"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-4"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "5"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 5,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 5"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-5"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "6"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 6,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 6"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-6"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "7"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 7,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 7"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-7"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "LineItem": [
+            {
+              "ID": [
+                {
+                  "_": "8"
+                }
+              ],
+              "Quantity": [
+                {
+                  "_": 8,
+                  "unitCode": "EA"
+                }
+              ],
+              "LineStatusCode": [
+                {
+                  "_": "Accepted"
+                }
+              ],
+              "Item": [
+                {
+                  "Name": [
+                    {
+                      "_": "Product 8"
+                    }
+                  ],
+                  "SellersItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "SKU-8"
+                        }
+                      ]
+                    }
+                  ],
+                  "StandardItemIdentification": [
+                    {
+                      "ID": [
+                        {
+                          "_": "0000000000000"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

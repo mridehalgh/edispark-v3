@@ -141,3 +141,15 @@ logging:
     root: INFO
     com.edispark: INFO
     software.amazon.awssdk: WARN
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+integration:
+  aws:
+    metadata-table: ${INTEGRATION_METADATA_TABLE:edispark-integration-local}
+mft:
+  local:
+    metadata-table: ${MFT_LOCAL_METADATA_TABLE:edispark-mft-local}

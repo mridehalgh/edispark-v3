@@ -46,7 +46,7 @@ class EdiPayloadWriterTest {
     }
 
     @ParameterizedTest(name = "EDIFACT D96A {0}")
-    @EnumSource(BusinessDocumentType.class)
+    @EnumSource(value = BusinessDocumentType.class, names = "ORDER_RESPONSE", mode = EnumSource.Mode.EXCLUDE)
     void createsEveryLifecycleDocumentAsEdifactD96a(BusinessDocumentType type) {
         String messageType = messageType(type);
 
@@ -59,7 +59,7 @@ class EdiPayloadWriterTest {
     }
 
     @ParameterizedTest(name = "TRADACOMS 9 {0}")
-    @EnumSource(BusinessDocumentType.class)
+    @EnumSource(value = BusinessDocumentType.class, names = "ORDER_RESPONSE", mode = EnumSource.Mode.EXCLUDE)
     void createsEveryLifecycleDocumentAsTradacoms9(BusinessDocumentType type) {
         String messageType = messageType(type);
 
@@ -68,6 +68,24 @@ class EdiPayloadWriterTest {
 
         assertThat(result).startsWith("STX=").contains("MHD=2+" + messageType + ":9'")
                 .contains("MTR=").endsWith("END=2'");
+    }
+
+    @Test void delegatesResponseSemanticsToTheStandardsContractAndBlocksUnspecifiedTradacoms() throws Exception {
+        var mapper = new ObjectMapper();
+        var model = new com.edispark.edifact.OrderResponse(com.edispark.edifact.OrderResponse.CONTRACT,
+                new com.edispark.edifact.OrderResponse.Header("OR-42", "2026-11-01", "PO-42", "29", "GBP", null),
+                new com.edispark.edifact.OrderResponse.Parties("SUPPLIER", "BUYER", "91", "92", null, null, null, null), null,
+                java.util.stream.IntStream.rangeClosed(1, 8).mapToObj(i -> new com.edispark.edifact.OrderResponse.Line(
+                        "" + i, "5", java.math.BigDecimal.valueOf(i), "EA", "Product " + i, null, "SKU-" + i, null, null)).toList());
+        var payload = mapper.writeValueAsBytes(model);
+        String edi = new String(writer.write(capability(BusinessDocumentType.ORDER_RESPONSE, EdiStandard.EDIFACT, "D96A", "ORDRSP"), payload), StandardCharsets.US_ASCII);
+        assertThat(edi).contains("BGM+231+OR-42+29'", "LIN+8+5'", "CNT+2:8'");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> writer.write(capability(BusinessDocumentType.ORDER_RESPONSE, EdiStandard.TRADACOMS, "9", "ORDRSP"), payload))
+                .hasMessageContaining("partner contract");
+        var hidden = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(payload);
+        hidden.put("unrepresentedBusinessField", "populated");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> writer.write(capability(BusinessDocumentType.ORDER_RESPONSE, EdiStandard.EDIFACT, "D96A", "ORDRSP"), mapper.writeValueAsBytes(hidden)))
+                .hasMessageContaining("contract is invalid");
     }
 
     private byte[] json() {

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile({"local", "openapi-export"})
+@Profile("openapi-export")
 public final class InMemoryPartnershipRepository implements PartnershipRepository {
     private final Map<UUID, TradingPartner> partners = new ConcurrentHashMap<>();
     private final Map<UUID, TradingAgreement> agreements = new ConcurrentHashMap<>();

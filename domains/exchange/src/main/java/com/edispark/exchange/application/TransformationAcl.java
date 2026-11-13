@@ -6,6 +6,10 @@ import java.util.List;
 
 public interface TransformationAcl {
     Result executePublished(ExchangeCapability capability, byte[] canonicalContent);
+    default Result prepareForDispatch(ExchangeCapability capability, byte[] canonicalContent, java.util.UUID exchangeId, Result checked) { return checked; }
+
+    default Qualification qualification(ExchangeCapability capability) { return new Qualification(true, ""); }
+    record Qualification(boolean valid, String identity) { }
 
     record Result(byte[] payload, byte[] report, List<ExchangeWarning> warnings) {
         public Result {

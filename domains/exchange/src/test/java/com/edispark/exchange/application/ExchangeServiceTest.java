@@ -38,6 +38,57 @@ class ExchangeServiceTest {
     private static final String TENANT = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Instant NOW = Instant.parse("2026-11-01T12:00:00Z");
 
+    @ParameterizedTest @EnumSource(value = TransportAcl.Outcome.class, names = {"DELIVERED", "NEEDS_REVIEW", "FAILED"})
+    void reflectsRetainedTransportReceiptsOnceWithoutAdvancingNeighbouringPendingExchanges(TransportAcl.Outcome outcome) {
+        var partnerships = new InMemoryPartnershipRepository();
+        var capability = capability(); var agreement = agreement(capability); saveAgreement(partnerships, agreement);
+        var repository = new InMemoryExchangeRepository();
+        var receipt = new AtomicReference<>(new TransportAcl.Receipt(TransportAcl.Outcome.PENDING, NOW.plusSeconds(1), "AS2 transfer is pending."));
+        var deliveredId = new AtomicReference<UUID>();
+        TransportAcl transport = new TransportAcl() {
+            public UUID submit(UUID a, String b, String c, String d, byte[] e, UUID f, UUID g, int h, UUID i, DocumentReference j, UUID k) { return UUID.randomUUID(); }
+            public Receipt receipt(UUID transferId, UUID exchangeId) {
+                return exchangeId.equals(deliveredId.get()) ? receipt.get() : new Receipt(Outcome.PENDING, NOW, "AS2 transfer is pending.");
+            }
+        };
+        var service = new ExchangeService(repository, partnerships, new DocumentProbe(),
+                (route, input) -> new TransformationAcl.Result(new byte[]{1}, new byte[]{2}, List.of()), transport, Clock.fixed(NOW, ZoneOffset.UTC));
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var first = service.submitOutbound(new ExchangeService.SubmitOutbound(agreement.id(), capability.id(), UUID.randomUUID(), UUID.randomUUID(), "receipt-one"));
+            var neighbour = service.submitOutbound(new ExchangeService.SubmitOutbound(agreement.id(), capability.id(), UUID.randomUUID(), UUID.randomUUID(), "receipt-two"));
+            deliveredId.set(first.id());
+            receipt.set(new TransportAcl.Receipt(outcome, NOW.plusSeconds(5), "Retained transport result: " + outcome));
+            assertThat(service.get(first.id()).status()).isEqualTo(ExchangeStatus.valueOf(outcome.name()));
+            int stages = service.get(first.id()).stages().size();
+            assertThat(service.get(first.id()).stages()).hasSize(stages);
+            assertThat(service.get(first.id()).updatedAt()).isEqualTo(NOW.plusSeconds(5));
+            assertThat(service.get(neighbour.id()).status()).isEqualTo(ExchangeStatus.AWAITING_RECEIPT);
+        });
+    }
+
+    @Test void transportReceiptDoesNotCompleteAnExchangeRequiringFunctionalAcknowledgement() {
+        var partnerships = new InMemoryPartnershipRepository();
+        var base = capability();
+        var capability = new ExchangeCapability(base.id(), base.direction(), base.documentType(), base.standard(), base.release(),
+                base.messageType(), base.sourceSchemaId(), base.targetSchemaId(), base.mappingRevisionId(), base.as2ConnectionId(),
+                AcknowledgementPolicy.FUNCTIONAL, base.batchingPolicy());
+        var agreement = agreement(capability); saveAgreement(partnerships, agreement);
+        TransportAcl transport = new TransportAcl() {
+            public UUID submit(UUID a, String b, String c, String d, byte[] e, UUID f, UUID g, int h, UUID i, DocumentReference j, UUID k) { return UUID.randomUUID(); }
+            public Receipt receipt(UUID transferId, UUID exchangeId) { return new Receipt(Outcome.DELIVERED, NOW.plusSeconds(5), "MDN verified"); }
+        };
+        var service = new ExchangeService(new InMemoryExchangeRepository(), partnerships, new DocumentProbe(),
+                (route, input) -> new TransformationAcl.Result(new byte[]{1}, new byte[]{2}, List.of()), transport, Clock.fixed(NOW, ZoneOffset.UTC));
+        TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
+            var exchange = service.submitOutbound(new ExchangeService.SubmitOutbound(agreement.id(), capability.id(), UUID.randomUUID(), UUID.randomUUID(), "functional"));
+            var updated = service.get(exchange.id());
+            assertThat(updated.status()).isEqualTo(ExchangeStatus.AWAITING_RECEIPT);
+            assertThat(updated.stages().getLast().detail()).contains("awaiting functional acknowledgement");
+            int count = updated.stages().size();
+            assertThat(service.get(exchange.id()).stages()).hasSize(count);
+        });
+    }
+
     @Test
     void readinessIsReadOnlyAndSendingRevalidatesInsteadOfTrustingAnEarlierPass() {
         var partnerships = new InMemoryPartnershipRepository();

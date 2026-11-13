@@ -104,13 +104,21 @@ public final class LocalIntegrationDemoSeeder {
     @Value("${integration.local-demo.mft-tradacoms-partner-id-file}") private Path mftTradacomsPartnerIdFile;
 
     @EventListener(ApplicationReadyEvent.class)
-    public void seed() {
+    public Ready seed() {
         try {
             UUID edifactConnectionId = readPartnerId(mftPartnerIdFile);
             UUID tradacomsConnectionId = readPartnerId(mftTradacomsPartnerIdFile);
             reconcile(tenantId, edifactConnectionId, tradacomsConnectionId);
+            return new Ready(tenantId, PARTNER_ID, edifactConnectionId, tradacomsConnectionId);
         } catch (IOException | IllegalArgumentException exception) {
             throw new IllegalStateException("Unable to seed the local trading network demo", exception);
+        }
+    }
+
+    /** Local-only fixture completion; emitted synchronously after both partner records exist. */
+    public record Ready(String tenantId, UUID edifactPartnerId, UUID edifactConnectionId, UUID tradacomsConnectionId) {
+        public Ready(String tenantId, UUID edifactPartnerId, UUID edifactConnectionId) {
+            this(tenantId, edifactPartnerId, edifactConnectionId, null);
         }
     }
 
@@ -126,9 +134,9 @@ public final class LocalIntegrationDemoSeeder {
         TradingPartner edifactPartner = partner(PARTNER_ID, targetTenantId, "Northstar Retail", "[edifact_buyer_gln]", now);
         TradingPartner tradacomsPartner = partner(TRADACOMS_PARTNER_ID, targetTenantId, "Harbour Retail",
                 "[tradacoms_buyer_gln]", now);
-        partnerships.savePartner(edifactPartner);
-        partnerships.savePartner(tradacomsPartner);
-        partnerships.savePartner(new TradingPartner(PARTNER_DRAFT_ID, targetTenantId, "Northstar Retail UK",
+        retainPartner(edifactPartner);
+        retainPartner(tradacomsPartner);
+        retainPartner(new TradingPartner(PARTNER_DRAFT_ID, targetTenantId, "Northstar Retail UK",
                 edifactPartner.identities(), PartnerStatus.DRAFT, now, now, PARTNER_ID, 2, null, null, 1,
                 InboundFileFailurePolicy.REJECT_FILE));
         sscc.find(targetTenantId, LOCAL_SSCC_ISSUER_ID).orElseGet(() -> sscc.save(new SsccIssuer(
@@ -139,15 +147,23 @@ public final class LocalIntegrationDemoSeeder {
                 "Northstar EDIFACT order to invoice", EdiStandard.EDIFACT, edifactConnectionId, now);
         TradingAgreement tradacomsAgreement = agreement(targetTenantId, TRADACOMS_PARTNER_ID, TRADACOMS_AGREEMENT_ID,
                 "Harbour TRADACOMS order to invoice", EdiStandard.TRADACOMS, tradacomsConnectionId, now);
-        partnerships.saveAgreement(edifactAgreement);
-        partnerships.saveAgreement(tradacomsAgreement);
+        retainAgreement(edifactAgreement);
+        retainAgreement(tradacomsAgreement);
         Instant scheduledAt = Instant.parse("2099-01-01T09:00:00Z");
-        partnerships.saveAgreement(new TradingAgreement(AGREEMENT_SCHEDULED_ID, targetTenantId, PARTNER_ID, 2,
+        retainAgreement(new TradingAgreement(AGREEMENT_SCHEDULED_ID, targetTenantId, PARTNER_ID, 2,
                 edifactAgreement.name(), AgreementStatus.SCHEDULED, scheduledAt, null,
                 edifactAgreement.capabilities(), edifactAgreement.qualification(), now, now,
                 AGREEMENT_ID, scheduledAt, null, 1));
         log.info("Integration demo ready for tenant {}; two supplier relationships, a synthetic SSCC range and {} editable mappings",
                 targetTenantId, demoMappings.size());
+    }
+
+    private void retainPartner(TradingPartner fixture) {
+        partnerships.findPartner(fixture.tenantId(), fixture.id()).orElseGet(() -> partnerships.savePartner(fixture));
+    }
+
+    private void retainAgreement(TradingAgreement fixture) {
+        partnerships.findAgreement(fixture.tenantId(), fixture.id()).orElseGet(() -> partnerships.saveAgreement(fixture));
     }
 
     private TradingPartner partner(UUID id, String targetTenantId, String name, String gln, Instant now) {

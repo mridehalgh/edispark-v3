@@ -1,5 +1,14 @@
 # Local demo data coverage
 
+The B&Q-only acknowledgement journey adds three versioned fixtures (`bq-ack-v1.4-full-acceptance-v1`):
+purchase order `order`, full acceptance `ready`, and `missing-vendor` with an actionable readiness failure.
+`BqAcknowledgementSeeder` creates missing examples and repairs RESPONDS_TO links without replacing edited bytes.
+`LocalBqAcknowledgementFixture` separately qualifies **B&Q ACK v1.4 · local simulator** with mapping
+`d9c01ea5-f555-4c6d-9c87-1465ea78ac61`. Its synthetic identity does not register the real retailer as a demo partner.
+The editor exposes vendor/order/delivery/EAN details. Readiness allocates no counters or transfers;
+dispatch reserves durable sequential controls. Screwfix is excluded; Ocado ACK remains unsupported.
+See [profile limits](standards/order-response-validation.md).
+
 This is the canonical coverage manifest for the deterministic `EdiSpark Local` workspace. Every user-facing feature change must assess and, when necessary, update this document, its fixture reconciler, and its behavior tests.
 
 The goal is not a large synthetic database. The goal is a small, safe set of connected examples that lets a developer exercise every supported journey immediately after `pnpm dev`.
@@ -10,7 +19,11 @@ Outbound readiness now validates the current canonical UBL against the bundled O
 
 The stable tenant draft `readiness:order-response:repeated-lines` (deterministic UUID) demonstrates repeated order-response lines for TRADACOMS. It is deliberately unpublished: populated fields outside its eight base rules must be mapped or explicitly omitted with a business reason and passing fixture before publication. The reconciler restores it when absent and preserves user edits. Existing global revision 1 definitions and active agreement pins are unchanged.
 
-The Documents send panel separates schema finalization from partner readiness and directs document owners to a linked correction draft and administrators to an immutable mapping revision. Correction drafts have their own partner metadata, retain fields outside the business form, and link across sets with `CORRECTS`. The original bytes and exchange history are preserved. Regression coverage: `JsonSchemaDocumentValidatorTest`, `CorrectionContentTest`, `ExchangeServiceTest`, `MappingRuntimeTest`, `MappingServiceTest`, `EdiPayloadWriterTest`, and `LocalIntegrationDemoSeederTest`.
+The Documents send panel separates schema finalization from partner readiness and directs document owners to a linked correction draft and administrators to an immutable mapping revision. Correction drafts have their own partner metadata, retain fields outside the business form, and link across sets with `CORRECTS`. Original document bytes remain retained. Local exchange/MFT/configuration metadata now uses the deployment DynamoDB repositories, preserving new operational history and idempotency across restarts; older in-memory history cannot be recreated from missing events. Regression coverage: `JsonSchemaDocumentValidatorTest`, `CorrectionContentTest`, `ExchangeServiceTest`, `MappingRuntimeTest`, `MappingServiceTest`, `EdiPayloadWriterTest`, and `LocalIntegrationDemoSeederTest`.
+
+The immutable replacement `d9c01ea5-f555-4c6d-9c87-1465ea78ac60` supplies an eight-line UBL Order Response/core EDIFACT sample. `LocalOrderResponseDeliveryFixture` creates and qualifies **Northstar · Order Response core demo v2** through the normal application service, repairs a missing fixture, and leaves the original six-document agreement pins intact. It carries AP/full acceptance, explicit line decisions and identifier schemes, and every repeated line. The original illustrative TRADACOMS ACK mapping is retained for history but cannot qualify or send without an authoritative definition. The supplied Ocado guide defines orders and invoices only. Kingfisher DSV requirements and unresolved profile details are recorded in `docs/standards/order-response-validation.md`; simulator success is not production partner qualification.
+
+Validation and activity views group repeated occurrences into business fields and retain exact paths behind technical evidence. An administrator can fork a mapping and load/test the exact retained source without reconstructing it; changed source identities are rejected. Successful processed AS2 receipts update the exchange delivery projection once. Functional-acknowledgement routes remain pending after an MDN. Generated artifacts use per-exchange variant keys so distinct attempts never overwrite or collide with historical representations.
 
 | Concern | Stable identity | Owner |
 |---|---|---|

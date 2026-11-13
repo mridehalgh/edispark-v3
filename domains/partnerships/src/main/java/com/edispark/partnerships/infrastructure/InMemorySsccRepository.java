@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Profile({"local", "openapi-export"})
+@Profile("openapi-export")
 public final class InMemorySsccRepository implements SsccRepository {
     private final Map<UUID, SsccIssuer> issuers = new ConcurrentHashMap<>();
     private final Map<String, SsccReservation> reservations = new ConcurrentHashMap<>();

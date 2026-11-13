@@ -9,7 +9,8 @@ import java.util.UUID;
 public record MappingRevision(UUID id, String tenantId, String name, int revision, UUID sourceSchemaId,
         UUID targetSchemaId, MappingStatus status, List<MappingNode> nodes, String contentHash,
         Instant createdAt, Instant publishedAt, UUID familyId, Instant scheduledAt, Instant archivedAt,
-        long version, MappingScope scope, String vendor, MappingSample sample, UUID derivedFromMappingId) {
+        long version, MappingScope scope, String vendor, MappingSample sample, UUID derivedFromMappingId,
+        TargetValidationEvidence targetValidationEvidence) {
     private static final int MAX_NODES = 2_000;
 
     public MappingRevision {
@@ -39,6 +40,14 @@ public record MappingRevision(UUID id, String tenantId, String name, int revisio
 
     public MappingRevision(UUID id, String tenantId, String name, int revision, UUID sourceSchemaId,
             UUID targetSchemaId, MappingStatus status, List<MappingNode> nodes, String contentHash,
+            Instant createdAt, Instant publishedAt, UUID familyId, Instant scheduledAt, Instant archivedAt,
+            long version, MappingScope scope, String vendor, MappingSample sample, UUID derivedFromMappingId) {
+        this(id, tenantId, name, revision, sourceSchemaId, targetSchemaId, status, nodes, contentHash,
+                createdAt, publishedAt, familyId, scheduledAt, archivedAt, version, scope, vendor, sample, derivedFromMappingId, null);
+    }
+
+    public MappingRevision(UUID id, String tenantId, String name, int revision, UUID sourceSchemaId,
+            UUID targetSchemaId, MappingStatus status, List<MappingNode> nodes, String contentHash,
             Instant createdAt, Instant publishedAt) {
         this(id, tenantId, name, revision, sourceSchemaId, targetSchemaId, status, nodes, contentHash,
                 createdAt, publishedAt, id, null, null, 1, MappingScope.TENANT, null, null, null);
@@ -63,41 +72,48 @@ public record MappingRevision(UUID id, String tenantId, String name, int revisio
     public MappingRevision publish(String hash, Instant now) {
         if (status != MappingStatus.DRAFT) throw new IllegalStateException("Only draft mappings can be published");
         if (nodes.isEmpty()) throw new IllegalStateException("A mapping must contain at least one node");
-        return new MappingRevision(id, tenantId, name, revision, sourceSchemaId, targetSchemaId,
-                MappingStatus.PUBLISHED, nodes, hash, createdAt, now, familyId, null, null, version + 1);
+        return retained(MappingStatus.PUBLISHED, hash, now, null, null, nodes, targetValidationEvidence);
     }
 
     public MappingRevision schedule(String hash, Instant effectiveAt) {
         if (status != MappingStatus.DRAFT) throw new IllegalStateException("Only draft mappings can be scheduled");
         if (nodes.isEmpty()) throw new IllegalStateException("A mapping must contain at least one node");
-        return new MappingRevision(id, tenantId, name, revision, sourceSchemaId, targetSchemaId,
-                MappingStatus.SCHEDULED, nodes, hash, createdAt, null, familyId, effectiveAt, null, version + 1);
+        return retained(MappingStatus.SCHEDULED, hash, null, effectiveAt, null, nodes, targetValidationEvidence);
     }
 
     public MappingRevision publishDue(Instant now) {
         if (status != MappingStatus.SCHEDULED || scheduledAt.isAfter(now)) return this;
-        return new MappingRevision(id, tenantId, name, revision, sourceSchemaId, targetSchemaId,
-                MappingStatus.PUBLISHED, nodes, contentHash, createdAt, now, familyId, null, null, version + 1);
+        return retained(MappingStatus.PUBLISHED, contentHash, now, null, null, nodes, targetValidationEvidence);
     }
 
     public MappingRevision revise(List<MappingNode> revisedNodes) {
         if (status != MappingStatus.DRAFT) throw new IllegalStateException("Published mappings are immutable");
-        return new MappingRevision(id, tenantId, name, revision, sourceSchemaId, targetSchemaId,
-                status, revisedNodes, null, createdAt, null, familyId, null, null, version + 1);
+        return retained(status, null, null, null, null, revisedNodes, null);
     }
 
     public MappingRevision newDraft(Instant now) {
         if (status != MappingStatus.PUBLISHED) throw new IllegalStateException("Only published mappings can be revised");
         return new MappingRevision(UUID.randomUUID(), tenantId, name, revision + 1, sourceSchemaId, targetSchemaId,
-                MappingStatus.DRAFT, nodes, null, now, null, familyId, null, null, 1);
+                MappingStatus.DRAFT, nodes, null, now, null, familyId, null, null, 1, scope, vendor, sample, derivedFromMappingId, null);
     }
 
     public MappingRevision archive(Instant now) {
         if (status == MappingStatus.DRAFT || status == MappingStatus.SCHEDULED) {
             throw new IllegalStateException("Discard the draft or cancel its schedule instead");
         }
-        return new MappingRevision(id, tenantId, name, revision, sourceSchemaId, targetSchemaId,
-                MappingStatus.ARCHIVED, nodes, contentHash, createdAt, publishedAt, familyId, null, now, version + 1);
+        return retained(MappingStatus.ARCHIVED, contentHash, publishedAt, null, now, nodes, targetValidationEvidence);
+    }
+
+    public MappingRevision withTargetEvidence(TargetValidationEvidence evidence) {
+        if (status != MappingStatus.DRAFT) throw new IllegalStateException("Target evidence is attached before publication");
+        return retained(status, contentHash, publishedAt, scheduledAt, archivedAt, nodes, evidence);
+    }
+
+    private MappingRevision retained(MappingStatus state, String hash, Instant published, Instant scheduled,
+            Instant archived, List<MappingNode> rules, TargetValidationEvidence evidence) {
+        return new MappingRevision(id, tenantId, name, revision, sourceSchemaId, targetSchemaId, state,
+                rules, hash, createdAt, published, familyId, scheduled, archived, version + 1,
+                scope, vendor, sample, derivedFromMappingId, evidence);
     }
 
     public MappingRevision forkForTenant(String targetTenantId, Instant now) {
@@ -108,7 +124,7 @@ public record MappingRevision(UUID id, String tenantId, String name, int revisio
                 MappingScope.TENANT, null, sample, id);
     }
 
-    @JsonProperty("compatibility")
+    @JsonProperty(value = "compatibility", access = JsonProperty.Access.READ_ONLY)
     public MappingCompatibility compatibility() {
         return MappingCompatibilityRegistry.resolve(sourceSchemaId, targetSchemaId);
     }

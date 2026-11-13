@@ -29,13 +29,17 @@ public class SimulatorAs2Configuration {
 
     @Bean AS2Session simulatorSession(SimulatorStore store,
             @Value("${simulator.keystore}") String keyStore,
-            @Value("${simulator.keystore-password}") String password) throws AS2Exception {
+            @Value("${simulator.keystore-password}") String password,
+            @Value("${simulator.sender-id}") String edifactId,
+            @Value("${simulator.tradacoms-sender-id}") String tradacomsId,
+            @Value("${simulator.sender-alias}") String alias,
+            @Value("${simulator.receiver-id}") String edisparkId) throws AS2Exception {
         AS2Session created = new AS2Session();
         CertificateFactory certificates = new CertificateFactory();
         certificates.setKeyStoreType(EKeyStoreType.PKCS12); certificates.setFilename(keyStore);
         certificates.setPassword(password); certificates.setSaveChangesToFile(false);
         certificates.initDynamicComponent(created, null); created.setCertificateFactory(certificates);
-        SelfFillingPartnershipFactory partnerships = new SelfFillingPartnershipFactory();
+        SelfFillingPartnershipFactory partnerships = new SimulatorPartnershipFactory(edifactId, tradacomsId, alias, edisparkId);
         partnerships.initDynamicComponent(created, null); created.setPartnershipFactory(partnerships);
         DefaultMessageProcessor processor = new DefaultMessageProcessor();
         processor.setPendingMDNFolder(".local/as2-simulator/pending-mdn");

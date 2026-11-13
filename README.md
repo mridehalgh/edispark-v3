@@ -87,6 +87,8 @@ When running `pnpm dev`, every page shows a floating **Local tools** dock in the
 
 The Documents catalogue automatically repairs the order, response, shipment, invoice, receipt, remittance and credit-note links across their original file sets. Local simulator samples also recover business references from their retained UBL JSON and link only to an unambiguous counterpart belonging to the same retained partner identity. Independent orders and missing or ambiguous counterparts remain unlinked. This reconciliation preserves source content, document IDs and developer-created documents; no workspace reset is required.
 
+Local exchange, agreement, mapping, SSCC and MFT metadata now use the deployment repositories against the existing embedded DynamoDB under `.local/dynamodb`. Restarting preserves their identities, idempotency keys and delivery evidence. OpenAPI export keeps its isolated in-memory repositories. Separately qualified **Northstar · Order Response core demo v2** and **B&Q ACK v1.4 · local simulator** routes demonstrate full acceptance of repeated lines. B&Q samples include a linked purchase order, a ready acknowledgement and a missing-vendor readiness failure. These simulator routes do not certify production partner connections. Screwfix is excluded and Ocado ACK remains unsupported. See [Order Response validation scope](docs/standards/order-response-validation.md).
+
 The button and its login route are development-only: the control is rendered only when `LOCAL_TEST_USER_BOOTSTRAP` is enabled, and the route returns HTTP 404 outside `next dev`. The predictable credential is enabled only by `tooling/scripts/local-environment.mjs`; do not enable `LOCAL_TEST_USER_BOOTSTRAP` in a deployed environment.
 
 Next.js development artifacts live in `apps/web/.next-dev`, separately from production builds in `apps/web/.next`. Running a web build while `pnpm dev` is active therefore cannot replace the chunks used by the dev server. Restart `pnpm dev` once after pulling a change to `next.config.mjs`.
@@ -172,7 +174,7 @@ Commit the API change, exported contract, and generated client together. The web
 - **The API does not become ready:** `pnpm dev` waits up to two minutes for `http://localhost:8080/actuator/health` before starting Next.js. Check the Java output for the first startup failure.
 - **An API area says the service is unavailable:** use `pnpm dev`, or run `pnpm dev:api` beside an already running web app. Verify `http://localhost:8080/actuator/health`.
 - **Authentication or JWKS fails:** verify `http://localhost:3000/api/auth/ok` first, then reset generated state with `pnpm local:reset` and restart.
-- **Local data is inconsistent:** stop the stack, run `pnpm local:reset`, and run `pnpm dev`. Reset removes all generated local users, workspaces, keys, and documents.
+- **Local data is inconsistent:** restart the stack to reconcile named fixtures while retaining developer-created records. Reserve `pnpm local:reset` for unrecoverable generated state; it deletes local users, workspaces, keys, documents and metadata.
 - **DynamoDB native-library errors:** run `./mvnw -B -pl tooling/local-runtime -am clean package -DskipTests`, then restart the API.
 - **Generated client drift:** run `pnpm contracts:sync:documents` and include both contract and client changes.
 - **Wrong Java release:** ensure `java -version` reports 21 or newer and that `JAVA_HOME` points to that installation.

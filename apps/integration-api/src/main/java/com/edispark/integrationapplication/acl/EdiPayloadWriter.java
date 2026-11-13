@@ -26,8 +26,32 @@ public final class EdiPayloadWriter {
 
     public EdiPayloadWriter(ObjectMapper mapper, Clock clock) { this.mapper = mapper; this.clock = clock; }
 
+    public byte[] preview(ExchangeCapability capability, byte[] mappedJson) {
+        return bq(capability) ? write(capability, mappedJson, new com.edispark.tradacoms.ack.BqAcknowledgement.Control(1, 1))
+                : write(capability, mappedJson);
+    }
+
+    public byte[] write(ExchangeCapability capability, byte[] mappedJson, com.edispark.tradacoms.ack.BqAcknowledgement.Control control) {
+        if (!bq(capability)) return write(capability, mappedJson);
+        return new BqAcknowledgementTargetContract(mapper).write(mappedJson, control, clock.instant()).getBytes(StandardCharsets.US_ASCII);
+    }
+
+    private boolean bq(ExchangeCapability capability) {
+        return capability.documentType() == BusinessDocumentType.ORDER_RESPONSE && capability.standard() == EdiStandard.TRADACOMS
+                && capability.release().equals("9") && capability.messageType().equals("ORDRSP");
+    }
+
     public byte[] write(ExchangeCapability capability, byte[] mappedJson) {
         try {
+            if (capability.documentType() == BusinessDocumentType.ORDER_RESPONSE) {
+                if (bq(capability)) throw new IllegalArgumentException("B&Q ACK validation requires its partner contract and reserved sequential transmission controls.");
+                if (capability.standard() != EdiStandard.EDIFACT || !capability.release().equals("D96A")
+                        || !capability.messageType().equals("ORDRSP")) {
+                    throw new IllegalArgumentException("Order Response validation is unavailable for this standard, release and partner definition.");
+                }
+                String control = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
+                return new OrderResponseTargetContract(mapper).write(mappedJson, control, clock.instant()).getBytes(StandardCharsets.US_ASCII);
+            }
             JsonNode document = mapper.readTree(mappedJson);
             validateModel(capability, document);
             String payload = capability.standard() == EdiStandard.EDIFACT

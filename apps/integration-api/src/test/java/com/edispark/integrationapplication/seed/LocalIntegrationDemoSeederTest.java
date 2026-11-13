@@ -13,6 +13,19 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 final class LocalIntegrationDemoSeederTest {
+    @Test void restartPreservesEditedDraftsAndDeliberatelySuspendedRelationships() {
+        var partnerships = new InMemoryPartnershipRepository();
+        var seeder = new LocalIntegrationDemoSeeder(partnerships, new InMemorySsccRepository(), new InMemoryMappingRepository(), Clock.systemUTC());
+        seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
+        var draft = partnerships.listPartners(TENANT_ID).stream().filter(item -> item.status().name().equals("DRAFT")).findFirst().orElseThrow();
+        var edited = draft.revise("Edited local supplier", draft.identities(), draft.inboundFileFailurePolicy(), Instant.now());
+        partnerships.savePartner(edited);
+        var active = partnerships.listPartners(TENANT_ID).stream().filter(item -> item.status().name().equals("ACTIVE")).findFirst().orElseThrow();
+        var suspended = active.suspend(Instant.now()); partnerships.savePartner(suspended);
+        seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
+        assertThat(partnerships.findPartner(TENANT_ID, edited.id()).orElseThrow()).isEqualTo(edited);
+        assertThat(partnerships.findPartner(TENANT_ID, suspended.id()).orElseThrow()).isEqualTo(suspended);
+    }
     private static final String TENANT_ID = "tenant-demo";
     private static final UUID EDIFACT_CONNECTION_ID = UUID.fromString("850ca900-3f1e-4f98-b5e2-f17f557cc9e0");
     private static final UUID TRADACOMS_CONNECTION_ID = UUID.fromString("850ca900-3f1e-4f98-b5e2-f17f557cc9e2");

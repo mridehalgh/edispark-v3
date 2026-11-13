@@ -12,18 +12,29 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 class ClasspathGlobalMappingCatalogTest {
+    @Test void bqAcknowledgementMapsAllEightLinesAndRecordsExplicitOmissions() throws Exception {
+        var mapping = catalog.find(BqAcknowledgementMapping.ID).orElseThrow();
+        var result = new MappingRuntime(mapper).executeDetailed(mapping, mapping.sample().sourceDocument().getBytes(StandardCharsets.UTF_8));
+        assertThat(result.warnings()).isEmpty();
+        assertThat(mapper.readTree(result.output())).isEqualTo(mapper.readTree(mapping.sample().targetDocument()));
+        assertThat(mapper.readTree(result.report()).path("reviewedOmissions")).hasSize(7);
+        var source = mapper.readTree(mapping.sample().sourceDocument());
+        ((com.fasterxml.jackson.databind.node.ObjectNode) source.at("/OrderResponse/0")).put("UnexpectedValue", "preserve me");
+        assertThat(new MappingRuntime(mapper).executeDetailed(mapping, mapper.writeValueAsBytes(source)).warnings())
+                .anySatisfy(warning -> assertThat(warning.sourcePath()).endsWith("/UnexpectedValue"));
+    }
     private final ObjectMapper mapper = new ObjectMapper();
     private final ClasspathGlobalMappingCatalog catalog = new ClasspathGlobalMappingCatalog();
 
     @Test
     void vendsAllSixLifecycleDocumentsAndKeepsComprehensiveOrderInvoiceSamples() throws Exception {
-        assertThat(catalog.list()).hasSize(24).allSatisfy(mapping -> {
+        assertThat(catalog.list()).hasSize(26).allSatisfy(mapping -> {
             assertThat(mapping.scope()).isEqualTo(MappingScope.GLOBAL);
             assertThat(mapping.status()).isEqualTo(MappingStatus.PUBLISHED);
             assertThat(mapping.vendor()).isEqualTo("EdiSpark");
             assertThat(mapping.compatibility()).isNotNull();
         });
-        assertThat(catalog.list()).filteredOn(mapping -> mapping.sample() != null).hasSize(8).allSatisfy(mapping -> {
+        assertThat(catalog.list()).filteredOn(mapping -> mapping.sample() != null && mapping.revision() == 1).hasSize(8).allSatisfy(mapping -> {
             assertThat(mapping.nodes()).hasSizeGreaterThanOrEqualTo(40);
             assertThat(mapping.sample().sourceFormat()).isNotBlank();
             assertThat(mapping.sample().targetFormat()).isNotBlank();
@@ -39,7 +50,7 @@ class ClasspathGlobalMappingCatalogTest {
             assertThat(rawEdi).containsAnyOf("LIN+2", "OLD=2", "ILD=2");
         });
         assertThat(catalog.list()).extracting(mapping -> mapping.id()).doesNotHaveDuplicates();
-        for (var mapping : catalog.list().stream().filter(item -> item.sample() != null).toList()) {
+        for (var mapping : catalog.list().stream().filter(item -> item.sample() != null && item.revision() == 1).toList()) {
             assertThat(mapper.readTree(mapping.sample().sourceDocument())).isNotNull();
             assertThat(mapper.readTree(mapping.sample().targetDocument())).isNotNull();
         }
@@ -72,7 +83,7 @@ class ClasspathGlobalMappingCatalogTest {
     @Test
     void everyPublishedFieldIsPopulatedAndLargeSamplesContainEightMeaningfulLines() throws Exception {
         var runtime = new MappingRuntime(mapper);
-        for (var mapping : catalog.list().stream().filter(item -> item.sample() != null).toList()) {
+        for (var mapping : catalog.list().stream().filter(item -> item.sample() != null && item.revision() == 1).toList()) {
             var source = mapper.readTree(mapping.sample().sourceDocument());
             assertThat(mapping.nodes()).allSatisfy(node -> {
                 if (node.operation() == com.edispark.transformations.domain.MappingOperation.CONSTANT) return;
@@ -99,7 +110,7 @@ class ClasspathGlobalMappingCatalogTest {
 
     @Test
     void publishedMappingsUseControlledLookupsForCodedBusinessFields() {
-        assertThat(catalog.list()).allSatisfy(mapping -> {
+        assertThat(catalog.list()).filteredOn(mapping -> mapping.revision() == 1).allSatisfy(mapping -> {
             assertThat(mapping.nodes()).anySatisfy(node -> {
                 assertThat(node.operation()).isEqualTo(MappingOperation.CODE_LOOKUP);
                 assertThat(node.codeMap()).isNotEmpty();
@@ -112,7 +123,7 @@ class ClasspathGlobalMappingCatalogTest {
 
     @Test
     void publishedCodeLookupsDeclareTheirSourceAndTargetStandards() {
-        assertThat(catalog.list()).allSatisfy(mapping -> mapping.nodes().stream()
+        assertThat(catalog.list()).filteredOn(mapping -> mapping.revision() == 1).allSatisfy(mapping -> mapping.nodes().stream()
                 .filter(node -> node.operation() == MappingOperation.CODE_LOOKUP)
                 .forEach(node -> {
                     assertThat(node.codeList()).isNotNull();
@@ -126,5 +137,24 @@ class ClasspathGlobalMappingCatalogTest {
                         assertThat(node.targetSyntax()).isEqualTo(BusinessCodeSyntax.UBL_2_1);
                     }
                 }));
+    }
+
+    @Test void replacementResponseMappingCoversEveryLineAndPreservesTheLegacyRevision() throws Exception {
+        var mapping = catalog.find(OrderResponseCoreMapping.ID).orElseThrow();
+        var runtime = new MappingRuntime(mapper);
+        var source = mapper.readTree(mapping.sample().sourceDocument());
+        var result = runtime.executeDetailed(mapping, mapper.writeValueAsBytes(source));
+        assertThat(result.warnings()).isEmpty();
+        assertThat(mapper.readTree(result.output())).isEqualTo(mapper.readTree(mapping.sample().targetDocument()));
+        var lines = (com.fasterxml.jackson.databind.node.ArrayNode) source.at("/OrderResponse/0/OrderLine");
+        for (int index = 9; index <= 12; index++) {
+            var line = lines.get(0).deepCopy();
+            ((com.fasterxml.jackson.databind.node.ObjectNode) line.at("/LineItem/0/ID/0")).put("_", "" + index);
+            lines.add(line);
+        }
+        var extended = runtime.executeDetailed(mapping, mapper.writeValueAsBytes(source));
+        assertThat(extended.warnings()).isEmpty();
+        assertThat(mapper.readTree(extended.output()).path("lines")).hasSize(12);
+        assertThat(catalog.find(java.util.UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac40")).orElseThrow().revision()).isEqualTo(1);
     }
 }

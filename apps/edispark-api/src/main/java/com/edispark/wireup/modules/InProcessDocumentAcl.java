@@ -75,7 +75,7 @@ final class InProcessDocumentAcl implements DocumentAcl {
         Derivative derivative = commands.handle(new StoreExternalDerivativeCommand(
                 new DocumentSetId(source.documentSetId()), new DocumentId(source.documentId()),
                 document.getCurrentVersion().versionNumber(), Content.of(bytes, storageFormat(artifact)),
-                artifact == GeneratedArtifact.VALIDATION_REPORT ? "validation:" + exchangeId : mappingRevisionId.toString()));
+                artifact.name().toLowerCase(java.util.Locale.ROOT) + ":" + exchangeId + ":" + mappingRevisionId));
         return new DocumentReference(source.documentSetId(), source.documentId(), derivative.id().value(),
                 derivative.contentHash().toFullString());
     }

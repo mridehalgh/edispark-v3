@@ -23,6 +23,10 @@ public record ExchangeCapability(UUID id, ExchangeDirection direction, BusinessD
         Objects.requireNonNull(acknowledgementPolicy);
         Objects.requireNonNull(batchingPolicy);
         outboundLossPolicy = outboundLossPolicy == null ? OutboundLossPolicy.STRICT : outboundLossPolicy;
+        if (direction == ExchangeDirection.OUTBOUND && documentType == BusinessDocumentType.ORDER_RESPONSE
+                && standard == EdiStandard.TRADACOMS && outboundLossPolicy != OutboundLossPolicy.STRICT) {
+            throw new IllegalArgumentException("B&Q acknowledgements require strict source coverage before transmission.");
+        }
         automationMode = automationMode == null ? WorkflowAutomationMode.MANUAL : automationMode;
         approvalPolicy = approvalPolicy == null ? WorkflowApprovalPolicy.NONE : approvalPolicy;
         if (automationMode == WorkflowAutomationMode.APPROVAL_REQUIRED

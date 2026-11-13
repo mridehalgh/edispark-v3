@@ -4,6 +4,7 @@ import type {
   MappingNode,
   MappingRevision,
   TestResult,
+  TestMappingRetainedSourceResponse,
 } from "@edispark/integration-client"
 import {
   ArrowLeft,
@@ -25,7 +26,7 @@ import {
   X,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -235,6 +236,8 @@ function CodeMapEditor({
 export function MappingWorkspacePage() {
   const { mappingId } = useParams()
   const navigate = useNavigate()
+  const [sourceParams] = useSearchParams()
+  const sourceQuery = sourceParams.toString()
   const [mapping, setMapping] = useState<MappingRevision>()
   const [nodes, setNodes] = useState<MappingNode[]>([])
   const [input, setInput] = useState(DEFAULT_INPUT)
@@ -252,26 +255,44 @@ export function MappingWorkspacePage() {
   const [error, setError] = useState<string>()
   const [notice, setNotice] = useState<string>()
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal: AbortSignal) => {
     if (!mappingId) return
     try {
       const result = await readApi<MappingRevision>(
         `/api/integration/mappings/${mappingId}`,
+        { signal },
       )
       setMapping(result)
       setNodes(result.nodes ?? [])
       setActiveNodeId(result.nodes?.[0]?.id)
       if (result.sample?.sourceDocument) setInput(result.sample.sourceDocument)
+      const source = new URLSearchParams(sourceQuery)
+      if (source.has("sourceSet")) {
+        const retained = await readApi<TestMappingRetainedSourceResponse>(
+          `/api/integration/mappings/${mappingId}/test-retained-source`,
+          { signal, method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+            documentSetId: source.get("sourceSet"), documentId: source.get("sourceDocument"),
+            representationId: source.get("sourceRepresentation"), contentHash: source.get("sourceHash"),
+          }) },
+        )
+        if (retained.input) setInput(retained.input)
+        if (retained.test) setTestResult({ ...retained.test, output: decodeOutput(retained.test.output) })
+        setNotice("Loaded and tested the exact retained document. Review the findings, create a draft revision, and test your changes before publishing.")
+        setTestOpen(true)
+      }
     } catch (requestError) {
+      if (signal.aborted) return
       setError(
         requestError instanceof Error
           ? requestError.message
           : "The document rule could not be loaded.",
       )
     }
-  }, [mappingId])
+  }, [mappingId, sourceQuery])
   useEffect(() => {
-    void load()
+    const controller = new AbortController()
+    void load(controller.signal)
+    return () => controller.abort()
   }, [load])
 
   const parsedInput = useMemo(() => {
@@ -435,7 +456,7 @@ export function MappingWorkspacePage() {
         `/api/integration/mappings/${mappingId}/revisions`,
         { method: "POST" },
       )
-      navigate(`/organisation/document-rules/${revision.id}`)
+      navigate(`/organisation/document-rules/${revision.id}${sourceQuery ? `?${sourceQuery}` : ""}`)
     } catch (requestError) {
       setError(
         requestError instanceof Error

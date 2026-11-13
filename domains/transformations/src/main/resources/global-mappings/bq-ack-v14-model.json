@@ -1,0 +1,91 @@
+{
+  "contract": "edispark.bq.tradacoms.ack.v1_4",
+  "sourceVersion": "2.1",
+  "decision": "AP",
+  "supplier": {
+    "gln": "0000000000000",
+    "scheme": "GLN",
+    "vendorNumber": "0000001",
+    "tradingName": "Demo Supplier",
+    "legalName": "Demo Supplier Legal"
+  },
+  "customer": {
+    "gln": "5013546018962",
+    "scheme": "GLN",
+    "name": "B&Q LTD",
+    "legalName": "B&Q LTD"
+  },
+  "order": {
+    "reference": "PO-42",
+    "versionReference": "PO-42",
+    "version": "0001",
+    "locationReference": "SO-42",
+    "deliveryDate": "2026-11-14"
+  },
+  "lines": [
+    {
+      "id": "1",
+      "decision": "Accepted",
+      "quantity": 1,
+      "unitCode": "EA",
+      "name": "Product 1",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "2",
+      "decision": "Accepted",
+      "quantity": 2,
+      "unitCode": "EA",
+      "name": "Product 2",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "3",
+      "decision": "Accepted",
+      "quantity": 3,
+      "unitCode": "EA",
+      "name": "Product 3",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "4",
+      "decision": "Accepted",
+      "quantity": 4,
+      "unitCode": "EA",
+      "name": "Product 4",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "5",
+      "decision": "Accepted",
+      "quantity": 5,
+      "unitCode": "EA",
+      "name": "Product 5",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "6",
+      "decision": "Accepted",
+      "quantity": 6,
+      "unitCode": "EA",
+      "name": "Product 6",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "7",
+      "decision": "Accepted",
+      "quantity": 7,
+      "unitCode": "EA",
+      "name": "Product 7",
+      "gtin": "0000000000000"
+    },
+    {
+      "id": "8",
+      "decision": "Accepted",
+      "quantity": 8,
+      "unitCode": "EA",
+      "name": "Product 8",
+      "gtin": "0000000000000"
+    }
+  ]
+}

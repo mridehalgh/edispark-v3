@@ -22,6 +22,40 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class MftDeliveryWorkerTest {
+    @Test void retriesATransportTimeoutWithoutDuplicatingTheTransferOrBlockingItsNeighbour() throws Exception {
+        var repository = new InMemoryMftRepository();
+        var payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-timeout-retry"));
+        var partner = partner(); repository.savePartner(partner);
+        var timedOut = transfer(partner, payloads, "timeout-export", NOW.minusSeconds(2));
+        var neighbour = transfer(partner, payloads, "neighbour-export", NOW.minusSeconds(1));
+        repository.save(timedOut); repository.save(neighbour);
+        var now = new java.util.concurrent.atomic.AtomicReference<>(NOW);
+        Clock clock = new Clock() {
+            public java.time.ZoneId getZone() { return ZoneOffset.UTC; }
+            public Clock withZone(java.time.ZoneId zone) { return this; }
+            public Instant instant() { return now.get(); }
+        };
+        var attempts = new AtomicInteger();
+        var deliveries = new MftDeliveryService(repository, payloads, (profile, current, bytes) -> {
+            if (current.id().equals(timedOut.id()) && attempts.getAndIncrement() == 0)
+                throw new com.edispark.mft.application.As2TransportException("AS2 request timed out",
+                        new java.net.SocketTimeoutException("local test timeout"), true);
+            return new As2DeliveryResult(false, "automatic-action/MDN-sent-automatically; processed", null);
+        }, clock);
+        var worker = new MftDeliveryWorker(repository, deliveries, clock);
+        worker.deliverDueTransfers();
+        assertThat(repository.findTransfer(TENANT_ID, timedOut.id()).orElseThrow().status()).isEqualTo(TransferStatus.RETRY_SCHEDULED);
+        assertThat(repository.findTransfer(TENANT_ID, neighbour.id()).orElseThrow().status()).isEqualTo(TransferStatus.DELIVERED);
+        now.set(NOW.plusSeconds(600));
+        worker.deliverDueTransfers();
+        var recovered = repository.findTransfer(TENANT_ID, timedOut.id()).orElseThrow();
+        assertThat(recovered.status()).isEqualTo(TransferStatus.DELIVERED);
+        assertThat(recovered.attempts()).hasSize(2);
+        assertThat(recovered.payload()).isEqualTo(timedOut.payload());
+        assertThat(attempts).hasValue(2);
+        worker.deliverDueTransfers();
+        assertThat(attempts).hasValue(2);
+    }
     private static final String TENANT_ID = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Instant NOW = Instant.parse("2026-11-04T12:00:00Z");
 

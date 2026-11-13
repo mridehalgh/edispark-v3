@@ -34,4 +34,9 @@ final class InProcessQualificationAcl implements QualificationAcl {
         return mft.listPartners().stream()
                 .anyMatch(partner -> partner.id().equals(id) && partner.status() == PartnerStatus.ACTIVE);
     }
+
+    @Override public RuleEvidence targetRuleEvidence(UUID id) {
+        var result = mappings.qualificationEvidence(id);
+        return new RuleEvidence(result.valid(), result.identity(), result.failures());
+    }
 }

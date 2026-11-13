@@ -52,6 +52,7 @@ public final class JsonSchemaDocumentValidator implements DocumentValidator {
                 }
                 addErrors(bundled.computeIfAbsent(root, name -> factory.getSchema(SchemaLocation.of(
                         "classpath:ubl/2.1/json-schema/maindoc/UBL-" + name + "-2.1.json"), config)), input, errors);
+                if (root.equals("OrderResponse")) errors.addAll(OrderResponseConsistency.validate(input));
             }
             return errors.isEmpty() ? ValidationResult.success() : ValidationResult.failure(errors.stream().distinct().limit(200).toList());
         } catch (com.fasterxml.jackson.core.JsonProcessingException exception) {

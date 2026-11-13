@@ -6,7 +6,7 @@ import { useEffect, useId, useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { documentFieldLabel } from "@/lib/document-field-label"
+import { DocumentFindings } from "@/components/documents/document-findings"
 import {
   documentExchanges,
   duration,
@@ -32,26 +32,6 @@ function eventDate(value?: string) {
   }).format(new Date(value!))
 }
 
-function MappingFinding({
-  warning,
-}: {
-  warning: NonNullable<ExchangeResponse["warnings"]>[number]
-}) {
-  return (
-    <li className="text-sm">
-      <p className="font-medium">{documentFieldLabel(warning.sourcePath)}</p>
-      <p className="max-w-[70ch] break-words leading-5">
-        {warning.message ?? "A mapping finding was recorded."}
-      </p>
-      {warning.sourcePath && (
-        <p className="mt-1 break-all font-mono text-xs">{warning.sourcePath}</p>
-      )}
-      <p className="mt-1 break-words text-xs text-muted-foreground">
-        {[warning.code, warning.disposition].filter(Boolean).join(" · ")}
-      </p>
-    </li>
-  )
-}
 
 function ExchangeEvidence({ exchange }: { exchange: ExchangeResponse }) {
   const fields = [
@@ -78,23 +58,9 @@ function ExchangeEvidence({ exchange }: { exchange: ExchangeResponse }) {
           <h4 className="text-sm font-semibold">
             Validation and mapping findings · {exchange.warnings!.length}
           </h4>
-          <ul className="mt-2 space-y-3">
-            {exchange.warnings!.slice(0, 3).map((warning, index) => (
-              <MappingFinding key={index} warning={warning} />
-            ))}
-          </ul>
-          {exchange.warnings!.length > 3 && (
-            <details className="mt-3">
-              <summary className="min-h-10 cursor-pointer py-2 text-sm font-medium text-primary">
-                Show {exchange.warnings!.length - 3} more findings
-              </summary>
-              <ul className="mt-2 space-y-3">
-                {exchange.warnings!.slice(3).map((warning, index) => (
-                  <MappingFinding key={index} warning={warning} />
-                ))}
-              </ul>
-            </details>
-          )}
+          <DocumentFindings findings={exchange.warnings!.map((warning) => ({
+            code: warning.code, path: warning.sourcePath, message: warning.message,
+          }))} />
         </div>
       )}
       {exchange.mappingReport?.documentSetId && (

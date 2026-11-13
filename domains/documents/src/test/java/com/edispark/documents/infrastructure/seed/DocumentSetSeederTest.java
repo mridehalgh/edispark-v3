@@ -33,6 +33,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Document set seeder")
 class DocumentSetSeederTest {
+    @Test void bqExamplesCreateRepairAndLinkWithoutReplacingDeveloperData() {
+        seeder.seedTenantData();
+        var handler = new DocumentSetCommandHandler(documentSets, schemas, content,
+                List.of(new com.edispark.documents.infrastructure.validation.JsonSchemaDocumentValidator()), List.of());
+        var bq = new BqAcknowledgementSeeder(documentSets, handler, new SchemaCommandHandler(schemas, content), "unused");
+        bq.reconcile(); bq.reconcile();
+        assertThat(documentSets.findAll()).hasSize(10);
+        var ready = documentSets.findAll().stream().filter(set -> "ready".equals(set.metadata().get("fixtureKey"))).findFirst().orElseThrow();
+        var originalHash = ready.getAllDocuments().getFirst().getCurrentVersion().contentHash();
+        var order = documentSets.findAll().stream().filter(set -> "order".equals(set.metadata().get("fixtureKey"))).findFirst().orElseThrow();
+        documentSets.delete(order.id());
+        bq.reconcile();
+        var repaired = documentSets.findAll().stream().filter(set -> "order".equals(set.metadata().get("fixtureKey"))).findFirst().orElseThrow();
+        assertThat(repaired.id()).isNotEqualTo(order.id());
+        assertThat(ready.getAllDocuments().getFirst().relations()).singleElement()
+                .satisfies(relation -> assertThat(relation.targetDocumentSetId()).isEqualTo(repaired.id()));
+        assertThat(ready.getAllDocuments().getFirst().getCurrentVersion().contentHash()).isEqualTo(originalHash);
+        assertThat(documentSets.findAll()).hasSize(10);
+    }
 
     private InMemoryDocumentSetRepository documentSets;
     private InMemorySchemaRepository schemas;

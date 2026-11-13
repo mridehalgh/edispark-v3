@@ -28,3 +28,9 @@ Each global revision includes a privacy-safe UBL example, a parsed EDI model, an
 | Code lookup | An immutable mapping rule that translates one canonical or partner code into another and rejects unmapped values. |
 | Partner alias | A trading-partner-specific representation of a canonical business code, retained inside its mapping revision. |
 | Representation | The value used for one code in a specific syntax and release, such as UBL 2.1, EDIFACT D.96A or TRADACOMS 9. |
+
+## Order Response target proof and recovery
+
+The replacement D96A core mapping uses aligned repeated nodes for every line and explicitly maps overall response meaning, line decisions, identifier schemes, names and references. Publication requires canonical source validation, complete source coverage and target-contract validation in addition to expected JSON equality. Evidence retains mapping/rule/fixture hashes without copying customer fixture bytes. Editing or forking clears proof; qualification and activation reject stale proof.
+
+Administrators can test against a tenant-authorized retained source identity. The caller-owned retained-source port rejects a changed representation/hash or mismatched document type; its composition adapter uses the provider application boundary. Global and historical mappings remain immutable. Partner-specific certification is separate from the explicitly named core demonstration contract.

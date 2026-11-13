@@ -113,8 +113,22 @@ export const HANDLING_UNIT_TYPES = [
 ] as const satisfies readonly BusinessCodeOption[]
 
 export const ORDER_RESPONSE_CODES = [
-  { value: "AB", label: "Accepted" },
-  { value: "AP", label: "Accepted with changes" },
+  { value: "AB", label: "Received, awaiting a decision" },
+  { value: "AP", label: "Accepted without changes" },
+  { value: "CA", label: "Accepted with changes" },
   { value: "RE", label: "Rejected" },
+] as const satisfies readonly BusinessCodeOption[]
+
+export const ENDPOINT_SCHEMES = [
+  { value: "GLN", label: "GS1 Global Location Number" },
+  { value: "0088", label: "GS1 GLN (ISO 6523)" },
+  { value: "ZZZ", label: "Supplier-assigned identifier" },
+] as const satisfies readonly BusinessCodeOption[]
+
+export const ORDER_RESPONSE_LINE_CODES = [
+  { value: "Accepted", label: "Accepted without changes" },
+  { value: "Acknowledged", label: "Received, awaiting a decision" },
+  { value: "Rejected", label: "Rejected" },
+  { value: "Amended", label: "Accepted with changes" },
 ] as const satisfies readonly BusinessCodeOption[]
 

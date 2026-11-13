@@ -24,7 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { attentionReason } from "@/lib/attention-reason"
-import { documentFieldLabel } from "@/lib/document-field-label"
+import { DocumentFindings } from "@/components/documents/document-findings"
 import { DOCUMENT_EXCHANGE_UPDATED } from "@/components/documents/exchange-timeline"
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -382,44 +382,7 @@ export function SendDocument({
                                 : "Partner configuration"}{" "}
                             · {issues.length}
                           </h4>
-                          <ul className="mt-2 space-y-3">
-                            {issues.slice(0, 3).map((issue, index) => (
-                              <li key={index} className="text-xs leading-5">
-                                <p className="font-medium">
-                                  {documentFieldLabel(issue.path)}
-                                </p>
-                                <p>{issue.message}</p>
-                                {issue.path && (
-                                  <p className="break-all font-mono text-muted-foreground">
-                                    {issue.path}
-                                  </p>
-                                )}
-                                <p className="text-muted-foreground">
-                                  {issue.action}
-                                </p>
-                              </li>
-                            ))}
-                          </ul>
-                          {issues.length > 3 && (
-                            <details className="mt-2">
-                              <summary className="min-h-10 cursor-pointer py-2 text-xs font-medium text-primary">
-                                Show {issues.length - 3} more findings
-                              </summary>
-                              <ul className="space-y-3">
-                                {issues.slice(3).map((issue, index) => (
-                                  <li key={index} className="text-xs leading-5">
-                                    <p className="font-medium">
-                                      {documentFieldLabel(issue.path)}
-                                    </p>
-                                    {issue.message}
-                                    <p className="break-all font-mono text-muted-foreground">
-                                      {issue.path}
-                                    </p>
-                                  </li>
-                                ))}
-                              </ul>
-                            </details>
-                          )}
+                          <DocumentFindings findings={issues} />
                           {owner === "DOCUMENT" && (
                             <Link
                               className="mt-2 inline-flex min-h-10 items-center text-xs font-medium text-primary hover:underline"
@@ -432,7 +395,11 @@ export function SendDocument({
                             readiness.mappingRevisionId && (
                               <Link
                                 className="mt-2 inline-flex min-h-10 items-center text-xs font-medium text-primary hover:underline"
-                                to={`/organisation/document-rules/${readiness.mappingRevisionId}`}
+                                to={`/organisation/document-rules/${readiness.mappingRevisionId}?${new URLSearchParams({
+                                  sourceSet: documentSetId, sourceDocument: documentId,
+                                  sourceRepresentation: readiness.sourceDocument?.representationId ?? "",
+                                  sourceHash: readiness.sourceDocument?.contentHash ?? "",
+                                })}`}
                               >
                                 Review mapping and create a revision →
                               </Link>

@@ -111,6 +111,15 @@ export function SpecialistAuthoringSections({ documentType, values, lines, onCha
         <Field label="Overall response"><BusinessCodeSelect value={values.responseCode} options={ORDER_RESPONSE_CODES} required onChange={(value) => change("responseCode", value)} /></Field>
         <Field label="Decision explanation"><Input value={values.responseDescription} onChange={(event) => change("responseDescription", event.target.value)} placeholder="Explain changes or rejection" /></Field>
       </div>
+      <details className="mt-5 rounded-md border p-4" open={Boolean(values.bqVendorNumber || values.bqOrderVersion || values.bqLocationReference)}>
+        <summary className="cursor-pointer text-sm font-medium">B&Q acknowledgement details</summary>
+        <p className="mt-2 text-sm text-muted-foreground">Copy these references from the purchase order. B&Q full acceptance also requires a promised delivery date and a 13-digit EAN on every line.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <Field label="B&Q vendor number"><Input value={values.bqVendorNumber ?? ""} inputMode="numeric" maxLength={7} onChange={(event) => change("bqVendorNumber", event.target.value)} /></Field>
+          <Field label="Purchase order version"><Input value={values.bqOrderVersion ?? ""} maxLength={40} onChange={(event) => change("bqOrderVersion", event.target.value)} /></Field>
+          <Field label="Sales order / store reference"><Input value={values.bqLocationReference ?? ""} maxLength={17} onChange={(event) => change("bqLocationReference", event.target.value)} /></Field>
+        </div>
+      </details>
     </section> : null}
 
     {(commercialDocument || shipmentDocument) ? <section className="border-t py-6" aria-labelledby="delivery-heading">

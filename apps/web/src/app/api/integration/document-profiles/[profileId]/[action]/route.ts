@@ -4,7 +4,8 @@ import { createAuthenticatedIntegrationClient, integrationErrorResponse } from "
 
 const ACTIONS = new Set(["draft", "publish", "revisions", "archive"])
 
-export async function PUT(request: Request, { params }: { params: { profileId: string; action: string } }) {
+export async function PUT(request: Request, { params: pendingParams }: { params: Promise<{ profileId: string; action: string }> }) {
+  const params = await pendingParams
   if (params.action !== "draft") return Response.json({ error: { message: "Unsupported action." } }, { status: 404 })
   try {
     const body = await request.json() as DocumentProfileUpdateRequest
@@ -16,7 +17,8 @@ export async function PUT(request: Request, { params }: { params: { profileId: s
   }
 }
 
-export async function POST(request: Request, { params }: { params: { profileId: string; action: string } }) {
+export async function POST(request: Request, { params: pendingParams }: { params: Promise<{ profileId: string; action: string }> }) {
+  const params = await pendingParams
   if (!ACTIONS.has(params.action) || params.action === "draft") return Response.json({ error: { message: "Unsupported action." } }, { status: 404 })
   try {
     const client = await createAuthenticatedIntegrationClient(request)

@@ -1,0 +1,65 @@
+{
+  "actionlint": {
+    "version": "v1.7.12",
+    "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz",
+    "sha256": "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
+    "archive": "tar.gz"
+  },
+  "gitleaks": {
+    "version": "v8.30.1",
+    "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+    "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+    "archive": "tar.gz"
+  },
+  "osv-scanner": {
+    "version": "v2.7.1",
+    "url": "https://github.com/google/osv-scanner/releases/download/v2.7.1/osv-scanner_linux_amd64",
+    "sha256": "fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8",
+    "archive": "binary"
+  },
+  "zizmor": {
+    "version": "v1.32.0",
+    "url": "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz",
+    "sha256": "bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b",
+    "archive": "tar.gz"
+  },
+  "oasdiff": {
+    "version": "v1.37.0",
+    "url": "https://github.com/oasdiff/oasdiff/releases/download/v1.37.0/oasdiff_1.37.0_linux_amd64.tar.gz",
+    "sha256": "eac87307d31d08c36800c58a409c247f1c5db37fbb72e2544402f22a87cbca3c",
+    "archive": "tar.gz"
+  },
+  "trivy": {
+    "version": "v0.76.2",
+    "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz",
+    "sha256": "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf",
+    "archive": "tar.gz",
+    "arm64": {
+      "url": "https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-ARM64.tar.gz",
+      "sha256": "ab9d51f86e6a5fb936f605faff6b593ac51bc378fff4d3e8b9d58358b9c367c3",
+      "archive": "tar.gz"
+    }
+  },
+  "syft": {
+    "version": "v1.57.1",
+    "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_amd64.tar.gz",
+    "sha256": "bf52519eb57f675d47c07d43213cb6dff6449f3d6d1147ff6701ed91f44eef0c",
+    "archive": "tar.gz",
+    "arm64": {
+      "url": "https://github.com/anchore/syft/releases/download/v1.57.1/syft_1.57.1_linux_arm64.tar.gz",
+      "sha256": "aa3d3e07344f590bcce8d31043b752daa76c8a56c2aa34ceeee63c6168152582",
+      "archive": "tar.gz"
+    }
+  },
+  "terraform": {
+    "version": "1.14.7",
+    "url": "https://releases.hashicorp.com/terraform/1.14.7/terraform_1.14.7_linux_amd64.zip",
+    "sha256": "e8bbcefea8015156e04e2a325cde37a0b2fb761728bda548e2fe3b8ad7c18c96",
+    "archive": "zip",
+    "arm64": {
+      "url": "https://releases.hashicorp.com/terraform/1.14.7/terraform_1.14.7_linux_arm64.zip",
+      "sha256": "04f88ee8924db27c0e26c379721965273c80c9b6a94bc5d8d8048a69163952ba",
+      "archive": "zip"
+    }
+  }
+}

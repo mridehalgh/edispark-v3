@@ -1,0 +1,130 @@
+name: Deploy verified release
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04-arm
+    environment: ${{ inputs.environment }}-migrations
+    timeout-minutes: 20
+    concurrency:
+      group: migrations-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-approved-node
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: signed-release
+          path: dist/release
+      - name: Verify before obtaining database permissions
+        env:
+          PUBLIC_RELEASE_KEY_PEM: ${{ vars.PUBLIC_RELEASE_KEY_PEM }}
+        run: node tooling/release/verify.mjs dist/release
+      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_MIGRATION_ROLE_ARN }}
+          aws-region: eu-west-2
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-duration-seconds: 1800
+      - name: Apply signed forward-compatible migrations
+        env:
+          BETTER_AUTH_DSQL_HOST: ${{ vars.BETTER_AUTH_DSQL_HOST }}
+          BETTER_AUTH_DSQL_USER: edispark_migrator
+        run: |
+          unzip -q dist/release/migrations.zip -d "$RUNNER_TEMP/migrations"
+          cd "$RUNNER_TEMP/migrations"
+          node index.mjs
+
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-24.04-arm
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 90
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+      BACKEND_URL: ${{ vars.BACKEND_URL }}
+      RELEASE_CONFIGURATION_JSON: ${{ vars.RELEASE_CONFIGURATION_JSON }}
+      DEPLOYMENT_ALARMS_JSON: ${{ vars.DEPLOYMENT_ALARMS_JSON }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-approved-node
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: signed-release
+          path: dist/release
+      - name: Verify the release and bootstrap readiness
+        env:
+          PUBLIC_RELEASE_KEY_PEM: ${{ vars.PUBLIC_RELEASE_KEY_PEM }}
+          DEPLOYMENT_READINESS: ${{ vars.DEPLOYMENT_READINESS }}
+        run: |
+          test "$DEPLOYMENT_READINESS" = verified
+          node tooling/release/verify.mjs dist/release
+          node tooling/ci/install-tools.mjs terraform trivy
+          .ci-tools/trivy image --input dist/release/api.tar --severity HIGH,CRITICAL --exit-code 1
+      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+          role-duration-seconds: 7200
+          aws-region: eu-west-2
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Read the current healthy release
+        env:
+          TF_BACKEND_CONFIGURATION_JSON: ${{ vars.TF_BACKEND_CONFIGURATION_JSON }}
+        run: |
+          node -e 'require("fs").writeFileSync("dist/backend.json", process.env.TF_BACKEND_CONFIGURATION_JSON)'
+          .ci-tools/terraform -chdir=infrastructure/terraform/release init -lockfile=readonly -backend-config="$PWD/dist/backend.json"
+          .ci-tools/terraform -chdir=infrastructure/terraform/release output -json deployment > dist/previous-release.json
+      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_PUBLISHER_ROLE_ARN }}
+          aws-region: eu-west-2
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Publish the verified image and versioned Web Function package
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+          ASSETS_BUCKET: ${{ vars.ASSETS_BUCKET }}
+        run: |
+          repository="$(node -e 'console.log(JSON.parse(process.env.RELEASE_CONFIGURATION_JSON).foundation.ecr_repository)')"
+          registry="${repository%%/*}"
+          aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin "$registry"
+          docker load -i dist/release/api.tar
+          test "$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "edispark-api:$RELEASE_COMMIT")" = "$RELEASE_COMMIT"
+          docker tag "edispark-api:$RELEASE_COMMIT" "$repository:$RELEASE_COMMIT"
+          docker push "$repository:$RELEASE_COMMIT"
+          IMAGE_DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$repository:$RELEASE_COMMIT")"
+          export IMAGE_DIGEST="${IMAGE_DIGEST##*@}"
+          node tooling/release/prepare.mjs dist/previous-release.json infrastructure/terraform/release/candidate.tfvars.json
+          unzip -q dist/release/web.zip -d "$RUNNER_TEMP/web"
+          aws s3 sync "$RUNNER_TEMP/web/apps/web/.next/static/" "s3://$ASSETS_BUCKET/_next/static/" --cache-control 'public,max-age=31536000,immutable' --region eu-west-2
+          docker logout "$registry"
+      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+          role-duration-seconds: 7200
+          aws-region: eu-west-2
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - name: Promote with policy checks, observation and automatic rollback
+        run: node tooling/release/deploy.mjs

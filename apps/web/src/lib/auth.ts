@@ -12,10 +12,18 @@ import { dirname } from "node:path"
 import { sendTransactionalEmail } from "@/lib/email"
 import { createKmsJwtSigner, getRemoteJwtSigningConfig } from "@/lib/jwt-signing"
 import { isOrganizationRole, type AccessContext, type PlatformRole } from "@/lib/access"
+import { createAuthPool, createDsqlAccessStore } from "@/lib/auth-dsql"
 
+const productionRuntime = process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build"
+if (productionRuntime && (process.env.BETTER_AUTH_AUTO_MIGRATE === "true" || process.env.LOCAL_TEST_USER_BOOTSTRAP === "true")) {
+  throw new Error("Local authentication and automatic migrations are forbidden in production")
+}
 const databasePath = process.env.BETTER_AUTH_DATABASE_PATH ?? "auth.db"
-mkdirSync(dirname(databasePath), { recursive: true })
-const database = new Database(databasePath)
+if (!productionRuntime) mkdirSync(dirname(databasePath), { recursive: true })
+const localDatabase = productionRuntime ? undefined : new Database(databasePath)
+const database = localDatabase!
+const pool = productionRuntime ? createAuthPool() : undefined
+const dsqlAccess = pool ? createDsqlAccessStore(pool) : undefined
 const KSUID_EPOCH_SECONDS = 1_400_000_000
 const KSUID_LENGTH = 27
 const BASE62_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -24,7 +32,7 @@ const LOCAL_TEST_ORGANIZATION_ID = "local-test-workspace"
 const LOCAL_TEST_MEMBER_ID = "local-test-owner"
 const LOCAL_OPERATIONS_MEMBER_ID = "local-test-operations"
 
-database.exec(`
+localDatabase?.exec(`
   CREATE TABLE IF NOT EXISTS platform_principal (
     user_id TEXT PRIMARY KEY NOT NULL,
     role TEXT NOT NULL CHECK (role = 'platform_admin'),
@@ -122,7 +130,7 @@ const passkeyOrigins = process.env.BETTER_AUTH_PASSKEY_ORIGINS
   .filter(Boolean) ?? [appOrigin]
 const remoteJwtSigning = getRemoteJwtSigningConfig()
 
-function defineJwtPayload({
+async function defineJwtPayload({
   user,
   session,
 }: {
@@ -137,21 +145,21 @@ function defineJwtPayload({
   const userId = typeof user.id === "string" ? user.id : undefined
   if (!userId) throw new Error("A user identifier is required to issue a JWT")
 
-  const membership = database.prepare(
+  const membership = dsqlAccess ? await dsqlAccess.membership(organizationId, userId) : database.prepare(
     "SELECT role FROM member WHERE organizationId = ? AND userId = ?",
   ).get(organizationId, userId) as { role: string } | undefined
   if (!membership || !isOrganizationRole(membership.role)) {
     throw new Error("Active organization membership is required to issue a JWT")
   }
 
-  const platformPrincipal = database.prepare(
+  const platformPrincipal = dsqlAccess ? await dsqlAccess.platformPrincipal(userId) : database.prepare(
     "SELECT role FROM platform_principal WHERE user_id = ?",
   ).get(userId) as { role: PlatformRole } | undefined
 
   return {
     ...user,
     organizationId,
-    tenant_id: resolveTenantId(organizationId),
+    tenant_id: dsqlAccess ? await dsqlAccess.resolveTenantId(organizationId, createTenantId(1)) : resolveTenantId(organizationId),
     organization_role: membership.role,
     ...(platformPrincipal ? { platform_role: platformPrincipal.role } : {}),
   }
@@ -159,7 +167,7 @@ function defineJwtPayload({
 
 export const auth = betterAuth({
   appName: "EDI Spark",
-  database,
+  database: pool ?? database,
   baseURL: appUrl,
   trustedOrigins: [appUrl, ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",").filter(Boolean) ?? [])],
   user: {
@@ -312,6 +320,7 @@ export const auth = betterAuth({
 })
 
 async function prepareLocalAuth() {
+  if (productionRuntime) throw new Error("Local auth preparation is unavailable in production")
   const context = await auth.$context
   await context.runMigrations()
 
@@ -376,12 +385,12 @@ export async function getRequestAccess(headers: Headers): Promise<AccessContext 
   const user = result?.user as { id?: string } | undefined
   if (!session?.activeOrganizationId || !user?.id) return null
 
-  const membership = database.prepare(
+  const membership = dsqlAccess ? await dsqlAccess.membership(session.activeOrganizationId, user.id) : database.prepare(
     "SELECT role FROM member WHERE organizationId = ? AND userId = ?",
   ).get(session.activeOrganizationId, user.id) as { role: string } | undefined
   if (!membership || !isOrganizationRole(membership.role)) return null
 
-  const platformPrincipal = database.prepare(
+  const platformPrincipal = dsqlAccess ? await dsqlAccess.platformPrincipal(user.id) : database.prepare(
     "SELECT role FROM platform_principal WHERE user_id = ?",
   ).get(user.id) as { role: PlatformRole } | undefined
 

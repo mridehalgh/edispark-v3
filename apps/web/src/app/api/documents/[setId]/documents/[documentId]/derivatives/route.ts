@@ -2,7 +2,8 @@ import type { CreateDerivativeRequest } from "@edispark/documents-client"
 
 import { createAuthenticatedDocumentsClient, documentsErrorResponse } from "@/lib/documents-server"
 
-export async function POST(request: Request, { params }: { params: { setId: string; documentId: string } }) {
+export async function POST(request: Request, { params: pendingParams }: { params: Promise<{ setId: string; documentId: string }> }) {
+  const params = await pendingParams
   try {
     const body = await request.json() as CreateDerivativeRequest
     const client = await createAuthenticatedDocumentsClient(request)

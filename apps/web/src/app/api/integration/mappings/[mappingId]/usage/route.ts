@@ -1,7 +1,7 @@
 import { createAuthenticatedIntegrationClient, integrationErrorResponse, isIntegrationResourceId } from '@/lib/integration-server'
 
-export async function GET(request: Request, context: { params: { mappingId: string } }) {
-  const { mappingId } = context.params
+export async function GET(request: Request, context: { params: Promise<{ mappingId: string }> }) {
+  const { mappingId } = (await context.params)
   if (!isIntegrationResourceId(mappingId)) {
     return Response.json({ error: { code: 'INVALID_MAPPING', message: 'The mapping identifier is invalid.' } }, { status: 400 })
   }

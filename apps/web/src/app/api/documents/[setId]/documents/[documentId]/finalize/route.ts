@@ -5,11 +5,12 @@ import {
 } from "@/lib/documents-server"
 
 interface RouteContext {
-  params: { setId: string; documentId: string }
+  params: Promise<{ setId: string; documentId: string }>
 }
 
 /** Finalization proves document validity. Pinned partner requirements are enforced by route readiness. */
-export async function POST(request: Request, { params }: RouteContext) {
+export async function POST(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   if (!isUuid(params.setId) || !isUuid(params.documentId)) {
     return Response.json(
       {

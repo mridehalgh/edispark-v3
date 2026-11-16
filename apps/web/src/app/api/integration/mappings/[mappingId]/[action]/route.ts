@@ -4,8 +4,8 @@ import { createAuthenticatedIntegrationClient, integrationErrorResponse, isInteg
 
 const ACTIONS = ['draft', 'test', 'test-retained-source', 'publish', 'revisions', 'archive'] as const
 
-export async function POST(request: Request, context: { params: { mappingId: string; action: string } }) {
-  const { mappingId, action } = context.params
+export async function POST(request: Request, context: { params: Promise<{ mappingId: string; action: string }> }) {
+  const { mappingId, action } = (await context.params)
   if (!isIntegrationResourceId(mappingId) || !ACTIONS.includes(action as typeof ACTIONS[number])) {
     return Response.json({ error: { code: 'INVALID_MAPPING_ACTION', message: 'The mapping action is invalid.' } }, { status: 400 })
   }
@@ -26,8 +26,8 @@ export async function POST(request: Request, context: { params: { mappingId: str
   }
 }
 
-export async function PUT(request: Request, context: { params: { mappingId: string; action: string } }) {
-  const { mappingId, action } = context.params
+export async function PUT(request: Request, context: { params: Promise<{ mappingId: string; action: string }> }) {
+  const { mappingId, action } = (await context.params)
   if (!isIntegrationResourceId(mappingId) || action !== 'draft') {
     return Response.json({ error: { code: 'INVALID_MAPPING_ACTION', message: 'The mapping action is invalid.' } }, { status: 400 })
   }

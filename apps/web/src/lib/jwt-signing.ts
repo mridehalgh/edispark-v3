@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto"
+import { createHash, createPublicKey } from "node:crypto"
 
-import { KMSClient, SignCommand, SigningAlgorithmSpec } from "@aws-sdk/client-kms"
+import { KMSClient, SignCommand, GetPublicKeyCommand, SigningAlgorithmSpec } from "@aws-sdk/client-kms"
 import type { JWTPayload } from "better-auth"
 
 const JWT_ALGORITHM = "ES256"
@@ -40,8 +40,16 @@ export function getRemoteJwtSigningConfig(): RemoteJwtSigningConfig | null {
     jwksUrl,
     keyId: requiredEnvironmentVariable("BETTER_AUTH_JWT_KID"),
     kmsKeyId: requiredEnvironmentVariable("BETTER_AUTH_JWT_KMS_KEY_ID"),
-    region: requiredEnvironmentVariable("AWS_REGION"),
+    region: process.env.BETTER_AUTH_JWT_KMS_REGION ?? requiredEnvironmentVariable("AWS_REGION"),
   }
+}
+
+export async function getPublicJwtKey(config: RemoteJwtSigningConfig) {
+  const kms = new KMSClient({ region: config.region })
+  const result = await kms.send(new GetPublicKeyCommand({ KeyId: config.kmsKeyId }))
+  if (!result.PublicKey) throw new Error("AWS KMS returned no JWT public key")
+  const key = createPublicKey({ key: Buffer.from(result.PublicKey), format: "der", type: "spki" }).export({ format: "jwk" })
+  return { ...key, kid: config.keyId, alg: "ES256", use: "sig" }
 }
 
 function readDerLength(bytes: Uint8Array, offset: number): { length: number; nextOffset: number } {

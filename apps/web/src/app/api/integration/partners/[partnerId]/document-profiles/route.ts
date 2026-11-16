@@ -4,7 +4,8 @@ import { createAuthenticatedIntegrationClient, integrationErrorResponse } from "
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: Request, { params }: { params: { partnerId: string } }) {
+export async function GET(request: Request, { params: pendingParams }: { params: Promise<{ partnerId: string }> }) {
+  const params = await pendingParams
   try {
     const client = await createAuthenticatedIntegrationClient(request, "member")
     const { data } = await client.listPartnerDocumentProfiles({ path: params, throwOnError: true })
@@ -14,7 +15,8 @@ export async function GET(request: Request, { params }: { params: { partnerId: s
   }
 }
 
-export async function POST(request: Request, { params }: { params: { partnerId: string } }) {
+export async function POST(request: Request, { params: pendingParams }: { params: Promise<{ partnerId: string }> }) {
+  const params = await pendingParams
   try {
     const body = await request.json() as DocumentProfileRequest
     const client = await createAuthenticatedIntegrationClient(request)

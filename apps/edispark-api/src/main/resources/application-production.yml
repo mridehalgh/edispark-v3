@@ -1,0 +1,32 @@
+documents:
+  content:
+    s3:
+      enabled: true
+      bucket-name: ${DOCUMENTS_S3_BUCKET}
+  dynamodb:
+    table-name: ${DOCUMENTS_TABLE_NAME}
+mft:
+  local-demo:
+    enabled: false
+integration:
+  local-demo:
+    enabled: false
+dynamodb:
+  local:
+    embedded: false
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s

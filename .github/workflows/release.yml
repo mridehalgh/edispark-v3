@@ -1,0 +1,32 @@
+name: Release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+  dependencies:
+    needs: quality
+    if: github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/fetch-dependencies.yml
+  package:
+    needs: dependencies
+    uses: ./.github/workflows/build-release.yml
+  sign:
+    needs: package
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/sign-release.yml
+  promote:
+    needs: sign
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/promote-release.yml

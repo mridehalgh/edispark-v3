@@ -3,8 +3,8 @@ import { createAuthenticatedIntegrationClient, integrationErrorResponse, isInteg
 const ACTIONS = ['qualify', 'activate', 'suspend', 'revisions', 'archive'] as const
 type AgreementAction = typeof ACTIONS[number]
 
-export async function POST(request: Request, context: { params: { agreementId: string; action: string } }) {
-  const { agreementId, action } = context.params
+export async function POST(request: Request, context: { params: Promise<{ agreementId: string; action: string }> }) {
+  const { agreementId, action } = (await context.params)
   if (!isIntegrationResourceId(agreementId) || !ACTIONS.includes(action as AgreementAction)) {
     return Response.json({ error: { code: 'INVALID_AGREEMENT_ACTION', message: 'The agreement action is invalid.' } }, { status: 400 })
   }

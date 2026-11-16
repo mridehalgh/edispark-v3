@@ -2,7 +2,8 @@ import { createAuthenticatedIntegrationClient, integrationErrorResponse, isInteg
 
 const ACTIONS = new Set(["activate", "retire", "default"])
 
-export async function POST(request: Request, { params }: { params: { issuerId: string; action: string } }) {
+export async function POST(request: Request, { params: pendingParams }: { params: Promise<{ issuerId: string; action: string }> }) {
+  const params = await pendingParams
   if (!isIntegrationResourceId(params.issuerId) || !ACTIONS.has(params.action)) {
     return Response.json({ error: { message: "Unsupported SSCC issuer action." } }, { status: 404 })
   }

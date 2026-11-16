@@ -1,8 +1,9 @@
 import { createAuthenticatedIntegrationClient, integrationErrorResponse, isIntegrationResourceId } from '@/lib/integration-server'
 
-interface RouteContext { params: { mappingId: string } }
+interface RouteContext { params: Promise<{ mappingId: string }> }
 
-export async function DELETE(request: Request, { params }: RouteContext) {
+export async function DELETE(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   if (!isIntegrationResourceId(params.mappingId)) return Response.json({ error: { code: 'INVALID_MAPPING', message: 'The mapping identifier is invalid.' } }, { status: 400 })
   try {
     const client = await createAuthenticatedIntegrationClient(request)
@@ -11,7 +12,8 @@ export async function DELETE(request: Request, { params }: RouteContext) {
   } catch (error) { return integrationErrorResponse(error) }
 }
 
-export async function GET(request: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   if (!isIntegrationResourceId(params.mappingId)) return Response.json({ error: { code: 'INVALID_MAPPING', message: 'The mapping identifier is invalid.' } }, { status: 400 })
   try {
     const client = await createAuthenticatedIntegrationClient(request)

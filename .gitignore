@@ -168,3 +168,4 @@ stats.json
 
 # Misc
 *.tgz
+.ci-tools/

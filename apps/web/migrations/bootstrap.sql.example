@@ -1,0 +1,11 @@
+-- Run once as a temporary DSQL administrator, one statement at a time.
+-- Replace the two IAM role ARN placeholders with bootstrap output. Never grant DbConnectAdmin to CI/runtime.
+CREATE ROLE edispark_auth WITH LOGIN;
+CREATE ROLE edispark_migrator WITH LOGIN;
+AWS IAM GRANT edispark_auth TO '[web_execution_role_arn]';
+AWS IAM GRANT edispark_migrator TO '[migration_role_arn]';
+CREATE SCHEMA auth AUTHORIZATION edispark_migrator;
+GRANT USAGE ON SCHEMA auth TO edispark_auth;
+ALTER DEFAULT PRIVILEGES FOR ROLE edispark_migrator IN SCHEMA auth GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO edispark_auth;
+ALTER ROLE edispark_auth SET search_path TO auth;
+ALTER ROLE edispark_migrator SET search_path TO auth;

@@ -2,8 +2,8 @@ import type { CreateAgreementRequest } from '@edispark/integration-client'
 
 import { createAuthenticatedIntegrationClient, integrationErrorResponse, isIntegrationResourceId } from '@/lib/integration-server'
 
-export async function POST(request: Request, context: { params: { partnerId: string } }) {
-  if (!isIntegrationResourceId(context.params.partnerId)) {
+export async function POST(request: Request, context: { params: Promise<{ partnerId: string }> }) {
+  if (!isIntegrationResourceId((await context.params).partnerId)) {
     return Response.json({ error: { code: 'INVALID_PARTNER_ID', message: 'The trading partner identifier is invalid.' } }, { status: 400 })
   }
   try {
@@ -11,7 +11,7 @@ export async function POST(request: Request, context: { params: { partnerId: str
     const client = await createAuthenticatedIntegrationClient(request)
     const { data } = await client.createTradingAgreement({
       body,
-      path: { partnerId: context.params.partnerId },
+      path: { partnerId: (await context.params).partnerId },
       throwOnError: true,
     })
     return Response.json(data, { status: 201 })

@@ -1,0 +1,44 @@
+name: Infrastructure
+on:
+  push:
+    branches: [main]
+    paths:
+      - infrastructure/terraform/**
+      - tooling/ci/plan-policy.mjs
+      - .github/workflows/infrastructure*.yml
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [staging, production]
+        required: true
+      root:
+        type: choice
+        options: [foundation, release, edge]
+        required: true
+permissions:
+  contents: read
+jobs:
+  infrastructure:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/infrastructure-apply.yml
+    with:
+      environment: ${{ inputs.environment }}
+      root: ${{ inputs.root }}
+  automatic:
+    if: github.event_name == 'push' && vars.CD_ENABLED == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [staging, production]
+        root: [foundation, release, edge]
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/infrastructure-apply.yml
+    with:
+      environment: ${{ matrix.environment }}
+      root: ${{ matrix.root }}

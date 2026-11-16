@@ -1,0 +1,48 @@
+name: Package release
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node
+        with:
+          install: 'false'
+      - uses: ./.github/actions/setup-java
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: approved-dependencies
+      - name: Install admitted dependencies and compile without AWS credentials
+        run: |
+          mkdir -p dist/approved
+          tar -xf approved-dependencies.tar -C dist/approved
+          pnpm install --offline --frozen-lockfile --ignore-scripts --store-dir dist/approved/pnpm
+          node tooling/ci/build-sqlite.mjs
+          ./mvnw -o -B -T 2 --no-transfer-progress -pl apps/edispark-api -am package -DskipTests -Dmaven.repo.local="$PWD/dist/approved/maven"
+      - name: Build the frontend without deployment credentials
+        run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" BETTER_AUTH_DATABASE_PATH="$RUNNER_TEMP/build-auth.db" pnpm --filter @edispark/web build
+      - name: Package immutable artifacts
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          mkdir -p dist/release
+          node tooling/ci/package-web.mjs
+          node tooling/ci/package-migrations.mjs
+          (cd dist/web && zip -q -r -y ../release/web.zip .)
+          (cd dist/migrations && zip -q -r ../release/migrations.zip .)
+          docker build --network=none --platform=linux/arm64 --build-arg SOURCE_COMMIT="$SOURCE_COMMIT" -f apps/edispark-api/Dockerfile -t "edispark-api:$SOURCE_COMMIT" .
+          docker save -o dist/release/api.tar "edispark-api:$SOURCE_COMMIT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-bytes
+          path: dist/release
+          compression-level: 0
+          retention-days: 2

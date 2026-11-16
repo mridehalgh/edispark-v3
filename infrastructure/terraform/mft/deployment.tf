@@ -68,6 +68,11 @@ resource "aws_iam_role_policy_attachment" "task_data" {
   role       = aws_iam_role.task[0].name
   policy_arn = aws_iam_policy.data_plane.arn
 }
+resource "aws_iam_role_policy_attachment" "task_storage" {
+  count      = var.enable_service ? 1 : 0
+  role       = aws_iam_role.task[0].name
+  policy_arn = aws_iam_policy.payload_storage.arn
+}
 
 resource "aws_iam_role_policy_attachment" "task_signing" {
   count      = var.enable_service ? 1 : 0

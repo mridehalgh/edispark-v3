@@ -2,15 +2,15 @@ import type { CapabilityRequest } from '@edispark/integration-client'
 
 import { createAuthenticatedIntegrationClient, integrationErrorResponse, isIntegrationResourceId } from '@/lib/integration-server'
 
-type RouteContext = { params: { agreementId: string; capabilityId: string } }
+type RouteContext = { params: Promise<{ agreementId: string; capabilityId: string }> }
 
-function invalidIdentifiers(context: RouteContext) {
-  const { agreementId, capabilityId } = context.params
+async function invalidIdentifiers(context: RouteContext) {
+  const { agreementId, capabilityId } = (await context.params)
   return !isIntegrationResourceId(agreementId) || !isIntegrationResourceId(capabilityId)
 }
 
 export async function PUT(request: Request, context: RouteContext) {
-  if (invalidIdentifiers(context)) {
+  if (await invalidIdentifiers(context)) {
     return Response.json({ error: { code: 'INVALID_CAPABILITY_ID', message: 'The agreement route identifier is invalid.' } }, { status: 400 })
   }
   try {
@@ -18,7 +18,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const client = await createAuthenticatedIntegrationClient(request)
     const { data } = await client.replaceExchangeCapability({
       body,
-      path: context.params,
+      path: (await context.params),
       throwOnError: true,
     })
     return Response.json(data)
@@ -28,13 +28,13 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  if (invalidIdentifiers(context)) {
+  if (await invalidIdentifiers(context)) {
     return Response.json({ error: { code: 'INVALID_CAPABILITY_ID', message: 'The agreement route identifier is invalid.' } }, { status: 400 })
   }
   try {
     const client = await createAuthenticatedIntegrationClient(request)
     const { data } = await client.removeExchangeCapability({
-      path: context.params,
+      path: (await context.params),
       throwOnError: true,
     })
     return Response.json(data)

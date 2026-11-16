@@ -1,0 +1,18 @@
+# GitHub rulesets must require an independent owner review and dismiss stale approvals.
+/.github/ @mridehalgh
+/infrastructure/ @mridehalgh
+/tooling/ci/ @mridehalgh
+/tooling/release/ @mridehalgh
+/apps/web/src/lib/auth* @mridehalgh
+/apps/web/src/lib/jwt-signing.ts @mridehalgh
+/apps/web/migrations/ @mridehalgh
+/**/package.json @mridehalgh
+/pnpm-lock.yaml @mridehalgh
+/**/pom.xml @mridehalgh
+/.mvn/ @mridehalgh
+
+/pnpm-workspace.yaml @mridehalgh
+/.pnpmfile.cjs @mridehalgh
+/.node-version @mridehalgh
+/**/Dockerfile @mridehalgh
+/apps/web/runtime/ @mridehalgh

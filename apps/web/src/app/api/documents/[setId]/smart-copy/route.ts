@@ -17,7 +17,7 @@ import {
 import type { AuthorableDocumentType } from "@/lib/ubl-authoring"
 
 interface RouteContext {
-  params: { setId: string }
+  params: Promise<{ setId: string }>
 }
 
 const MAX_CHAIN_DOCUMENTS = 12
@@ -87,7 +87,8 @@ async function loadCanonicalJson(
   )
 }
 
-export async function GET(request: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   const url = new URL(request.url)
   const sourceDocumentId = url.searchParams.get("sourceDocumentId")
   const targetType = url.searchParams.get("targetType")

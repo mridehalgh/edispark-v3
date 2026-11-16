@@ -2,7 +2,8 @@ import { createAuthenticatedMftClient, isMftResourceId, mftErrorResponse } from 
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: Request, { params }: { params: { transferId: string } }) {
+export async function GET(request: Request, { params: pendingParams }: { params: Promise<{ transferId: string }> }) {
+  const params = await pendingParams
   if (!isMftResourceId(params.transferId)) {
     return Response.json({ error: { code: "INVALID_TRANSFER", message: "The file identifier is invalid." } }, { status: 400 })
   }

@@ -1,0 +1,5 @@
+**
+!apps/
+!apps/edispark-api/
+!apps/edispark-api/target/
+!apps/edispark-api/target/edispark-api-1.0.0-SNAPSHOT.jar

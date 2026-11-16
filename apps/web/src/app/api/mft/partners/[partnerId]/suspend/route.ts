@@ -1,10 +1,11 @@
 import { createAuthenticatedMftClient, isMftResourceId, mftErrorResponse } from "@/lib/mft-server"
 
-interface RouteContext { params: { partnerId: string } }
+interface RouteContext { params: Promise<{ partnerId: string }> }
 
 export const dynamic = "force-dynamic"
 
-export async function POST(request: Request, { params }: RouteContext) {
+export async function POST(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   if (!isMftResourceId(params.partnerId)) {
     return Response.json({ error: { code: "INVALID_PARTNER", message: "The trading partner identifier is invalid." } }, { status: 400 })
   }

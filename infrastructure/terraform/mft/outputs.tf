@@ -19,8 +19,9 @@ output "service_endpoint" {
 
 output "attachable_policy_arns" {
   value = {
-    data_plane     = aws_iam_policy.data_plane.arn
-    as2_signing    = aws_iam_policy.as2_signing.arn
-    as2_decryption = aws_iam_policy.as2_decryption.arn
+    data_plane      = aws_iam_policy.data_plane.arn
+    as2_signing     = aws_iam_policy.as2_signing.arn
+    as2_decryption  = aws_iam_policy.as2_decryption.arn
+    payload_storage = aws_iam_policy.payload_storage.arn
   }
 }

@@ -1,0 +1,25 @@
+rules:
+  - id: javascript-reject-disabled-tls
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: TLS certificate verification must remain enabled.
+    pattern: '{ rejectUnauthorized: false, ... }'
+  - id: javascript-reject-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Do not evaluate dynamic code.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: javascript-reject-shell-interpolation
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Use argument arrays with execFile instead of interpolating shell commands.
+    pattern-either:
+      - pattern: execSync(`...${...}...`, ...)
+      - pattern: exec(`...${...}...`, ...)
+  - id: java-reject-runtime-shell
+    languages: [java]
+    severity: ERROR
+    message: Do not pass concatenated strings to a process shell.
+    pattern: Runtime.getRuntime().exec($A + $B)

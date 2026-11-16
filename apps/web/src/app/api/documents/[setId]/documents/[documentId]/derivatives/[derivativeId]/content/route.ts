@@ -5,16 +5,17 @@ import {
 } from "@/lib/documents-server"
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     setId: string
     documentId: string
     derivativeId: string
-  }
+  }>
 }
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   if (
     !isUuid(params.setId)
     || !isUuid(params.documentId)

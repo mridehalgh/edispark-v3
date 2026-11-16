@@ -1,0 +1,38 @@
+name: Apply dependency admission
+on:
+  workflow_call:
+    inputs:
+      emergency:
+        type: boolean
+        default: false
+      security_issue:
+        type: string
+        required: false
+permissions:
+  contents: read
+jobs:
+  admit:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.emergency && 'dependency-emergency' || 'dependency-admission' }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node
+      - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPENDENCY_ADMISSION_ROLE_ARN }}
+          aws-region: eu-west-2
+          allowed-account-ids: ${{ vars.AWS_TOOLING_ACCOUNT_ID }}
+          role-duration-seconds: 900
+      - name: Admit exact revisions from the reviewed manifest
+        env:
+          CODEARTIFACT_DOMAIN: ${{ vars.CODEARTIFACT_DOMAIN }}
+          AWS_TOOLING_ACCOUNT_ID: ${{ vars.AWS_TOOLING_ACCOUNT_ID }}
+          DEPENDENCY_EMERGENCY: ${{ inputs.emergency }}
+          EMERGENCY_REFERENCE: ${{ inputs.security_issue }}
+        run: node tooling/ci/admit-dependencies.mjs .github/dependencies/admission.json

@@ -5,14 +5,15 @@ import {
 } from "@/lib/documents-server"
 
 interface RouteContext {
-  params: {
+  params: Promise<{
     setId: string
-  }
+  }>
 }
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request: Request, { params }: RouteContext) {
+export async function GET(request: Request, { params: pendingParams }: RouteContext) {
+  const params = await pendingParams
   if (!isUuid(params.setId)) {
     return Response.json(
       { error: { code: "INVALID_DOCUMENT_SET_ID", message: "The document set identifier is invalid." } },

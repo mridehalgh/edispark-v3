@@ -2,7 +2,8 @@ import { createAuthenticatedIntegrationClient, integrationErrorResponse, isInteg
 
 const ACTIONS = ['revisions', 'activate', 'archive'] as const
 
-export async function POST(request: Request, { params }: { params: { partnerId: string; action: string } }) {
+export async function POST(request: Request, { params: pendingParams }: { params: Promise<{ partnerId: string; action: string }> }) {
+  const params = await pendingParams
   if (!isIntegrationResourceId(params.partnerId) || !ACTIONS.includes(params.action as typeof ACTIONS[number])) return Response.json({ error: { code: 'INVALID_PARTNER_ACTION', message: 'The partner action is invalid.' } }, { status: 400 })
   try {
     const client = await createAuthenticatedIntegrationClient(request)

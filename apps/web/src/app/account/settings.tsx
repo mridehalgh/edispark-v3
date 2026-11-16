@@ -195,9 +195,10 @@ export function AccountSettingsPage() {
     const password = String(new FormData(event.currentTarget).get("password"))
     setNotice(null)
     setPendingAction("enable-2fa")
-    const result = await authClient.twoFactor.enable({ password })
+    const result = await authClient.twoFactor.enable({ password, method: "totp" })
     setPendingAction(null)
     if (result.error) return setNotice({ kind: "error", text: getError(result.error, "We couldn’t start two-step verification.") })
+    if (result.data?.method !== "totp") return setNotice({ kind: "error", text: "Authenticator app setup is unavailable. Please try again." })
     setTwoFactorSetup(result.data)
   }
 

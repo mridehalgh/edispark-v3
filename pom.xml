@@ -44,7 +44,7 @@
         <jakarta.validation.version>3.1.1</jakarta.validation.version>
         <spring.boot.version>4.0.9</spring.boot.version>
         <junit.version>6.0.3</junit.version>
-        <jqwik.version>1.9.3</jqwik.version>
+        <jqwik.version>1.10.2</jqwik.version>
         <assertj.version>3.27.6</assertj.version>
         <lombok.version>1.18.46</lombok.version>
         <aws.sdk.version>2.44.4</aws.sdk.version>

@@ -112,8 +112,8 @@ importers:
         specifier: ^6.12.6
         version: 6.15.0
       base62:
-        specifier: ^2.0.1
-        version: 2.0.2
+        specifier: ^3.0.0
+        version: 3.0.0
       better-auth:
         specifier: 1.7.25
         version: 1.7.25(next@16.4.6(@babel/core@7.29.13)(@types/node@24.10.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(pg@8.16.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(vitest@5.1.0(@types/node@24.10.1)(vite@8.3.3(@types/node@24.10.1)(esbuild@0.28.0)(jiti@1.21.7)(tsx@4.20.6)))
@@ -2430,9 +2430,9 @@ packages:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
 
-  base62@2.0.2:
-    resolution: {integrity: sha512-FLoAQzMpmdDBei0u7fUAQzVCxoH6g4pueCIuGDoCZVZCiCeW4qTKpEGB79jkS15VB8b/5EIHc4R+WSKTByM+dw==}
-    engines: {node: '>=6.0.0'}
+  base62@3.0.0:
+    resolution: {integrity: sha512-dE5M7GCUopwruZVnbKnQB4Jhr5gnF9EK2PZtGXkcCEwCMGkZIJfq2bk3H3bGUOcMmaSHglCIBqbzBnye3CG16g==}
+    engines: {node: '>=18.0.0'}
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
@@ -6939,7 +6939,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  base62@2.0.2: {}
+  base62@3.0.0: {}
 
   base64-js@1.5.1: {}
 

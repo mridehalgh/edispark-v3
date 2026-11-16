@@ -42,7 +42,7 @@
         <!-- Dependency versions -->
         <jackson.version>2.21.8</jackson.version>
         <jakarta.validation.version>3.1.1</jakarta.validation.version>
-        <spring.boot.version>4.0.9</spring.boot.version>
+        <spring.boot.version>4.1.2</spring.boot.version>
         <junit.version>6.0.3</junit.version>
         <jqwik.version>1.9.3</jqwik.version>
         <assertj.version>3.27.6</assertj.version>

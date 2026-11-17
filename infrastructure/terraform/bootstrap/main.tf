@@ -157,7 +157,7 @@ resource "aws_iam_role" "ci" {
     Effect = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.github.arn }, Action = "sts:AssumeRoleWithWebIdentity",
     Condition = { StringEquals = {
       "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com",
-        "token.actions.githubusercontent.com:sub" = "repo:${var.repository}:environment:${each.value.environment}:workflow_ref:${var.repository}/.github/workflows/${each.value.workflow}@refs/heads/main:ref:refs/heads/main"
+      "token.actions.githubusercontent.com:sub" = "repo:${var.repository}:environment:${each.value.environment}:workflow_ref:${var.repository}/.github/workflows/${each.value.workflow}@refs/heads/main:ref:refs/heads/main"
     } }
   }] })
 }

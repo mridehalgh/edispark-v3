@@ -28,6 +28,19 @@ jobs:
       # Bound both reactor concurrency and test forks to prevent JVM oversubscription.
     - name: Verify every Maven module
       run: ./mvnw -B -T 2 --no-transfer-progress -Popenapi-export verify -Dsurefire.forkCount=1
+    - name: Inventory the packaged backend without resolving POMs again
+      env:
+        SYFT_CHECK_FOR_APP_UPDATE: 'false'
+      run: |
+        node tooling/ci/install-tools.mjs syft
+        .ci-tools/syft scan file:apps/edispark-api/target/edispark-api-1.0.0-SNAPSHOT.jar -o cyclonedx-json=target/backend.cdx.json
+        node -e 'const sbom = require("./target/backend.cdx.json"); if (!sbom.components?.some(c => c.name === "spring-boot" && c.purl)) throw new Error("Backend dependency inventory is incomplete")'
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: backend-sbom
+        path: target/backend.cdx.json
+        if-no-files-found: error
+        retention-days: 1
     - name: Upload verified contracts
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
       with:
@@ -138,7 +151,7 @@ jobs:
 
   # Preserve the original required check name; failed/skipped dependencies must fail this gate.
   build:
-    needs: [backend, frontend, contracts, security, infrastructure]
+    needs: [backend, frontend, contracts, security, dependency-security, infrastructure]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -149,12 +162,14 @@ jobs:
         FRONTEND_RESULT: ${{ needs.frontend.result }}
         CONTRACTS_RESULT: ${{ needs.contracts.result }}
         SECURITY_RESULT: ${{ needs.security.result }}
+        DEPENDENCIES_RESULT: ${{ needs.dependency-security.result }}
         INFRASTRUCTURE_RESULT: ${{ needs.infrastructure.result }}
       run: |
         test "$BACKEND_RESULT" = success
         test "$FRONTEND_RESULT" = success
         test "$CONTRACTS_RESULT" = success
         test "$SECURITY_RESULT" = success
+        test "$DEPENDENCIES_RESULT" = success
         test "$INFRASTRUCTURE_RESULT" = success
 
   security:
@@ -164,7 +179,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scan: [secrets, dependencies, source, workflows]
+        scan: [secrets, source, workflows]
     env:
       SEMGREP_SEND_METRICS: 'off'
     steps:
@@ -177,12 +192,6 @@ jobs:
       run: |
         node tooling/ci/install-tools.mjs gitleaks
         .ci-tools/gitleaks git --redact --no-banner
-    - name: Scan dependency locks and infrastructure
-      if: matrix.scan == 'dependencies'
-      run: |
-        node tooling/ci/install-tools.mjs trivy osv-scanner
-        .ci-tools/trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs '.git,node_modules,.ci-tools,dist,.local,**/target,**/.next,**/.next-dev,**/.terraform,**/node_modules' .
-        .ci-tools/osv-scanner scan source --recursive --x-disable-plugins git .
     - name: Install hash-locked source scanner
       if: matrix.scan == 'source'
       run: |
@@ -194,7 +203,28 @@ jobs:
       run: |
         node tooling/ci/install-tools.mjs actionlint zizmor
         .ci-tools/actionlint
-        .ci-tools/zizmor --offline --no-progress .github
+        # Low-severity style advice includes syntax not supported by pinned actionlint.
+        .ci-tools/zizmor --offline --no-progress --min-severity medium .github
+
+  dependency-security:
+    name: Security dependencies
+    needs: backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: backend-sbom
+        path: dist/security
+    - name: Scan resolved backend, JavaScript locks and infrastructure
+      run: |
+        node tooling/ci/install-tools.mjs trivy osv-scanner
+        .ci-tools/trivy sbom --severity HIGH,CRITICAL --exit-code 1 dist/security/backend.cdx.json
+        .ci-tools/trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-files '**/pom.xml' --skip-dirs '.git,node_modules,.ci-tools,dist,.local,**/target,**/.next,**/.next-dev,**/.terraform,**/node_modules' .
+        .ci-tools/osv-scanner scan source --lockfile pnpm-lock.yaml --lockfile dist/security/backend.cdx.json
 
   infrastructure:
     name: Terraform ${{ matrix.root }}

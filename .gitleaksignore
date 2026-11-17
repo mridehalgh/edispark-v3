@@ -1,0 +1,4 @@
+# Historical documentation examples contain deliberately truncated, nonfunctional
+# DynamoDB pagination tokens. Ignore only these exact findings, not whole files.
+f6151447dc6d4d42a740eabd11cf26851b7adfe7:.kiro/steering/dynamodb-query-patterns.md:generic-api-key:83
+f6151447dc6d4d42a740eabd11cf26851b7adfe7:.kiro/specs/paginated-document-sets/requirements.md:generic-api-key:98

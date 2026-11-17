@@ -1,5 +1,9 @@
 name: Set up workspace Java tooling
 description: Java 21 and dependency caches shared by the isolated Java CI jobs.
+inputs:
+  cache:
+    description: Enable caches for unprivileged CI jobs.
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -7,11 +11,12 @@ runs:
       with:
         distribution: temurin
         java-version: '21'
-        cache: maven
+        cache: ${{ inputs.cache == 'true' && 'maven' || '' }}
         cache-dependency-path: |
           **/pom.xml
           .mvn/wrapper/maven-wrapper.properties
     - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      if: inputs.cache == 'true'
       with:
         path: ~/.m2/wrapper
         key: ${{ runner.os }}-maven-wrapper-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}

@@ -11,7 +11,7 @@ const scan = JSON.parse(await readFile(`${directory}/scan.json`, 'utf8'))
 if ((scan.Results ?? []).some(result => (result.Vulnerabilities ?? []).some(item => ['HIGH', 'CRITICAL'].includes(item.Severity)))) throw new Error('Release contains blocking vulnerabilities')
 const manifest = {
   schema: 1, commit: process.env.GITHUB_SHA, repository: process.env.GITHUB_REPOSITORY,
-  workflow: '.github/workflows/release.yml', scannedAt: scan.CreatedAt,
+  workflow: '.github/workflows/ci.yml', scannedAt: scan.CreatedAt,
   policy: 'pass', artifacts,
 }
 validateManifest(manifest, { commit: process.env.GITHUB_SHA, repository: process.env.GITHUB_REPOSITORY })

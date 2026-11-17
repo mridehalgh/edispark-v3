@@ -1,6 +1,8 @@
 # UK deployment and trunk-based delivery
 
-The deployment implementation is provided as code, with account and DNS placeholders. No AWS resources or GitHub settings are applied by editing this repository. Leave `CD_ENABLED` unset until bootstrap and the deployed acceptance checks below have passed.
+The deployment implementation is provided as code, with account and DNS placeholders. No AWS resources or GitHub settings are applied by editing this repository. Deployment is currently opt-in: leave the repository Actions variable `CD_ENABLED` unset (or set it to `false`). The CI & Delivery workflow keeps all delivery stages visible but skips dependency fetching, packaging, signing, staging and production. The Operations workflow also skips infrastructure planning/applying and dependency admission, including on manual runs. Build, test, contract, security and offline Terraform checks remain active; the required `build` check depends only on those verification jobs.
+
+Set `CD_ENABLED` to the exact string `true` only after configuring the AWS roles, environments and release inputs and reviewing the deployment architecture and budget. Before enabling automatic promotion, complete bootstrap and the deployed acceptance checks below using the reviewed initial provisioning procedure. Missing configuration after opting in is an error, rather than a successful deployment.
 
 ## Trunk and promotion
 

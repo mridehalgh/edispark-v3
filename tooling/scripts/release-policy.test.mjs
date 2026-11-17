@@ -18,7 +18,7 @@ test('deletion, unknown resources and invalid weights cannot use automatic infra
 })
 test('release verification rejects a different commit, stale scans and missing evidence', () => {
   const now = new Date('2026-11-13T12:00:00Z')
-  const manifest = { schema: 1, commit: 'a'.repeat(40), repository: 'example/edispark', workflow: '.github/workflows/release.yml', scannedAt: now.toISOString(), policy: 'pass', artifacts: { 'web.zip': 'b'.repeat(64), 'api.tar': 'c'.repeat(64), 'migrations.zip': 'f'.repeat(64), 'sbom.json': 'd'.repeat(64), 'scan.json': 'e'.repeat(64) } }
+  const manifest = { schema: 1, commit: 'a'.repeat(40), repository: 'example/edispark', workflow: '.github/workflows/ci.yml', scannedAt: now.toISOString(), policy: 'pass', artifacts: { 'web.zip': 'b'.repeat(64), 'api.tar': 'c'.repeat(64), 'migrations.zip': 'f'.repeat(64), 'sbom.json': 'd'.repeat(64), 'scan.json': 'e'.repeat(64) } }
   const expected = { commit: manifest.commit, repository: manifest.repository, now }
   assert.doesNotThrow(() => validateManifest(manifest, expected))
   assert.throws(() => validateManifest(manifest, { ...expected, commit: 'f'.repeat(40) }))

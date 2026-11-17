@@ -1,9 +1,9 @@
 name: Set up workspace Node tooling
 description: Install the repository-pinned pnpm before resolving its dependency cache.
 inputs:
-  install:
-    description: Install workspace dependencies (disable when preparing an isolated approved store).
-    default: 'true'
+  mode:
+    description: 'Dependency installation: standard CI, approved offline store, or none.'
+    default: standard
 runs:
   using: composite
   steps:
@@ -13,13 +13,24 @@ runs:
     - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version-file: .node-version
-        cache: pnpm
+        cache: ${{ inputs.mode == 'standard' && 'pnpm' || '' }}
         cache-dependency-path: pnpm-lock.yaml
     - name: Install workspace dependencies
-      if: inputs.install == 'true'
+      if: inputs.mode == 'standard'
       shell: bash
       run: pnpm install --frozen-lockfile --ignore-scripts
     - name: Build the explicitly allowed local SQLite binding
-      if: inputs.install == 'true'
+      if: inputs.mode == 'standard'
       shell: bash
       run: node tooling/ci/build-sqlite.mjs
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      if: inputs.mode == 'approved'
+      with:
+        name: approved-dependencies
+    - name: Install approved dependencies without network or package scripts
+      if: inputs.mode == 'approved'
+      shell: bash
+      run: |
+        mkdir -p dist/approved
+        tar -xf approved-dependencies.tar -C dist/approved
+        pnpm install --offline --frozen-lockfile --ignore-scripts --store-dir dist/approved/pnpm

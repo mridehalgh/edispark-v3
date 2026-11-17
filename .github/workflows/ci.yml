@@ -1,10 +1,12 @@
-name: CI
+name: CI & Delivery
 
 on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-  workflow_call:
+  push:
+    branches:
+    - main
 
 permissions:
   contents: read
@@ -19,29 +21,29 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-java
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-java
       # Bound both reactor concurrency and test forks to prevent JVM oversubscription.
-      - name: Verify every Maven module
-        run: ./mvnw -B -T 2 --no-transfer-progress -Popenapi-export verify -Dsurefire.forkCount=1
-      - name: Upload verified contracts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: verified-contracts
-          path: contracts/*/openapi.json
-          retention-days: 1
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: backend-test-reports
-          path: |
-            **/target/surefire-reports/
-            **/target/failsafe-reports/
-          if-no-files-found: ignore
-          retention-days: 7
+    - name: Verify every Maven module
+      run: ./mvnw -B -T 2 --no-transfer-progress -Popenapi-export verify -Dsurefire.forkCount=1
+    - name: Upload verified contracts
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      with:
+        name: verified-contracts
+        path: contracts/*/openapi.json
+        retention-days: 1
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      with:
+        name: backend-test-reports
+        path: |
+          **/target/surefire-reports/
+          **/target/failsafe-reports/
+        if-no-files-found: ignore
+        retention-days: 7
 
   frontend:
     name: Frontend ${{ matrix.task }}
@@ -54,35 +56,36 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-node
-      - name: Restore Next.js compiler cache
-        if: matrix.task == 'build'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: apps/web/.next/cache
-          key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
-      - name: Check tooling, frontend behavior and types
-        if: matrix.task == 'checks'
-        run: |
-          pnpm test:tooling
-          node tooling/ci/check-infrastructure.mjs
-          pnpm --filter @edispark/web lint
-          pnpm --filter @edispark/web test
-          pnpm --filter @edispark/web exec node --import tsx scripts/verify-local-auth.mts
-          pnpm --filter @edispark/web exec node --import tsx scripts/generate-auth-migration.mts
-          git diff --exit-code -- apps/web/migrations
-          pnpm --filter @edispark/web typecheck
-      - name: Build production frontend
-        if: matrix.task == 'build'
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-node
+    - name: Restore Next.js compiler cache
+      if: matrix.task == 'build'
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830   # v4.3.0
+      with:
+        path: apps/web/.next/cache
+        key: ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-next-${{ hashFiles('pnpm-lock.yaml') }}-
+    - name: Check tooling, frontend behavior and types
+      if: matrix.task == 'checks'
+      run: |
+        pnpm test:tooling
+        node tooling/ci/check-infrastructure.mjs
+        pnpm --filter @edispark/web lint
+        pnpm --filter @edispark/web test
+        pnpm --filter @edispark/web exec node --import tsx scripts/verify-local-auth.mts
+        pnpm --filter @edispark/web exec node --import tsx scripts/generate-auth-migration.mts
+        git diff --exit-code -- apps/web/migrations
+        pnpm --filter @edispark/web typecheck
+    - name: Build production frontend
+      if: matrix.task == 'build'
         # Build-time auth initialization needs a secret, but CI needs no deployment credentials.
         # Generate a disposable value for this process; never upload this database or environment.
-        shell: bash
-        run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" BETTER_AUTH_DATABASE_PATH="$RUNNER_TEMP/ci-auth.db" pnpm --filter @edispark/web build
+      shell: bash
+      run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" BETTER_AUTH_DATABASE_PATH="$RUNNER_TEMP/ci-auth.db" pnpm
+        --filter @edispark/web build
 
   contracts:
     name: API contracts and generated SDKs
@@ -90,48 +93,48 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-node
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: verified-contracts
-          path: contracts
-      - name: Install pinned API compatibility checker
-        run: node tooling/ci/install-tools.mjs oasdiff
-      - name: Validate contracts and detect generated SDK drift
-        run: pnpm contracts:check
-      - name: Check out the exact pull request baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          path: .ci-baseline
-          persist-credentials: false
-      - name: Detect breaking changes in every API
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          for module in documents mft integration; do
-            contract="contracts/$module/openapi.json"
-            baseline=".ci-baseline/$contract"
-            if test -f "$baseline"; then
-              .ci-tools/oasdiff breaking "$baseline" "$contract"
-            else
-              echo "No baseline contract for $module; treating it as a new API."
-            fi
-          done
-      - name: Upload exported contracts for review
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: exported-api-contracts
-          path: contracts/*/openapi.json
-          retention-days: 7
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-node
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+      with:
+        name: verified-contracts
+        path: contracts
+    - name: Install pinned API compatibility checker
+      run: node tooling/ci/install-tools.mjs oasdiff
+    - name: Validate contracts and detect generated SDK drift
+      run: pnpm contracts:check
+    - name: Check out the exact pull request baseline
+      if: github.event_name == 'pull_request'
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        path: .ci-baseline
+        persist-credentials: false
+    - name: Detect breaking changes in every API
+      if: github.event_name == 'pull_request'
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        for module in documents mft integration; do
+          contract="contracts/$module/openapi.json"
+          baseline=".ci-baseline/$contract"
+          if test -f "$baseline"; then
+            .ci-tools/oasdiff breaking "$baseline" "$contract"
+          else
+            echo "No baseline contract for $module; treating it as a new API."
+          fi
+        done
+    - name: Upload exported contracts for review
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      with:
+        name: exported-api-contracts
+        path: contracts/*/openapi.json
+        retention-days: 7
 
   # Preserve the original required check name; failed/skipped dependencies must fail this gate.
   build:
@@ -140,19 +143,19 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - name: Require all CI checks to pass
-        env:
-          BACKEND_RESULT: ${{ needs.backend.result }}
-          FRONTEND_RESULT: ${{ needs.frontend.result }}
-          CONTRACTS_RESULT: ${{ needs.contracts.result }}
-          SECURITY_RESULT: ${{ needs.security.result }}
-          INFRASTRUCTURE_RESULT: ${{ needs.infrastructure.result }}
-        run: |
-          test "$BACKEND_RESULT" = success
-          test "$FRONTEND_RESULT" = success
-          test "$CONTRACTS_RESULT" = success
-          test "$SECURITY_RESULT" = success
-          test "$INFRASTRUCTURE_RESULT" = success
+    - name: Require all CI checks to pass
+      env:
+        BACKEND_RESULT: ${{ needs.backend.result }}
+        FRONTEND_RESULT: ${{ needs.frontend.result }}
+        CONTRACTS_RESULT: ${{ needs.contracts.result }}
+        SECURITY_RESULT: ${{ needs.security.result }}
+        INFRASTRUCTURE_RESULT: ${{ needs.infrastructure.result }}
+      run: |
+        test "$BACKEND_RESULT" = success
+        test "$FRONTEND_RESULT" = success
+        test "$CONTRACTS_RESULT" = success
+        test "$SECURITY_RESULT" = success
+        test "$INFRASTRUCTURE_RESULT" = success
 
   security:
     name: Security ${{ matrix.scan }}
@@ -165,33 +168,33 @@ jobs:
     env:
       SEMGREP_SEND_METRICS: 'off'
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      - name: Scan repository history for secrets
-        if: matrix.scan == 'secrets'
-        run: |
-          node tooling/ci/install-tools.mjs gitleaks
-          .ci-tools/gitleaks git --redact --no-banner
-      - name: Scan dependency locks and infrastructure
-        if: matrix.scan == 'dependencies'
-        run: |
-          node tooling/ci/install-tools.mjs trivy osv-scanner
-          .ci-tools/trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs '.git,node_modules,.ci-tools,dist,.local,**/target,**/.next,**/.next-dev,**/.terraform,**/node_modules' .
-          .ci-tools/osv-scanner scan source --recursive --skip-git .
-      - name: Install hash-locked source scanner
-        if: matrix.scan == 'source'
-        run: |
-          python3 -m venv "$RUNNER_TEMP/semgrep"
-          "$RUNNER_TEMP/semgrep/bin/pip" install --require-hashes -r tooling/ci/requirements.txt
-          "$RUNNER_TEMP/semgrep/bin/semgrep" scan --metrics=off --disable-version-check --error --config tooling/ci/semgrep.yml .
-      - name: Validate workflow syntax and trust boundaries
-        if: matrix.scan == 'workflows'
-        run: |
-          node tooling/ci/install-tools.mjs actionlint zizmor
-          .ci-tools/actionlint
-          .ci-tools/zizmor --offline --no-progress .github
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+    - name: Scan repository history for secrets
+      if: matrix.scan == 'secrets'
+      run: |
+        node tooling/ci/install-tools.mjs gitleaks
+        .ci-tools/gitleaks git --redact --no-banner
+    - name: Scan dependency locks and infrastructure
+      if: matrix.scan == 'dependencies'
+      run: |
+        node tooling/ci/install-tools.mjs trivy osv-scanner
+        .ci-tools/trivy fs --scanners vuln,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs '.git,node_modules,.ci-tools,dist,.local,**/target,**/.next,**/.next-dev,**/.terraform,**/node_modules' .
+        .ci-tools/osv-scanner scan source --recursive --x-disable-plugins git .
+    - name: Install hash-locked source scanner
+      if: matrix.scan == 'source'
+      run: |
+        python3 -m venv "$RUNNER_TEMP/semgrep"
+        "$RUNNER_TEMP/semgrep/bin/pip" install --require-hashes -r tooling/ci/requirements.txt
+        "$RUNNER_TEMP/semgrep/bin/semgrep" scan --metrics=off --disable-version-check --error --config tooling/ci/semgrep.yml .
+    - name: Validate workflow syntax and trust boundaries
+      if: matrix.scan == 'workflows'
+      run: |
+        node tooling/ci/install-tools.mjs actionlint zizmor
+        .ci-tools/actionlint
+        .ci-tools/zizmor --offline --no-progress .github
 
   infrastructure:
     name: Terraform ${{ matrix.root }}
@@ -206,15 +209,272 @@ jobs:
       TF_INPUT: 'false'
       TF_ROOT: infrastructure/terraform/${{ matrix.root }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          persist-credentials: false
-      - name: Install checksum-verified Terraform
-        run: node tooling/ci/install-tools.mjs terraform
-      - name: Validate without AWS credentials or state access
-        run: |
-          node tooling/ci/check-infrastructure.mjs
-          .ci-tools/terraform -chdir="$TF_ROOT" fmt -check
-          .ci-tools/terraform -chdir="$TF_ROOT" init -backend=false -lockfile=readonly
-          .ci-tools/terraform -chdir="$TF_ROOT" validate
-          .ci-tools/terraform -chdir="$TF_ROOT" test
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - name: Install checksum-verified Terraform
+      run: node tooling/ci/install-tools.mjs terraform
+    - name: Validate without AWS credentials or state access
+      run: |
+        node tooling/ci/check-infrastructure.mjs
+        .ci-tools/terraform -chdir="$TF_ROOT" fmt -check
+        .ci-tools/terraform -chdir="$TF_ROOT" init -backend=false -lockfile=readonly
+        .ci-tools/terraform -chdir="$TF_ROOT" validate
+        .ci-tools/terraform -chdir="$TF_ROOT" test
+  dependencies:
+    # Leave CD_ENABLED unset while deployment configuration contains placeholders.
+    runs-on: ubuntu-24.04-arm
+    environment: dependency-fetch
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-node
+      with:
+        mode: none
+    - uses: ./.github/actions/setup-java
+      with:
+        cache: 'false'
+    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+      with:
+        role-to-assume: ${{ vars.AWS_DEPENDENCY_FETCH_ROLE_ARN }}
+        aws-region: eu-west-2
+        role-duration-seconds: 1800
+        allowed-account-ids: ${{ vars.AWS_TOOLING_ACCOUNT_ID }}
+    - name: Fetch from repositories with no public upstream fallback
+      env:
+        CODEARTIFACT_DOMAIN: ${{ vars.CODEARTIFACT_DOMAIN }}
+        CODEARTIFACT_NPM_ENDPOINT: ${{ vars.CODEARTIFACT_NPM_ENDPOINT }}
+        CODEARTIFACT_MAVEN_ENDPOINT: ${{ vars.CODEARTIFACT_MAVEN_ENDPOINT }}
+        AWS_TOOLING_ACCOUNT_ID: ${{ vars.AWS_TOOLING_ACCOUNT_ID }}
+      run: |
+        node tooling/ci/fetch-approved-dependencies.mjs
+        tar -cf approved-dependencies.tar -C dist/approved .
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      with:
+        name: approved-dependencies
+        path: approved-dependencies.tar
+        compression-level: 0
+        retention-days: 1
+    name: Fetch approved dependencies
+    needs: build
+    if: github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true'
+  package:
+    if: github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-node
+      with:
+        mode: none
+    - uses: ./.github/actions/setup-java
+      with:
+        cache: 'false'
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+      with:
+        name: approved-dependencies
+    - name: Install admitted dependencies and compile without AWS credentials
+      run: |
+        mkdir -p dist/approved
+        tar -xf approved-dependencies.tar -C dist/approved
+        pnpm install --offline --frozen-lockfile --ignore-scripts --store-dir dist/approved/pnpm
+        node tooling/ci/build-sqlite.mjs
+        ./mvnw -o -B -T 2 --no-transfer-progress -pl apps/edispark-api -am package -DskipTests -Dmaven.repo.local="$PWD/dist/approved/maven"
+    - name: Build the frontend without deployment credentials
+      run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" BETTER_AUTH_DATABASE_PATH="$RUNNER_TEMP/build-auth.db" pnpm
+        --filter @edispark/web build
+    - name: Package immutable artifacts
+      env:
+        SOURCE_COMMIT: ${{ github.sha }}
+      run: |
+        mkdir -p dist/release
+        node tooling/ci/package-web.mjs
+        node tooling/ci/package-migrations.mjs
+        (cd dist/web && zip -q -r -y ../release/web.zip .)
+        (cd dist/migrations && zip -q -r ../release/migrations.zip .)
+        docker build --network=none --platform=linux/arm64 --build-arg SOURCE_COMMIT="$SOURCE_COMMIT" -f apps/edispark-api/Dockerfile -t "edispark-api:$SOURCE_COMMIT" .
+        docker save -o dist/release/api.tar "edispark-api:$SOURCE_COMMIT"
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      with:
+        name: release-bytes
+        path: dist/release
+        compression-level: 0
+        retention-days: 2
+    name: Package release
+    needs: dependencies
+  sign:
+    if: github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true'
+    runs-on: ubuntu-24.04-arm
+    environment: release-signing
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-node
+      with:
+        mode: approved
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+      with:
+        name: release-bytes
+        path: dist/release
+    - name: Scan the exact release bytes and generate the SBOM
+      run: |
+        node tooling/ci/install-tools.mjs trivy syft
+        .ci-tools/syft scan docker-archive:dist/release/api.tar -o cyclonedx-json="$RUNNER_TEMP/api.sbom.json"
+        .ci-tools/trivy image --input dist/release/api.tar --severity HIGH,CRITICAL --exit-code 1 --format json --output dist/release/scan.json
+        unzip -q dist/release/web.zip -d "$RUNNER_TEMP/web-scan"
+        .ci-tools/syft scan "dir:$RUNNER_TEMP/web-scan" -o cyclonedx-json="$RUNNER_TEMP/web.sbom.json"
+        node tooling/release/combine-sboms.mjs dist/release/sbom.json "$RUNNER_TEMP/api.sbom.json" "$RUNNER_TEMP/web.sbom.json"
+        .ci-tools/trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 "$RUNNER_TEMP/web-scan"
+    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+      with:
+        role-to-assume: ${{ vars.AWS_RELEASE_SIGNER_ROLE_ARN }}
+        aws-region: eu-west-2
+        role-duration-seconds: 900
+        allowed-account-ids: ${{ vars.AWS_TOOLING_ACCOUNT_ID }}
+    - name: Sign the release manifest
+      env:
+        RELEASE_SIGNING_KEY_ARN: ${{ vars.RELEASE_SIGNING_KEY_ARN }}
+      run: node tooling/release/seal.mjs dist/release
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      with:
+        name: signed-release
+        path: dist/release
+        compression-level: 0
+        retention-days: 2
+    name: Scan and sign
+    needs: package
+  staging:
+    if: github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true'
+    needs: sign
+    runs-on: ubuntu-24.04-arm
+    environment: staging
+    timeout-minutes: 90
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+      BACKEND_URL: ${{ vars.BACKEND_URL }}
+      RELEASE_CONFIGURATION_JSON: ${{ vars.RELEASE_CONFIGURATION_JSON }}
+      DEPLOYMENT_ALARMS_JSON: ${{ vars.DEPLOYMENT_ALARMS_JSON }}
+    steps: &deploy_steps
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+    - uses: ./.github/actions/setup-node
+      with:
+        mode: approved
+    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+      with:
+        name: signed-release
+        path: dist/release
+    - name: Verify the release and bootstrap readiness
+      env:
+        PUBLIC_RELEASE_KEY_PEM: ${{ vars.PUBLIC_RELEASE_KEY_PEM }}
+        DEPLOYMENT_READINESS: ${{ vars.DEPLOYMENT_READINESS }}
+      run: |
+        test "$DEPLOYMENT_READINESS" = verified
+        node tooling/release/verify.mjs dist/release
+        node tooling/ci/install-tools.mjs terraform trivy
+        .ci-tools/trivy image --input dist/release/api.tar --severity HIGH,CRITICAL --exit-code 1
+    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+      with:
+        role-to-assume: ${{ vars.AWS_MIGRATION_ROLE_ARN }}
+        aws-region: eu-west-2
+        allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+        role-duration-seconds: 1800
+    - name: Apply signed forward-compatible migrations
+      env:
+        BETTER_AUTH_DSQL_HOST: ${{ vars.BETTER_AUTH_DSQL_HOST }}
+        BETTER_AUTH_DSQL_USER: edispark_migrator
+      run: |
+        unzip -q dist/release/migrations.zip -d "$RUNNER_TEMP/migrations"
+        cd "$RUNNER_TEMP/migrations"
+        node index.mjs
+
+    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+      with:
+        role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+        role-duration-seconds: 7200
+        aws-region: eu-west-2
+        allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+    - name: Read the current healthy release
+      env:
+        TF_BACKEND_CONFIGURATION_JSON: ${{ vars.TF_BACKEND_CONFIGURATION_JSON }}
+      run: |
+        node -e 'require("fs").writeFileSync("dist/backend.json", process.env.TF_BACKEND_CONFIGURATION_JSON)'
+        .ci-tools/terraform -chdir=infrastructure/terraform/release init -lockfile=readonly -backend-config="$PWD/dist/backend.json"
+        .ci-tools/terraform -chdir=infrastructure/terraform/release output -json deployment > dist/previous-release.json
+    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+      with:
+        role-to-assume: ${{ vars.AWS_PUBLISHER_ROLE_ARN }}
+        aws-region: eu-west-2
+        allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+    - name: Publish the verified image and versioned Web Function package
+      env:
+        RELEASE_COMMIT: ${{ github.sha }}
+        ASSETS_BUCKET: ${{ vars.ASSETS_BUCKET }}
+      run: |
+        repository="$(node -e 'console.log(JSON.parse(process.env.RELEASE_CONFIGURATION_JSON).foundation.ecr_repository)')"
+        registry="${repository%%/*}"
+        aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin "$registry"
+        docker load -i dist/release/api.tar
+        test "$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "edispark-api:$RELEASE_COMMIT")" = "$RELEASE_COMMIT"
+        docker tag "edispark-api:$RELEASE_COMMIT" "$repository:$RELEASE_COMMIT"
+        docker push "$repository:$RELEASE_COMMIT"
+        IMAGE_DIGEST="$(docker inspect --format '{{index .RepoDigests 0}}' "$repository:$RELEASE_COMMIT")"
+        export IMAGE_DIGEST="${IMAGE_DIGEST##*@}"
+        node tooling/release/prepare.mjs dist/previous-release.json infrastructure/terraform/release/candidate.tfvars.json
+        unzip -q dist/release/web.zip -d "$RUNNER_TEMP/web"
+        aws s3 sync "$RUNNER_TEMP/web/apps/web/.next/static/" "s3://$ASSETS_BUCKET/_next/static/" --cache-control 'public,max-age=31536000,immutable' --region eu-west-2
+        docker logout "$registry"
+    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+      with:
+        role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
+        role-duration-seconds: 7200
+        aws-region: eu-west-2
+        allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+    - name: Promote with policy checks, observation and automatic rollback
+      run: node tooling/release/deploy.mjs
+    name: Staging
+  production:
+    if: github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true'
+    needs: staging
+    runs-on: ubuntu-24.04-arm
+    environment: production
+    timeout-minutes: 90
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TF_INPUT: 'false'
+      FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+      BACKEND_URL: ${{ vars.BACKEND_URL }}
+      RELEASE_CONFIGURATION_JSON: ${{ vars.RELEASE_CONFIGURATION_JSON }}
+      DEPLOYMENT_ALARMS_JSON: ${{ vars.DEPLOYMENT_ALARMS_JSON }}
+    steps: *deploy_steps
+    name: Production

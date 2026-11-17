@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 export const requiredArtifacts = ['api.tar', 'web.zip', 'migrations.zip', 'sbom.json', 'scan.json']
 export function validateManifest(manifest, { commit, repository, now = new Date() }) {
   if (!/^[0-9a-f]{40}$/.test(commit) || manifest.schema !== 1 || manifest.commit !== commit || manifest.repository !== repository
-    || manifest.workflow !== '.github/workflows/release.yml' || manifest.policy !== 'pass') throw new Error('Untrusted release identity or policy')
+    || manifest.workflow !== '.github/workflows/ci.yml' || manifest.policy !== 'pass') throw new Error('Untrusted release identity or policy')
   const age = now.getTime() - Date.parse(manifest.scannedAt)
   if (!Number.isFinite(age) || age < -60_000 || age > 24 * 60 * 60 * 1000) throw new Error('Release scan is stale')
   if (!requiredArtifacts.every(name => /^[0-9a-f]{64}$/.test(manifest.artifacts?.[name]))) throw new Error('Missing release evidence')

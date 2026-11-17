@@ -35,21 +35,21 @@ jobs:
         node tooling/ci/install-tools.mjs syft
         .ci-tools/syft scan file:apps/edispark-api/target/edispark-api-1.0.0-SNAPSHOT.jar -o cyclonedx-json=target/backend.cdx.json
         node -e 'const sbom = require("./target/backend.cdx.json"); if (!sbom.components?.some(c => c.name === "spring-boot" && c.purl)) throw new Error("Backend dependency inventory is incomplete")'
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: backend-sbom
         path: target/backend.cdx.json
         if-no-files-found: error
         retention-days: 1
     - name: Upload verified contracts
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
       with:
         name: verified-contracts
         path: contracts/*/openapi.json
         retention-days: 1
     - name: Upload test reports
       if: always()
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
       with:
         name: backend-test-reports
         path: |
@@ -143,7 +143,7 @@ jobs:
         done
     - name: Upload exported contracts for review
       if: always()
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
       with:
         name: exported-api-contracts
         path: contracts/*/openapi.json
@@ -284,7 +284,7 @@ jobs:
       run: |
         node tooling/ci/fetch-approved-dependencies.mjs
         tar -cf approved-dependencies.tar -C dist/approved .
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
       with:
         name: approved-dependencies
         path: approved-dependencies.tar
@@ -333,7 +333,7 @@ jobs:
         (cd dist/migrations && zip -q -r ../release/migrations.zip .)
         docker build --network=none --platform=linux/arm64 --build-arg SOURCE_COMMIT="$SOURCE_COMMIT" -f apps/edispark-api/Dockerfile -t "edispark-api:$SOURCE_COMMIT" .
         docker save -o dist/release/api.tar "edispark-api:$SOURCE_COMMIT"
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
       with:
         name: release-bytes
         path: dist/release
@@ -379,7 +379,7 @@ jobs:
       env:
         RELEASE_SIGNING_KEY_ARN: ${{ vars.RELEASE_SIGNING_KEY_ARN }}
       run: node tooling/release/seal.mjs dist/release
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02   # v4.6.2
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
       with:
         name: signed-release
         path: dist/release

@@ -239,7 +239,7 @@ jobs:
     - uses: ./.github/actions/setup-java
       with:
         cache: 'false'
-    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+    - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
       with:
         role-to-assume: ${{ vars.AWS_DEPENDENCY_FETCH_ROLE_ARN }}
         aws-region: eu-west-2
@@ -339,7 +339,7 @@ jobs:
         .ci-tools/syft scan "dir:$RUNNER_TEMP/web-scan" -o cyclonedx-json="$RUNNER_TEMP/web.sbom.json"
         node tooling/release/combine-sboms.mjs dist/release/sbom.json "$RUNNER_TEMP/api.sbom.json" "$RUNNER_TEMP/web.sbom.json"
         .ci-tools/trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 "$RUNNER_TEMP/web-scan"
-    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+    - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
       with:
         role-to-assume: ${{ vars.AWS_RELEASE_SIGNER_ROLE_ARN }}
         aws-region: eu-west-2
@@ -397,7 +397,7 @@ jobs:
         node tooling/release/verify.mjs dist/release
         node tooling/ci/install-tools.mjs terraform trivy
         .ci-tools/trivy image --input dist/release/api.tar --severity HIGH,CRITICAL --exit-code 1
-    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+    - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
       with:
         role-to-assume: ${{ vars.AWS_MIGRATION_ROLE_ARN }}
         aws-region: eu-west-2
@@ -412,7 +412,7 @@ jobs:
         cd "$RUNNER_TEMP/migrations"
         node index.mjs
 
-    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+    - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
       with:
         role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
         role-duration-seconds: 7200
@@ -425,7 +425,7 @@ jobs:
         node -e 'require("fs").writeFileSync("dist/backend.json", process.env.TF_BACKEND_CONFIGURATION_JSON)'
         .ci-tools/terraform -chdir=infrastructure/terraform/release init -lockfile=readonly -backend-config="$PWD/dist/backend.json"
         .ci-tools/terraform -chdir=infrastructure/terraform/release output -json deployment > dist/previous-release.json
-    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+    - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
       with:
         role-to-assume: ${{ vars.AWS_PUBLISHER_ROLE_ARN }}
         aws-region: eu-west-2
@@ -448,7 +448,7 @@ jobs:
         unzip -q dist/release/web.zip -d "$RUNNER_TEMP/web"
         aws s3 sync "$RUNNER_TEMP/web/apps/web/.next/static/" "s3://$ASSETS_BUCKET/_next/static/" --cache-control 'public,max-age=31536000,immutable' --region eu-west-2
         docker logout "$registry"
-    - uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8   # v5.1.0
+    - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd   # v6.3.0
       with:
         role-to-assume: ${{ vars.AWS_DEPLOYMENT_ROLE_ARN }}
         role-duration-seconds: 7200

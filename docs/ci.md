@@ -20,6 +20,7 @@ New commits cancel obsolete checks for the same PR. Main delivery runs are not c
 
 ## Dependency and cache boundaries
 
+- Dependabot checks weekly and waits seven days after publication for routine version updates across GitHub Actions, npm, Maven and all six Terraform roots. GitHub security-update PRs bypass this cooldown so urgent fixes can be reviewed promptly; cooldown reduces exposure to newly compromised releases but does not guarantee safety.
 - Java jobs cache Maven dependencies and the wrapper. Node jobs install the pnpm version pinned in
   package.json before setup-node resolves the pnpm store cache, then use a frozen lockfile.
 - Backend verification exports contracts once. Contract verification downloads those exports; it does not compile Java again. Syft inventories the packaged Spring JAR, and dependency scanning consumes that CycloneDX SBOM instead of re-resolving raw Maven POMs against rate-limited public registries. JavaScript lockfiles and Terraform configuration remain scanned directly. OSV checks the backend SBOM and pnpm lockfile explicitly.

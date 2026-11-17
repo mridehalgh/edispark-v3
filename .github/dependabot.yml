@@ -1,4 +1,6 @@
 version: 2
+# Wait seven days after release before routine version-update PRs.
+# GitHub security-update PRs bypass cooldown and still require review and CI.
 updates:
   - package-ecosystem: github-actions
     directory: /
@@ -15,5 +17,6 @@ updates:
     cooldown: { default-days: 7 }
     open-pull-requests-limit: 5
   - package-ecosystem: terraform
-    directories: [/infrastructure/terraform/foundation, /infrastructure/terraform/release, /infrastructure/terraform/edge, /infrastructure/terraform/bootstrap]
+    directories: [/infrastructure/terraform/foundation, /infrastructure/terraform/release, /infrastructure/terraform/edge, /infrastructure/terraform/bootstrap, /infrastructure/terraform/mft, /infrastructure/terraform/integration]
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }

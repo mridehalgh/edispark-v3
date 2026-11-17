@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-java
@@ -69,7 +69,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-node
@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-node
@@ -120,7 +120,7 @@ jobs:
       run: pnpm contracts:check
     - name: Check out the exact pull request baseline
       if: github.event_name == 'pull_request'
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         ref: ${{ github.event.pull_request.base.sha }}
         path: .ci-baseline
@@ -183,7 +183,7 @@ jobs:
     env:
       SEMGREP_SEND_METRICS: 'off'
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 0
@@ -212,7 +212,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
     - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -239,7 +239,7 @@ jobs:
       TF_INPUT: 'false'
       TF_ROOT: infrastructure/terraform/${{ matrix.root }}
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - name: Install checksum-verified Terraform
@@ -260,7 +260,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-node
@@ -300,7 +300,7 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-node
@@ -350,7 +350,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-node
@@ -407,7 +407,7 @@ jobs:
       RELEASE_CONFIGURATION_JSON: ${{ vars.RELEASE_CONFIGURATION_JSON }}
       DEPLOYMENT_ALARMS_JSON: ${{ vars.DEPLOYMENT_ALARMS_JSON }}
     steps: &deploy_steps
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 0

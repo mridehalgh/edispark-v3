@@ -110,7 +110,7 @@ jobs:
       with:
         persist-credentials: false
     - uses: ./.github/actions/setup-node
-    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333   # v8.0.2
       with:
         name: verified-contracts
         path: contracts
@@ -215,7 +215,7 @@ jobs:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       with:
         persist-credentials: false
-    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: backend-sbom
         path: dist/security
@@ -309,7 +309,7 @@ jobs:
     - uses: ./.github/actions/setup-java
       with:
         cache: 'false'
-    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333   # v8.0.2
       with:
         name: approved-dependencies
     - name: Install admitted dependencies and compile without AWS credentials
@@ -356,7 +356,7 @@ jobs:
     - uses: ./.github/actions/setup-node
       with:
         mode: approved
-    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333   # v8.0.2
       with:
         name: release-bytes
         path: dist/release
@@ -414,7 +414,7 @@ jobs:
     - uses: ./.github/actions/setup-node
       with:
         mode: approved
-    - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093   # v4.3.0
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333   # v8.0.2
       with:
         name: signed-release
         path: dist/release

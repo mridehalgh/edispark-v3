@@ -1,0 +1,16 @@
+package com.edispark.mft.infrastructure;
+import com.edispark.mft.domain.model.*;
+import java.net.URI;
+import java.time.Instant;
+import java.util.UUID;
+import com.edispark.mft.domain.repository.MftCreation;
+import io.cottn.core.tenancy.TenantAccess;
+public interface MftCreationAdapter extends MftCreation {
+    default Transfer outbound(UUID partnerId, String filename, String contentType, String as2MessageId, String idempotencyKey, TransferId resendOf, Instant now) { return Transfer.outbound(TenantAccess.currentId(), partnerId, filename, contentType, as2MessageId, idempotencyKey, resendOf, now); }
+    default Transfer outbound(UUID partnerId, String filename, String contentType, String as2MessageId, String idempotencyKey, TransferId resendOf, TransferProvenance provenance, Instant now) { return Transfer.outbound(TenantAccess.currentId(), partnerId, filename, contentType, as2MessageId, idempotencyKey, resendOf, provenance, now); }
+    default Transfer inbound(UUID partnerId, String filename, String contentType, String as2MessageId, Instant now) { return Transfer.inbound(TenantAccess.currentId(), partnerId, filename, contentType, as2MessageId, now); }
+    default PartnerProfile partner(String name, String localAs2Id, String remoteAs2Id, URI endpoint, UUID localCertificateId, UUID partnerSigningCertificateId, UUID partnerEncryptionCertificateId, UUID previousPartnerSigningCertificateId, Instant signingCertificateGraceUntil, URI asynchronousMdnEndpoint, MdnMode mdnMode, boolean signingRequired, boolean encryptionRequired, boolean compressionEnabled, boolean legacyCryptoEnabled, PartnerStatus status, Instant createdAt) { return new PartnerProfile(UUID.randomUUID(), TenantAccess.currentId(), name, localAs2Id, remoteAs2Id, endpoint, localCertificateId, partnerSigningCertificateId, partnerEncryptionCertificateId, previousPartnerSigningCertificateId, signingCertificateGraceUntil, asynchronousMdnEndpoint, mdnMode, signingRequired, encryptionRequired, compressionEnabled, legacyCryptoEnabled, status, createdAt); }
+    default CertificateRecord certificate(UUID id, String name, CertificateKind kind, String fingerprintSha256, String subject, String issuer, Instant notBefore, Instant notAfter, boolean hasPrivateKey, String publicCertificatePem, String secretRef, Instant createdAt) { String owner = TenantAccess.currentId(); UUID resolved = id == null ? UUID.nameUUIDFromBytes((owner + "\u0000" + fingerprintSha256).getBytes(java.nio.charset.StandardCharsets.UTF_8)) : id; return new CertificateRecord(resolved, owner, name, kind, fingerprintSha256, subject, issuer, notBefore, notAfter, hasPrivateKey, publicCertificatePem, secretRef, createdAt); }
+    default MdnDelivery pendingMdn(UUID id, UUID partnerId, URI callback, String contentType, String as2From, String as2To, String messageId, String originalMessageId, PayloadRef payload, Instant now) { return MdnDelivery.pending(id, TenantAccess.currentId(), partnerId, callback, contentType, as2From, as2To, messageId, originalMessageId, payload, now); }
+    default UUID mdnId(String originalMessageId) { return UUID.nameUUIDFromBytes((TenantAccess.currentId() + "\u0000" + originalMessageId).getBytes(java.nio.charset.StandardCharsets.UTF_8)); }
+}

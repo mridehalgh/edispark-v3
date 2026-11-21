@@ -130,8 +130,7 @@ public final class KmsAs2ExchangeAdapter implements As2ExchangePort {
     }
 
     private void requireConfiguredIdentity(PartnerProfile partner) throws Exception {
-        X509Certificate selected = certificate(certificates.load(
-                partner.tenantId(), partner.localCertificateId()).bytes());
+        X509Certificate selected = certificate(certificates.load(partner.localCertificateId()).bytes());
         if (!MessageDigest.isEqual(selected.getPublicKey().getEncoded(),
                 identity.signingCertificate().getPublicKey().getEncoded())) {
             throw new IllegalArgumentException("Partner profile does not use the configured KMS signing certificate");
@@ -139,7 +138,7 @@ public final class KmsAs2ExchangeAdapter implements As2ExchangePort {
     }
 
     private X509Certificate partnerCertificate(PartnerProfile partner) throws Exception {
-        return certificate(certificates.load(partner.tenantId(), partner.partnerEncryptionCertificateId()).bytes());
+        return certificate(certificates.load(partner.partnerEncryptionCertificateId()).bytes());
     }
 
     private X509Certificate certificate(byte[] bytes) throws Exception {

@@ -5,6 +5,7 @@
   <artifactId>exchange-domain</artifactId><name>Exchange Domain</name>
   <description>Durable agreement-driven inbound and outbound EDI orchestration</description>
   <dependencies>
+    <dependency><groupId>com.edispark</groupId><artifactId>tenancy-test-support</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>tenancy</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.edispark</groupId><artifactId>partnerships-domain</artifactId><version>${project.version}</version></dependency>

@@ -19,7 +19,7 @@ public class MdnDeliveryController {
     @GetMapping
     @Operation(operationId = "listMftMdnDeliveries", summary = "List asynchronous receipt delivery evidence")
     public List<MdnDeliveryResponse> list() {
-        return repository.listMdnDeliveries(TenantContext.getCurrentTenant().asString()).stream()
+        return repository.listMdnDeliveries().stream()
                 .map(MdnDeliveryResponse::from).toList();
     }
 }

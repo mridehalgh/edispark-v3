@@ -1,5 +1,7 @@
 package com.edispark.exchange.infrastructure;
 
+import io.cottn.core.tenancy.TenantAccess;
+
 import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeRepository;
 import java.util.List;
@@ -12,15 +14,15 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("openapi-export")
-public final class InMemoryExchangeRepository implements ExchangeRepository {
-    private final Map<UUID, EdiExchange> exchanges = new ConcurrentHashMap<>();
+public final class InMemoryExchangeRepository implements ExchangeRepository, ExchangeCreationAdapter {
+    private final Map<String, EdiExchange> exchanges = new ConcurrentHashMap<>();
     private final Map<String, UUID> idempotency = new ConcurrentHashMap<>();
-    @Override public synchronized EdiExchange save(EdiExchange exchange) {
+    @Override public synchronized EdiExchange save(EdiExchange exchange) { TenantAccess.requireOwner(exchange.tenantId());
         UUID existing = idempotency.putIfAbsent(exchange.tenantId() + ":" + exchange.idempotencyKey(), exchange.id());
-        if (existing != null && !existing.equals(exchange.id())) return exchanges.get(existing);
-        exchanges.put(exchange.id(), exchange); return exchange;
+        if (existing != null && !existing.equals(exchange.id())) return exchanges.get(exchange.tenantId() + ":" + existing);
+        exchanges.put(exchange.tenantId() + ":" + exchange.id(), exchange); return exchange;
     }
-    @Override public Optional<EdiExchange> find(String tenantId, UUID id) { return Optional.ofNullable(exchanges.get(id)).filter(item -> item.tenantId().equals(tenantId)); }
-    @Override public Optional<EdiExchange> findByIdempotencyKey(String tenantId, String key) { return Optional.ofNullable(idempotency.get(tenantId + ":" + key)).flatMap(id -> find(tenantId, id)); }
-    @Override public List<EdiExchange> list(String tenantId) { return exchanges.values().stream().filter(item -> item.tenantId().equals(tenantId)).toList(); }
+    @Override public Optional<EdiExchange> find(UUID id) { String tenantId = TenantAccess.currentId(); return Optional.ofNullable(exchanges.get(tenantId + ":" + id)).filter(item -> item.tenantId().equals(tenantId)); }
+    @Override public Optional<EdiExchange> findByIdempotencyKey(String key) { String tenantId = TenantAccess.currentId(); return Optional.ofNullable(idempotency.get(tenantId + ":" + key)).flatMap(id -> find(id)); }
+    @Override public List<EdiExchange> list() { String tenantId = TenantAccess.currentId(); return exchanges.values().stream().filter(item -> item.tenantId().equals(tenantId)).toList(); }
 }

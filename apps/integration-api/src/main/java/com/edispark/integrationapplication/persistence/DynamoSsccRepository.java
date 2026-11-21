@@ -1,5 +1,8 @@
 package com.edispark.integrationapplication.persistence;
 
+import io.cottn.core.tenancy.TenantAccess;
+import com.edispark.partnerships.infrastructure.SsccCreationAdapter;
+
 import com.edispark.partnerships.domain.model.SsccIssuer;
 import com.edispark.partnerships.domain.model.SsccReservation;
 import com.edispark.partnerships.domain.repository.SsccRepository;
@@ -12,7 +15,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("!openapi-export")
-final class DynamoSsccRepository implements SsccRepository {
+final class DynamoSsccRepository implements SsccRepository, SsccCreationAdapter {
     private final IntegrationDynamoStore store;
     private final ObjectMapper json;
 
@@ -21,7 +24,7 @@ final class DynamoSsccRepository implements SsccRepository {
         this.json = json;
     }
 
-    @Override public SsccIssuer save(SsccIssuer issuer) {
+    @Override public SsccIssuer save(SsccIssuer issuer) { TenantAccess.requireOwner(issuer.tenantId());
         if (!store.putVersionedIfCurrent(issuer.tenantId(), issuerKey(issuer.id()), "SSCC_ISSUER",
                 write(issuer), issuer.version())) {
             throw new java.util.ConcurrentModificationException("SSCC range changed; reload and try again");
@@ -29,22 +32,24 @@ final class DynamoSsccRepository implements SsccRepository {
         return issuer;
     }
 
-    @Override public Optional<SsccIssuer> find(String tenantId, UUID id) {
+    @Override public Optional<SsccIssuer> find(UUID id) { String tenantId = TenantAccess.currentId();
         return store.get(tenantId, issuerKey(id)).map(value -> read(value, SsccIssuer.class));
     }
 
-    @Override public List<SsccIssuer> list(String tenantId) {
+    @Override public List<SsccIssuer> list() { String tenantId = TenantAccess.currentId();
         return store.list(tenantId, "SSCC_ISSUER#").stream()
                 .map(value -> read(value, SsccIssuer.class)).toList();
     }
 
-    @Override public Optional<SsccReservation> findReservation(String tenantId, String idempotencyKey) {
+    @Override public Optional<SsccReservation> findReservation(String idempotencyKey) { String tenantId = TenantAccess.currentId();
         return store.get(tenantId, reservationKey(idempotencyKey))
                 .map(value -> read(value, SsccReservation.class));
     }
 
     @Override public boolean saveReservation(SsccIssuer issuer, long expectedVersion,
-            SsccReservation reservation) {
+            SsccReservation reservation) { TenantAccess.requireOwner(issuer.tenantId());
+        TenantAccess.requireOwner(reservation.tenantId());
+        if (!issuer.id().equals(reservation.issuerId())) throw new SecurityException("Reservation issuer does not match");
         return store.putVersionedPairIfCurrent(issuer.tenantId(), issuerKey(issuer.id()), "SSCC_ISSUER",
                 write(issuer), expectedVersion, issuer.version(), reservationKey(reservation.idempotencyKey()),
                 "SSCC_RESERVATION", write(reservation));

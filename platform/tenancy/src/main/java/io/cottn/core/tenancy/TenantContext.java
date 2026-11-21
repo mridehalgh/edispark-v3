@@ -32,6 +32,18 @@ public final class TenantContext {
     return () -> restore(previous, previousMdcTenant);
   }
 
+  static void runWithoutTenant(Runnable operation) {
+    TenantContextHolder previous = CURRENT_TENANT.get();
+    String previousMdcTenant = MDC.get("tenant");
+    CURRENT_TENANT.remove();
+    MDC.remove("tenant");
+    try {
+      operation.run();
+    } finally {
+      restore(previous, previousMdcTenant);
+    }
+  }
+
   public static void runWhere(TenantContextHolder tenant, Runnable runnable) {
     Objects.requireNonNull(runnable, "runnable must not be null");
     try (Scope ignored = where(tenant)) {

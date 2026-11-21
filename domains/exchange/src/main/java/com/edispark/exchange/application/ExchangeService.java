@@ -10,7 +10,6 @@ import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.partnerships.domain.model.OutboundLossPolicy;
 import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.repository.PartnershipRepository;
-import io.cottn.core.tenancy.TenantContext;
 import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
@@ -36,11 +35,10 @@ public final class ExchangeService {
     }
 
     public List<EligibleRoute> eligibleRoutes(UUID documentSetId, UUID documentId) {
-        String tenant = tenant();
         var document = documents.describe(documentSetId, documentId);
-        return partnerships.listAgreements(tenant).stream()
+        return partnerships.listAgreements().stream()
                 .filter(item -> item.status() == AgreementStatus.ACTIVE)
-                .filter(item -> partnerships.findPartner(tenant, item.partnerId()).filter(partner -> partner.status() == com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE).isPresent())
+                .filter(item -> partnerships.findPartner(item.partnerId()).filter(partner -> partner.status() == com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE).isPresent())
                 .filter(item -> document.partnerId() == null || item.partnerId().equals(document.partnerId()))
                 .flatMap(agreement -> agreement.capabilities().stream()
                         .filter(capability -> capability.direction() == ExchangeDirection.OUTBOUND)
@@ -53,10 +51,9 @@ public final class ExchangeService {
     }
 
     public EdiExchange submitOutbound(SubmitOutbound command) {
-        String tenant = tenant();
-        EdiExchange prior = exchanges.findByIdempotencyKey(tenant, command.idempotencyKey()).orElse(null);
+        EdiExchange prior = exchanges.findByIdempotencyKey(command.idempotencyKey()).orElse(null);
         if (prior != null) return prior;
-        TradingAgreement agreement = partnerships.findAgreement(tenant, command.agreementId())
+        TradingAgreement agreement = partnerships.findAgreement(command.agreementId())
                 .filter(item -> item.status() == AgreementStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalArgumentException("Active agreement was not found"));
         ExchangeCapability capability = agreement.capabilities().stream()
@@ -65,7 +62,7 @@ public final class ExchangeService {
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Outbound capability was not found"));
         var descriptor = documents.describe(command.documentSetId(), command.documentId());
         if (descriptor.type() != capability.documentType()) throw new IllegalArgumentException("Document type does not match capability");
-        EdiExchange exchange = EdiExchange.outbound(tenant, agreement.partnerId(), agreement.id(), agreement.revision(),
+        EdiExchange exchange = exchanges.outbound( agreement.partnerId(), agreement.id(), agreement.revision(),
                 capability.id(), command.idempotencyKey(), descriptor.current(), clock.instant());
         EdiExchange claimed = exchanges.save(exchange);
         if (!claimed.id().equals(exchange.id())) return claimed;
@@ -116,7 +113,7 @@ public final class ExchangeService {
                 exchange.advance(ExchangeStatus.QUEUING_TRANSPORT, "Submitting to AS2 connection", clock.instant());
             }
             documents.content(descriptor.current()); // Recheck the exact source identity immediately before dispatch.
-            var active = partnerships.findAgreement(tenant(), exchange.agreementId()).orElseThrow();
+            var active = partnerships.findAgreement(exchange.agreementId()).orElseThrow();
             if (active.status() != AgreementStatus.ACTIVE || active.revision() != exchange.agreementRevision()) {
                 throw new IllegalArgumentException("The partner route changed. Check readiness again before sending.");
             }
@@ -137,7 +134,7 @@ public final class ExchangeService {
 
     /** No files, exchanges or transfers are created by this dry run. Send always repeats it. */
     public ReadinessReport checkReadiness(UUID agreementId, UUID capabilityId, UUID setId, UUID documentId) {
-        var agreement = partnerships.findAgreement(tenant(), agreementId)
+        var agreement = partnerships.findAgreement(agreementId)
                 .filter(item -> item.status() == AgreementStatus.ACTIVE).orElseThrow(() -> new IllegalArgumentException("Select an active partner agreement."));
         var capability = agreement.capabilities().stream().filter(item -> item.id().equals(capabilityId)
                 && item.direction() == ExchangeDirection.OUTBOUND).findFirst().orElseThrow(() -> new IllegalArgumentException("Select an outbound route."));
@@ -145,9 +142,9 @@ public final class ExchangeService {
     }
 
     private Prepared prepare(UUID agreementId, ExchangeCapability capability, DocumentAcl.DocumentDescriptor descriptor) {
-        var agreement = partnerships.findAgreement(tenant(), agreementId).orElseThrow();
+        var agreement = partnerships.findAgreement(agreementId).orElseThrow();
         List<ReadinessIssue> issues = new ArrayList<>();
-        if (partnerships.findPartner(tenant(), agreement.partnerId()).filter(partner -> partner.status() == com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE).isEmpty()) {
+        if (partnerships.findPartner(agreement.partnerId()).filter(partner -> partner.status() == com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE).isEmpty()) {
             issues.add(ReadinessIssue.configuration("PARTNER_UNAVAILABLE", "The trading partner is unavailable or suspended."));
         }
         if (!"FINAL".equals(descriptor.lifecycleStatus())) issues.add(ReadinessIssue.document("DOCUMENT_NOT_FINAL", "/", "Validate and finalize this draft before sending. Cancelled documents cannot be sent."));
@@ -161,7 +158,7 @@ public final class ExchangeService {
                 "The selected route has no current target validation proof. Ask an administrator to publish a tested mapping and requalify the agreement."));
         byte[] canonical = documents.content(descriptor.current());
         if (capability.documentProfileRevisionId() != null) {
-            var profile = partnerships.findDocumentProfile(tenant(), capability.documentProfileRevisionId()).orElse(null);
+            var profile = partnerships.findDocumentProfile(capability.documentProfileRevisionId()).orElse(null);
             if (profile == null || profile.status() != com.edispark.partnerships.domain.model.DocumentProfileStatus.PUBLISHED
                     || !profile.partnerId().equals(agreement.partnerId()) || profile.documentType() != descriptor.type()
                     || profile.direction() != ExchangeDirection.OUTBOUND) issues.add(ReadinessIssue.configuration("PROFILE_UNAVAILABLE", "The pinned partner profile is unavailable or does not match this route."));
@@ -194,8 +191,8 @@ public final class ExchangeService {
                 && agreement.qualification().passed() && agreement.qualification().checks().contains(evidence.identity()));
     }
 
-    public List<EdiExchange> list() { return exchanges.list(tenant()).stream().map(this::refreshReceipt).toList(); }
-    public EdiExchange get(UUID id) { return refreshReceipt(exchanges.find(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Exchange was not found"))); }
+    public List<EdiExchange> list() { return exchanges.list().stream().map(this::refreshReceipt).toList(); }
+    public EdiExchange get(UUID id) { return refreshReceipt(exchanges.find(id).orElseThrow(() -> new IllegalArgumentException("Exchange was not found"))); }
 
     /** Reconciles a durable MFT fact, so a missed notification cannot strand the read projection. */
     private EdiExchange refreshReceipt(EdiExchange exchange) {
@@ -222,7 +219,7 @@ public final class ExchangeService {
     }
 
     private boolean requiresFunctionalAcknowledgement(EdiExchange exchange) {
-        return partnerships.findAgreement(tenant(), exchange.agreementId()).stream()
+        return partnerships.findAgreement(exchange.agreementId()).stream()
                 .flatMap(agreement -> agreement.capabilities().stream()).filter(cap -> cap.id().equals(exchange.capabilityId()))
                 .map(cap -> cap.acknowledgementPolicy() == com.edispark.partnerships.domain.model.AcknowledgementPolicy.FUNCTIONAL)
                 .findFirst().orElse(true);
@@ -233,7 +230,6 @@ public final class ExchangeService {
         return safe + "-" + capability.messageType().toLowerCase(java.util.Locale.ROOT) + ".edi";
     }
     private String contentType(ExchangeCapability capability) { return capability.standard().name().equals("EDIFACT") ? "application/edifact" : "application/edi"; }
-    private String tenant() { return TenantContext.getCurrentTenant().asString(); }
 
     public record SubmitOutbound(UUID agreementId, UUID capabilityId, UUID documentSetId, UUID documentId,
                                  String idempotencyKey) { }

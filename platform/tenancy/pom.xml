@@ -13,6 +13,8 @@
 
     <artifactId>tenancy</artifactId>
     <dependencies>
+    <dependency><groupId>net.jqwik</groupId><artifactId>jqwik</artifactId><version>${jqwik.version}</version><scope>test</scope></dependency>
+        <dependency><groupId>ch.qos.logback</groupId><artifactId>logback-classic</artifactId><scope>test</scope></dependency>
         <dependency>
             <groupId>com.edispark</groupId>
             <artifactId>crn</artifactId>

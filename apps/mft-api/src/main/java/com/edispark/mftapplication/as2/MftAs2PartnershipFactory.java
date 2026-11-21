@@ -1,9 +1,11 @@
 package com.edispark.mftapplication.as2;
 
+import io.cottn.core.tenancy.TenantExecution;
+
 import com.edispark.mft.application.CertificateMaterial;
 import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.domain.model.PartnerProfile;
-import com.edispark.mft.domain.repository.MftRepository;
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
 import com.helger.phase2.cert.CertificateFactory;
 import com.helger.phase2.exception.AS2Exception;
 import com.helger.phase2.partner.Partnership;
@@ -17,11 +19,11 @@ import java.util.Optional;
 
 final class MftAs2PartnershipFactory extends SelfFillingPartnershipFactory {
     private static final char[] RUNTIME_PASSWORD = "runtime-only".toCharArray();
-    private final MftRepository repository;
+    private final MftDiscovery repository;
     private final CertificateService certificateService;
     private final CertificateFactory certificateFactory;
 
-    MftAs2PartnershipFactory(MftRepository repository, CertificateService certificateService,
+    MftAs2PartnershipFactory(MftDiscovery repository, CertificateService certificateService,
                              CertificateFactory certificateFactory) {
         this.repository = repository;
         this.certificateService = certificateService;
@@ -56,7 +58,7 @@ final class MftAs2PartnershipFactory extends SelfFillingPartnershipFactory {
     }
 
     private void loadIdentity(PartnerProfile partner) throws Exception {
-        CertificateMaterial material = certificateService.load(partner.tenantId(), partner.localCertificateId());
+        CertificateMaterial material = TenantExecution.io(partner.tenantId(), () -> certificateService.load(partner.localCertificateId()));
         KeyStore source = KeyStore.getInstance("PKCS12");
         source.load(new ByteArrayInputStream(material.bytes()), material.password().toCharArray());
         PrivateKey key = (PrivateKey) source.getKey(material.alias(), material.password().toCharArray());
@@ -67,7 +69,7 @@ final class MftAs2PartnershipFactory extends SelfFillingPartnershipFactory {
     }
 
     private void loadPartnerCertificate(PartnerProfile partner) throws Exception {
-        CertificateMaterial material = certificateService.load(partner.tenantId(), partner.partnerCertificateId());
+        CertificateMaterial material = TenantExecution.io(partner.tenantId(), () -> certificateService.load(partner.partnerCertificateId()));
         java.security.cert.CertificateFactory parser = java.security.cert.CertificateFactory.getInstance("X.509");
         X509Certificate certificate = (X509Certificate) parser.generateCertificate(new ByteArrayInputStream(material.bytes()));
         synchronized (certificateFactory) {

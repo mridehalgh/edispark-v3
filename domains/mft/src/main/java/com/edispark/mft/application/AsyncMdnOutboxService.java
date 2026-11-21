@@ -25,12 +25,10 @@ public final class AsyncMdnOutboxService {
 
     public MdnDelivery enqueue(PartnerProfile partner, URI callback, String contentType, byte[] body,
                                String messageId, String originalMessageId) throws IOException {
-        UUID id = UUID.nameUUIDFromBytes((partner.tenantId() + "\u0000" + originalMessageId)
-                .getBytes(StandardCharsets.UTF_8));
+        UUID id = repository.mdnId(originalMessageId);
         TransferId payloadId = new TransferId(id);
-        var payload = payloads.put(partner.tenantId(), payloadId, "signed-mdn.mime",
-                new ByteArrayInputStream(body));
-        MdnDelivery delivery = MdnDelivery.pending(id, partner.tenantId(), partner.id(), callback, contentType,
+        var payload = payloads.put(payloadId, "signed-mdn.mime", new ByteArrayInputStream(body));
+        MdnDelivery delivery = repository.pendingMdn(id, partner.id(), callback, contentType,
                 partner.localAs2Id(), partner.remoteAs2Id(), messageId, originalMessageId, payload, clock.instant());
         return repository.saveMdnDeliveryIfAbsent(delivery);
     }

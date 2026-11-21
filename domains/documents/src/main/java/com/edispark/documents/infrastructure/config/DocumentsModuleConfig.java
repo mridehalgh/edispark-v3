@@ -68,8 +68,7 @@ public class DocumentsModuleConfig {
      * Uses default AWS credentials and region configuration.
      */
     @Bean
-    @Profile("!local")
-    @ConditionalOnMissingBean
+    @Profile("!local & !openapi-export")
     public DynamoDbClient dynamoDbClient(
             @Value("${aws.region:us-east-1}") String region) {
         return DynamoDbClient.builder()
@@ -94,8 +93,7 @@ public class DocumentsModuleConfig {
      * Uses default AWS credentials and region configuration.
      */
     @Bean
-    @Profile("!local")
-    @ConditionalOnMissingBean
+    @Profile("!local & !openapi-export")
     public S3Client s3Client(
             @Value("${aws.region:us-east-1}") String region) {
         return S3Client.builder()
@@ -135,36 +133,9 @@ public class DocumentsModuleConfig {
      * Used when S3 is not available or for local testing.
      */
     @Bean
-    @Profile("local")
+    @Profile("local | openapi-export")
     @ConditionalOnMissingBean
     public ContentStore contentStoreLocal(
-            @Value("${documents.content.local.directory:./content-store}") String directory) {
-        Path contentDirectory = Paths.get(directory);
-        return new FileSystemContentStore(contentDirectory);
-    }
-
-    /**
-     * Content store implementation using S3 for production.
-     * This is a placeholder - actual S3ContentStore implementation would be needed.
-     */
-    @Bean
-    @Profile("!local")
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(name = "documents.content.s3.enabled", havingValue = "true")
-    public ContentStore contentStoreS3(
-            S3Client s3Client,
-            @Value("${documents.content.s3.bucket-name}") String bucketName) {
-        // TODO: Implement S3ContentStore when needed
-        throw new UnsupportedOperationException("S3ContentStore not yet implemented. Use local profile for development.");
-    }
-
-    /**
-     * Fallback content store using file system when S3 is not configured.
-     */
-    @Bean
-    @Profile("!local")
-    @ConditionalOnMissingBean
-    public ContentStore contentStoreFallback(
             @Value("${documents.content.local.directory:./content-store}") String directory) {
         Path contentDirectory = Paths.get(directory);
         return new FileSystemContentStore(contentDirectory);

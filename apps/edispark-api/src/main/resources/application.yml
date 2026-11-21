@@ -41,6 +41,12 @@ documents:
       enabled: ${DOCUMENTS_S3_ENABLED:false}
       bucket-name: ${DOCUMENTS_S3_BUCKET:}
 
+  encryption:
+    registry-table: ${DOCUMENTS_TENANT_KEY_REGISTRY_TABLE:${MFT_METADATA_TABLE:}}
+    key-store-table: ${DOCUMENTS_KEY_STORE_TABLE:${MFT_KEY_STORE_TABLE:}}
+    logical-name: ${DOCUMENTS_KEY_STORE_LOGICAL_NAME:${MFT_KEY_STORE_LOGICAL_NAME:}}
+    root-key-arn: ${DOCUMENTS_ROOT_KMS_KEY_ARN:${MFT_ROOT_KMS_KEY_ARN:}}
+
 mft:
   aws:
     region: ${AWS_REGION:eu-west-2}

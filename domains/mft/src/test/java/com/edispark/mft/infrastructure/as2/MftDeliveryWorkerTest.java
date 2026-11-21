@@ -25,10 +25,10 @@ class MftDeliveryWorkerTest {
     @Test void retriesATransportTimeoutWithoutDuplicatingTheTransferOrBlockingItsNeighbour() throws Exception {
         var repository = new InMemoryMftRepository();
         var payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-timeout-retry"));
-        var partner = partner(); repository.savePartner(partner);
+        var partner = partner(); com.edispark.testing.FixtureTenants.persist(partner, record -> record.tenantId(), repository::savePartner);
         var timedOut = transfer(partner, payloads, "timeout-export", NOW.minusSeconds(2));
         var neighbour = transfer(partner, payloads, "neighbour-export", NOW.minusSeconds(1));
-        repository.save(timedOut); repository.save(neighbour);
+        com.edispark.testing.FixtureTenants.persist(timedOut, record -> record.tenantId(), repository::save); com.edispark.testing.FixtureTenants.persist(neighbour, record -> record.tenantId(), repository::save);
         var now = new java.util.concurrent.atomic.AtomicReference<>(NOW);
         Clock clock = new Clock() {
             public java.time.ZoneId getZone() { return ZoneOffset.UTC; }
@@ -44,11 +44,11 @@ class MftDeliveryWorkerTest {
         }, clock);
         var worker = new MftDeliveryWorker(repository, deliveries, clock);
         worker.deliverDueTransfers();
-        assertThat(repository.findTransfer(TENANT_ID, timedOut.id()).orElseThrow().status()).isEqualTo(TransferStatus.RETRY_SCHEDULED);
-        assertThat(repository.findTransfer(TENANT_ID, neighbour.id()).orElseThrow().status()).isEqualTo(TransferStatus.DELIVERED);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.findTransfer(timedOut.id())).orElseThrow().status()).isEqualTo(TransferStatus.RETRY_SCHEDULED);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.findTransfer(neighbour.id())).orElseThrow().status()).isEqualTo(TransferStatus.DELIVERED);
         now.set(NOW.plusSeconds(600));
         worker.deliverDueTransfers();
-        var recovered = repository.findTransfer(TENANT_ID, timedOut.id()).orElseThrow();
+        var recovered = io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.findTransfer(timedOut.id())).orElseThrow();
         assertThat(recovered.status()).isEqualTo(TransferStatus.DELIVERED);
         assertThat(recovered.attempts()).hasSize(2);
         assertThat(recovered.payload()).isEqualTo(timedOut.payload());
@@ -64,11 +64,11 @@ class MftDeliveryWorkerTest {
         var repository = new InMemoryMftRepository();
         var payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-delivery-worker"));
         var partner = partner();
-        repository.savePartner(partner);
+        com.edispark.testing.FixtureTenants.persist(partner, record -> record.tenantId(), repository::savePartner);
         Transfer bad = transfer(partner, payloads, "bad-export", NOW.minusSeconds(2));
         Transfer good = transfer(partner, payloads, "good-export", NOW.minusSeconds(1));
-        repository.save(bad);
-        repository.save(good);
+        com.edispark.testing.FixtureTenants.persist(bad, record -> record.tenantId(), repository::save);
+        com.edispark.testing.FixtureTenants.persist(good, record -> record.tenantId(), repository::save);
         var attempts = new AtomicInteger();
         var deliveries = new MftDeliveryService(repository, payloads, (profile, transfer, payload) -> {
             if (attempts.getAndIncrement() == 0) throw new IllegalArgumentException("bad outbound payload");
@@ -78,9 +78,9 @@ class MftDeliveryWorkerTest {
 
         worker.deliverDueTransfers();
 
-        assertThat(repository.findTransfer(TENANT_ID, bad.id()).orElseThrow().status())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.findTransfer(bad.id())).orElseThrow().status())
                 .isEqualTo(TransferStatus.NEEDS_REVIEW);
-        assertThat(repository.findTransfer(TENANT_ID, good.id()).orElseThrow().status())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.findTransfer(good.id())).orElseThrow().status())
                 .isEqualTo(TransferStatus.DELIVERED);
         assertThat(attempts).hasValue(2);
     }

@@ -24,6 +24,21 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemResponse;
 
 class DynamoDbMftRepositoryIsolationTest {
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
+
+    @org.junit.jupiter.api.BeforeEach
+    @net.jqwik.api.lifecycle.BeforeTry
+    void bindFixtureTenant() {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(
+                com.edispark.identifiers.tenant.TenantId.fromString("2OnHVzeAJKwm0ThFLcy1HfLHGPm")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    @net.jqwik.api.lifecycle.AfterTry
+    void restoreFixtureTenant() {
+        if (fixtureScope != null) fixtureScope.close();
+    }
+
     @Test
     void transferTransitionsUseAStatusConditionSoCallbacksCannotBeOverwritten() {
         AtomicReference<PutItemRequest> captured = new AtomicReference<>();
@@ -32,7 +47,7 @@ class DynamoDbMftRepositoryIsolationTest {
             return PutItemResponse.builder().build();
         });
         Instant now = Instant.parse("2026-10-30T12:00:00Z");
-        Transfer transfer = Transfer.outbound("tenant-a", UUID.randomUUID(), "order.edi", "application/edifact",
+        Transfer transfer = Transfer.outbound("2OnHVzeAJKwm0ThFLcy1HfLHGPm", UUID.randomUUID(), "order.edi", "application/edifact",
                 "<message@example.test>", UUID.randomUUID().toString(), null, now);
         transfer.startAttempt(now);
         transfer.awaitMdn(now.plusSeconds(1));
@@ -57,7 +72,7 @@ class DynamoDbMftRepositoryIsolationTest {
         Instant now = Instant.parse("2026-10-30T12:00:00.900Z");
 
         assertThat(new DynamoDbMftRepository(dynamoDb, "mft").tryAcquireDeliveryLease(
-                "tenant-a", com.edispark.mft.domain.model.TransferId.generate(), "worker", now,
+                "2OnHVzeAJKwm0ThFLcy1HfLHGPm", com.edispark.mft.domain.model.TransferId.generate(), "worker", now,
                 now.plusSeconds(60))).isTrue();
 
         assertThat(captured.get().item().get("leaseUntil").n()).isEqualTo("1793361660900");
@@ -74,9 +89,9 @@ class DynamoDbMftRepositoryIsolationTest {
         });
         UUID partnerId = UUID.randomUUID();
 
-        assertThat(new DynamoDbMftRepository(dynamoDb, "mft").findPartner("tenant-a", partnerId)).isEmpty();
+        assertThat(new DynamoDbMftRepository(dynamoDb, "mft").findPartner("2OnHVzeAJKwm0ThFLcy1HfLHGPm", partnerId)).isEmpty();
         assertThat(captured.get().consistentRead()).isTrue();
-        assertThat(captured.get().key().get("pk").s()).isEqualTo("TENANT#tenant-a");
+        assertThat(captured.get().key().get("pk").s()).isEqualTo("TENANT#2OnHVzeAJKwm0ThFLcy1HfLHGPm");
         assertThat(captured.get().key().get("sk").s()).isEqualTo("PARTNER#" + partnerId);
     }
 
@@ -88,11 +103,11 @@ class DynamoDbMftRepositoryIsolationTest {
             return QueryResponse.builder().items(List.of()).build();
         });
 
-        new DynamoDbMftRepository(dynamoDb, "mft").listPartners("tenant-a");
+        new DynamoDbMftRepository(dynamoDb, "mft").listPartners("2OnHVzeAJKwm0ThFLcy1HfLHGPm");
 
         assertThat(captured.get().keyConditionExpression()).isEqualTo("pk = :pk AND begins_with(sk, :prefix)");
         assertThat(captured.get().filterExpression()).isNull();
-        assertThat(captured.get().expressionAttributeValues().get(":pk").s()).isEqualTo("TENANT#tenant-a");
+        assertThat(captured.get().expressionAttributeValues().get(":pk").s()).isEqualTo("TENANT#2OnHVzeAJKwm0ThFLcy1HfLHGPm");
         assertThat(captured.get().expressionAttributeValues().get(":prefix").s()).isEqualTo("PARTNER#");
     }
 
@@ -103,7 +118,7 @@ class DynamoDbMftRepositoryIsolationTest {
             captured.set((TransactWriteItemsRequest) arguments[0]);
             return TransactWriteItemsResponse.builder().build();
         });
-        PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), "tenant-a", "Retailer", "EDISPARK-A",
+        PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), "2OnHVzeAJKwm0ThFLcy1HfLHGPm", "Retailer", "EDISPARK-A",
                 "RETAILER-A", URI.create("https://retailer.example/as2"), UUID.randomUUID(), UUID.randomUUID(),
                 MdnMode.SYNCHRONOUS, true, true, true, false, Instant.parse("2026-10-30T12:00:00Z"));
 
@@ -114,10 +129,10 @@ class DynamoDbMftRepositoryIsolationTest {
                 captured.get().transactItems().getFirst().put().item();
         assertThat(owner.get("pk").s()).startsWith("AS2PAIR#");
         assertThat(owner.get("sk").s()).isEqualTo("OWNER");
-        assertThat(owner.get("tenantId").s()).isEqualTo("tenant-a");
+        assertThat(owner.get("tenantId").s()).isEqualTo("2OnHVzeAJKwm0ThFLcy1HfLHGPm");
         assertThat(captured.get().transactItems().getFirst().put().conditionExpression())
                 .isEqualTo("attribute_not_exists(pk)");
         assertThat(captured.get().transactItems().get(1).put().item().get("pk").s())
-                .isEqualTo("TENANT#tenant-a");
+                .isEqualTo("TENANT#2OnHVzeAJKwm0ThFLcy1HfLHGPm");
     }
 }

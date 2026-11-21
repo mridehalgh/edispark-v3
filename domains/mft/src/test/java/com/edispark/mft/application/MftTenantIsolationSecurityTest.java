@@ -41,15 +41,15 @@ class MftTenantIsolationSecurityTest {
         FileSystemPayloadStore payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-isolation"));
         CertificateRecord local = certificate(TENANT_A, CertificateKind.LOCAL_IDENTITY);
         CertificateRecord remote = certificate(TENANT_B, CertificateKind.PARTNER_PUBLIC);
-        repository.saveCertificate(local);
-        repository.saveCertificate(remote);
+        com.edispark.testing.FixtureTenants.persist(local, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(remote, record -> record.tenantId(), repository::saveCertificate);
         MftService service = new MftService(repository, payloads, CLOCK);
 
         assertThatThrownBy(() -> inTenant(TENANT_A, () -> service.createPartner(command(local.id(), remote.id(),
                 "EDISPARK-A", "RETAILER-A"))))
                 .isInstanceOf(MftNotFoundException.class)
                 .hasMessage("Partner signing certificate was not found");
-        assertThat(repository.listPartners(TENANT_A)).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listPartners())).isEmpty();
     }
 
     @Test
@@ -57,8 +57,8 @@ class MftTenantIsolationSecurityTest {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         CertificateRecord first = certificate(TENANT_A, CertificateKind.PARTNER_PUBLIC);
         CertificateRecord second = certificate(TENANT_A, CertificateKind.PARTNER_PUBLIC);
-        repository.saveCertificate(first);
-        repository.saveCertificate(second);
+        com.edispark.testing.FixtureTenants.persist(first, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(second, record -> record.tenantId(), repository::saveCertificate);
         MftService service = new MftService(repository,
                 new FileSystemPayloadStore(Files.createTempDirectory("mft-purpose")), CLOCK);
 
@@ -74,9 +74,9 @@ class MftTenantIsolationSecurityTest {
         CertificateRecord local = certificate(TENANT_A, CertificateKind.LOCAL_IDENTITY);
         CertificateRecord partnerCertificate = certificate(TENANT_A, CertificateKind.PARTNER_PUBLIC);
         CertificateRecord foreign = certificate(TENANT_B, CertificateKind.PARTNER_PUBLIC);
-        repository.saveCertificate(local);
-        repository.saveCertificate(partnerCertificate);
-        repository.saveCertificate(foreign);
+        com.edispark.testing.FixtureTenants.persist(local, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(partnerCertificate, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(foreign, record -> record.tenantId(), repository::saveCertificate);
         MftService service = new MftService(repository,
                 new FileSystemPayloadStore(Files.createTempDirectory("mft-rollover-isolation")),
                 CLOCK, false, false);
@@ -98,17 +98,17 @@ class MftTenantIsolationSecurityTest {
         CertificateRecord remoteA = certificate(TENANT_A, CertificateKind.PARTNER_PUBLIC);
         CertificateRecord localB = certificate(TENANT_B, CertificateKind.LOCAL_IDENTITY);
         CertificateRecord remoteB = certificate(TENANT_B, CertificateKind.PARTNER_PUBLIC);
-        repository.saveCertificate(localA);
-        repository.saveCertificate(remoteA);
-        repository.saveCertificate(localB);
-        repository.saveCertificate(remoteB);
+        com.edispark.testing.FixtureTenants.persist(localA, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(remoteA, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(localB, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(remoteB, record -> record.tenantId(), repository::saveCertificate);
         inTenant(TENANT_A, () -> service.createPartner(command(localA.id(), remoteA.id(), "EDISPARK", "RETAILER")));
 
         assertThatThrownBy(() -> inTenant(TENANT_B, () -> service.createPartner(
                 command(localB.id(), remoteB.id(), "EDISPARK", "RETAILER"))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("The AS2 identity pair is already assigned to a workspace");
-        assertThat(repository.listPartners(TENANT_B)).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_B, () -> repository.listPartners())).isEmpty();
     }
 
     @Test
@@ -117,16 +117,16 @@ class MftTenantIsolationSecurityTest {
         FileSystemPayloadStore payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-inbound-owner"));
         PartnerProfile owner = partner(TENANT_A, "EDISPARK-A", "RETAILER-A");
         PartnerProfile other = partner(TENANT_B, "EDISPARK-B", "RETAILER-B");
-        repository.savePartner(owner);
-        repository.savePartner(other);
+        com.edispark.testing.FixtureTenants.persist(owner, record -> record.tenantId(), repository::savePartner);
+        com.edispark.testing.FixtureTenants.persist(other, record -> record.tenantId(), repository::savePartner);
         MftService service = new MftService(repository, payloads, CLOCK);
 
-        Transfer transfer = service.receiveInbound("EDISPARK-A", "RETAILER-A", "<message@retailer>",
+        Transfer transfer = new com.edispark.mft.infrastructure.as2.MftInboundGateway(repository, service).receiveInbound("EDISPARK-A", "RETAILER-A", "<message@retailer>",
                 "orders.edi", "application/edifact", "UNA:+.?".getBytes());
 
         assertThat(transfer.tenantId()).isEqualTo(TENANT_A);
-        assertThat(repository.listTransfers(TENANT_A)).containsExactly(transfer);
-        assertThat(repository.listTransfers(TENANT_B)).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listTransfers())).containsExactly(transfer);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_B, () -> repository.listTransfers())).isEmpty();
         assertThat(payloads.get(TENANT_A, transfer.payload()).readAllBytes()).isEqualTo("UNA:+.?".getBytes());
         assertThatThrownBy(() -> payloads.get(TENANT_B, transfer.payload()))
                 .isInstanceOf(SecurityException.class);
@@ -136,7 +136,7 @@ class MftTenantIsolationSecurityTest {
     void outboundSubmissionCannotUseAnotherOrganisationsPartnerAndWritesNoPayload() {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         PartnerProfile partnerB = partner(TENANT_B, "EDISPARK-B", "RETAILER-B");
-        repository.savePartner(partnerB);
+        com.edispark.testing.FixtureTenants.persist(partnerB, record -> record.tenantId(), repository::savePartner);
         RecordingPayloadStore payloads = new RecordingPayloadStore();
         MftService service = new MftService(repository, payloads, CLOCK);
 
@@ -146,8 +146,8 @@ class MftTenantIsolationSecurityTest {
                 .isInstanceOf(MftNotFoundException.class)
                 .hasMessage("Partner was not found");
         assertThat(payloads.putCalls).isZero();
-        assertThat(repository.listTransfers(TENANT_A)).isEmpty();
-        assertThat(repository.listTransfers(TENANT_B)).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listTransfers())).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_B, () -> repository.listTransfers())).isEmpty();
     }
 
     @Test
@@ -158,39 +158,39 @@ class MftTenantIsolationSecurityTest {
         Transfer second = Transfer.outbound(TENANT_B, UUID.randomUUID(), "b.edi", "application/edifact",
                 "<b@example>", "same-key", null, NOW);
 
-        assertThat(repository.saveOutboundIfAbsent(first)).isSameAs(first);
-        assertThat(repository.saveOutboundIfAbsent(second)).isSameAs(second);
-        assertThat(repository.listTransfers(TENANT_A)).containsExactly(first);
-        assertThat(repository.listTransfers(TENANT_B)).containsExactly(second);
+        assertThat(com.edispark.testing.FixtureTenants.persist(first, record -> record.tenantId(), repository::saveOutboundIfAbsent)).isSameAs(first);
+        assertThat(com.edispark.testing.FixtureTenants.persist(second, record -> record.tenantId(), repository::saveOutboundIfAbsent)).isSameAs(second);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listTransfers())).containsExactly(first);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_B, () -> repository.listTransfers())).containsExactly(second);
     }
 
     @Test
     void unknownAs2PairDoesNotFallBackToAnyOrganisation() throws Exception {
         InMemoryMftRepository repository = new InMemoryMftRepository();
-        repository.savePartner(partner(TENANT_A, "EDISPARK-A", "RETAILER-A"));
+        com.edispark.testing.FixtureTenants.persist(partner(TENANT_A, "EDISPARK-A", "RETAILER-A"), record -> record.tenantId(), repository::savePartner);
         MftService service = new MftService(repository,
                 new FileSystemPayloadStore(Files.createTempDirectory("mft-unknown-pair")), CLOCK);
 
-        assertThatThrownBy(() -> service.receiveInbound("EDISPARK-A", "ATTACKER", "<unknown@example>",
+        assertThatThrownBy(() -> new com.edispark.mft.infrastructure.as2.MftInboundGateway(repository, service).receiveInbound("EDISPARK-A", "ATTACKER", "<unknown@example>",
                 "payload.edi", "application/edifact", new byte[]{1}))
                 .isInstanceOf(MftNotFoundException.class)
                 .hasMessage("Inbound AS2 partnership was not found");
-        assertThat(repository.listTransfers(TENANT_A)).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listTransfers())).isEmpty();
     }
 
     @Test
     void reusingMessageIdWithDifferentContentIsRejectedWithoutStoringAnotherFile() throws Exception {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         FileSystemPayloadStore payloads = new FileSystemPayloadStore(Files.createTempDirectory("mft-replay"));
-        repository.savePartner(partner(TENANT_A, "EDISPARK-A", "RETAILER-A"));
+        com.edispark.testing.FixtureTenants.persist(partner(TENANT_A, "EDISPARK-A", "RETAILER-A"), record -> record.tenantId(), repository::savePartner);
         MftService service = new MftService(repository, payloads, CLOCK);
-        service.receiveInbound("EDISPARK-A", "RETAILER-A", "<replay@example>",
+        new com.edispark.mft.infrastructure.as2.MftInboundGateway(repository, service).receiveInbound("EDISPARK-A", "RETAILER-A", "<replay@example>",
                 "orders.edi", "application/edifact", new byte[]{1, 2, 3});
 
-        assertThatThrownBy(() -> service.receiveInbound("EDISPARK-A", "RETAILER-A", "<replay@example>",
+        assertThatThrownBy(() -> new com.edispark.mft.infrastructure.as2.MftInboundGateway(repository, service).receiveInbound("EDISPARK-A", "RETAILER-A", "<replay@example>",
                 "orders.edi", "application/edifact", new byte[]{9, 8, 7}))
                 .isInstanceOf(As2ReplayConflictException.class);
-        assertThat(repository.listTransfers(TENANT_A)).hasSize(1);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listTransfers())).hasSize(1);
     }
 
     @Test
@@ -201,18 +201,18 @@ class MftTenantIsolationSecurityTest {
                 active.remoteAs2Id(), active.endpoint(), active.localCertificateId(),
                 active.partnerSigningCertificateId(), active.partnerEncryptionCertificateId(), null, null, null,
                 active.mdnMode(), true, true, false, false, PartnerStatus.DRAFT, NOW);
-        repository.savePartner(draft);
+        com.edispark.testing.FixtureTenants.persist(draft, record -> record.tenantId(), repository::savePartner);
         MftService service = new MftService(repository,
                 new FileSystemPayloadStore(Files.createTempDirectory("mft-inactive")), CLOCK);
 
-        assertThatThrownBy(() -> service.receiveInbound("EDISPARK-A", "RETAILER-A", "<draft@example>",
+        assertThatThrownBy(() -> new com.edispark.mft.infrastructure.as2.MftInboundGateway(repository, service).receiveInbound("EDISPARK-A", "RETAILER-A", "<draft@example>",
                 "orders.edi", "application/edifact", new byte[]{1}))
                 .isInstanceOf(IllegalStateException.class).hasMessage("Partner is not active");
         assertThatThrownBy(() -> inTenant(TENANT_A, () -> service.submitOutbound(new MftService.SubmitOutbound(
                 draft.id(), "draft", "orders.edi", "application/edifact",
                 new ByteArrayInputStream(new byte[]{1}), null))))
                 .isInstanceOf(IllegalStateException.class).hasMessage("Partner is not active");
-        assertThat(repository.listTransfers(TENANT_A)).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_A, () -> repository.listTransfers())).isEmpty();
     }
 
     private MftService.CreatePartner command(UUID local, UUID remote, String localAs2, String remoteAs2) {
@@ -259,7 +259,7 @@ class MftTenantIsolationSecurityTest {
     @FunctionalInterface
     private interface ThrowingSupplier<T> { T get() throws Exception; }
 
-    private static final class RecordingPayloadStore implements PayloadStore {
+    private static final class RecordingPayloadStore implements com.edispark.mft.infrastructure.storage.ExplicitPayloadStore {
         private int putCalls;
         @Override public PayloadRef put(String tenantId, TransferId transferId, String filename, InputStream content) {
             putCalls++;

@@ -277,7 +277,7 @@ class ExchangeServiceTest {
                     return UUID.randomUUID();
                 }, Clock.fixed(NOW, ZoneOffset.UTC));
         var command = new ExchangeService.SubmitOutbound(
-                partnerships.listAgreements(TENANT).getFirst().id(), capability.id(), UUID.randomUUID(),
+                io.cottn.core.tenancy.TenantExecution.get(TENANT, () -> partnerships.listAgreements()).getFirst().id(), capability.id(), UUID.randomUUID(),
                 UUID.randomUUID(), "warning-" + policy);
         var exchange = new AtomicReference<EdiExchange>();
         TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)),
@@ -293,9 +293,9 @@ class ExchangeServiceTest {
     }
 
     private void saveAgreement(InMemoryPartnershipRepository repository, TradingAgreement agreement) {
-        repository.savePartner(new com.edispark.partnerships.domain.model.TradingPartner(agreement.partnerId(), TENANT,
-                "Test partner", List.of(), com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE, NOW, NOW));
-        repository.saveAgreement(agreement);
+        com.edispark.testing.FixtureTenants.persist(new com.edispark.partnerships.domain.model.TradingPartner(agreement.partnerId(), TENANT,
+                "Test partner", List.of(), com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE, NOW, NOW), record -> record.tenantId(), repository::savePartner);
+        com.edispark.testing.FixtureTenants.persist(agreement, record -> record.tenantId(), repository::saveAgreement);
     }
 
     private static final class DocumentProbe implements DocumentAcl {

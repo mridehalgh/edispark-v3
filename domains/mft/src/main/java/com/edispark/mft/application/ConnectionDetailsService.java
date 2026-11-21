@@ -3,7 +3,6 @@ package com.edispark.mft.application;
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.repository.MftRepository;
-import io.cottn.core.tenancy.TenantContext;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -32,14 +31,13 @@ public final class ConnectionDetailsService {
     }
 
     public List<ConnectionDetails> list() {
-        String tenantId = TenantContext.getCurrentTenant().asString();
-        return repository.listPartners(tenantId).stream()
-                .map(partner -> connectionDetails(tenantId, partner))
+        return repository.listPartners().stream()
+                .map(partner -> connectionDetails(partner))
                 .toList();
     }
 
-    private ConnectionDetails connectionDetails(String tenantId, PartnerProfile partner) {
-        CertificateRecord certificate = repository.findCertificate(tenantId, partner.localCertificateId())
+    private ConnectionDetails connectionDetails(PartnerProfile partner) {
+        CertificateRecord certificate = repository.findCertificate(partner.localCertificateId())
                 .orElseThrow(() -> new MftNotFoundException("Organisation AS2 certificate was not found"));
         As2EncryptionCertificateProvider.PublicCertificate encryption =
                 encryptionCertificates.encryptionCertificate(certificate);

@@ -17,16 +17,16 @@ final class LocalIntegrationDemoSeederTest {
         var partnerships = new InMemoryPartnershipRepository();
         var seeder = new LocalIntegrationDemoSeeder(partnerships, new InMemorySsccRepository(), new InMemoryMappingRepository(), Clock.systemUTC());
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
-        var draft = partnerships.listPartners(TENANT_ID).stream().filter(item -> item.status().name().equals("DRAFT")).findFirst().orElseThrow();
+        var draft = io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners()).stream().filter(item -> item.status().name().equals("DRAFT")).findFirst().orElseThrow();
         var edited = draft.revise("Edited local supplier", draft.identities(), draft.inboundFileFailurePolicy(), Instant.now());
-        partnerships.savePartner(edited);
-        var active = partnerships.listPartners(TENANT_ID).stream().filter(item -> item.status().name().equals("ACTIVE")).findFirst().orElseThrow();
-        var suspended = active.suspend(Instant.now()); partnerships.savePartner(suspended);
+        com.edispark.testing.FixtureTenants.persist(edited, record -> record.tenantId(), partnerships::savePartner);
+        var active = io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners()).stream().filter(item -> item.status().name().equals("ACTIVE")).findFirst().orElseThrow();
+        var suspended = active.suspend(Instant.now()); com.edispark.testing.FixtureTenants.persist(suspended, record -> record.tenantId(), partnerships::savePartner);
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
-        assertThat(partnerships.findPartner(TENANT_ID, edited.id()).orElseThrow()).isEqualTo(edited);
-        assertThat(partnerships.findPartner(TENANT_ID, suspended.id()).orElseThrow()).isEqualTo(suspended);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.findPartner(edited.id())).orElseThrow()).isEqualTo(edited);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.findPartner(suspended.id())).orElseThrow()).isEqualTo(suspended);
     }
-    private static final String TENANT_ID = "tenant-demo";
+    private static final String TENANT_ID = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final UUID EDIFACT_CONNECTION_ID = UUID.fromString("850ca900-3f1e-4f98-b5e2-f17f557cc9e0");
     private static final UUID TRADACOMS_CONNECTION_ID = UUID.fromString("850ca900-3f1e-4f98-b5e2-f17f557cc9e2");
 
@@ -39,34 +39,34 @@ final class LocalIntegrationDemoSeederTest {
                 Clock.fixed(Instant.parse("2026-11-01T12:00:00Z"), ZoneOffset.UTC));
 
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
-        var firstMappingNodes = mappings.list(TENANT_ID).stream().flatMap(mapping -> mapping.nodes().stream())
+        var firstMappingNodes = io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.list()).stream().flatMap(mapping -> mapping.nodes().stream())
                 .map(node -> node.id()).sorted().toList();
 
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
 
-        assertThat(partnerships.listPartners(TENANT_ID)).hasSize(3);
-        assertThat(partnerships.listAgreements(TENANT_ID)).hasSize(3);
-        assertThat(sscc.list(TENANT_ID)).singleElement().satisfies(issuer -> {
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners())).hasSize(3);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listAgreements())).hasSize(3);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> sscc.list())).singleElement().satisfies(issuer -> {
             assertThat(issuer.name()).isEqualTo("Local demonstration range");
             assertThat(issuer.defaultIssuer()).isTrue();
             assertThat(issuer.nextSerial()).isEqualTo(1);
         });
-        assertThat(mappings.list(TENANT_ID)).hasSize(3);
-        assertThat(partnerships.listPartners(TENANT_ID)).extracting(item -> item.status().name())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.list())).hasSize(3);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners())).extracting(item -> item.status().name())
                 .containsExactlyInAnyOrder("ACTIVE", "ACTIVE", "DRAFT");
-        assertThat(partnerships.listPartners(TENANT_ID)).extracting(item -> item.displayName())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners())).extracting(item -> item.displayName())
                 .containsExactlyInAnyOrder("Northstar Retail", "Northstar Retail UK", "Harbour Retail");
-        assertThat(partnerships.listPartners(TENANT_ID).stream()
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners()).stream()
                 .filter(item -> item.displayName().equals("Harbour Retail")))
                 .allSatisfy(item -> assertThat(item.inboundFileFailurePolicy())
                         .isEqualTo(InboundFileFailurePolicy.KEEP_VALID_MESSAGES));
-        assertThat(partnerships.listPartners(TENANT_ID).stream()
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listPartners()).stream()
                 .filter(item -> item.displayName().startsWith("Northstar Retail")))
                 .allSatisfy(item -> assertThat(item.inboundFileFailurePolicy())
                         .isEqualTo(InboundFileFailurePolicy.REJECT_FILE));
-        assertThat(mappings.list(TENANT_ID)).extracting(item -> item.status().name())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.list())).extracting(item -> item.status().name())
                 .containsExactlyInAnyOrder("DRAFT", "DRAFT", "SCHEDULED");
-        assertThat(partnerships.listAgreements(TENANT_ID).stream()
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listAgreements()).stream()
                 .filter(agreement -> agreement.status().name().equals("ACTIVE")))
                 .allSatisfy(agreement -> {
                     assertThat(agreement.capabilities()).hasSize(6);
@@ -79,7 +79,7 @@ final class LocalIntegrationDemoSeederTest {
                             .containsOnly(agreement.name().contains("EDIFACT")
                                     ? EDIFACT_CONNECTION_ID : TRADACOMS_CONNECTION_ID);
                 });
-        assertThat(partnerships.listAgreements(TENANT_ID).stream()
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> partnerships.listAgreements()).stream()
                 .filter(agreement -> agreement.status().name().equals("ACTIVE"))
                 .flatMap(agreement -> agreement.capabilities().stream())
                 .map(capability -> capability.standard().name() + ":" + capability.release()
@@ -99,16 +99,16 @@ final class LocalIntegrationDemoSeederTest {
                         "TRADACOMS:9:OUTBOUND:INVOICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac23",
                         "TRADACOMS:9:INBOUND:REMITTANCE_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac55",
                         "TRADACOMS:9:INBOUND:RECEIPT_ADVICE:d9c01ea5-f555-4c6d-9c87-1465ea78ac57");
-        assertThat(mappings.list(TENANT_ID).stream().flatMap(mapping -> mapping.nodes().stream())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.list()).stream().flatMap(mapping -> mapping.nodes().stream())
                 .map(node -> node.id()).sorted().toList()).isEqualTo(firstMappingNodes);
-        var reviewDraft = mappings.list(TENANT_ID).stream()
+        var reviewDraft = io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.list()).stream()
                 .filter(mapping -> mapping.name().startsWith("Order response readiness review")).findFirst().orElseThrow();
-        mappings.delete(TENANT_ID, reviewDraft.id());
+        io.cottn.core.tenancy.TenantExecution.run(TENANT_ID, () -> mappings.delete(reviewDraft.id()));
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
-        assertThat(mappings.find(TENANT_ID, reviewDraft.id()).orElseThrow().nodes()).isEqualTo(reviewDraft.nodes());
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.find(reviewDraft.id())).orElseThrow().nodes()).isEqualTo(reviewDraft.nodes());
         var edited = reviewDraft.revise(reviewDraft.nodes().subList(0, 2));
-        mappings.save(edited);
+        com.edispark.testing.FixtureTenants.persist(edited, record -> record.tenantId(), mappings::save);
         seeder.reconcile(TENANT_ID, EDIFACT_CONNECTION_ID, TRADACOMS_CONNECTION_ID);
-        assertThat(mappings.find(TENANT_ID, reviewDraft.id()).orElseThrow().nodes()).isEqualTo(edited.nodes());
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> mappings.find(reviewDraft.id())).orElseThrow().nodes()).isEqualTo(edited.nodes());
     }
 }

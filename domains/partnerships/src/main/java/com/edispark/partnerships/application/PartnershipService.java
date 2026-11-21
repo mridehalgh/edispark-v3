@@ -16,7 +16,6 @@ import com.edispark.partnerships.domain.model.TradingAgreement;
 import com.edispark.partnerships.domain.model.TradingPartner;
 import com.edispark.partnerships.domain.repository.PartnershipRepository;
 import com.edispark.partnerships.domain.repository.SsccRepository;
-import io.cottn.core.tenancy.TenantContext;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,13 +50,12 @@ public final class PartnershipService {
 
     public TradingPartner createPartner(String name, List<BusinessIdentity> identities,
             InboundFileFailurePolicy failurePolicy) {
-        String tenant = tenant();
         for (BusinessIdentity identity : identities) {
-            boolean duplicate = repository.listPartners(tenant).stream()
+            boolean duplicate = repository.listPartners().stream()
                     .flatMap(item -> item.identities().stream()).anyMatch(identity::equals);
             if (duplicate) throw new IllegalArgumentException("Business identity is already registered");
         }
-        return repository.savePartner(TradingPartner.create(tenant, name, identities,
+        return repository.savePartner(repository.createPartner( name, identities,
                 failurePolicy == null ? InboundFileFailurePolicy.REJECT_FILE : failurePolicy, clock.instant()));
     }
 
@@ -65,7 +63,7 @@ public final class PartnershipService {
         return createPartner(name, identities, InboundFileFailurePolicy.REJECT_FILE);
     }
 
-    public List<TradingPartner> listPartners() { promoteDue(); return repository.listPartners(tenant()); }
+    public List<TradingPartner> listPartners() { promoteDue(); return repository.listPartners(); }
 
     public TradingPartner getPartner(UUID id) { return requirePartner(id); }
 
@@ -92,7 +90,7 @@ public final class PartnershipService {
         if (effectiveAt != null && effectiveAt.isAfter(now)) {
             return repository.savePartner(candidate.schedule(effectiveAt, now));
         }
-        repository.listPartners(tenant()).stream()
+        repository.listPartners().stream()
                 .filter(item -> item.familyId().equals(candidate.familyId()) && !item.id().equals(candidate.id()))
                 .map(item -> item.supersede(now)).filter(item -> item.status() == PartnerStatus.SUPERSEDED)
                 .forEach(repository::savePartner);
@@ -108,16 +106,16 @@ public final class PartnershipService {
         if (partner.status() != PartnerStatus.DRAFT) {
             throw new IllegalStateException("Only an unused draft partner revision can be permanently deleted");
         }
-        boolean referenced = repository.listAgreements(tenant()).stream()
+        boolean referenced = repository.listAgreements().stream()
                 .anyMatch(item -> item.partnerId().equals(id) || item.partnerId().equals(partner.familyId()));
         if (referenced) throw new IllegalStateException("Partner revision is used by an agreement");
-        repository.deletePartner(tenant(), id);
+        repository.deletePartner(id);
     }
 
     public TradingAgreement createAgreement(UUID partnerId, String name) {
         TradingPartner partner = requirePartner(partnerId);
         if (partner.status() != PartnerStatus.ACTIVE) throw new IllegalStateException("Partner is suspended");
-        return repository.saveAgreement(TradingAgreement.draft(tenant(), partnerId, name, clock.instant()));
+        return repository.saveAgreement(repository.draftAgreement( partnerId, name, clock.instant()));
     }
 
     public TradingAgreement addCapability(UUID agreementId, ExchangeCapability capability) {
@@ -143,13 +141,13 @@ public final class PartnershipService {
             BusinessDocumentType documentType, List<DocumentFieldRule> rules, SsccGenerationMode generationMode,
             UUID ssccIssuerId) {
         TradingPartner partner = requirePartner(partnerId);
-        return repository.saveDocumentProfile(DocumentProfile.draft(tenant(), partner.id(), name, direction,
+        return repository.saveDocumentProfile(repository.draftProfile( partner.id(), name, direction,
                 documentType, rules, generationMode, ssccIssuerId, clock.instant()));
     }
 
     public List<DocumentProfile> listDocumentProfiles(UUID partnerId) {
         requirePartner(partnerId);
-        return repository.listDocumentProfiles(tenant(), partnerId);
+        return repository.listDocumentProfiles(partnerId);
     }
 
     public DocumentProfile updateDocumentProfile(UUID profileId, List<DocumentFieldRule> rules) {
@@ -173,7 +171,7 @@ public final class PartnershipService {
     }
 
     public DocumentProfile archiveDocumentProfile(UUID profileId) {
-        boolean referenced = repository.listAgreements(tenant()).stream().flatMap(item -> item.capabilities().stream())
+        boolean referenced = repository.listAgreements().stream().flatMap(item -> item.capabilities().stream())
                 .anyMatch(item -> profileId.equals(item.documentProfileRevisionId()));
         if (referenced) throw new IllegalStateException("Document profile revision is used by an agreement");
         return repository.saveDocumentProfile(requireDocumentProfile(profileId).archive(clock.instant()));
@@ -184,7 +182,7 @@ public final class PartnershipService {
         if (profile.status() != DocumentProfileStatus.DRAFT) {
             throw new IllegalStateException("Only an unused draft document profile can be deleted");
         }
-        repository.deleteDocumentProfile(tenant(), profileId);
+        repository.deleteDocumentProfile(profileId);
     }
 
     public TradingAgreement qualify(UUID agreementId) {
@@ -229,7 +227,7 @@ public final class PartnershipService {
         if (effectiveAt != null && effectiveAt.isAfter(now)) {
             return repository.saveAgreement(candidate.schedule(effectiveAt, now));
         }
-        repository.listAgreements(tenant()).stream()
+        repository.listAgreements().stream()
                 .filter(item -> item.familyId().equals(candidate.familyId()) && !item.id().equals(candidate.id()))
                 .map(item -> item.supersede(now)).filter(item -> item.status() == com.edispark.partnerships.domain.model.AgreementStatus.SUPERSEDED)
                 .forEach(repository::saveAgreement);
@@ -270,7 +268,7 @@ public final class PartnershipService {
         if (agreement.status() != com.edispark.partnerships.domain.model.AgreementStatus.DRAFT) {
             throw new IllegalStateException("Only an unused draft agreement revision can be permanently deleted");
         }
-        repository.deleteAgreement(tenant(), id);
+        repository.deleteAgreement(id);
     }
 
     public Usage agreementUsage(UUID id) {
@@ -280,20 +278,19 @@ public final class PartnershipService {
                 new Dependency("agreement-revision", id, "Revision has entered its retained lifecycle")));
     }
 
-    public List<TradingAgreement> listAgreements() { promoteDue(); return repository.listAgreements(tenant()); }
+    public List<TradingAgreement> listAgreements() { promoteDue(); return repository.listAgreements(); }
     public TradingAgreement getAgreement(UUID id) { return requireAgreement(id); }
 
-    private TradingPartner requirePartner(UUID id) { return repository.findPartner(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Trading partner was not found")); }
-    private TradingAgreement requireAgreement(UUID id) { return repository.findAgreement(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Trading agreement was not found")); }
-    private DocumentProfile requireDocumentProfile(UUID id) { return repository.findDocumentProfile(tenant(), id).orElseThrow(() -> new IllegalArgumentException("Document profile was not found")); }
-    private String tenant() { return TenantContext.getCurrentTenant().asString(); }
+    private TradingPartner requirePartner(UUID id) { return repository.findPartner(id).orElseThrow(() -> new IllegalArgumentException("Trading partner was not found")); }
+    private TradingAgreement requireAgreement(UUID id) { return repository.findAgreement(id).orElseThrow(() -> new IllegalArgumentException("Trading agreement was not found")); }
+    private DocumentProfile requireDocumentProfile(UUID id) { return repository.findDocumentProfile(id).orElseThrow(() -> new IllegalArgumentException("Document profile was not found")); }
 
     private void validateSsccGeneration(DocumentProfile profile) {
         if (ssccRepository == null || profile.ssccGenerationMode() == SsccGenerationMode.MANUAL) return;
         boolean active = profile.ssccIssuerId() == null
-                ? ssccRepository.list(tenant()).stream().anyMatch(issuer -> issuer.defaultIssuer()
+                ? ssccRepository.list().stream().anyMatch(issuer -> issuer.defaultIssuer()
                         && issuer.status() == SsccIssuerStatus.ACTIVE)
-                : ssccRepository.find(tenant(), profile.ssccIssuerId())
+                : ssccRepository.find(profile.ssccIssuerId())
                         .filter(issuer -> issuer.status() == SsccIssuerStatus.ACTIVE).isPresent();
         if (!active) throw new IllegalStateException(profile.ssccIssuerId() == null
                 ? "Configure an active default SSCC range before publishing this profile"
@@ -302,7 +299,7 @@ public final class PartnershipService {
 
     private void ensureUniqueIdentities(UUID currentId, List<BusinessIdentity> identities) {
         UUID familyId = requirePartner(currentId).familyId();
-        boolean duplicate = repository.listPartners(tenant()).stream().filter(item -> !item.id().equals(currentId))
+        boolean duplicate = repository.listPartners().stream().filter(item -> !item.id().equals(currentId))
                 .filter(item -> !familyId.equals(item.familyId()))
                 .flatMap(item -> item.identities().stream()).anyMatch(identities::contains);
         if (duplicate) throw new IllegalArgumentException("Business identity is already registered");
@@ -310,10 +307,10 @@ public final class PartnershipService {
 
     private void promoteDue() {
         Instant now = clock.instant();
-        repository.listPartners(tenant()).stream()
+        repository.listPartners().stream()
                 .filter(item -> item.status() == PartnerStatus.SCHEDULED && !item.scheduledAt().isAfter(now))
                 .forEach(item -> activatePartner(item.id(), null));
-        repository.listAgreements(tenant()).stream()
+        repository.listAgreements().stream()
                 .filter(item -> item.status() == com.edispark.partnerships.domain.model.AgreementStatus.SCHEDULED)
                 .filter(item -> !item.scheduledAt().isAfter(now))
                 .map(TradingAgreement::id).toList()
@@ -344,7 +341,7 @@ public final class PartnershipService {
             List<String> failures) {
         if (capability.documentProfileRevisionId() == null) return;
         checks.add("Published document profile " + capability.documentProfileRevisionId());
-        DocumentProfile profile = repository.findDocumentProfile(tenant(), capability.documentProfileRevisionId())
+        DocumentProfile profile = repository.findDocumentProfile(capability.documentProfileRevisionId())
                 .orElse(null);
         if (profile == null || profile.status() != DocumentProfileStatus.PUBLISHED) {
             failures.add("Document profile is not published: " + capability.documentProfileRevisionId());

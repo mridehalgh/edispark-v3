@@ -45,6 +45,8 @@ public final class SchemaItemMapper {
         item.put(PK, AttributeValue.builder().s(schemaPk(tenantId, schemaId)).build());
         item.put(SK, AttributeValue.builder().s(schemaMetadataSk()).build());
         
+        item.put(GSI3_PK, AttributeValue.builder().s(tenantSchemasPk(tenantId)).build());
+        item.put(GSI3_SK, AttributeValue.builder().s("SCHEMA#" + schemaId).build());
         item.put("schemaId", AttributeValue.builder().s(schemaId).build());
         item.put("tenantId", AttributeValue.builder().s(tenantId).build());
         item.put("name", AttributeValue.builder().s(schema.name()).build());

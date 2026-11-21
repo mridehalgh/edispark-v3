@@ -17,7 +17,7 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 
-public final class FileSystemPayloadStore implements PayloadStore {
+public final class FileSystemPayloadStore implements ExplicitPayloadStore {
     private static final int NONCE_BYTES = 12;
     private static final SecureRandom RANDOM = new SecureRandom();
     private final Path root;

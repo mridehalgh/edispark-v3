@@ -1,0 +1,18 @@
+# Exact bytecode signature<TAB>tenant|global|business<TAB>review reason
+com.edispark.exchange.domain.ExchangeRepository.findByIdempotencyKey(java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.findByIdempotencyKey(java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.findInboundByMessageId(java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.findInboundDuplicate(java.lang.String, java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.findOutboundByMessageId(java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.releaseDeliveryLease(com.edispark.mft.domain.model.TransferId, java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.releaseMdnLease(java.util.UUID, java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.tryAcquireDeliveryLease(com.edispark.mft.domain.model.TransferId, java.lang.String, java.time.Instant, java.time.Instant)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.MftRepository.tryAcquireMdnLease(java.util.UUID, java.lang.String, java.time.Instant, java.time.Instant)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter
+com.edispark.mft.domain.repository.PayloadStore.put(com.edispark.mft.domain.model.TransferId, java.lang.String, java.io.InputStream)	business	Object name/reference is resolved inside the active tenant storage namespace
+com.edispark.mft.domain.repository.SecretStore.delete(java.lang.String)	business	Object name/reference is resolved inside the active tenant storage namespace
+com.edispark.mft.domain.repository.SecretStore.get(java.lang.String)	business	Object name/reference is resolved inside the active tenant storage namespace
+com.edispark.mft.domain.repository.SecretStore.put(java.lang.String, [B)	business	Object name/reference is resolved inside the active tenant storage namespace
+com.edispark.mft.infrastructure.persistence.MftDiscovery.findInboundPartner(java.lang.String, java.lang.String)	global	Privileged AS2/work discovery is infrastructure-only and cannot be injected into business services
+com.edispark.mft.infrastructure.persistence.MftDiscovery.listPendingMdnDeliveries(java.time.Instant, int)	global	Privileged AS2/work discovery is infrastructure-only and cannot be injected into business services
+com.edispark.mft.infrastructure.persistence.MftDiscovery.listPendingTransfers(java.time.Instant, int)	global	Privileged AS2/work discovery is infrastructure-only and cannot be injected into business services
+com.edispark.partnerships.domain.repository.SsccRepository.findReservation(java.lang.String)	business	Scoped operation accepts business identity, idempotency or lease-owner data; tenant authority comes from the adapter

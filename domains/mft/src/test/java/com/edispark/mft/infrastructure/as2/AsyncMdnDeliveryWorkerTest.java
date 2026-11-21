@@ -20,12 +20,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class AsyncMdnDeliveryWorkerTest {
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
+
+    @org.junit.jupiter.api.BeforeEach
+    @net.jqwik.api.lifecycle.BeforeTry
+    void bindFixtureTenant() {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(
+                com.edispark.identifiers.tenant.TenantId.fromString("2OnHVzeAJKwm0ThFLcy1HfLHGPm")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    @net.jqwik.api.lifecycle.AfterTry
+    void restoreFixtureTenant() {
+        if (fixtureScope != null) fixtureScope.close();
+    }
+
     @Test
     void retriesTransientFailureAndThenRecordsDelivery() throws Exception {
         MutableClock clock = new MutableClock(Instant.parse("2026-11-01T12:00:00Z"));
         InMemoryMftRepository repository = new InMemoryMftRepository();
         FileSystemPayloadStore payloads = new FileSystemPayloadStore(Files.createTempDirectory("mdn-worker"));
-        PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), "tenant-a", "Retailer", "EDISPARK",
+        PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), "2OnHVzeAJKwm0ThFLcy1HfLHGPm", "Retailer", "EDISPARK",
                 "RETAILER", URI.create("https://retailer.example/as2"), UUID.randomUUID(), UUID.randomUUID(),
                 MdnMode.ASYNCHRONOUS, true, true, false, false, clock.instant());
         new AsyncMdnOutboxService(repository, payloads, clock).enqueue(partner,
@@ -40,13 +55,13 @@ class AsyncMdnDeliveryWorkerTest {
                 });
 
         worker.deliverDue();
-        var pending = repository.listMdnDeliveries("tenant-a").getFirst();
+        var pending = io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.listMdnDeliveries()).getFirst();
         assertThat(pending.status()).isEqualTo(MdnDeliveryStatus.PENDING);
         assertThat(pending.attempts()).isEqualTo(1);
 
         clock.advanceSeconds(6);
         worker.deliverDue();
-        var delivered = repository.listMdnDeliveries("tenant-a").getFirst();
+        var delivered = io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.listMdnDeliveries()).getFirst();
         assertThat(delivered.status()).isEqualTo(MdnDeliveryStatus.DELIVERED);
         assertThat(delivered.attempts()).isEqualTo(2);
         assertThat(calls).hasValue(2);

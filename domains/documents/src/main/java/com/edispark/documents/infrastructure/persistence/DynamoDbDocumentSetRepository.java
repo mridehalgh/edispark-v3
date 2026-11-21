@@ -49,11 +49,8 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
     private final String tenantId;
     private final DocumentSetItemMapper mapper;
 
-    public DynamoDbDocumentSetRepository(DynamoDbClient client, String tableName) {
-        this(client, tableName, DEFAULT_TENANT);
-    }
-
-    public DynamoDbDocumentSetRepository(DynamoDbClient client, String tableName, String tenantId) {
+DynamoDbDocumentSetRepository(DynamoDbClient client, String tableName, String tenantId) {
+        com.edispark.identifiers.tenant.TenantId.fromString(tenantId);
         this.client = client;
         this.tableName = tableName;
         this.tenantId = tenantId;
@@ -72,7 +69,7 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
                 .expressionAttributeValues(Map.of(":pk", AttributeValue.builder().s(pk).build()))
                 .build();
         
-        QueryResponse response = client.query(request);
+        QueryResponse response = QueryResponse.builder().items(DynamoQueries.all(client, request)).build();
         
         if (response.items().isEmpty()) {
             return Optional.empty();
@@ -95,7 +92,7 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
                 .scanIndexForward(false)
                 .build();
         
-        QueryResponse response = client.query(request);
+        QueryResponse response = QueryResponse.builder().items(DynamoQueries.all(client, request)).build();
         
         // Extract document set IDs from the GSI results
         Set<DocumentSetId> documentSetIds = new LinkedHashSet<>();
@@ -121,6 +118,7 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
         Map<String, AttributeValue> exclusiveStartKey = page.continuationToken()
             .map(PaginationTokenCodec::decode)
             .orElse(null);
+        validateCursor(exclusiveStartKey);
         
         // Query GSI1 to get document sets for this tenant
         String gsi1Pk = gsi1PkForTenantDocumentSets(tenantId);
@@ -150,6 +148,31 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
         return PaginatedResult.of(documentSets, nextToken);
     }
     
+    private void validateCursor(Map<String, AttributeValue> cursor) {
+        if (cursor == null) return;
+        String prefix = TENANT_PREFIX + tenantId + "#DOCSET#";
+        boolean valid = cursor.keySet().equals(java.util.Set.of(PK, SK, GSI1_PK, GSI1_SK))
+                && java.util.Optional.ofNullable(cursor.get(PK)).map(AttributeValue::s).filter(key -> key.startsWith(prefix)).isPresent()
+                && java.util.Optional.ofNullable(cursor.get(GSI1_PK)).map(AttributeValue::s)
+                        .filter(gsi1PkForTenantDocumentSets(tenantId)::equals).isPresent()
+                && cursorHasMetadataShape(cursor, prefix);
+        if (!valid) throw new com.edispark.documents.application.handler.InvalidPaginationTokenException("Invalid pagination token", null);
+    }
+
+    private boolean cursorHasMetadataShape(Map<String, AttributeValue> cursor, String prefix) {
+        try {
+            String id = cursor.get(PK).s().substring(prefix.length());
+            java.util.UUID.fromString(id);
+            if (!METADATA_SK.equals(cursor.get(SK).s())) return false;
+            String ordering = cursor.get(GSI1_SK).s();
+            if (!ordering.endsWith("#" + id)) return false;
+            java.time.Instant.parse(ordering.substring(0, ordering.length() - id.length() - 1));
+            return true;
+        } catch (RuntimeException invalid) {
+            return false;
+        }
+    }
+
     private List<DocumentSet> extractDocumentSets(List<Map<String, AttributeValue>> items) {
         Set<DocumentSetId> documentSetIds = new LinkedHashSet<>();
         for (Map<String, AttributeValue> item : items) {
@@ -266,7 +289,7 @@ public class DynamoDbDocumentSetRepository implements DocumentSetRepository {
                 .expressionAttributeValues(Map.of(":gsi2pk", AttributeValue.builder().s(gsi2Pk).build()))
                 .build();
         
-        QueryResponse response = client.query(request);
+        QueryResponse response = QueryResponse.builder().items(DynamoQueries.all(client, request)).build();
         
         // Extract unique document set IDs
         Set<DocumentSetId> documentSetIds = new HashSet<>();

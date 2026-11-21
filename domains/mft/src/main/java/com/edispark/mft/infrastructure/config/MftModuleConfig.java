@@ -1,5 +1,9 @@
 package com.edispark.mft.infrastructure.config;
 
+import com.edispark.mft.infrastructure.persistence.MftPersistence;
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
+import com.edispark.mft.infrastructure.as2.MftInboundGateway;
+
 import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.application.ConnectionDetailsService;
 import com.edispark.mft.application.As2ExchangePort;
@@ -30,6 +34,12 @@ import org.springframework.context.annotation.Profile;
 @Configuration
 @Profile({"local", "openapi-export"})
 public class MftModuleConfig {
+    @Bean
+    MftInboundGateway mftInboundGateway(MftRepository repository, com.edispark.mft.application.MftService service) {
+        return new MftInboundGateway(
+                (MftDiscovery) repository, service);
+    }
+
     @Bean
     @ConditionalOnMissingBean
     MftRepository mftRepository() {
@@ -87,7 +97,7 @@ public class MftModuleConfig {
 
     @Bean
     MftDeliveryWorker mftDeliveryWorker(MftRepository repository, MftDeliveryService deliveryService, Clock clock) {
-        return new MftDeliveryWorker(repository, deliveryService, clock);
+        return new MftDeliveryWorker((MftPersistence) repository, deliveryService, clock);
     }
 
     @Bean

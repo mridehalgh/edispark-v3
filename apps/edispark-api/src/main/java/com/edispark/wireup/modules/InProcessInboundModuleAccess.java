@@ -1,5 +1,8 @@
 package com.edispark.wireup.modules;
 
+import io.cottn.core.tenancy.TenantAccess;
+import io.cottn.core.tenancy.TenantExecution;
+
 import com.edispark.documents.application.inbound.InboundCanonicalDocumentService;
 import com.edispark.documents.domain.model.DocumentType;
 import com.edispark.integrationapplication.inbound.InboundMftPayloadEvent;
@@ -30,9 +33,10 @@ final class InProcessInboundModuleAccess implements InboundModuleAccess {
 
     @Override
     public byte[] payload(InboundMftPayloadEvent event) {
-        Transfer transfer = transfers.findTransfer(event.tenantId(), new TransferId(event.transferId()))
+        TenantAccess.requireOwner(event.tenantId());
+        Transfer transfer = transfers.findTransfer(new TransferId(event.transferId()))
                 .orElseThrow(() -> new IllegalArgumentException("Retained MFT transfer was not found"));
-        try (var input = payloads.get(event.tenantId(), transfer.payload())) {
+        try (var input = payloads.get(transfer.payload())) {
             return input.readAllBytes();
         } catch (IOException exception) {
             throw new IllegalStateException("Retained MFT payload could not be read", exception);
@@ -41,9 +45,9 @@ final class InProcessInboundModuleAccess implements InboundModuleAccess {
 
     @Override
     public List<InboundMftPayloadEvent> inboundTransfers(String tenantId) {
-        return transfers.listTransfers(tenantId).stream()
+        return TenantExecution.get(tenantId, () -> transfers.listTransfers().stream()
                 .filter(transfer -> transfer.direction() == TransferDirection.INBOUND && transfer.payload() != null)
-                .map(this::event).toList();
+                .map(this::event).toList());
     }
 
     @Override

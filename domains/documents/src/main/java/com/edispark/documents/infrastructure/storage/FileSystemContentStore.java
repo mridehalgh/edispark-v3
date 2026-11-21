@@ -1,132 +1,83 @@
 package com.edispark.documents.infrastructure.storage;
 
+import com.edispark.crypto.LocalTenantCipher;
+import com.edispark.crypto.TenantCipher;
 import com.edispark.documents.domain.model.Content;
 import com.edispark.documents.domain.model.ContentHash;
 import com.edispark.documents.domain.repository.ContentStore;
-
+import io.cottn.core.tenancy.TenantAccess;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Optional;
 
-/**
- * File system based implementation of ContentStore for local development.
- * 
- * <p>Stores content by hash in a local directory structure. Content is stored
- * using the hash as the filename, enabling content-addressable storage and
- * automatic deduplication.</p>
- * 
- * <p>Requirements: 8.1, 8.2, 8.4, 8.5</p>
- */
-public class FileSystemContentStore implements ContentStore {
+/** Tenant-scoped encrypted local storage. Legacy hash-only files require explicit migration. */
+public final class FileSystemContentStore implements ContentStore {
+    private final Path root;
+    private final TenantCipher cipher;
 
-    private final Path baseDirectory;
-
-    /**
-     * Creates a FileSystemContentStore with the specified base directory.
-     * 
-     * @param baseDirectory the directory where content will be stored
-     */
-    public FileSystemContentStore(Path baseDirectory) {
-        this.baseDirectory = baseDirectory;
-        ensureDirectoryExists();
+    public FileSystemContentStore(Path directory) {
+        this(directory, new LocalTenantCipher(directory.resolve(".tenant-root.key"), "edispark-documents"));
     }
 
-    /**
-     * Stores content in the file system.
-     * 
-     * <p>Requirement 8.1: Store document content separately from document metadata.</p>
-     * <p>Requirement 8.2: Support content deduplication using ContentHash.</p>
-     * <p>Requirement 8.5: If content with the same hash already exists, reuse it.</p>
-     * 
-     * @param content the content to store
-     */
-    @Override
-    public void store(Content content) {
-        Path contentPath = resolveContentPath(content.hash());
-        
-        // Idempotent: if content already exists, skip writing
-        if (Files.exists(contentPath)) {
-            return;
-        }
+    public FileSystemContentStore(Path directory, TenantCipher cipher) {
+        this.root = directory.toAbsolutePath().normalize();
+        this.cipher = java.util.Objects.requireNonNull(cipher);
+    }
 
+    @Override public void store(Content content) {
+        String key = ContentAddress.currentKey(content.hash());
+        byte[] bytes = ContentAddress.verify(content.hash(), content.data());
+        Path target = path(key);
         try {
-            Files.write(contentPath, content.data());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to store content: " + content.hash(), e);
+            if (Files.exists(target, LinkOption.NOFOLLOW_LINKS)) return;
+            byte[] encrypted = cipher.encrypt(TenantAccess.currentId(), bytes, ContentAddress.context(key));
+            Files.createDirectories(target.getParent());
+            Path temporary = Files.createTempFile(target.getParent(), ".content-", ".tmp",
+                    PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+            try {
+                Files.write(temporary, encrypted);
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(temporary);
+            }
+        } catch (IOException failure) {
+            throw new UncheckedIOException("Content could not be stored", failure);
         }
     }
 
-    /**
-     * Retrieves content by its hash.
-     * 
-     * <p>Requirement 8.4: Support retrieval of content by ContentHash.</p>
-     * 
-     * @param hash the content hash to retrieve
-     * @return the content data if found, empty otherwise
-     */
-    @Override
-    public Optional<byte[]> retrieve(ContentHash hash) {
-        Path contentPath = resolveContentPath(hash);
-        
-        if (!Files.exists(contentPath)) {
+    @Override public Optional<byte[]> retrieve(ContentHash hash) {
+        String key = ContentAddress.currentKey(hash);
+        try {
+            byte[] encrypted = Files.readAllBytes(path(key));
+            byte[] plaintext = cipher.decrypt(TenantAccess.currentId(), encrypted, ContentAddress.context(key));
+            return Optional.of(ContentAddress.verify(hash, plaintext));
+        } catch (NoSuchFileException absent) {
             return Optional.empty();
+        } catch (IOException failure) {
+            throw new UncheckedIOException("Content could not be read", failure);
         }
+    }
 
+    @Override public boolean exists(ContentHash hash) {
+        return Files.isRegularFile(path(ContentAddress.currentKey(hash)), LinkOption.NOFOLLOW_LINKS);
+    }
+
+    @Override public void delete(ContentHash hash) {
         try {
-            byte[] data = Files.readAllBytes(contentPath);
-            return Optional.of(data);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to retrieve content: " + hash, e);
+            Files.deleteIfExists(path(ContentAddress.currentKey(hash)));
+        } catch (IOException failure) {
+            throw new UncheckedIOException("Content could not be deleted", failure);
         }
     }
 
-    /**
-     * Checks if content with the given hash exists in the store.
-     * 
-     * @param hash the content hash to check
-     * @return true if content with the hash exists
-     */
-    @Override
-    public boolean exists(ContentHash hash) {
-        Path contentPath = resolveContentPath(hash);
-        return Files.exists(contentPath);
-    }
-
-    /**
-     * Deletes content by its hash.
-     * 
-     * @param hash the content hash to delete
-     */
-    @Override
-    public void delete(ContentHash hash) {
-        Path contentPath = resolveContentPath(hash);
-        
-        try {
-            Files.deleteIfExists(contentPath);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to delete content: " + hash, e);
+    private Path path(String key) {
+        Path resolved = root.resolve(key).normalize();
+        if (!resolved.startsWith(root)) throw new SecurityException("Content path is outside its namespace");
+        for (Path current = resolved; current != null && current.startsWith(root); current = current.getParent()) {
+            if (Files.isSymbolicLink(current)) throw new SecurityException("Content paths cannot contain symbolic links");
         }
-    }
-
-    /**
-     * Resolves the file path for a given content hash.
-     * Uses the full hash string as the filename.
-     */
-    private Path resolveContentPath(ContentHash hash) {
-        String filename = hash.toFullString().replace(":", "_");
-        return baseDirectory.resolve(filename);
-    }
-
-    /**
-     * Ensures the base directory exists, creating it if necessary.
-     */
-    private void ensureDirectoryExists() {
-        try {
-            Files.createDirectories(baseDirectory);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Failed to create content store directory: " + baseDirectory, e);
-        }
+        return resolved;
     }
 }

@@ -27,12 +27,12 @@ class CertificateLifecycleTest {
         var secrets = new RecordingSecretStore();
         var service = new CertificateService(repository, secrets, Clock.fixed(NOW, ZoneOffset.UTC));
         CertificateRecord certificate = certificate();
-        repository.saveCertificate(certificate);
+        com.edispark.testing.FixtureTenants.persist(certificate, record -> record.tenantId(), repository::saveCertificate);
 
         TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(TENANT)), () -> {
             assertThat(service.usage(certificate.id()).deletable()).isTrue();
             try { service.deleteUnused(certificate.id()); } catch (IOException exception) { throw new AssertionError(exception); }
-            assertThat(repository.findCertificate(TENANT, certificate.id())).isEmpty();
+            assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT, () -> repository.findCertificate(certificate.id()))).isEmpty();
             assertThat(secrets.deleted).isEqualTo(certificate.secretRef());
         });
     }
@@ -51,7 +51,7 @@ class CertificateLifecycleTest {
                 "-----BEGIN CERTIFICATE-----\nplaceholder\n-----END CERTIFICATE-----\n", "secret-ref", NOW);
     }
 
-    private static final class RecordingSecretStore implements SecretStore {
+    private static final class RecordingSecretStore implements com.edispark.mft.infrastructure.storage.ExplicitSecretStore {
         private String deleted;
         @Override public String put(String tenantId, String name, byte[] plaintext) { return "secret-ref"; }
         @Override public byte[] get(String tenantId, String reference) { return new byte[0]; }

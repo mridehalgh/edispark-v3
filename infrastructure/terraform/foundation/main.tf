@@ -1,6 +1,7 @@
 locals {
-  name = "edispark-${var.environment}"
-  azs  = ["eu-west-2a", "eu-west-2b"]
+  documents_metadata_actions = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:TransactWriteItems", "dynamodb:BatchWriteItem", "dynamodb:BatchGetItem", "dynamodb:DescribeTable"]
+  name                       = "edispark-${var.environment}"
+  azs                        = ["eu-west-2a", "eu-west-2b"]
 }
 
 resource "aws_vpc" "application" {
@@ -96,7 +97,7 @@ resource "aws_dynamodb_table" "documents" {
   hash_key     = "PK"
   range_key    = "SK"
   dynamic "attribute" {
-    for_each = toset(["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK"])
+    for_each = toset(["PK", "SK", "GSI1PK", "GSI1SK", "GSI2PK", "GSI2SK", "GSI3PK", "GSI3SK"])
     content {
       name = attribute.value
       type = "S"
@@ -104,7 +105,7 @@ resource "aws_dynamodb_table" "documents" {
   }
   dynamic "global_secondary_index" {
     for_each = {
-      "GSI1-TenantDocumentSetsIndex" = "GSI1", "GSI2-ContentHashIndex" = "GSI2"
+      "GSI1-TenantDocumentSetsIndex" = "GSI1", "GSI2-ContentHashIndex" = "GSI2", "GSI3-TenantSchemasIndex" = "GSI3"
     }
     content {
       name            = global_secondary_index.key
@@ -261,7 +262,7 @@ resource "aws_iam_role_policy" "documents" {
   policy = jsonencode({
     Version = "2012-10-17", Statement = [
       {
-        Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:TransactWriteItems", "dynamodb:BatchWriteItem", "dynamodb:BatchGetItem", "dynamodb:DescribeTable"], Resource = [aws_dynamodb_table.documents.arn, "${aws_dynamodb_table.documents.arn}/index/*"]
+        Effect = "Allow", Action = local.documents_metadata_actions, Resource = [aws_dynamodb_table.documents.arn, "${aws_dynamodb_table.documents.arn}/index/*"]
       },
       {
         Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], Resource = "${aws_s3_bucket.documents.arn}/*"

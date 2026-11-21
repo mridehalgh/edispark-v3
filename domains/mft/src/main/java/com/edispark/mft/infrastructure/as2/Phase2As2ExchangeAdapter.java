@@ -40,10 +40,8 @@ public final class Phase2As2ExchangeAdapter implements As2ExchangePort {
     public As2DeliveryResult send(PartnerProfile partner, Transfer transfer, byte[] payload) {
         validateEndpoint(partner.endpoint());
         try {
-            CertificateMaterial localIdentity = certificateService.load(
-                    partner.tenantId(), partner.localCertificateId());
-            CertificateMaterial partnerCertificate = certificateService.load(
-                    partner.tenantId(), partner.partnerCertificateId());
+            CertificateMaterial localIdentity = certificateService.load(partner.localCertificateId());
+            CertificateMaterial partnerCertificate = certificateService.load(partner.partnerCertificateId());
             X509Certificate receiverCertificate = (X509Certificate) CertificateFactory.getInstance("X.509")
                     .generateCertificate(new ByteArrayInputStream(partnerCertificate.bytes()));
             AS2ClientSettings settings = new AS2ClientSettings();

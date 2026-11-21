@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
-public final class S3EncryptedSecretStore implements SecretStore {
+public final class S3EncryptedSecretStore implements ExplicitSecretStore {
     private final S3Client s3;
     private final TenantCipher cipher;
     private final String bucket;

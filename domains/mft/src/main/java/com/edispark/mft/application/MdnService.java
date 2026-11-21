@@ -17,12 +17,12 @@ public final class MdnService {
 
     public Transfer record(PartnerProfile partner, String originalMessageId, String disposition,
                            String receivedContentMic) {
-        Transfer transfer = repository.findOutboundByMessageId(partner.tenantId(), originalMessageId)
+        Transfer transfer = repository.findOutboundByMessageId(originalMessageId)
                 .orElseThrow(() -> new MftNotFoundException("The MDN does not match an outbound transfer"));
         for (int attempt = 0; attempt < 3; attempt++) {
             Transfer completed = complete(partner, transfer, disposition, receivedContentMic);
             if (completed != null) return completed;
-            transfer = repository.findTransfer(partner.tenantId(), transfer.id())
+            transfer = repository.findTransfer(transfer.id())
                     .orElseThrow(() -> new MftNotFoundException("The MDN transfer no longer exists"));
         }
         throw new IllegalStateException("The MDN transfer changed repeatedly while it was being completed");

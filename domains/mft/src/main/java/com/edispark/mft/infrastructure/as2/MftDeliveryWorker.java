@@ -1,5 +1,9 @@
 package com.edispark.mft.infrastructure.as2;
 
+import io.cottn.core.tenancy.TenantExecution;
+import com.edispark.mft.infrastructure.persistence.MftPersistence;
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
+
 import com.edispark.identifiers.tenant.TenantId;
 import com.edispark.mft.application.MftDeliveryService;
 import com.edispark.mft.domain.repository.MftRepository;
@@ -15,19 +19,21 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Slf4j
 public class MftDeliveryWorker {
     private final MftRepository repository;
+    private final MftDiscovery discovery;
     private final MftDeliveryService deliveryService;
     private final Clock clock;
     private final String leaseOwner;
     private final Duration leaseDuration;
 
-    public MftDeliveryWorker(MftRepository repository, MftDeliveryService deliveryService, Clock clock) {
+    public MftDeliveryWorker(MftPersistence repository, MftDeliveryService deliveryService, Clock clock) {
         this(repository, deliveryService, clock, UUID.randomUUID().toString(),
                 Transfer.PROCESSING_RECOVERY_TIMEOUT);
     }
 
-    MftDeliveryWorker(MftRepository repository, MftDeliveryService deliveryService, Clock clock,
+    MftDeliveryWorker(MftPersistence repository, MftDeliveryService deliveryService, Clock clock,
                       String leaseOwner, Duration leaseDuration) {
         this.repository = repository;
+        this.discovery = repository;
         this.deliveryService = deliveryService;
         this.clock = clock;
         this.leaseOwner = leaseOwner;
@@ -36,17 +42,19 @@ public class MftDeliveryWorker {
 
     @Scheduled(fixedDelayString = "${mft.delivery.poll-interval-ms:1000}")
     public void deliverDueTransfers() {
-        repository.listPendingTransfers(clock.instant(), 10).forEach(transfer -> {
-            if (!repository.tryAcquireDeliveryLease(transfer.tenantId(), transfer.id(), leaseOwner,
-                    clock.instant(), clock.instant().plus(leaseDuration))) return;
-            try {
-                TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(transfer.tenantId())),
-                        () -> deliveryService.deliver(transfer.id()));
-            } catch (RuntimeException exception) {
-                log.error("MFT delivery worker failed for transfer {}", transfer.id(), exception);
-            } finally {
-                repository.releaseDeliveryLease(transfer.tenantId(), transfer.id(), leaseOwner);
-            }
-        });
+        discovery.listPendingTransfers(clock.instant(), 10).forEach(transfer ->
+                TenantExecution.run(transfer.tenantId(), () -> deliverScoped(transfer)));
+    }
+
+    private void deliverScoped(Transfer transfer) {
+        if (!repository.tryAcquireDeliveryLease(transfer.id(), leaseOwner,
+                clock.instant(), clock.instant().plus(leaseDuration))) return;
+        try {
+            deliveryService.deliver(transfer.id());
+        } catch (RuntimeException exception) {
+            log.error("MFT delivery worker failed for transfer {}", transfer.id(), exception);
+        } finally {
+            repository.releaseDeliveryLease(transfer.id(), leaseOwner);
+        }
     }
 }

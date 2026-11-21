@@ -29,15 +29,18 @@ class ContentDeduplicationPropertyTest {
 
     private Path tempDir;
     private ContentStore store;
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
 
     @BeforeTry
     void setUp() throws IOException {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(com.edispark.identifiers.tenant.TenantId.newTenantId()));
         tempDir = Files.createTempDirectory("content-dedup-test");
         store = new FileSystemContentStore(tempDir);
     }
 
     @AfterTry
     void tearDown() throws IOException {
+        if (fixtureScope != null) fixtureScope.close();
         if (tempDir != null && Files.exists(tempDir)) {
             Files.walk(tempDir)
                 .sorted(Comparator.reverseOrder())
@@ -181,7 +184,9 @@ class ContentDeduplicationPropertyTest {
 
     private long countFilesInStore() {
         try {
-            return Files.list(tempDir).count();
+            try (var files = Files.walk(tempDir)) {
+                return files.filter(path -> path.toString().endsWith(".enc")).count();
+            }
         } catch (IOException e) {
             throw new RuntimeException("Failed to count files in store", e);
         }

@@ -121,22 +121,22 @@ public final class InboundMftEventProcessor {
 
     private TradingPartner resolvePartner(InboundMftPayloadEvent event) {
         Instant now = clock.instant();
-        List<TradingPartner> candidates = partnerships.listAgreements(event.tenantId()).stream()
+        List<TradingPartner> candidates = partnerships.listAgreements().stream()
                 .filter(agreement -> active(agreement, now))
                 .filter(agreement -> agreement.capabilities().stream().anyMatch(capability ->
                         capability.direction() == ExchangeDirection.INBOUND
                                 && capability.as2ConnectionId().equals(event.partnerId())))
                 .map(TradingAgreement::partnerId)
-                .map(id -> partnerships.findPartner(event.tenantId(), id).orElseThrow(() ->
+                .map(id -> partnerships.findPartner(id).orElseThrow(() ->
                         new IllegalStateException("Inbound agreement partner was not found")))
-                .map(partner -> currentPartner(event.tenantId(), partner)).distinct().toList();
+                .map(this::currentPartner).distinct().toList();
         if (candidates.isEmpty()) throw new IllegalArgumentException("No active partner accepts the inbound connection");
         if (candidates.size() > 1) throw new IllegalStateException("Inbound connection partner is ambiguous");
         return candidates.getFirst();
     }
 
-    private TradingPartner currentPartner(String tenantId, TradingPartner partner) {
-        return partnerships.listPartners(tenantId).stream()
+    private TradingPartner currentPartner(TradingPartner partner) {
+        return partnerships.listPartners().stream()
                 .filter(item -> item.familyId().equals(partner.familyId()))
                 .filter(item -> item.status() == com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE)
                 .findFirst().orElse(partner);
@@ -145,9 +145,9 @@ public final class InboundMftEventProcessor {
     private Route resolve(InboundMftPayloadEvent event, TradingPartner partner,
             InboundEdiTranslator.Translation translation) {
         Instant now = clock.instant();
-        var matches = partnerships.listAgreements(event.tenantId()).stream()
+        var matches = partnerships.listAgreements().stream()
                 .filter(agreement -> active(agreement, now))
-                .filter(agreement -> belongsTo(event.tenantId(), agreement, partner))
+                .filter(agreement -> belongsTo(agreement, partner))
                 .flatMap(agreement -> agreement.capabilities().stream().map(capability -> new Route(agreement, capability)))
                 .filter(route -> route.capability().direction() == ExchangeDirection.INBOUND)
                 .filter(route -> route.capability().as2ConnectionId().equals(event.partnerId()))
@@ -160,8 +160,8 @@ public final class InboundMftEventProcessor {
         return matches.getFirst();
     }
 
-    private boolean belongsTo(String tenantId, TradingAgreement agreement, TradingPartner partner) {
-        return partnerships.findPartner(tenantId, agreement.partnerId())
+    private boolean belongsTo(TradingAgreement agreement, TradingPartner partner) {
+        return partnerships.findPartner(agreement.partnerId())
                 .map(item -> item.familyId().equals(partner.familyId())).orElse(false);
     }
 
@@ -179,13 +179,13 @@ public final class InboundMftEventProcessor {
                 response.canonicalDerivativeId(), response.canonicalSha256());
         Route route = prepared.route();
         String key = inboundKey(event.transferId(), translation.messageOrdinal());
-        EdiExchange exchange = exchanges.findByIdempotencyKey(event.tenantId(), key).orElse(null);
+        EdiExchange exchange = exchanges.findByIdempotencyKey(key).orElse(null);
         if (exchange != null && exchange.status() == com.edispark.exchange.domain.ExchangeStatus.NEEDS_REVIEW) {
             exchange.completeInbound(route.agreement().id(), route.agreement().revision(), route.capability().id(),
                     source, canonicalDocument, clock.instant());
             exchange = exchanges.save(exchange);
         } else if (exchange == null) {
-            exchange = exchanges.save(EdiExchange.inbound(event.tenantId(), route.agreement().partnerId(),
+            exchange = exchanges.save(exchanges.inbound(route.agreement().partnerId(),
                     route.agreement().id(), route.agreement().revision(), route.capability().id(), event.transferId(),
                     source, canonicalDocument, translation.messageOrdinal(), translation.sourceMessageReference(),
                     event.receivedAt()));
@@ -197,7 +197,7 @@ public final class InboundMftEventProcessor {
     private MessageResult review(InboundMftPayloadEvent event, TradingPartner partner,
             InboundEdiBatchSplitter.InboundMessage message, IllegalArgumentException exception) {
         String reason = "MESSAGE_REJECTED: " + bounded(exception.getMessage());
-        EdiExchange review = exchanges.save(EdiExchange.inboundNeedsReview(event.tenantId(), partner.id(),
+        EdiExchange review = exchanges.save(exchanges.inboundNeedsReview(partner.id(),
                 event.transferId(), message.ordinal(), message.sourceReference(), reason, clock.instant()));
         return new MessageResult(message.ordinal(), message.sourceReference(), review.id(), null, null,
                 MessageStatus.NEEDS_REVIEW);

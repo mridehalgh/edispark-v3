@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 import java.util.ArrayList;
@@ -37,11 +36,8 @@ public class DynamoDbSchemaRepository implements SchemaRepository {
     private final String tenantId;
     private final SchemaItemMapper mapper;
 
-    public DynamoDbSchemaRepository(DynamoDbClient client, String tableName) {
-        this(client, tableName, DEFAULT_TENANT);
-    }
-
-    public DynamoDbSchemaRepository(DynamoDbClient client, String tableName, String tenantId) {
+DynamoDbSchemaRepository(DynamoDbClient client, String tableName, String tenantId) {
+        com.edispark.identifiers.tenant.TenantId.fromString(tenantId);
         this.client = client;
         this.tableName = tableName;
         this.tenantId = tenantId;
@@ -60,7 +56,7 @@ public class DynamoDbSchemaRepository implements SchemaRepository {
                 .expressionAttributeValues(Map.of(":pk", AttributeValue.builder().s(pk).build()))
                 .build();
         
-        QueryResponse response = client.query(request);
+        QueryResponse response = QueryResponse.builder().items(DynamoQueries.all(client, request)).build();
         
         if (response.items().isEmpty()) {
             return Optional.empty();
@@ -71,20 +67,14 @@ public class DynamoDbSchemaRepository implements SchemaRepository {
 
     @Override
     public List<Schema> findAll() {
-        var response = client.scan(ScanRequest.builder()
-                .tableName(tableName)
-                .filterExpression("#tenantId = :tenantId AND #entityType = :entityType")
-                .expressionAttributeNames(Map.of(
-                        "#tenantId", "tenantId",
-                        "#entityType", "entityType"))
-                .expressionAttributeValues(Map.of(
-                        ":tenantId", AttributeValue.builder().s(tenantId).build(),
-                        ":entityType", AttributeValue.builder().s("SCHEMA").build()))
-                .build());
-        return response.items().stream()
+        var request = QueryRequest.builder().tableName(tableName).indexName(GSI3_NAME)
+                .keyConditionExpression("#tenant = :tenant")
+                .expressionAttributeNames(Map.of("#tenant", GSI3_PK))
+                .expressionAttributeValues(Map.of(":tenant", AttributeValue.builder().s(tenantSchemasPk(tenantId)).build()))
+                .build();
+        return DynamoQueries.all(client, request).stream()
                 .map(mapper::fromSchemaMetadataItem)
-                .map(metadata -> findById(metadata.id()).orElseThrow())
-                .toList();
+                .map(metadata -> findById(metadata.id()).orElseThrow()).toList();
     }
 
     @Override
@@ -126,7 +116,7 @@ public class DynamoDbSchemaRepository implements SchemaRepository {
                 .expressionAttributeValues(Map.of(":gsi1pk", AttributeValue.builder().s(gsi1Pk).build()))
                 .build();
         
-        QueryResponse response = client.query(request);
+        QueryResponse response = QueryResponse.builder().items(DynamoQueries.all(client, request)).build();
         
         // For each document set, check if any document references this schema version
         for (Map<String, AttributeValue> item : response.items()) {
@@ -161,7 +151,7 @@ public class DynamoDbSchemaRepository implements SchemaRepository {
                         ":schemaVersion", AttributeValue.builder().s(schemaVersionRef.version().value()).build()))
                 .build();
         
-        QueryResponse response = client.query(request);
+        QueryResponse response = QueryResponse.builder().items(DynamoQueries.all(client, request)).build();
         
         return !response.items().isEmpty();
     }

@@ -85,3 +85,9 @@ For data-bearing changes:
 - add local-only interactive simulations to the shared local tools dock rather than creating independent floating controls.
 
 Update this manifest in the same change whenever a journey, status, entity, or fixture key changes.
+
+## Tenant-scoped storage upgrade
+
+The stable tenant mapping and fixture business keys are unchanged. Documents now stores authenticated ciphertext under `tenants/{tenantId}/content` within its configured local content directory, with one disposable owner-only `.tenant-root.key`. Startup first ensures/backfills the tenant schema-listing index, then copies retained document/schema references from the legacy content directory into this tenant namespace, then reconciles named fixtures. Original plaintext files and developer records are retained; runtime reads never fall back to plaintext. This does not require `pnpm local:reset`. Public bundled schema resources remain classpath reference data.
+
+Verification covers content round trips, duplicate hashes in separate tenants, independent deletion, wrong-resource/tenant decryption, missing/corrupt migration receipts, and seeder creation/repair/idempotence. Live browser sign-in and a deployment migration are separate verification boundaries. See [migration instructions](architecture/documents-storage-migration.md).

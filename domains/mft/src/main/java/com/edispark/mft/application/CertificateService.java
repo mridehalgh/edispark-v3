@@ -4,7 +4,6 @@ import com.edispark.mft.domain.model.CertificateKind;
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.repository.MftRepository;
 import com.edispark.mft.domain.repository.SecretStore;
-import io.cottn.core.tenancy.TenantContext;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -77,10 +76,9 @@ public final class CertificateService {
             throw new IllegalArgumentException("Certificate has expired");
         }
         validateCryptography(parsed.certificate());
-        String tenantId = TenantContext.getCurrentTenant().asString();
-        String secretRef = secretStore.put(tenantId, name, encodeMaterial(bytes, new String(password), parsed.alias()));
+        String secretRef = secretStore.put(name, encodeMaterial(bytes, new String(password), parsed.alias()));
         X509Certificate certificate = parsed.certificate();
-        CertificateRecord record = new CertificateRecord(UUID.randomUUID(), tenantId, name, kind,
+        CertificateRecord record = repository.certificate(UUID.randomUUID(), name, kind,
                 fingerprint(certificate), certificate.getSubjectX500Principal().getName(),
                 certificate.getIssuerX500Principal().getName(), certificate.getNotBefore().toInstant(),
                 certificate.getNotAfter().toInstant(), parsed.hasPrivateKey(), toPem(certificate), secretRef,
@@ -89,15 +87,13 @@ public final class CertificateService {
     }
 
     public List<CertificateRecord> list() {
-        String tenantId = TenantContext.getCurrentTenant().asString();
-        ensureManagedIdentity(tenantId);
-        return repository.listCertificates(tenantId);
+        ensureManagedIdentity();
+        return repository.listCertificates();
     }
 
     public Usage usage(UUID certificateId) {
-        String tenantId = TenantContext.getCurrentTenant().asString();
-        requireRecord(tenantId, certificateId);
-        List<UUID> partners = repository.listPartners(tenantId).stream()
+        requireRecord( certificateId);
+        List<UUID> partners = repository.listPartners().stream()
                 .filter(item -> item.localCertificateId().equals(certificateId)
                         || item.partnerSigningCertificateId().equals(certificateId)
                         || item.partnerEncryptionCertificateId().equals(certificateId)
@@ -107,30 +103,25 @@ public final class CertificateService {
     }
 
     public void deleteUnused(UUID certificateId) throws IOException {
-        String tenantId = TenantContext.getCurrentTenant().asString();
-        CertificateRecord record = requireRecord(tenantId, certificateId);
+        CertificateRecord record = requireRecord( certificateId);
         if (!usage(certificateId).deletable()) throw new IllegalStateException("Certificate is assigned to an AS2 profile");
-        if (!record.secretRef().startsWith("public:")) secretStore.delete(tenantId, record.secretRef());
-        repository.deleteCertificate(tenantId, certificateId);
+        if (!record.secretRef().startsWith("public:")) secretStore.delete(record.secretRef());
+        repository.deleteCertificate(certificateId);
     }
 
-    private CertificateRecord requireRecord(String tenantId, UUID certificateId) {
-        return repository.findCertificate(tenantId, certificateId)
+    private CertificateRecord requireRecord(UUID certificateId) {
+        return repository.findCertificate(certificateId)
                 .orElseThrow(() -> new MftNotFoundException("Certificate was not found"));
     }
 
     public CertificateMaterial load(UUID certificateId) throws IOException {
-        return load(TenantContext.getCurrentTenant().asString(), certificateId);
-    }
-
-    public CertificateMaterial load(String tenantId, UUID certificateId) throws IOException {
-        CertificateRecord record = repository.findCertificate(tenantId, certificateId)
+        CertificateRecord record = repository.findCertificate(certificateId)
                 .orElseThrow(() -> new MftNotFoundException("Certificate was not found"));
         if (record.secretRef().startsWith("public:")) {
             return new CertificateMaterial(record.publicCertificatePem().getBytes(java.nio.charset.StandardCharsets.US_ASCII),
                     "", "");
         }
-        try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(secretStore.get(tenantId, record.secretRef())))) {
+        try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(secretStore.get(record.secretRef())))) {
             int version = input.readInt();
             if (version != 1) throw new IOException("Unsupported certificate material version");
             String alias = input.readUTF();
@@ -141,18 +132,16 @@ public final class CertificateService {
         }
     }
 
-    public void ensureManagedIdentity(String tenantId) {
+    public void ensureManagedIdentity() {
         if (managedPublicIdentity == null) return;
         ParsedCertificate parsed = parsePublic(managedPublicIdentity);
         String fingerprint = fingerprint(parsed.certificate());
-        boolean exists = repository.listCertificates(tenantId).stream()
+        boolean exists = repository.listCertificates().stream()
                 .anyMatch(item -> item.kind() == CertificateKind.LOCAL_IDENTITY
                         && item.fingerprintSha256().equals(fingerprint));
         if (exists) return;
         X509Certificate certificate = parsed.certificate();
-        UUID id = UUID.nameUUIDFromBytes((tenantId + "\u0000" + fingerprint)
-                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        repository.saveCertificate(new CertificateRecord(id, tenantId, "EdiSpark AS2 signing",
+        repository.saveCertificate(repository.certificate(null, "EdiSpark AS2 signing",
                 CertificateKind.LOCAL_IDENTITY, fingerprint,
                 certificate.getSubjectX500Principal().getName(), certificate.getIssuerX500Principal().getName(),
                 certificate.getNotBefore().toInstant(), certificate.getNotAfter().toInstant(), false,

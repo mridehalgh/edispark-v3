@@ -31,15 +31,18 @@ class ContentRoundTripPropertyTest {
 
     private Path tempDir;
     private ContentStore store;
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
 
     @BeforeTry
     void setUp() throws IOException {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(com.edispark.identifiers.tenant.TenantId.newTenantId()));
         tempDir = Files.createTempDirectory("content-store-test");
         store = new FileSystemContentStore(tempDir);
     }
 
     @AfterTry
     void tearDown() throws IOException {
+        if (fixtureScope != null) fixtureScope.close();
         if (tempDir != null && Files.exists(tempDir)) {
             Files.walk(tempDir)
                 .sorted(Comparator.reverseOrder())

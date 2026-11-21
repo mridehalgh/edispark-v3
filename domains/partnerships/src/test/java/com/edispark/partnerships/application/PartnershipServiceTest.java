@@ -112,7 +112,7 @@ class PartnershipServiceTest {
 
             var agreement = service.createAgreement(partner.id(), "Retail orders");
             service.deleteAgreementDraft(agreement.id());
-            assertThat(repository.findAgreement(TENANT, agreement.id())).isEmpty();
+            assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT, () -> repository.findAgreement(agreement.id()))).isEmpty();
         });
     }
 

@@ -47,6 +47,10 @@ public final class DynamoDbTableConfig {
     // Table and index names
     public static final String DEFAULT_TABLE_NAME = "documents";
     public static final String GSI1_NAME = "GSI1-TenantDocumentSetsIndex";
+    public static final String GSI3_NAME = "GSI3-TenantSchemasIndex";
+    public static final String GSI3_PK = "GSI3PK";
+    public static final String GSI3_SK = "GSI3SK";
+
     public static final String GSI2_NAME = "GSI2-ContentHashIndex";
 
     // Attribute names
@@ -70,7 +74,7 @@ public final class DynamoDbTableConfig {
     // Sort key constants
     public static final String METADATA_SK = "METADATA";
 
-    // Default tenant for single-tenant scenarios
+    // Legacy fixture label only; runtime repositories require an explicit tenant
     public static final String DEFAULT_TENANT = "DEFAULT";
 
     private final String tableName;
@@ -96,6 +100,8 @@ public final class DynamoDbTableConfig {
      */
     public void createTableIfNotExists(DynamoDbClient client) {
         if (tableExists(client)) {
+            ensureSchemaIndex(client);
+            awaitSchemaIndex(client);
             return;
         }
 
@@ -103,6 +109,8 @@ public final class DynamoDbTableConfig {
                 .tableName(tableName)
                 .billingMode(BillingMode.PAY_PER_REQUEST)
                 .attributeDefinitions(
+                        AttributeDefinition.builder().attributeName(GSI3_PK).attributeType(ScalarAttributeType.S).build(),
+                        AttributeDefinition.builder().attributeName(GSI3_SK).attributeType(ScalarAttributeType.S).build(),
                         AttributeDefinition.builder()
                                 .attributeName(PK)
                                 .attributeType(ScalarAttributeType.S)
@@ -138,10 +146,31 @@ public final class DynamoDbTableConfig {
                                 .build())
                 .globalSecondaryIndexes(
                         createGsi1(),
-                        createGsi2())
+                        createGsi2(), createGsi3())
                 .build();
 
         client.createTable(request);
+        awaitSchemaIndex(client);
+    }
+
+    private void awaitSchemaIndex(DynamoDbClient client) {
+        long deadline = System.nanoTime() + java.time.Duration.ofSeconds(30).toNanos();
+        while (System.nanoTime() < deadline) {
+            var table = client.describeTable(request -> request.tableName(tableName)).table();
+            if (table.globalSecondaryIndexes().stream().anyMatch(index -> GSI3_NAME.equals(index.indexName())
+                    && index.indexStatus() == software.amazon.awssdk.services.dynamodb.model.IndexStatus.ACTIVE)) return;
+            pauseForIndex();
+        }
+        throw new IllegalStateException("Tenant schema index did not become active before local startup deadline");
+    }
+
+    private void pauseForIndex() {
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted waiting for tenant schema index", interrupted);
+        }
     }
 
     /**
@@ -166,6 +195,29 @@ public final class DynamoDbTableConfig {
         } catch (ResourceNotFoundException e) {
             return false;
         }
+    }
+
+    public static String tenantSchemasPk(String tenantId) {
+        return TENANT_PREFIX + tenantId + "#SCHEMAS";
+    }
+
+    private GlobalSecondaryIndex createGsi3() {
+        return GlobalSecondaryIndex.builder().indexName(GSI3_NAME)
+                .keySchema(KeySchemaElement.builder().attributeName(GSI3_PK).keyType(KeyType.HASH).build(),
+                        KeySchemaElement.builder().attributeName(GSI3_SK).keyType(KeyType.RANGE).build())
+                .projection(Projection.builder().projectionType(ProjectionType.ALL).build()).build();
+    }
+
+    private void ensureSchemaIndex(DynamoDbClient client) {
+        var table = client.describeTable(request -> request.tableName(tableName)).table();
+        if (table.globalSecondaryIndexes().stream().anyMatch(index -> index.indexName().equals(GSI3_NAME))) return;
+        client.updateTable(software.amazon.awssdk.services.dynamodb.model.UpdateTableRequest.builder().tableName(tableName)
+                .attributeDefinitions(AttributeDefinition.builder().attributeName(GSI3_PK).attributeType(ScalarAttributeType.S).build(),
+                        AttributeDefinition.builder().attributeName(GSI3_SK).attributeType(ScalarAttributeType.S).build())
+                .globalSecondaryIndexUpdates(software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndexUpdate.builder()
+                        .create(software.amazon.awssdk.services.dynamodb.model.CreateGlobalSecondaryIndexAction.builder()
+                                .indexName(GSI3_NAME).keySchema(createGsi3().keySchema()).projection(createGsi3().projection()).build()).build())
+                .build());
     }
 
     private GlobalSecondaryIndex createGsi1() {

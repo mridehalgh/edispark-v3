@@ -24,4 +24,16 @@ run "uk_foundation_has_no_nat_and_preserves_data" {
     condition     = aws_s3_bucket_versioning.documents.versioning_configuration[0].status == "Enabled"
     error_message = "Document versions must be recoverable."
   }
+  assert {
+    condition     = contains([for index in aws_dynamodb_table.documents.global_secondary_index : index.name], "GSI3-TenantSchemasIndex")
+    error_message = "Schema listing requires a tenant-keyed index."
+  }
+  assert {
+    condition     = !contains(local.documents_metadata_actions, "dynamodb:Scan")
+    error_message = "The application must not scan tenant document metadata. Backfills use separate administrative authority."
+  }
+  assert {
+    condition     = output.release_config.backend_environment.DOCUMENTS_KEY_STORE_TABLE == module.mft.application_environment.MFT_KEY_STORE_TABLE
+    error_message = "Documents must use the provisioned cell key store rather than an unconfigured encryption fallback."
+  }
 }

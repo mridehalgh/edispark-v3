@@ -1,5 +1,8 @@
 package com.edispark.mft.infrastructure.as2;
 
+import io.cottn.core.tenancy.TenantExecution;
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
+
 import com.edispark.mft.application.As2TransportException;
 import com.edispark.mft.application.AsyncMdnOutboxService;
 import com.edispark.mft.application.CertificateService;
@@ -21,7 +24,7 @@ import java.time.Clock;
 import java.util.UUID;
 
 public final class KmsAs2InboundService {
-    private final MftRepository repository;
+    private final MftDiscovery repository;
     private final CertificateService certificates;
     private final MftService transfers;
     private final MdnService mdns;
@@ -31,7 +34,7 @@ public final class KmsAs2InboundService {
     private final AsyncMdnOutboxService mdnOutbox;
     private final Clock clock;
 
-    public KmsAs2InboundService(MftRepository repository, CertificateService certificates,
+    public KmsAs2InboundService(MftDiscovery repository, CertificateService certificates,
                                 MftService transfers, MdnService mdns, KmsCmsCodec cms,
                                 As2EndpointPolicy endpoints, As2AdmissionController admission,
                                 AsyncMdnOutboxService mdnOutbox, Clock clock) {
@@ -50,6 +53,12 @@ public final class KmsAs2InboundService {
                                    String receiptDeliveryOption, byte[] body) {
         validateMessageId(messageId);
         PartnerProfile partner = partner(as2To, as2From);
+        return TenantExecution.get(partner.tenantId(), () ->
+                receiveScoped(partner, messageId, contentType, receiptDeliveryOption, body));
+    }
+
+    private InboundResponse receiveScoped(PartnerProfile partner, String messageId, String contentType,
+            String receiptDeliveryOption, byte[] body) {
         boolean authenticated = false;
         byte[] authenticatedMic = sha256(body);
         try (As2AdmissionController.Permit ignored = admission.acquirePartner(partner)) {
@@ -76,7 +85,7 @@ public final class KmsAs2InboundService {
             }
             String filename = safeFilename(current.getFileName());
             String payloadType = current.getContentType();
-            transfers.receiveInbound(partner.localAs2Id(), partner.remoteAs2Id(), messageId,
+            transfers.receiveInbound(partner, messageId,
                     filename, payloadType, cms.content(current));
             MimeBodyPart mdn = cms.signedMdn(messageId, "processed", mic);
             if (receiptDeliveryOption != null && !receiptDeliveryOption.isBlank()) {
@@ -192,7 +201,7 @@ public final class KmsAs2InboundService {
 
     private X509Certificate partnerCertificate(PartnerProfile partner, UUID certificateId) {
         try {
-            byte[] bytes = certificates.load(partner.tenantId(), certificateId).bytes();
+            byte[] bytes = TenantExecution.io(partner.tenantId(), () -> certificates.load(certificateId)).bytes();
             return (X509Certificate) CertificateFactory.getInstance("X.509")
                     .generateCertificate(new ByteArrayInputStream(bytes));
         } catch (Exception exception) {

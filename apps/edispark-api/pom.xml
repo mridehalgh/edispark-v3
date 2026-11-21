@@ -13,6 +13,7 @@
   <name>EdiSpark API</name>
   <description>Single Spring Boot composition root for all EdiSpark bounded contexts</description>
   <dependencies>
+    <dependency><groupId>com.edispark</groupId><artifactId>tenancy-test-support</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency>

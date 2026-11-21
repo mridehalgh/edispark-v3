@@ -17,23 +17,38 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class AsyncMdnIsolationTest {
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
+
+    @org.junit.jupiter.api.BeforeEach
+    @net.jqwik.api.lifecycle.BeforeTry
+    void bindFixtureTenant() {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(
+                com.edispark.identifiers.tenant.TenantId.fromString("2OnHVzeAJKwm0ThFLcy1HfLHGPm")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    @net.jqwik.api.lifecycle.AfterTry
+    void restoreFixtureTenant() {
+        if (fixtureScope != null) fixtureScope.close();
+    }
+
     private static final Instant NOW = Instant.parse("2026-10-30T12:00:00Z");
     private static final String MIC = Base64.getEncoder().encodeToString(new byte[]{1, 2, 3}) + ", sha-256";
 
     @Test
     void asynchronousMdnCanOnlyCompleteTheMatchingPartnerTransferInItsTenant() {
         InMemoryMftRepository repository = new InMemoryMftRepository();
-        PartnerProfile owner = partner("tenant-a");
-        PartnerProfile other = partner("tenant-a");
+        PartnerProfile owner = partner("2OnHVzeAJKwm0ThFLcy1HfLHGPm");
+        PartnerProfile other = partner("2OnHVzeAJKwm0ThFLcy1HfLHGPm");
         Transfer transfer = awaiting(owner, "<same-message@example.invalid>");
-        repository.saveOutboundIfAbsent(transfer);
+        com.edispark.testing.FixtureTenants.persist(transfer, record -> record.tenantId(), repository::saveOutboundIfAbsent);
         MdnService service = new MdnService(repository, Clock.fixed(NOW.plusSeconds(5), ZoneOffset.UTC));
 
         assertThatThrownBy(() -> service.record(other, transfer.as2MessageId(),
                 "automatic-action/MDN-sent-automatically; processed", MIC))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("wrong trading partner");
-        assertThat(repository.findTransfer("tenant-a", transfer.id()).orElseThrow().status())
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.findTransfer(transfer.id())).orElseThrow().status())
                 .isEqualTo(TransferStatus.AWAITING_MDN);
 
         Transfer completed = service.record(owner, transfer.as2MessageId(),
@@ -46,9 +61,9 @@ class AsyncMdnIsolationTest {
     @Test
     void asynchronousMdnRejectsAValidSignatureWithTheWrongMic() {
         InMemoryMftRepository repository = new InMemoryMftRepository();
-        PartnerProfile owner = partner("tenant-a");
+        PartnerProfile owner = partner("2OnHVzeAJKwm0ThFLcy1HfLHGPm");
         Transfer transfer = awaiting(owner, "<message@example.invalid>");
-        repository.saveOutboundIfAbsent(transfer);
+        com.edispark.testing.FixtureTenants.persist(transfer, record -> record.tenantId(), repository::saveOutboundIfAbsent);
         MdnService service = new MdnService(repository, Clock.fixed(NOW.plusSeconds(5), ZoneOffset.UTC));
 
         assertThatThrownBy(() -> service.record(owner, transfer.as2MessageId(),

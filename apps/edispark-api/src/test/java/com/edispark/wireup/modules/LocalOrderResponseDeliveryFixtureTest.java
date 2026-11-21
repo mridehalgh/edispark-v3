@@ -38,7 +38,7 @@ class LocalOrderResponseDeliveryFixtureTest {
             assertThat(agreement.status()).isEqualTo(AgreementStatus.ACTIVE);
             assertThat(agreement.capabilities()).singleElement().satisfies(cap ->
                     assertThat(cap.mappingRevisionId()).isEqualTo(LocalBqAcknowledgementFixture.MAPPING));
-            repository.deleteAgreement(tenant, agreement.id());
+            io.cottn.core.tenancy.TenantExecution.run(tenant, () -> repository.deleteAgreement(agreement.id()));
             fixture.reconcile(ready);
             assertThat(partnerships.listAgreements()).hasSize(1);
             var replacement = partnerships.listAgreements().getFirst();
@@ -71,7 +71,7 @@ class LocalOrderResponseDeliveryFixtureTest {
             assertThat(created.capabilities()).singleElement().satisfies(cap -> assertThat(cap.mappingRevisionId()).isEqualTo(LocalOrderResponseDeliveryFixture.MAPPING));
             fixture.reconcile(ready);
             assertThat(partnerships.listAgreements()).hasSize(2);
-            repository.deleteAgreement(tenant, created.id());
+            io.cottn.core.tenancy.TenantExecution.run(tenant, () -> repository.deleteAgreement(created.id()));
             fixture.reconcile(ready);
             assertThat(partnerships.listAgreements()).hasSize(2);
             assertThat(partnerships.getAgreement(unrelated.id())).isEqualTo(unrelated);

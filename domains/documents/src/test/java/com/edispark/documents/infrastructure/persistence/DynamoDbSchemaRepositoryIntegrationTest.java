@@ -50,8 +50,8 @@ class DynamoDbSchemaRepositoryIntegrationTest {
         // Recreate table for each test
         tableConfig.deleteTableIfExists(dynamoDbLocal.client());
         tableConfig.createTableIfNotExists(dynamoDbLocal.client());
-        schemaRepository = new DynamoDbSchemaRepository(dynamoDbLocal.client(), tableConfig.tableName());
-        documentSetRepository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName());
+        schemaRepository = new DynamoDbSchemaRepository(dynamoDbLocal.client(), tableConfig.tableName(), "2OnHVzeAJKwm0ThFLcy1HfLHGPm");
+        documentSetRepository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName(), "2OnHVzeAJKwm0ThFLcy1HfLHGPm");
     }
 
     @Test

@@ -187,3 +187,5 @@ Commit the API change, exported contract, and generated client together. The web
 ## Engineering guidance
 
 Repository rules live in `AGENTS.md` and `.agents/rules/`. Feature specifications under `docs/specs/` should be checked against the current implementation before changing their areas. New proposals use the `openspec/` workflow.
+
+Tenant-scoped feature development and trusted worker boundaries are documented in [the developer guide](docs/architecture/tenant-scoped-development.md). Documents content is now encrypted per tenant in local and production storage. Existing local data is copied from retained metadata without resetting the workspace; production requires the [storage cutover procedure](docs/architecture/documents-storage-migration.md).

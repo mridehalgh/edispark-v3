@@ -1,5 +1,9 @@
 package com.edispark.mft.infrastructure.as2;
 
+import io.cottn.core.tenancy.TenantExecution;
+import com.edispark.mft.infrastructure.persistence.MftPersistence;
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
+
 import com.edispark.mft.application.As2TransportException;
 import com.edispark.mft.domain.model.MdnDelivery;
 import com.edispark.mft.domain.repository.MftRepository;
@@ -16,20 +20,22 @@ import org.springframework.scheduling.annotation.Scheduled;
 @Slf4j
 public final class AsyncMdnDeliveryWorker {
     private final MftRepository repository;
+    private final MftDiscovery discovery;
     private final PayloadStore payloads;
     private final As2EndpointPolicy endpoints;
     private final Clock clock;
     private final MdnTransport transport;
     private final String owner = UUID.randomUUID().toString();
 
-    public AsyncMdnDeliveryWorker(MftRepository repository, PayloadStore payloads,
+    public AsyncMdnDeliveryWorker(MftPersistence repository, PayloadStore payloads,
                                   As2EndpointPolicy endpoints, Clock clock) {
         this(repository, payloads, endpoints, clock, new HttpMdnTransport());
     }
 
-    AsyncMdnDeliveryWorker(MftRepository repository, PayloadStore payloads,
+    AsyncMdnDeliveryWorker(MftPersistence repository, PayloadStore payloads,
                            As2EndpointPolicy endpoints, Clock clock, MdnTransport transport) {
         this.repository = repository;
+        this.discovery = repository;
         this.payloads = payloads;
         this.endpoints = endpoints;
         this.clock = clock;
@@ -38,12 +44,11 @@ public final class AsyncMdnDeliveryWorker {
 
     @Scheduled(fixedDelayString = "${mft.mdn-delivery.poll-interval-ms:1000}")
     public void deliverDue() {
-        repository.listPendingMdnDeliveries(clock.instant(), 10).forEach(this::withLease);
+        discovery.listPendingMdnDeliveries(clock.instant(), 10).forEach(delivery -> TenantExecution.run(delivery.tenantId(), () -> withLease(delivery)));
     }
 
     private void withLease(MdnDelivery delivery) {
-        if (!repository.tryAcquireMdnLease(delivery.tenantId(), delivery.id(), owner, clock.instant(),
-                clock.instant().plus(Duration.ofMinutes(2)))) return;
+        if (!repository.tryAcquireMdnLease(delivery.id(), owner, clock.instant(), clock.instant().plus(Duration.ofMinutes(2)))) return;
         try {
             deliver(delivery);
         } catch (Exception exception) {
@@ -54,14 +59,14 @@ public final class AsyncMdnDeliveryWorker {
             log.warn("AS2 asynchronous MDN delivery failed for delivery {} after {} attempts",
                     delivery.id(), delivery.attempts() + 1);
         } finally {
-            repository.releaseMdnLease(delivery.tenantId(), delivery.id(), owner);
+            repository.releaseMdnLease(delivery.id(), owner);
         }
     }
 
     private void deliver(MdnDelivery delivery) throws Exception {
         endpoints.validate(delivery.callback());
         byte[] body;
-        try (var input = payloads.get(delivery.tenantId(), delivery.payload())) {
+        try (var input = payloads.get(delivery.payload())) {
             body = input.readAllBytes();
         }
         transport.send(delivery, body);

@@ -13,6 +13,8 @@
   <name>MFT Domain</name>
   <description>Tenant-isolated AS2 transfer, partner, certificate, and evidence management</description>
   <dependencies>
+    <dependency><groupId>com.edispark</groupId><artifactId>tenant-crypto</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.edispark</groupId><artifactId>tenancy-test-support</artifactId><version>${project.version}</version><scope>test</scope></dependency>
     <dependency>
       <groupId>com.edispark</groupId>
       <artifactId>tenancy</artifactId>

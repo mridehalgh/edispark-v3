@@ -11,36 +11,32 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface MftRepository {
+public interface MftRepository extends MftCreation {
     PartnerProfile savePartner(PartnerProfile partner);
     PartnerProfile updatePartner(PartnerProfile partner);
-    List<PartnerProfile> listPartners(String tenantId);
-    Optional<PartnerProfile> findPartner(String tenantId, UUID partnerId);
-    Optional<PartnerProfile> findInboundPartner(String localAs2Id, String remoteAs2Id);
-    void deletePartner(String tenantId, UUID partnerId);
+    List<PartnerProfile> listPartners();
+    Optional<PartnerProfile> findPartner(UUID partnerId);
+    void deletePartner(UUID partnerId);
     Transfer saveOutboundIfAbsent(Transfer transfer);
     Transfer saveInboundIfAbsent(Transfer transfer);
     Transfer save(Transfer transfer);
     boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus);
-    Optional<Transfer> findTransfer(String tenantId, TransferId id);
-    Optional<Transfer> findByIdempotencyKey(String tenantId, String idempotencyKey);
-    Optional<Transfer> findOutboundByMessageId(String tenantId, String as2MessageId);
-    Optional<Transfer> findInboundDuplicate(String tenantId, String as2MessageId, String sha256);
-    Optional<Transfer> findInboundByMessageId(String tenantId, String as2MessageId);
-    List<Transfer> listTransfers(String tenantId);
+    Optional<Transfer> findTransfer(TransferId id);
+    Optional<Transfer> findByIdempotencyKey(String idempotencyKey);
+    Optional<Transfer> findOutboundByMessageId(String as2MessageId);
+    Optional<Transfer> findInboundDuplicate(String as2MessageId, String sha256);
+    Optional<Transfer> findInboundByMessageId(String as2MessageId);
+    List<Transfer> listTransfers();
     CertificateRecord saveCertificate(CertificateRecord certificate);
-    List<CertificateRecord> listCertificates(String tenantId);
-    Optional<CertificateRecord> findCertificate(String tenantId, UUID certificateId);
-    void deleteCertificate(String tenantId, UUID certificateId);
-    List<Transfer> listPendingTransfers(Instant dueAt, int limit);
-    boolean tryAcquireDeliveryLease(String tenantId, TransferId transferId, String owner,
-                                    Instant now, Instant expiresAt);
-    void releaseDeliveryLease(String tenantId, TransferId transferId, String owner);
+    List<CertificateRecord> listCertificates();
+    Optional<CertificateRecord> findCertificate(UUID certificateId);
+    void deleteCertificate(UUID certificateId);
+    boolean tryAcquireDeliveryLease(TransferId transferId, String owner, Instant now, Instant expiresAt);
+    void releaseDeliveryLease(TransferId transferId, String owner);
     MdnDelivery saveMdnDelivery(MdnDelivery delivery);
     boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts);
     MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery);
-    List<MdnDelivery> listPendingMdnDeliveries(Instant dueAt, int limit);
-    List<MdnDelivery> listMdnDeliveries(String tenantId);
-    boolean tryAcquireMdnLease(String tenantId, UUID deliveryId, String owner, Instant now, Instant expiresAt);
-    void releaseMdnLease(String tenantId, UUID deliveryId, String owner);
+    List<MdnDelivery> listMdnDeliveries();
+    boolean tryAcquireMdnLease(UUID deliveryId, String owner, Instant now, Instant expiresAt);
+    void releaseMdnLease(UUID deliveryId, String owner);
 }

@@ -16,7 +16,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-public final class S3EncryptedPayloadStore implements PayloadStore {
+public final class S3EncryptedPayloadStore implements ExplicitPayloadStore {
     private final S3Client s3;
     private final TenantCipher cipher;
     private final String bucket;

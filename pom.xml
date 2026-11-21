@@ -16,6 +16,8 @@
         <module>platform/pagination</module>
         <module>platform/crn</module>
         <module>platform/tenancy</module>
+        <module>platform/tenant-crypto</module>
+        <module>tooling/tenancy-test-support</module>
         <module>domains/mft</module>
         <module>domains/partnerships</module>
         <module>domains/transformations</module>

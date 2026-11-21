@@ -30,10 +30,15 @@ final class UnifiedTenantContextFilter extends OncePerRequestFilter {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The tenant claim is invalid");
             return;
         }
+        TenantId tenant;
         try {
-            TenantContext.runWhere(TenantContextHolder.of(TenantId.fromString(claim)), () -> invoke(chain, request, response));
+            tenant = TenantId.fromString(claim);
         } catch (IllegalArgumentException exception) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "The tenant claim is invalid");
+            return;
+        }
+        try {
+            TenantContext.runWhere(TenantContextHolder.of(tenant), () -> invoke(chain, request, response));
         } catch (FilterFailure failure) {
             if (failure.getCause() instanceof IOException io) throw io;
             throw (ServletException) failure.getCause();

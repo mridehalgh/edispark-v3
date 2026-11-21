@@ -18,9 +18,13 @@ output "release_config" {
     web_secret_arn     = aws_secretsmanager_secret.web.arn
     jwt_key_arn        = aws_kms_key.jwt.arn
     backend_environment = merge(module.mft.application_environment, module.integration.application_environment, {
-      DOCUMENTS_TABLE_NAME = aws_dynamodb_table.documents.name
-      DOCUMENTS_S3_ENABLED = "true"
-      DOCUMENTS_S3_BUCKET  = aws_s3_bucket.documents.id
+      DOCUMENTS_TABLE_NAME                = aws_dynamodb_table.documents.name
+      DOCUMENTS_S3_ENABLED                = "true"
+      DOCUMENTS_S3_BUCKET                 = aws_s3_bucket.documents.id
+      DOCUMENTS_TENANT_KEY_REGISTRY_TABLE = module.mft.application_environment.MFT_METADATA_TABLE
+      DOCUMENTS_KEY_STORE_TABLE           = module.mft.application_environment.MFT_KEY_STORE_TABLE
+      DOCUMENTS_KEY_STORE_LOGICAL_NAME    = module.mft.application_environment.MFT_KEY_STORE_LOGICAL_NAME
+      DOCUMENTS_ROOT_KMS_KEY_ARN          = module.mft.application_environment.MFT_ROOT_KMS_KEY_ARN
     })
   }
 }

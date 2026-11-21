@@ -1,6 +1,6 @@
 package com.edispark.mftapplication.as2;
 
-import com.edispark.mft.application.MftService;
+import com.edispark.mft.infrastructure.as2.MftInboundGateway;
 import com.helger.phase2.exception.AS2Exception;
 import com.helger.phase2.message.IMessage;
 import com.helger.phase2.processor.module.AbstractProcessorModule;
@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 
 final class MftAs2StorageModule extends AbstractProcessorModule implements IProcessorStorageModule {
     private static final Logger LOGGER = LoggerFactory.getLogger(MftAs2StorageModule.class);
-    private final MftService mftService;
+    private final MftInboundGateway mftService;
 
-    MftAs2StorageModule(MftService mftService) {
+    MftAs2StorageModule(MftInboundGateway mftService) {
         this.mftService = mftService;
     }
 

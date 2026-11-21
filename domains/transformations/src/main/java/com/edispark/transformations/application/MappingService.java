@@ -7,7 +7,6 @@ import com.edispark.transformations.domain.MappingRevision;
 import com.edispark.transformations.domain.MappingStatus;
 import com.edispark.transformations.domain.TargetValidationEvidence;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.cottn.core.tenancy.TenantContext;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
@@ -43,7 +42,7 @@ public final class MappingService {
     }
 
     public MappingRevision create(String name, UUID sourceSchemaId, UUID targetSchemaId, List<MappingNode> nodes) {
-        return repository.save(MappingRevision.draft(tenant(), name, sourceSchemaId, targetSchemaId, nodes, clock.instant()));
+        return repository.save(repository.draft( name, sourceSchemaId, targetSchemaId, nodes, clock.instant()));
     }
 
     public MappingRevision update(UUID id, List<MappingNode> nodes) { return repository.save(requireTenant(id).revise(nodes)); }
@@ -51,12 +50,12 @@ public final class MappingService {
         promoteDue();
         var combined = new LinkedHashMap<UUID, MappingRevision>();
         globalCatalog.list().forEach(mapping -> combined.put(mapping.id(), mapping));
-        repository.list(tenant()).forEach(mapping -> combined.putIfAbsent(mapping.id(), mapping));
+        repository.list().forEach(mapping -> combined.putIfAbsent(mapping.id(), mapping));
         return List.copyOf(combined.values());
     }
     public MappingRevision get(UUID id) { return promote(require(id)); }
     public MappingRevision createRevision(UUID id) {
-        return repository.save(require(id).forkForTenant(tenant(), clock.instant()));
+        return repository.save(repository.fork(require(id), clock.instant()));
     }
 
     public TestResult test(UUID id, byte[] input, byte[] expected) {
@@ -145,7 +144,7 @@ public final class MappingService {
         if (mapping.status() != MappingStatus.DRAFT) {
             throw new IllegalStateException("Only an unused draft mapping can be permanently deleted");
         }
-        repository.delete(tenant(), id);
+        repository.delete(id);
     }
 
     public Usage usage(UUID id) {
@@ -159,14 +158,14 @@ public final class MappingService {
                 new Dependency("mapping-revision", mapping.id(), "Revision has entered its retained lifecycle")));
     }
 
-    private void promoteDue() { repository.list(tenant()).forEach(this::promote); }
+    private void promoteDue() { repository.list().forEach(this::promote); }
     private MappingRevision promote(MappingRevision mapping) {
         MappingRevision promoted = mapping.publishDue(clock.instant());
         return promoted == mapping ? mapping : repository.save(promoted);
     }
 
     private MappingRevision require(UUID id) {
-        return globalCatalog.find(id).or(() -> repository.find(tenant(), id))
+        return globalCatalog.find(id).or(() -> repository.find(id))
                 .orElseThrow(() -> new IllegalArgumentException("Mapping was not found"));
     }
     private MappingRevision requireTenant(UUID id) {
@@ -176,7 +175,6 @@ public final class MappingService {
         }
         return mapping;
     }
-    private String tenant() { return TenantContext.getCurrentTenant().asString(); }
     private byte[] normalize(byte[] json) {
         try { return mapper.writeValueAsBytes(mapper.readTree(json)); }
         catch (Exception exception) { throw new IllegalArgumentException("Fixture is not valid JSON", exception); }

@@ -1,5 +1,8 @@
 package com.edispark.mftapplication.as2;
 
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
+import com.edispark.mft.infrastructure.as2.MftInboundGateway;
+
 import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.application.MftService;
 import com.edispark.mft.domain.repository.MftRepository;
@@ -39,7 +42,7 @@ public class MftAs2ReceiverConfiguration {
 
     @Bean
     AS2Session mftAs2Session(MftRepository repository, CertificateService certificateService,
-                             MftService mftService) throws AS2Exception {
+                             MftInboundGateway mftService) throws AS2Exception {
         AS2Session created = new AS2Session();
         CertificateFactory certificates = new CertificateFactory();
         certificates.setKeyStoreType(EKeyStoreType.PKCS12);
@@ -49,7 +52,7 @@ public class MftAs2ReceiverConfiguration {
         initializeRuntimeKeyStore(certificates);
         created.setCertificateFactory(certificates);
 
-        MftAs2PartnershipFactory partnerships = new MftAs2PartnershipFactory(repository, certificateService, certificates);
+        MftAs2PartnershipFactory partnerships = new MftAs2PartnershipFactory((MftDiscovery) repository, certificateService, certificates);
         partnerships.initDynamicComponent(created, null);
         created.setPartnershipFactory(partnerships);
 
@@ -72,7 +75,7 @@ public class MftAs2ReceiverConfiguration {
         }
     }
 
-    private void addModules(AS2Session session, DefaultMessageProcessor processor, MftService service) throws AS2Exception {
+    private void addModules(AS2Session session, DefaultMessageProcessor processor, MftInboundGateway service) throws AS2Exception {
         AS2ServletReceiverModule receiver = new AS2ServletReceiverModule();
         receiver.setErrorDirectory(".local/mft/inbound-errors");
         receiver.setErrorFormat("$msg.sender.as2_id$-$msg.receiver.as2_id$-$date.uuuuMMddHHmmss$");

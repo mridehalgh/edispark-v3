@@ -121,7 +121,7 @@ class MappingServiceTest {
 
             var disposable = service.create("Disposable", UUID.randomUUID(), UUID.randomUUID(), List.of(node));
             service.deleteDraft(disposable.id());
-            assertThat(repository.find(TENANT, disposable.id())).isEmpty();
+            assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT, () -> repository.find(disposable.id()))).isEmpty();
         });
     }
 

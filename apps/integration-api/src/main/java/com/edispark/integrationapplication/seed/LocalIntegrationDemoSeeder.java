@@ -127,10 +127,15 @@ public final class LocalIntegrationDemoSeeder {
     }
 
     void reconcile(String targetTenantId, UUID edifactConnectionId, UUID tradacomsConnectionId) {
+        io.cottn.core.tenancy.TenantExecution.run(targetTenantId,
+                () -> reconcileTenant(targetTenantId, edifactConnectionId, tradacomsConnectionId));
+    }
+
+    private void reconcileTenant(String targetTenantId, UUID edifactConnectionId, UUID tradacomsConnectionId) {
         Instant now = clock.instant();
-        GLOBAL_MAPPING_IDS.forEach(id -> mappings.delete(targetTenantId, id));
+        GLOBAL_MAPPING_IDS.forEach(id -> mappings.delete(id));
         List<MappingRevision> demoMappings = mappings(targetTenantId, now);
-        demoMappings.forEach(mapping -> mappings.find(targetTenantId, mapping.id()).orElseGet(() -> mappings.save(mapping)));
+        demoMappings.forEach(mapping -> mappings.find(mapping.id()).orElseGet(() -> mappings.save(mapping)));
         TradingPartner edifactPartner = partner(PARTNER_ID, targetTenantId, "Northstar Retail", "[edifact_buyer_gln]", now);
         TradingPartner tradacomsPartner = partner(TRADACOMS_PARTNER_ID, targetTenantId, "Harbour Retail",
                 "[tradacoms_buyer_gln]", now);
@@ -139,7 +144,7 @@ public final class LocalIntegrationDemoSeeder {
         retainPartner(new TradingPartner(PARTNER_DRAFT_ID, targetTenantId, "Northstar Retail UK",
                 edifactPartner.identities(), PartnerStatus.DRAFT, now, now, PARTNER_ID, 2, null, null, 1,
                 InboundFileFailurePolicy.REJECT_FILE));
-        sscc.find(targetTenantId, LOCAL_SSCC_ISSUER_ID).orElseGet(() -> sscc.save(new SsccIssuer(
+        sscc.find(LOCAL_SSCC_ISSUER_ID).orElseGet(() -> sscc.save(new SsccIssuer(
                 LOCAL_SSCC_ISSUER_ID, targetTenantId, "Local demonstration range", "1234567", 0,
                 1, 999999999L, 1, 12, true, true, SsccIssuerStatus.ACTIVE, 0, now, now)));
 
@@ -159,11 +164,11 @@ public final class LocalIntegrationDemoSeeder {
     }
 
     private void retainPartner(TradingPartner fixture) {
-        partnerships.findPartner(fixture.tenantId(), fixture.id()).orElseGet(() -> partnerships.savePartner(fixture));
+        partnerships.findPartner(fixture.id()).orElseGet(() -> partnerships.savePartner(fixture));
     }
 
     private void retainAgreement(TradingAgreement fixture) {
-        partnerships.findAgreement(fixture.tenantId(), fixture.id()).orElseGet(() -> partnerships.saveAgreement(fixture));
+        partnerships.findAgreement(fixture.id()).orElseGet(() -> partnerships.saveAgreement(fixture));
     }
 
     private TradingPartner partner(UUID id, String targetTenantId, String name, String gln, Instant now) {

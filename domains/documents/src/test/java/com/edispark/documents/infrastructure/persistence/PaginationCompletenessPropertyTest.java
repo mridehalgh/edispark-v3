@@ -58,7 +58,7 @@ class PaginationCompletenessPropertyTest {
     void setUp() {
         tableConfig.deleteTableIfExists(dynamoDbLocal.client());
         tableConfig.createTableIfNotExists(dynamoDbLocal.client());
-        repository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName());
+        repository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName(), "2OnHVzeAJKwm0ThFLcy1HfLHGPm");
     }
 
     @Property(tries = 25)

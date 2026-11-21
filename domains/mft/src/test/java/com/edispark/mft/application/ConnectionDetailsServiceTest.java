@@ -19,6 +19,21 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class ConnectionDetailsServiceTest {
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
+
+    @org.junit.jupiter.api.BeforeEach
+    @net.jqwik.api.lifecycle.BeforeTry
+    void bindFixtureTenant() {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(
+                com.edispark.identifiers.tenant.TenantId.fromString("2OnHVzeAJKwm0ThFLcy1HfLHGPm")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    @net.jqwik.api.lifecycle.AfterTry
+    void restoreFixtureTenant() {
+        if (fixtureScope != null) fixtureScope.close();
+    }
+
     private static final String TENANT_ID = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Instant NOW = Instant.parse("2026-10-30T12:00:00Z");
 
@@ -27,11 +42,11 @@ class ConnectionDetailsServiceTest {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         CertificateRecord identity = identity(TENANT_ID, "EDISPARK-CERTIFICATE");
         PartnerProfile partner = partner(TENANT_ID, identity.id(), "EDISPARK", "Northstar Trading");
-        repository.saveCertificate(identity);
-        repository.savePartner(partner);
-        CertificateRecord otherIdentity = identity("another-tenant", "OTHER-CERTIFICATE");
-        repository.saveCertificate(otherIdentity);
-        repository.savePartner(partner("another-tenant", otherIdentity.id(), "OTHER", "Other Retailer"));
+        com.edispark.testing.FixtureTenants.persist(identity, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(partner, record -> record.tenantId(), repository::savePartner);
+        CertificateRecord otherIdentity = identity("3PnIWafBKLxn1UiGMdz2IgMIRNn", "OTHER-CERTIFICATE");
+        com.edispark.testing.FixtureTenants.persist(otherIdentity, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(partner("3PnIWafBKLxn1UiGMdz2IgMIRNn", otherIdentity.id(), "OTHER", "Other Retailer"), record -> record.tenantId(), repository::savePartner);
         ConnectionDetailsService service = new ConnectionDetailsService(
                 repository,
                 URI.create("https://as2.edispark.example/as2"),
@@ -62,9 +77,9 @@ class ConnectionDetailsServiceTest {
     @Test
     void rejectsACrossTenantCertificateReference() {
         InMemoryMftRepository repository = new InMemoryMftRepository();
-        CertificateRecord otherIdentity = identity("another-tenant", "OTHER-CERTIFICATE");
-        repository.saveCertificate(otherIdentity);
-        repository.savePartner(partner(TENANT_ID, otherIdentity.id(), "EDISPARK", "Northstar Trading"));
+        CertificateRecord otherIdentity = identity("3PnIWafBKLxn1UiGMdz2IgMIRNn", "OTHER-CERTIFICATE");
+        com.edispark.testing.FixtureTenants.persist(otherIdentity, record -> record.tenantId(), repository::saveCertificate);
+        com.edispark.testing.FixtureTenants.persist(partner(TENANT_ID, otherIdentity.id(), "EDISPARK", "Northstar Trading"), record -> record.tenantId(), repository::savePartner);
         ConnectionDetailsService service = new ConnectionDetailsService(
                 repository,
                 URI.create("https://as2.edispark.example/as2"),

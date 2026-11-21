@@ -9,7 +9,7 @@ import java.security.SecureRandom;
 import java.util.UUID;
 import javax.crypto.Cipher;
 
-public final class LocalEncryptedSecretStore implements SecretStore {
+public final class LocalEncryptedSecretStore implements ExplicitSecretStore {
     private static final int NONCE_BYTES = 12;
     private static final SecureRandom RANDOM = new SecureRandom();
     private final Path root;

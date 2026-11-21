@@ -1,5 +1,7 @@
 package com.edispark.mft.infrastructure.persistence;
 
+import io.cottn.core.tenancy.TenantAccess;
+
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.MdnDelivery;
@@ -37,7 +39,7 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
-public final class DynamoDbMftRepository implements MftRepository {
+public final class DynamoDbMftRepository implements MftPersistence {
     private static final String WORK_INDEX = "work-index";
     private final DynamoDbClient dynamoDb;
     private final String tableName;
@@ -49,7 +51,7 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public PartnerProfile savePartner(PartnerProfile partner) {
+    public PartnerProfile savePartner(PartnerProfile partner) { TenantAccess.requireOwner(partner.tenantId());
         if (partner.revision() > 1) {
             dynamoDb.putItem(PutItemRequest.builder().tableName(tableName)
                     .item(entity(partner.tenantId(), "PARTNER#" + partner.id(), partner))
@@ -74,7 +76,7 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public PartnerProfile updatePartner(PartnerProfile partner) {
+    public PartnerProfile updatePartner(PartnerProfile partner) { TenantAccess.requireOwner(partner.tenantId());
         dynamoDb.putItem(PutItemRequest.builder().tableName(tableName)
                 .item(entity(partner.tenantId(), "PARTNER#" + partner.id(), partner))
                 .conditionExpression("attribute_exists(pk) AND attribute_exists(sk)").build());
@@ -113,7 +115,7 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public Transfer saveOutboundIfAbsent(Transfer transfer) {
+    public Transfer saveOutboundIfAbsent(Transfer transfer) { TenantAccess.requireOwner(transfer.tenantId());
         Map<String, AttributeValue> transferItem = transferEntity(transfer);
         Map<String, AttributeValue> marker = Map.of(
                 "pk", string(tenantPk(transfer.tenantId())),
@@ -137,7 +139,7 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public Transfer saveInboundIfAbsent(Transfer transfer) {
+    public Transfer saveInboundIfAbsent(Transfer transfer) { TenantAccess.requireOwner(transfer.tenantId());
         String markerKey = inboundMarker(transfer.as2MessageId());
         Map<String, AttributeValue> marker = Map.of(
                 "pk", string(tenantPk(transfer.tenantId())), "sk", string(markerKey),
@@ -160,13 +162,13 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public Transfer save(Transfer transfer) {
+    public Transfer save(Transfer transfer) { TenantAccess.requireOwner(transfer.tenantId());
         dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(transferEntity(transfer)).build());
         return transfer;
     }
 
     @Override
-    public boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus) {
+    public boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus) { TenantAccess.requireOwner(transfer.tenantId());
         try {
             dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(transferEntity(transfer))
                     .conditionExpression("#status = :expectedStatus")
@@ -213,7 +215,7 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public CertificateRecord saveCertificate(CertificateRecord certificate) {
+    public CertificateRecord saveCertificate(CertificateRecord certificate) { TenantAccess.requireOwner(certificate.tenantId());
         dynamoDb.putItem(PutItemRequest.builder().tableName(tableName)
                 .item(entity(certificate.tenantId(), "CERTIFICATE#" + certificate.id(), certificate)).build());
         return certificate;
@@ -291,13 +293,13 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public MdnDelivery saveMdnDelivery(MdnDelivery delivery) {
+    public MdnDelivery saveMdnDelivery(MdnDelivery delivery) { TenantAccess.requireOwner(delivery.tenantId());
         dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(mdnDeliveryEntity(delivery)).build());
         return delivery;
     }
 
     @Override
-    public boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts) {
+    public boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts) { TenantAccess.requireOwner(delivery.tenantId());
         try {
             dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(mdnDeliveryEntity(delivery))
                     .conditionExpression("#status = :pending AND attempts = :expected")
@@ -311,7 +313,7 @@ public final class DynamoDbMftRepository implements MftRepository {
     }
 
     @Override
-    public MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery) {
+    public MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery) { TenantAccess.requireOwner(delivery.tenantId());
         try {
             dynamoDb.putItem(PutItemRequest.builder().tableName(tableName).item(mdnDeliveryEntity(delivery))
                     .conditionExpression("attribute_not_exists(pk) AND attribute_not_exists(sk)").build());

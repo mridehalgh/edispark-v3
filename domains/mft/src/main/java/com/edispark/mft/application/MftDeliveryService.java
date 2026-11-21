@@ -6,7 +6,6 @@ import com.edispark.mft.domain.model.TransferId;
 import com.edispark.mft.domain.model.TransferStatus;
 import com.edispark.mft.domain.repository.MftRepository;
 import com.edispark.mft.domain.repository.PayloadStore;
-import io.cottn.core.tenancy.TenantContext;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -29,17 +28,16 @@ public final class MftDeliveryService {
     }
 
     public void deliver(TransferId transferId) {
-        String tenantId = TenantContext.getCurrentTenant().asString();
-        Transfer transfer = repository.findTransfer(tenantId, transferId)
+        Transfer transfer = repository.findTransfer(transferId)
                 .orElseThrow(() -> new MftNotFoundException("Transfer was not found"));
-        PartnerProfile partner = repository.findPartner(tenantId, transfer.partnerId())
+        PartnerProfile partner = repository.findPartner(transfer.partnerId())
                 .orElseThrow(() -> new MftNotFoundException("Partner was not found"));
         Instant startedAt = clock.instant();
         if (transfer.status() == TransferStatus.QUEUED || transfer.status() == TransferStatus.RETRY_SCHEDULED) {
             TransferStatus expectedStatus = transfer.status();
             transfer.startAttempt(startedAt);
             if (!repository.saveIfStatus(transfer, expectedStatus)) {
-                returnIfConcurrentlyDelivered(tenantId, transferId);
+                returnIfConcurrentlyDelivered(transferId);
                 return;
             }
         } else if (transfer.status() != TransferStatus.PROCESSING
@@ -47,9 +45,9 @@ public final class MftDeliveryService {
             throw new IllegalStateException("Transfer is not eligible for delivery");
         }
         try {
-            byte[] payload = payloadStore.get(tenantId, transfer.payload()).readAllBytes();
+            byte[] payload = payloadStore.get(transfer.payload()).readAllBytes();
             As2DeliveryResult result = exchange.send(partner, transfer, payload);
-            transfer = repository.findTransfer(tenantId, transferId).orElse(transfer);
+            transfer = repository.findTransfer(transferId).orElse(transfer);
             if (transfer.status() == TransferStatus.DELIVERED) return;
             TransferStatus expectedStatus = transfer.status();
             if (result.awaitingAsyncMdn() && transfer.status() == TransferStatus.PROCESSING) {
@@ -62,21 +60,21 @@ public final class MftDeliveryService {
                 transfer.requireReview(result.disposition() == null ? "Partner returned no MDN" : result.disposition(), clock.instant());
             }
             if (!repository.saveIfStatus(transfer, expectedStatus)) {
-                returnIfConcurrentlyDelivered(tenantId, transferId);
+                returnIfConcurrentlyDelivered(transferId);
             }
             return;
         } catch (As2TransportException exception) {
-            transfer = repository.findTransfer(tenantId, transferId).orElse(transfer);
+            transfer = repository.findTransfer(transferId).orElse(transfer);
             if (transfer.status() == TransferStatus.DELIVERED) return;
             handleFailure(transfer, exception.getMessage(), exception.retryable());
             return;
         } catch (IOException exception) {
-            transfer = repository.findTransfer(tenantId, transferId).orElse(transfer);
+            transfer = repository.findTransfer(transferId).orElse(transfer);
             if (transfer.status() == TransferStatus.DELIVERED) return;
             handleFailure(transfer, "Transfer storage was unavailable", true);
             return;
         } catch (RuntimeException exception) {
-            transfer = repository.findTransfer(tenantId, transferId).orElse(transfer);
+            transfer = repository.findTransfer(transferId).orElse(transfer);
             if (transfer.status() == TransferStatus.DELIVERED) return;
             handleFailure(transfer, "AS2 preparation or verification failed", false);
         }
@@ -91,11 +89,11 @@ public final class MftDeliveryService {
             transfer.requireReview(reason, now);
         }
         if (repository.saveIfStatus(transfer, expectedStatus)) return;
-        returnIfConcurrentlyDelivered(transfer.tenantId(), transfer.id());
+        returnIfConcurrentlyDelivered(transfer.id());
     }
 
-    private void returnIfConcurrentlyDelivered(String tenantId, TransferId transferId) {
-        Transfer current = repository.findTransfer(tenantId, transferId)
+    private void returnIfConcurrentlyDelivered(TransferId transferId) {
+        Transfer current = repository.findTransfer(transferId)
                 .orElseThrow(() -> new MftNotFoundException("Transfer was not found"));
         if (current.status() != TransferStatus.DELIVERED) {
             throw new IllegalStateException("Transfer changed during delivery");

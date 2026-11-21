@@ -94,15 +94,15 @@ public final class LocalMftDemoSeeder {
             reconcileLifecycleTransfers(tradacomsPartner, true);
             log.info("MFT demo ready for tenant {}; workspace totals: {} partner(s), {} certificate(s), {} transfer(s)",
                     tenantId,
-                    repository.listPartners(tenantId).size(), repository.listCertificates(tenantId).size(),
-                    repository.listTransfers(tenantId).size());
+                    repository.listPartners().size(), repository.listCertificates().size(),
+                    repository.listTransfers().size());
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to seed the local MFT demo", exception);
         }
     }
 
     void reconcilePartnerRevision(PartnerProfile active) {
-        boolean exists = repository.listPartners(active.tenantId()).stream()
+        boolean exists = repository.listPartners().stream()
                 .anyMatch(item -> item.id().equals(DRAFT_PARTNER_ID));
         if (exists) return;
         repository.savePartner(new PartnerProfile(DRAFT_PARTNER_ID, active.tenantId(), active.name(),
@@ -122,7 +122,7 @@ public final class LocalMftDemoSeeder {
     }
 
     private PartnerProfile findDemoPartner(String remoteAs2Id) {
-        return repository.listPartners(tenantId).stream()
+        return repository.listPartners().stream()
                 .filter(partner -> partner.localAs2Id().equals("EDISPARK"))
                 .filter(partner -> partner.remoteAs2Id().equals(remoteAs2Id))
                 .filter(partner -> partner.status() == com.edispark.mft.domain.model.PartnerStatus.ACTIVE)
@@ -154,7 +154,7 @@ public final class LocalMftDemoSeeder {
     }
 
     void reconcileTransfers(PartnerProfile partner) throws IOException {
-        var existing = repository.listTransfers(partner.tenantId());
+        var existing = repository.listTransfers();
         Instant now = clock.instant();
         if (!hasInbound(existing)) {
             Transfer inbound = inbound(partner, "PO_45001235.edi", INBOUND_MESSAGE_ID, now.minusSeconds(420));
@@ -189,7 +189,7 @@ public final class LocalMftDemoSeeder {
     }
 
     void reconcileTradacomsTransfers(PartnerProfile partner) throws IOException {
-        var existing = repository.listTransfers(partner.tenantId());
+        var existing = repository.listTransfers();
         Instant now = clock.instant();
         boolean inboundExists = existing.stream().anyMatch(transfer ->
                 transfer.direction() == TransferDirection.INBOUND
@@ -223,7 +223,7 @@ public final class LocalMftDemoSeeder {
         Instant now = clock.instant();
         for (int index = 0; index < fixtures.size(); index++) {
             LifecycleFixture fixture = fixtures.get(index);
-            if (repository.listTransfers(partner.tenantId()).stream()
+            if (repository.listTransfers().stream()
                     .anyMatch(transfer -> transfer.partnerId().equals(partner.id())
                             && transfer.filename().equals(fixture.filename())
                             && transfer.status() == TransferStatus.DELIVERED)) continue;
@@ -269,19 +269,17 @@ public final class LocalMftDemoSeeder {
     }
 
     private void attachPayload(Transfer transfer, String filename, byte[] content) throws IOException {
-        transfer.attachPayload(payloadStore.put(transfer.tenantId(), transfer.id(), filename,
-                new ByteArrayInputStream(content)), transfer.createdAt());
+        transfer.attachPayload(payloadStore.put(transfer.id(), filename, new ByteArrayInputStream(content)), transfer.createdAt());
     }
 
     private void reconcileFixturePayloads(String targetTenantId) throws IOException {
-        for (Transfer transfer : repository.listTransfers(targetTenantId)) {
+        for (Transfer transfer : repository.listTransfers()) {
             if (!isDemoFilename(transfer.filename())) continue;
             byte[] expected = samplePayload(transfer.filename());
             byte[] current = transfer.payload() == null ? new byte[0]
-                    : payloadStore.get(targetTenantId, transfer.payload()).readAllBytes();
+                    : payloadStore.get(transfer.payload()).readAllBytes();
             if (Arrays.equals(current, expected)) continue;
-            var payload = payloadStore.put(targetTenantId, transfer.id(), transfer.filename(),
-                    new ByteArrayInputStream(expected));
+            var payload = payloadStore.put(transfer.id(), transfer.filename(), new ByteArrayInputStream(expected));
             repository.save(Transfer.restore(transfer.id(), transfer.tenantId(), transfer.partnerId(),
                     transfer.direction(), transfer.filename(), transfer.contentType(), transfer.as2MessageId(),
                     transfer.idempotencyKey(), transfer.resendOf(), transfer.provenance(), transfer.status(),

@@ -1,5 +1,9 @@
 package com.edispark.mft.infrastructure.config;
 
+import com.edispark.mft.infrastructure.persistence.MftPersistence;
+import com.edispark.mft.infrastructure.persistence.MftDiscovery;
+import com.edispark.mft.infrastructure.as2.MftInboundGateway;
+
 import com.edispark.mft.application.CertificateService;
 import com.edispark.mft.application.ConnectionDetailsService;
 import com.edispark.mft.application.MftService;
@@ -47,6 +51,12 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Configuration
 @Profile("production")
 public class ProductionMftModuleConfig {
+    @Bean
+    MftInboundGateway mftInboundGateway(MftRepository repository, com.edispark.mft.application.MftService service) {
+        return new MftInboundGateway(
+                (MftDiscovery) repository, service);
+    }
+
     @Bean
     DynamoDbClient mftDynamoDbClient(@Value("${mft.aws.region}") String region) {
         return DynamoDbClient.builder().region(Region.of(region))
@@ -177,7 +187,7 @@ public class ProductionMftModuleConfig {
             CertificateService certificates, MftService transfers, MdnService mdns,
             KmsCmsCodec cms, As2EndpointPolicy endpoints, As2AdmissionController admission,
             AsyncMdnOutboxService mdnOutbox, Clock clock) {
-        return new KmsAs2InboundService(repository, certificates, transfers, mdns, cms, endpoints,
+        return new KmsAs2InboundService((MftDiscovery) repository, certificates, transfers, mdns, cms, endpoints,
                 admission, mdnOutbox, clock);
     }
 
@@ -197,7 +207,7 @@ public class ProductionMftModuleConfig {
     @Bean
     AsyncMdnDeliveryWorker mftAsyncMdnDeliveryWorker(MftRepository repository, PayloadStore payloads,
                                                       As2EndpointPolicy endpoints, Clock clock) {
-        return new AsyncMdnDeliveryWorker(repository, payloads, endpoints, clock);
+        return new AsyncMdnDeliveryWorker((MftPersistence) repository, payloads, endpoints, clock);
     }
 
     @Bean
@@ -209,7 +219,7 @@ public class ProductionMftModuleConfig {
     @Bean
     MftDeliveryWorker mftDeliveryWorker(MftRepository repository, MftDeliveryService deliveryService,
                                         Clock clock) {
-        return new MftDeliveryWorker(repository, deliveryService, clock);
+        return new MftDeliveryWorker((MftPersistence) repository, deliveryService, clock);
     }
 
     private List<String> commaSeparated(String value) {

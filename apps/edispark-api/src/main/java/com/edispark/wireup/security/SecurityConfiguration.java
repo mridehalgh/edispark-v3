@@ -13,6 +13,11 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
     @Bean
+    org.springframework.core.task.TaskDecorator tenantTaskDecorator() {
+        return io.cottn.core.tenancy.TenantExecution::capture;
+    }
+
+    @Bean
     SecurityFilterChain edisparkSecurityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

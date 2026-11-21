@@ -9,7 +9,6 @@ import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
 import com.edispark.mft.domain.repository.MftRepository;
 import com.edispark.mft.domain.repository.PayloadStore;
-import io.cottn.core.tenancy.TenantContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
@@ -86,17 +85,13 @@ public final class MftService {
         if (command.legacyCryptoEnabled() && !legacyCryptoAllowed) {
             throw new IllegalArgumentException("Legacy cryptography is disabled for this service");
         }
-        String tenantId = tenantId();
-        if (repository.findInboundPartner(command.localAs2Id(), command.remoteAs2Id()).isPresent()) {
-            throw new IllegalArgumentException("The AS2 identity pair is already assigned to a workspace");
-        }
-        requireCertificate(tenantId, command.localCertificateId(), CertificateKind.LOCAL_IDENTITY,
+        requireCertificate( command.localCertificateId(), CertificateKind.LOCAL_IDENTITY,
                 "Organisation AS2 certificate");
-        requireCertificate(tenantId, command.partnerSigningCertificateId(), CertificateKind.PARTNER_PUBLIC,
+        requireCertificate( command.partnerSigningCertificateId(), CertificateKind.PARTNER_PUBLIC,
                 "Partner signing certificate");
-        requireCertificate(tenantId, command.partnerEncryptionCertificateId(), CertificateKind.PARTNER_PUBLIC,
+        requireCertificate( command.partnerEncryptionCertificateId(), CertificateKind.PARTNER_PUBLIC,
                 "Partner encryption certificate");
-        PartnerProfile partner = new PartnerProfile(UUID.randomUUID(), tenantId, command.name(),
+        PartnerProfile partner = repository.partner( command.name(),
                 command.localAs2Id(), command.remoteAs2Id(), command.endpoint(), command.localCertificateId(),
                 command.partnerSigningCertificateId(), command.partnerEncryptionCertificateId(),
                 null, null, command.asynchronousMdnEndpoint(), command.mdnMode(),
@@ -111,7 +106,7 @@ public final class MftService {
         PartnerProfile partner = requirePartner(partnerId);
         validateForActivation(partner);
         Instant now = clock.instant();
-        repository.listPartners(tenantId()).stream()
+        repository.listPartners().stream()
                 .filter(item -> item.familyId().equals(partner.familyId()) && !item.id().equals(partner.id()))
                 .map(item -> item.supersede(now)).filter(item -> item.status() == PartnerStatus.SUPERSEDED)
                 .forEach(repository::updatePartner);
@@ -140,15 +135,14 @@ public final class MftService {
     }
 
     public List<PartnerProfile> listPartners() {
-        String tenant = tenantId();
         Instant now = clock.instant();
-        repository.listPartners(tenant).stream().map(item -> item.activateDue(now))
+        repository.listPartners().stream().map(item -> item.activateDue(now))
                 .filter(item -> item.status() == PartnerStatus.ACTIVE)
                 .forEach(item -> {
-                    PartnerProfile current = repository.findPartner(tenant, item.id()).orElseThrow();
+                    PartnerProfile current = repository.findPartner(item.id()).orElseThrow();
                     if (current.status() != item.status()) activatePartner(item.id());
                 });
-        return repository.listPartners(tenant);
+        return repository.listPartners();
     }
 
     public PartnerProfile createPartnerRevision(UUID partnerId) {
@@ -177,59 +171,55 @@ public final class MftService {
         if (partner.status() != PartnerStatus.DRAFT) {
             throw new IllegalStateException("Only an unused draft AS2 revision can be permanently deleted");
         }
-        boolean used = repository.listTransfers(tenantId()).stream().anyMatch(item -> item.partnerId().equals(partnerId));
+        boolean used = repository.listTransfers().stream().anyMatch(item -> item.partnerId().equals(partnerId));
         if (used) throw new IllegalStateException("AS2 profile revision is referenced by transfer evidence");
-        repository.deletePartner(tenantId(), partnerId);
+        repository.deletePartner(partnerId);
     }
 
     public Usage partnerUsage(UUID partnerId) {
         requirePartner(partnerId);
-        List<TransferId> transfers = repository.listTransfers(tenantId()).stream()
+        List<TransferId> transfers = repository.listTransfers().stream()
                 .filter(item -> item.partnerId().equals(partnerId)).map(Transfer::id).toList();
         return new Usage(transfers.isEmpty() && requirePartner(partnerId).status() == PartnerStatus.DRAFT, transfers);
     }
 
     public Transfer submitOutbound(SubmitOutbound command) throws IOException {
-        String tenantId = tenantId();
         validateFilename(command.filename());
         validateContentType(command.contentType());
         if (command.idempotencyKey() == null || command.idempotencyKey().isBlank()
                 || command.idempotencyKey().length() > 200) {
             throw new IllegalArgumentException("Idempotency key must contain 1-200 characters");
         }
-        Transfer existing = repository.findByIdempotencyKey(tenantId, command.idempotencyKey()).orElse(null);
+        Transfer existing = repository.findByIdempotencyKey(command.idempotencyKey()).orElse(null);
         if (existing != null) return existing;
-        PartnerProfile partner = repository.findPartner(tenantId, command.partnerId())
+        PartnerProfile partner = repository.findPartner(command.partnerId())
                 .orElseThrow(() -> new MftNotFoundException("Partner was not found"));
         requireActive(partner);
         Instant now = clock.instant();
-        Transfer transfer = Transfer.outbound(tenantId, command.partnerId(), command.filename(),
+        Transfer transfer = repository.outbound( command.partnerId(), command.filename(),
                 command.contentType(), messageId(), command.idempotencyKey(), command.resendOf(), command.provenance(), now);
-        transfer.attachPayload(payloadStore.put(tenantId, transfer.id(), command.filename(),
-                new MaximumSizeInputStream(command.content(), maximumPayloadBytes)), now);
+        transfer.attachPayload(payloadStore.put(transfer.id(), command.filename(), new MaximumSizeInputStream(command.content(), maximumPayloadBytes)), now);
         return repository.saveOutboundIfAbsent(transfer);
     }
 
     public Transfer resend(TransferId originalId) throws IOException {
-        String tenantId = tenantId();
         Transfer original = getTransfer(originalId);
-        InputStream content = payloadStore.get(tenantId, original.payload());
+        InputStream content = payloadStore.get(original.payload());
         String key = "resend:" + original.id() + ":" + UUID.randomUUID();
         return submitOutbound(new SubmitOutbound(original.partnerId(), key, original.filename(),
                 original.contentType(), content, original.id(), original.provenance()));
     }
 
     public List<Transfer> listTransfers() {
-        return repository.listTransfers(tenantId());
+        return repository.listTransfers();
     }
 
-    public Transfer receiveInbound(String localAs2Id, String remoteAs2Id, String messageId,
+    public Transfer receiveInbound(PartnerProfile resolvedPartner, String messageId,
                                    String filename, String contentType, byte[] content) throws IOException {
-        PartnerProfile partner = repository.findInboundPartner(localAs2Id, remoteAs2Id)
-                .orElseThrow(() -> new MftNotFoundException("Inbound AS2 partnership was not found"));
+        PartnerProfile partner = requirePartner(resolvedPartner.id());
         requireActive(partner);
         String contentSha256 = sha256(content);
-        Transfer prior = repository.findInboundByMessageId(partner.tenantId(), messageId).orElse(null);
+        Transfer prior = repository.findInboundByMessageId(messageId).orElse(null);
         if (prior != null) {
             if (prior.payload() != null && prior.payload().sha256().equals(contentSha256)) {
                 publishInbound(prior);
@@ -238,9 +228,8 @@ public final class MftService {
             throw new As2ReplayConflictException();
         }
         Instant now = clock.instant();
-        Transfer transfer = Transfer.inbound(partner.tenantId(), partner.id(), filename, contentType, messageId, now);
-        transfer.attachPayload(payloadStore.put(partner.tenantId(), transfer.id(), filename,
-                new ByteArrayInputStream(content)), now);
+        Transfer transfer = repository.inbound( partner.id(), filename, contentType, messageId, now);
+        transfer.attachPayload(payloadStore.put(transfer.id(), filename, new ByteArrayInputStream(content)), now);
         transfer.deliver("automatic-action/MDN-sent-automatically; processed", now);
         Transfer saved = repository.saveInboundIfAbsent(transfer);
         publishInbound(saved);
@@ -256,33 +245,29 @@ public final class MftService {
     }
 
     public Transfer getTransfer(TransferId id) {
-        return repository.findTransfer(tenantId(), id)
+        return repository.findTransfer(id)
                 .orElseThrow(() -> new MftNotFoundException("Transfer was not found"));
     }
 
     public InputStream getPayload(TransferId id) throws IOException {
         Transfer transfer = getTransfer(id);
-        return payloadStore.get(tenantId(), transfer.payload());
-    }
-
-    private String tenantId() {
-        return TenantContext.getCurrentTenant().asString();
+        return payloadStore.get(transfer.payload());
     }
 
     private String messageId() {
         return "<" + UUID.randomUUID() + "@as2.edispark.local>";
     }
 
-    private CertificateRecord requireCertificate(String tenantId, UUID certificateId, CertificateKind kind,
+    private CertificateRecord requireCertificate(UUID certificateId, CertificateKind kind,
                                                   String label) {
-        CertificateRecord certificate = repository.findCertificate(tenantId, certificateId)
+        CertificateRecord certificate = repository.findCertificate(certificateId)
                 .orElseThrow(() -> new MftNotFoundException(label + " was not found"));
         if (certificate.kind() != kind) throw new IllegalArgumentException(label + " has the wrong purpose");
         return certificate;
     }
 
     private PartnerProfile requirePartner(UUID partnerId) {
-        return repository.findPartner(tenantId(), partnerId)
+        return repository.findPartner(partnerId)
                 .orElseThrow(() -> new MftNotFoundException("Partner was not found"));
     }
 
@@ -293,11 +278,11 @@ public final class MftService {
     }
 
     private void validateForActivation(PartnerProfile partner) {
-        CertificateRecord local = requireCertificate(partner.tenantId(), partner.localCertificateId(),
+        CertificateRecord local = requireCertificate( partner.localCertificateId(),
                 CertificateKind.LOCAL_IDENTITY, "Organisation AS2 certificate");
-        CertificateRecord signing = requireCertificate(partner.tenantId(), partner.partnerSigningCertificateId(),
+        CertificateRecord signing = requireCertificate( partner.partnerSigningCertificateId(),
                 CertificateKind.PARTNER_PUBLIC, "Partner signing certificate");
-        CertificateRecord encryption = requireCertificate(partner.tenantId(), partner.partnerEncryptionCertificateId(),
+        CertificateRecord encryption = requireCertificate( partner.partnerEncryptionCertificateId(),
                 CertificateKind.PARTNER_PUBLIC, "Partner encryption certificate");
         validateCertificate(local, CertificatePurpose.SIGNING);
         validateCertificate(signing, CertificatePurpose.SIGNING);

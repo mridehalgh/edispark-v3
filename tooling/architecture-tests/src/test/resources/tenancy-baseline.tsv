@@ -1,0 +1,2 @@
+# No remaining tenant-plumbing exceptions in business code.
+# Tests never write this file. New violations must be fixed, not baselined.

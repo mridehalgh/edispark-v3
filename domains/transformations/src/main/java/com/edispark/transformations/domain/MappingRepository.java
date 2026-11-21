@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface MappingRepository {
+public interface MappingRepository extends MappingCreation {
     MappingRevision save(MappingRevision mapping);
-    Optional<MappingRevision> find(String tenantId, UUID id);
-    List<MappingRevision> list(String tenantId);
-    void delete(String tenantId, UUID id);
+    Optional<MappingRevision> find(UUID id);
+    List<MappingRevision> list();
+    void delete(UUID id);
 }

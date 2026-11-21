@@ -24,7 +24,7 @@ class ProductionCertificatePolicyTest {
         org.assertj.core.api.Assertions.assertThat(secrets.putCalls).isZero();
     }
 
-    private static final class RecordingSecretStore implements SecretStore {
+    private static final class RecordingSecretStore implements com.edispark.mft.infrastructure.storage.ExplicitSecretStore {
         private int putCalls;
         @Override public String put(String tenantId, String name, byte[] plaintext) {
             putCalls++;

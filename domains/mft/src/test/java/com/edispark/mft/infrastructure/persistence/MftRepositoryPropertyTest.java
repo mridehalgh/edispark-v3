@@ -14,14 +14,29 @@ import net.jqwik.api.Property;
 import org.junit.jupiter.api.Test;
 
 class MftRepositoryPropertyTest {
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
+
+    @org.junit.jupiter.api.BeforeEach
+    @net.jqwik.api.lifecycle.BeforeTry
+    void bindFixtureTenant() {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(
+                com.edispark.identifiers.tenant.TenantId.fromString("2OnHVzeAJKwm0ThFLcy1HfLHGPm")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    @net.jqwik.api.lifecycle.AfterTry
+    void restoreFixtureTenant() {
+        if (fixtureScope != null) fixtureScope.close();
+    }
+
     @Test
     void processingTransferBecomesRecoverableAfterItsWorkerDeadline() {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         Instant now = Instant.parse("2026-01-01T00:00:00Z");
-        Transfer transfer = Transfer.outbound("tenant", UUID.randomUUID(), "order.edi", "application/edi-x12",
+        Transfer transfer = Transfer.outbound("2OnHVzeAJKwm0ThFLcy1HfLHGPm", UUID.randomUUID(), "order.edi", "application/edi-x12",
                 "<message@example.test>", UUID.randomUUID().toString(), null, now);
         transfer.startAttempt(now);
-        repository.save(transfer);
+        com.edispark.testing.FixtureTenants.persist(transfer, record -> record.tenantId(), repository::save);
 
         assertThat(repository.listPendingTransfers(now.plusSeconds(119), 10)).isEmpty();
         assertThat(repository.listPendingTransfers(now.plusSeconds(120), 10)).containsExactly(transfer);
@@ -34,14 +49,14 @@ class MftRepositoryPropertyTest {
         UUID idempotencyKey = UUID.nameUUIDFromBytes(generatedKey.getBytes());
         InMemoryMftRepository repository = new InMemoryMftRepository();
         Instant now = Instant.parse("2026-01-01T00:00:00Z");
-        Transfer first = Transfer.outbound("tenant", UUID.randomUUID(), "order.edi", "application/edi-x12",
+        Transfer first = Transfer.outbound("2OnHVzeAJKwm0ThFLcy1HfLHGPm", UUID.randomUUID(), "order.edi", "application/edi-x12",
                 "<first@example.test>", idempotencyKey.toString(), null, now);
-        Transfer duplicate = Transfer.outbound("tenant", first.partnerId(), "order.edi", "application/edi-x12",
+        Transfer duplicate = Transfer.outbound("2OnHVzeAJKwm0ThFLcy1HfLHGPm", first.partnerId(), "order.edi", "application/edi-x12",
                 "<second@example.test>", idempotencyKey.toString(), null, now);
 
-        assertThat(repository.saveOutboundIfAbsent(first)).isSameAs(first);
-        assertThat(repository.saveOutboundIfAbsent(duplicate)).isSameAs(first);
-        assertThat(repository.listTransfers("tenant")).containsExactly(first);
+        assertThat(com.edispark.testing.FixtureTenants.persist(first, record -> record.tenantId(), repository::saveOutboundIfAbsent)).isSameAs(first);
+        assertThat(com.edispark.testing.FixtureTenants.persist(duplicate, record -> record.tenantId(), repository::saveOutboundIfAbsent)).isSameAs(first);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.listTransfers())).containsExactly(first);
     }
 
     /** Feature: mft-as2, Property 3: tenant queries do not cross boundaries. */
@@ -49,13 +64,13 @@ class MftRepositoryPropertyTest {
     void tenantQueriesRemainIsolated(@ForAll String generatedSeed) {
         UUID seed = UUID.nameUUIDFromBytes(generatedSeed.getBytes());
         InMemoryMftRepository repository = new InMemoryMftRepository();
-        PartnerProfile first = partner("tenant-a", "A-" + seed);
-        PartnerProfile second = partner("tenant-b", "B-" + seed);
-        repository.savePartner(first);
-        repository.savePartner(second);
+        PartnerProfile first = partner("2OnHVzeAJKwm0ThFLcy1HfLHGPm", "A-" + seed);
+        PartnerProfile second = partner("3PnIWafBKLxn1UiGMdz2IgMIRNn", "B-" + seed);
+        com.edispark.testing.FixtureTenants.persist(first, record -> record.tenantId(), repository::savePartner);
+        com.edispark.testing.FixtureTenants.persist(second, record -> record.tenantId(), repository::savePartner);
 
-        assertThat(repository.listPartners("tenant-a")).containsExactly(first);
-        assertThat(repository.findPartner("tenant-a", second.id())).isEmpty();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.listPartners())).containsExactly(first);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.findPartner(second.id()))).isEmpty();
     }
 
     @Property(tries = 100)
@@ -65,15 +80,11 @@ class MftRepositoryPropertyTest {
         Instant now = Instant.parse("2026-01-01T00:00:00Z");
         String firstOwner = "first-" + ownerSeed;
 
-        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, firstOwner,
-                now, now.plusSeconds(60))).isTrue();
-        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, "second",
-                now.plusSeconds(30), now.plusSeconds(90))).isFalse();
-        repository.releaseDeliveryLease("tenant", transferId, "wrong-owner");
-        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, "second",
-                now.plusSeconds(30), now.plusSeconds(90))).isFalse();
-        assertThat(repository.tryAcquireDeliveryLease("tenant", transferId, "second",
-                now.plusSeconds(61), now.plusSeconds(121))).isTrue();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.tryAcquireDeliveryLease(transferId, firstOwner, now, now.plusSeconds(60)))).isTrue();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.tryAcquireDeliveryLease(transferId, "second", now.plusSeconds(30), now.plusSeconds(90)))).isFalse();
+        io.cottn.core.tenancy.TenantExecution.run("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.releaseDeliveryLease(transferId, "wrong-owner"));
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.tryAcquireDeliveryLease(transferId, "second", now.plusSeconds(30), now.plusSeconds(90)))).isFalse();
+        assertThat(io.cottn.core.tenancy.TenantExecution.get("2OnHVzeAJKwm0ThFLcy1HfLHGPm", () -> repository.tryAcquireDeliveryLease(transferId, "second", now.plusSeconds(61), now.plusSeconds(121)))).isTrue();
     }
 
     private PartnerProfile partner(String tenant, String as2Id) {

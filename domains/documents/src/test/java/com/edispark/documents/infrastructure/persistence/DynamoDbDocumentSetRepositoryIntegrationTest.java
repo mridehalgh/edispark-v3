@@ -59,7 +59,7 @@ class DynamoDbDocumentSetRepositoryIntegrationTest {
         // Recreate table for each test
         tableConfig.deleteTableIfExists(dynamoDbLocal.client());
         tableConfig.createTableIfNotExists(dynamoDbLocal.client());
-        repository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName());
+        repository = new DynamoDbDocumentSetRepository(dynamoDbLocal.client(), tableConfig.tableName(), "2OnHVzeAJKwm0ThFLcy1HfLHGPm");
     }
 
     @Test

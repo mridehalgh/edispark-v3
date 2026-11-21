@@ -19,6 +19,21 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LocalMftDemoSeederTest {
+    private io.cottn.core.tenancy.TenantContext.Scope fixtureScope;
+
+    @org.junit.jupiter.api.BeforeEach
+    @net.jqwik.api.lifecycle.BeforeTry
+    void bindFixtureTenant() {
+        fixtureScope = io.cottn.core.tenancy.TenantContext.where(io.cottn.core.tenancy.TenantContextHolder.of(
+                com.edispark.identifiers.tenant.TenantId.fromString("2OnHVzeAJKwm0ThFLcy1HfLHGPm")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    @net.jqwik.api.lifecycle.AfterTry
+    void restoreFixtureTenant() {
+        if (fixtureScope != null) fixtureScope.close();
+    }
+
     private static final String TENANT_ID = "2OnHVzeAJKwm0ThFLcy1HfLHGPm";
     private static final Instant NOW = Instant.parse("2026-10-30T12:00:00Z");
 
@@ -27,8 +42,8 @@ class LocalMftDemoSeederTest {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         FileSystemPayloadStore payloadStore = new FileSystemPayloadStore(Files.createTempDirectory("mft-demo"));
         PartnerProfile partner = partner();
-        repository.savePartner(partner);
-        repository.save(existingInbound(partner, payloadStore));
+        com.edispark.testing.FixtureTenants.persist(partner, record -> record.tenantId(), repository::savePartner);
+        com.edispark.testing.FixtureTenants.persist(existingInbound(partner, payloadStore), record -> record.tenantId(), repository::save);
         LocalMftDemoSeeder seeder = new LocalMftDemoSeeder(
                 repository, payloadStore, null, null, Clock.fixed(NOW, ZoneOffset.UTC));
 
@@ -39,9 +54,9 @@ class LocalMftDemoSeederTest {
         seeder.reconcilePartnerRevision(partner);
         seeder.reconcilePartnerRevision(partner);
 
-        assertThat(repository.listTransfers(TENANT_ID)).hasSize(9);
-        assertThat(repository.listPartners(TENANT_ID)).hasSize(2);
-        assertThat(repository.listTransfers(TENANT_ID))
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).hasSize(9);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listPartners())).hasSize(2);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers()))
                 .extracting(Transfer::status)
                 .containsExactlyInAnyOrder(
                         TransferStatus.DELIVERED,
@@ -53,7 +68,7 @@ class LocalMftDemoSeederTest {
                         TransferStatus.DELIVERED,
                         TransferStatus.DELIVERED,
                         TransferStatus.DELIVERED);
-        assertThat(repository.listTransfers(TENANT_ID)).allSatisfy(transfer -> {
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).allSatisfy(transfer -> {
             try {
                 String edi = new String(payloadStore.get(TENANT_ID, transfer.payload()).readAllBytes(),
                         StandardCharsets.UTF_8);
@@ -63,7 +78,7 @@ class LocalMftDemoSeederTest {
                 throw new AssertionError(exception);
             }
         });
-        assertThat(repository.listTransfers(TENANT_ID)).filteredOn(transfer ->
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).filteredOn(transfer ->
                 transfer.filename().endsWith("_2026_0042.edi")).hasSize(4)
                 .extracting(Transfer::direction)
                 .containsExactlyInAnyOrder(
@@ -78,7 +93,7 @@ class LocalMftDemoSeederTest {
         InMemoryMftRepository repository = new InMemoryMftRepository();
         FileSystemPayloadStore payloadStore = new FileSystemPayloadStore(Files.createTempDirectory("mft-tradacoms-demo"));
         PartnerProfile partner = partner("Harbour Retail", "SIMULATOR_TRADACOMS");
-        repository.savePartner(partner);
+        com.edispark.testing.FixtureTenants.persist(partner, record -> record.tenantId(), repository::savePartner);
         LocalMftDemoSeeder seeder = new LocalMftDemoSeeder(
                 repository, payloadStore, null, null, Clock.fixed(NOW, ZoneOffset.UTC));
 
@@ -87,8 +102,8 @@ class LocalMftDemoSeederTest {
         seeder.reconcileLifecycleTransfers(partner, true);
         seeder.reconcileLifecycleTransfers(partner, true);
 
-        assertThat(repository.listTransfers(TENANT_ID)).hasSize(6);
-        assertThat(repository.listTransfers(TENANT_ID)).allSatisfy(transfer -> {
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).hasSize(6);
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).allSatisfy(transfer -> {
             try {
                 String edi = new String(payloadStore.get(TENANT_ID, transfer.payload()).readAllBytes(),
                         StandardCharsets.UTF_8);
@@ -103,14 +118,14 @@ class LocalMftDemoSeederTest {
                 throw new AssertionError(exception);
             }
         });
-        assertThat(repository.listTransfers(TENANT_ID)).anySatisfy(transfer -> {
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).anySatisfy(transfer -> {
             assertThat(transfer.direction()).isEqualTo(com.edispark.mft.domain.model.TransferDirection.INBOUND);
             assertThat(transfer.filename()).startsWith("PO_HARBOUR");
         }).anySatisfy(transfer -> {
             assertThat(transfer.direction()).isEqualTo(com.edispark.mft.domain.model.TransferDirection.OUTBOUND);
             assertThat(transfer.filename()).startsWith("invoice_harbour");
         });
-        assertThat(repository.listTransfers(TENANT_ID)).filteredOn(transfer ->
+        assertThat(io.cottn.core.tenancy.TenantExecution.get(TENANT_ID, () -> repository.listTransfers())).filteredOn(transfer ->
                 transfer.filename().contains("harbour_2026_0042.edi")).hasSize(4)
                 .extracting(Transfer::direction)
                 .containsExactlyInAnyOrder(

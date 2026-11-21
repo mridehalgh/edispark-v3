@@ -7,17 +7,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface PartnershipRepository {
+public interface PartnershipRepository extends PartnershipCreation {
     TradingPartner savePartner(TradingPartner partner);
-    Optional<TradingPartner> findPartner(String tenantId, UUID id);
-    List<TradingPartner> listPartners(String tenantId);
-    void deletePartner(String tenantId, UUID id);
+    Optional<TradingPartner> findPartner(UUID id);
+    List<TradingPartner> listPartners();
+    void deletePartner(UUID id);
     TradingAgreement saveAgreement(TradingAgreement agreement);
-    Optional<TradingAgreement> findAgreement(String tenantId, UUID id);
-    List<TradingAgreement> listAgreements(String tenantId);
-    void deleteAgreement(String tenantId, UUID id);
+    Optional<TradingAgreement> findAgreement(UUID id);
+    List<TradingAgreement> listAgreements();
+    void deleteAgreement(UUID id);
     DocumentProfile saveDocumentProfile(DocumentProfile profile);
-    Optional<DocumentProfile> findDocumentProfile(String tenantId, UUID id);
-    List<DocumentProfile> listDocumentProfiles(String tenantId, UUID partnerId);
-    void deleteDocumentProfile(String tenantId, UUID id);
+    Optional<DocumentProfile> findDocumentProfile(UUID id);
+    List<DocumentProfile> listDocumentProfiles(UUID partnerId);
+    void deleteDocumentProfile(UUID id);
 }

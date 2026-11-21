@@ -1,5 +1,7 @@
 package com.edispark.mft.infrastructure.persistence;
 
+import io.cottn.core.tenancy.TenantAccess;
+
 import com.edispark.mft.domain.model.CertificateRecord;
 import com.edispark.mft.domain.model.PartnerProfile;
 import com.edispark.mft.domain.model.MdnDelivery;
@@ -15,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class InMemoryMftRepository implements MftRepository {
+public final class InMemoryMftRepository implements MftPersistence {
     private final ConcurrentHashMap<String, PartnerProfile> partners = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> inboundOwners = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Transfer> transfers = new ConcurrentHashMap<>();
@@ -29,7 +31,7 @@ public final class InMemoryMftRepository implements MftRepository {
     private final ConcurrentHashMap<String, DeliveryLease> mdnLeases = new ConcurrentHashMap<>();
 
     @Override
-    public synchronized PartnerProfile savePartner(PartnerProfile partner) {
+    public synchronized PartnerProfile savePartner(PartnerProfile partner) { TenantAccess.requireOwner(partner.tenantId());
         if (partner.revision() > 1) {
             partners.put(partner.tenantId() + ":" + partner.id(), partner);
             return partner;
@@ -45,7 +47,7 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public synchronized PartnerProfile updatePartner(PartnerProfile partner) {
+    public synchronized PartnerProfile updatePartner(PartnerProfile partner) { TenantAccess.requireOwner(partner.tenantId());
         String key = partner.tenantId() + ":" + partner.id();
         if (!partners.containsKey(key)) throw new IllegalArgumentException("Partner does not exist");
         partners.put(key, partner);
@@ -74,7 +76,7 @@ public final class InMemoryMftRepository implements MftRepository {
     @Override public void deletePartner(String tenantId, UUID partnerId) { partners.remove(tenantId + ":" + partnerId); }
 
     @Override
-    public synchronized Transfer saveOutboundIfAbsent(Transfer transfer) {
+    public synchronized Transfer saveOutboundIfAbsent(Transfer transfer) { TenantAccess.requireOwner(transfer.tenantId());
         String key = transfer.tenantId() + ":" + transfer.idempotencyKey();
         TransferId existing = idempotency.putIfAbsent(key, transfer.id());
         if (existing != null) return transfers.get(transfer.tenantId() + ":" + existing);
@@ -85,7 +87,7 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public synchronized Transfer save(Transfer transfer) {
+    public synchronized Transfer save(Transfer transfer) { TenantAccess.requireOwner(transfer.tenantId());
         String key = transfer.tenantId() + ":" + transfer.id();
         transfers.put(key, transfer);
         persistedStatuses.put(key, transfer.status());
@@ -93,7 +95,7 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public synchronized boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus) {
+    public synchronized boolean saveIfStatus(Transfer transfer, TransferStatus expectedStatus) { TenantAccess.requireOwner(transfer.tenantId());
         String key = transfer.tenantId() + ":" + transfer.id();
         if (persistedStatuses.get(key) != expectedStatus) return false;
         transfers.put(key, transfer);
@@ -102,7 +104,7 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public synchronized Transfer saveInboundIfAbsent(Transfer transfer) {
+    public synchronized Transfer saveInboundIfAbsent(Transfer transfer) { TenantAccess.requireOwner(transfer.tenantId());
         String key = inboundKey(transfer.tenantId(), transfer.as2MessageId());
         TransferId existing = inboundMessages.putIfAbsent(key, transfer.id());
         if (existing != null) {
@@ -156,7 +158,7 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public CertificateRecord saveCertificate(CertificateRecord certificate) {
+    public CertificateRecord saveCertificate(CertificateRecord certificate) { TenantAccess.requireOwner(certificate.tenantId());
         certificates.put(certificate.tenantId() + ":" + certificate.id(), certificate);
         return certificate;
     }
@@ -202,13 +204,13 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public MdnDelivery saveMdnDelivery(MdnDelivery delivery) {
+    public MdnDelivery saveMdnDelivery(MdnDelivery delivery) { TenantAccess.requireOwner(delivery.tenantId());
         mdnDeliveries.put(delivery.tenantId() + ":" + delivery.id(), delivery);
         return delivery;
     }
 
     @Override
-    public synchronized boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts) {
+    public synchronized boolean saveMdnDeliveryIfAttempts(MdnDelivery delivery, int expectedAttempts) { TenantAccess.requireOwner(delivery.tenantId());
         String key = delivery.tenantId() + ":" + delivery.id();
         MdnDelivery current = mdnDeliveries.get(key);
         if (current == null || current.status() != MdnDeliveryStatus.PENDING
@@ -218,7 +220,7 @@ public final class InMemoryMftRepository implements MftRepository {
     }
 
     @Override
-    public MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery) {
+    public MdnDelivery saveMdnDeliveryIfAbsent(MdnDelivery delivery) { TenantAccess.requireOwner(delivery.tenantId());
         return mdnDeliveries.computeIfAbsent(delivery.tenantId() + ":" + delivery.id(), ignored -> delivery);
     }
 

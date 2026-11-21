@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { Link, useParams } from "react-router-dom"
 
+import { DispatchReturnLink, RecordQuestion } from "@/app/overview/question-composer"
 import { LayoutBody } from "@/components/layout/layout"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -210,6 +211,7 @@ export function FilesPage() {
   if (error || !detail) {
     return (
       <LayoutBody className="mx-auto w-full max-w-6xl py-7 sm:py-8">
+        <DispatchReturnLink />
         <Link to="/files" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to files
@@ -242,6 +244,7 @@ export function FilesPage() {
 
   return (
     <LayoutBody className="mx-auto w-full max-w-6xl py-7 sm:py-8">
+      <DispatchReturnLink />
       <Link to="/files" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Back to files
@@ -250,7 +253,8 @@ export function FilesPage() {
       <header className="mt-3 border-b pb-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+            <h1 className="break-all text-2xl font-semibold tracking-tight">{title}</h1>
+            <RecordQuestion label={title} prompts={["Which documents are in this file set?", "What issues are recorded for these files?"]} />
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
             <FileStack className="h-4 w-4 text-primary" aria-hidden="true" />

@@ -1,22 +1,8 @@
 import type { TransferResponse } from "@edispark/mft-client"
 import { AlertCircle, CheckCircle2, Clock3, RefreshCw } from "lucide-react"
 
+import { transferStatusLabel } from "@/lib/transfer-status"
 import { cn } from "@/lib/utils"
-
-const labels: Record<NonNullable<TransferResponse["status"]>, string> = {
-  RECEIVED: "Received",
-  QUEUED: "Queued",
-  PROCESSING: "Processing",
-  AWAITING_MDN: "Waiting for receipt",
-  DELIVERED: "Delivered",
-  RETRY_SCHEDULED: "Retry scheduled",
-  NEEDS_REVIEW: "Needs attention",
-  FAILED: "Failed",
-}
-
-export function transferStatusLabel(status?: TransferResponse["status"]) {
-  return status ? labels[status] : "Unknown"
-}
 
 export function TransferStatus({ status, className }: { status?: TransferResponse["status"]; className?: string }) {
   const failed = status === "FAILED" || status === "NEEDS_REVIEW"

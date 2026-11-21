@@ -32,7 +32,6 @@ import { ConnectionPage } from "@/app/connections/connection"
 import { ConnectionEditorPage } from "@/app/connections/editor"
 import { RequireOrganizationAdmin, RequirePlatformAdmin } from "@/components/auth/access-gates"
 import { LayoutBody } from "@/components/layout/layout"
-import { canManageOrganization } from "@/lib/access"
 import { useAccess } from "@/lib/use-access"
 
 const AppLayout = () => (
@@ -69,7 +68,7 @@ function PlatformBoundary() {
 function HomeRedirect() {
   const { access, loading } = useAccess()
   if (loading) return <LayoutBody className="py-8"><div className="h-8 w-40 animate-pulse bg-muted" /></LayoutBody>
-  return <Navigate to={canManageOrganization(access?.organizationRole) ? "/overview" : "/documents"} replace />
+  return <Navigate to={access ? "/overview" : "/workspace"} replace />
 }
 
 function RouterError() {
@@ -91,6 +90,10 @@ function ReactRouterComponent() {
           {
             path: "/account/settings",
             element: <AuthGate><AccountSettingsPage /></AuthGate>
+          },
+          {
+            path: "/overview",
+            element: <AuthGate><OverviewPage /></AuthGate>,
           },
           {
             path: "/documents",
@@ -122,7 +125,6 @@ function ReactRouterComponent() {
               { path: "/partners", element: <PartnersPage /> },
               { path: "/partners/new", element: <NewPartnerPage /> },
               { path: "/partners/:partnerId", element: <PartnerPage /> },
-              { path: "/overview", element: <OverviewPage /> },
               { path: "/ai", lazy: async () => ({ Component: (await import("@/app/ai/ai")).AiPage }) },
               { path: "/files", element: <FilesList /> },
               { path: "/files/send", element: <SendFilePage /> },

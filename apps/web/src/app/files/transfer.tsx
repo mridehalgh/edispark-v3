@@ -1,11 +1,14 @@
 "use client"
 
+import type { ExchangeResponse } from "@edispark/integration-client"
 import type { PartnerResponse, TransferResponse } from "@edispark/mft-client"
 import { ArrowLeft, ArrowRight, Copy, Download, FileCode2, FileStack, RefreshCw, RotateCcw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
+import { DispatchReturnLink, RecordQuestion } from "@/app/overview/question-composer"
 import { AdminEmptyState, AdminNotice, AdminPage, AdminPageHeader } from "@/components/admin/admin-page"
+import { ExchangeTimeline } from "@/components/documents/exchange-timeline"
 import { TransferStatus } from "@/components/mft/transfer-status"
 import { Button } from "@/components/ui/button"
 import { adminApi, formatAdminDate } from "@/lib/admin-api"
@@ -21,6 +24,7 @@ export function TransferPage() {
   const { transferId } = useParams<{ transferId: string }>()
   const navigate = useNavigate()
   const [transfer, setTransfer] = useState<TransferResponse>()
+  const [exchanges, setExchanges] = useState<ExchangeResponse[]>([])
   const [connection, setConnection] = useState<PartnerResponse>()
   const [documentSet, setDocumentSet] = useState<DocumentSetDetail>()
   const [loading, setLoading] = useState(true)
@@ -33,11 +37,13 @@ export function TransferPage() {
     setLoading(true)
     setError(undefined)
     try {
-      const [nextTransfer, connections] = await Promise.all([
+      const [nextTransfer, connections, exchangeHistory] = await Promise.all([
         adminApi<TransferResponse>(`/api/mft/transfers/${transferId}`),
         adminApi<PartnerResponse[]>("/api/mft/partners"),
+        adminApi<ExchangeResponse[]>("/api/integration/exchanges").catch(() => []),
       ])
       setTransfer(nextTransfer)
+      setExchanges(exchangeHistory.filter((exchange) => exchange.mftTransferId === transferId))
       setConnection(connections.find((item) => item.id === nextTransfer.partnerId))
       const documentSetId = nextTransfer.provenance?.documentSetId ?? (await getDocumentSets({ limit: 100 }).catch(() => undefined))?.items
         ?.find((item) => item.metadata?.mftTransferId === nextTransfer.id)?.id
@@ -77,7 +83,7 @@ export function TransferPage() {
   }
 
   if (loading) return <AdminPage><div className="h-96 animate-pulse bg-muted/40" /></AdminPage>
-  if (!transfer || error) return <AdminPage><Button asChild variant="ghost"><Link to="/files"><ArrowLeft className="mr-2 h-4 w-4" />Files</Link></Button><div className="mt-6"><AdminNotice>{error ?? "The file was not found."}</AdminNotice></div></AdminPage>
+  if (!transfer || error) return <AdminPage><DispatchReturnLink /><Button asChild variant="ghost"><Link to="/files"><ArrowLeft className="mr-2 h-4 w-4" />Files</Link></Button><div className="mt-6"><AdminNotice>{error ?? "The file was not found."}</AdminNotice></div></AdminPage>
 
   const relatedSetId = transfer.provenance?.documentSetId ?? documentSet?.documentSet.id
   const relatedDocumentId = transfer.provenance?.documentId ?? documentSet?.documents[0]?.id
@@ -88,9 +94,11 @@ export function TransferPage() {
 
   return (
     <AdminPage className="max-w-5xl">
+      <div className="mb-2"><DispatchReturnLink /></div>
       <Button asChild variant="ghost" className="-ml-3 mb-3"><Link to="/files"><ArrowLeft className="mr-2 h-4 w-4" />Files</Link></Button>
       <AdminPageHeader title={transfer.filename ?? "File"} actions={<><Button variant="ghost" size="icon" onClick={() => void refresh()} aria-label="Refresh file"><RefreshCw className="h-4 w-4" /></Button><Button asChild variant="outline"><a href={`/api/mft/transfers/${transfer.id}/content`}><Download className="mr-2 h-4 w-4" />Download</a></Button>{canResend ? <Button onClick={() => void resend()} disabled={busy}><RotateCcw className={cn("mr-2 h-4 w-4", busy && "animate-spin")} />Resend</Button> : null}</>} />
-      <TransferStatus status={transfer.status} className="mb-6 text-sm" />
+      <div className="mb-3"><RecordQuestion label={transfer.filename ?? `File · ${transferId?.slice(0, 8)}`} prompts={["What is the recorded delivery status?", "Which business document is linked to this transfer?"]} /></div>
+      <div className="mb-6 flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Transport status</span><TransferStatus status={transfer.status} className="text-sm" /></div>
       {error ? <AdminNotice>{error}</AdminNotice> : null}
       {transfer.failureReason ? <AdminNotice>{transfer.failureReason}</AdminNotice> : null}
 
@@ -116,6 +124,11 @@ export function TransferPage() {
         <div className="border-b px-4 py-3"><h2 id="timeline-title" className="text-sm font-semibold">Timeline</h2></div>
         {transfer.attempts?.length ? <ol className="divide-y">{transfer.attempts.map((attempt) => <li key={attempt.number} className="grid gap-1 px-4 py-4 sm:grid-cols-[8rem_1fr_12rem]"><span className="text-sm font-medium">Attempt {attempt.number}</span><span className="text-sm text-muted-foreground">{attempt.detail ?? attempt.outcome ?? "Transfer attempted"}</span><time className="text-xs text-muted-foreground">{formatAdminDate(attempt.completedAt ?? attempt.startedAt)}</time></li>)}</ol> : <AdminEmptyState title="No attempts recorded" />}
       </section>
+
+      {exchanges.length > 0 && <section className="mt-8 border-y py-4" aria-labelledby="exchange-processing">
+        <h2 id="exchange-processing" className="mb-3 text-sm font-semibold">Exchange processing</h2>
+        <ExchangeTimeline exchanges={exchanges} />
+      </section>}
 
       {documentSet ? <DocumentLineage detail={documentSet} relatedDocument={relatedDocument} /> : relatedDocument ? <section className="mt-8 border-y"><div className="border-b px-4 py-3"><h2 className="text-sm font-semibold">Document</h2></div><Link to={relatedDocument} className="flex min-h-14 items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/40">Open related document<ArrowRight className="h-4 w-4 text-muted-foreground" /></Link></section> : null}
 

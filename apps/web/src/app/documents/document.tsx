@@ -8,6 +8,9 @@ import { InvoiceDocumentPage } from "@/app/documents/invoice"
 import { OrderDocumentPage } from "@/app/documents/order"
 import { OperationalDocumentPage } from "@/app/documents/operational-document"
 import { LayoutBody } from "@/components/layout/layout"
+import { DispatchReturnLink, RecordQuestion } from "@/app/overview/question-composer"
+import { authClient } from "@/lib/auth-client"
+import { documentLabels } from "@/lib/document-workspace"
 import { getDocumentSetDetail } from "@/lib/documents-api"
 
 type DocumentKind = "ORDER" | "ORDER_RESPONSE" | "DESPATCH_ADVICE" | "INVOICE" | "REMITTANCE_ADVICE" | "RECEIPT_ADVICE"
@@ -23,27 +26,38 @@ const supportedKinds = new Set<DocumentKind>([
 
 export function BusinessDocumentPage() {
   const { setId, documentId } = useParams<{ setId: string; documentId: string }>()
-  const [result, setResult] = useState<{ key: string; document?: DocumentResponse }>()
-  const key = `${setId}/${documentId}`
+  const { data: organisation, isPending } = authClient.useActiveOrganization()
+  const [result, setResult] = useState<{ key: string; document?: DocumentResponse; reference?: string }>()
+  const key = `${organisation?.id}/${setId}/${documentId}`
 
   useEffect(() => {
-    if (!setId || !documentId) return
+    if (isPending || !setId || !documentId) return
     const controller = new AbortController()
     void getDocumentSetDetail(setId, controller.signal)
-      .then(({ documents }) => {
-        if (!controller.signal.aborted) setResult({ key, document: documents.find((item) => item.id === documentId) })
+      .then(({ documentSet, documents }) => {
+        if (!controller.signal.aborted) setResult({ key, document: documents.find((item) => item.id === documentId), reference: documentSet.metadata?.businessDocumentNumber && documents.length === 1 ? documentSet.metadata.businessDocumentNumber : undefined })
       })
       .catch(() => { if (!controller.signal.aborted) setResult({ key }) })
     return () => controller.abort()
-  }, [documentId, key, setId])
+  }, [documentId, isPending, key, setId])
 
-  const document = result?.key === key ? result.document : undefined
+  const document = !isPending && result?.key === key ? result.document : undefined
   const kind = document?.type as DocumentKind | undefined
   if (setId && document && kind && supportedKinds.has(kind)) {
     const page = kind === "ORDER" ? <OrderDocumentPage /> : kind === "INVOICE" ? <InvoiceDocumentPage /> : <OperationalDocumentPage kind={kind} />
-    return <>{page}<DocumentExplanation setId={setId} document={document} /></>
+    const label = result?.reference ?? `${documentLabels[kind]} · ${documentId?.slice(0, 8)}`
+    const prompts = kind === "INVOICE"
+      ? ["Find the order linked to this invoice.", "What issues are recorded for this invoice?"]
+      : ["What has happened to this document?", "Which documents are linked to this one?"]
+    return <>
+      <LayoutBody className="mx-auto w-full max-w-[96rem] items-start gap-1 pb-0 pt-3">
+        <DispatchReturnLink />
+        <RecordQuestion label={label} prompts={prompts} />
+      </LayoutBody>
+      {page}<DocumentExplanation setId={setId} document={document} />
+    </>
   }
-  return <LayoutBody className="mx-auto w-full max-w-[96rem] py-8"><p className="text-sm text-muted-foreground">{result?.key === key || !setId || !documentId ? "Document unavailable." : "Loading document…"}</p></LayoutBody>
+  return <LayoutBody className="mx-auto w-full max-w-[96rem] py-8"><DispatchReturnLink /><p className="text-sm text-muted-foreground">{result?.key === key || !setId || !documentId ? "Document unavailable." : "Loading document…"}</p></LayoutBody>
 }
 
 function DocumentExplanation({ setId, document }: { setId: string; document: DocumentResponse }) {

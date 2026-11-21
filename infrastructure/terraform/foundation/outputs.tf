@@ -25,6 +25,14 @@ output "release_config" {
       DOCUMENTS_KEY_STORE_TABLE           = module.mft.application_environment.MFT_KEY_STORE_TABLE
       DOCUMENTS_KEY_STORE_LOGICAL_NAME    = module.mft.application_environment.MFT_KEY_STORE_LOGICAL_NAME
       DOCUMENTS_ROOT_KMS_KEY_ARN          = module.mft.application_environment.MFT_ROOT_KMS_KEY_ARN
-    })
+      }, var.enable_desk_agent ? {
+      EDISPARK_AGENT_ENABLED         = "true"
+      EDISPARK_AGENT_GUARDRAIL       = module.desk_guardrail[0].arn
+      EDISPARK_AGENT_VERSION         = module.desk_guardrail[0].version
+      EDISPARK_AGENT_USAGETABLE      = aws_dynamodb_table.desk_usage.name
+      EDISPARK_AGENT_MONTHLYCREDITS  = tostring(var.desk_ai_monthly_credits)
+      EDISPARK_AGENT_ROUNDSPERMINUTE = tostring(var.desk_ai_rounds_per_minute)
+      AGENTCORE_MEMORY_MEMORYID      = aws_bedrockagentcore_memory.desk[0].id
+    } : {})
   }
 }

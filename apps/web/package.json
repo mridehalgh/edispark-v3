@@ -15,12 +15,15 @@
     "check:ubl-contracts": "pnpm check:ubl-order-contract && pnpm check:ubl-invoice-contract && pnpm check:ubl-operational-contracts"
   },
   "dependencies": {
+    "@ag-ui/client": "^1.0.5",
     "@aws-sdk/client-kms": "^3.1094.0",
     "@aws-sdk/client-secrets-manager": "3.1094.0",
     "@aws/aurora-dsql-node-postgres-connector": "0.1.9",
     "@better-auth/oauth-provider": "1.7.25",
     "@better-auth/passkey": "1.7.25",
     "@better-auth/sso": "1.7.25",
+    "@copilotkit/react-core": "^1.90.0",
+    "@copilotkit/runtime": "^1.90.0",
     "@edispark/documents-client": "workspace:*",
     "@edispark/integration-client": "workspace:*",
     "@edispark/mft-client": "workspace:*",
@@ -53,6 +56,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-flow-renderer": "^10.3.17",
+    "react-markdown": "^8.0.7",
     "react-router-dom": "7.18.2",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7"

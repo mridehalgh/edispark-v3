@@ -27,9 +27,11 @@ class LocalDurableMetadataConfiguration {
 
     @Bean LocalMetadataTables localMetadataTables(DynamoDbClient client,
             @Value("${integration.aws.metadata-table}") String integration,
-            @Value("${mft.local.metadata-table}") String mft) {
+            @Value("${mft.local.metadata-table}") String mft,
+            @Value("${edispark.agent.usagetable:edispark-desk-usage-local}") String deskUsage) {
         ensureTable(client, integration, false);
         ensureTable(client, mft, true);
+        ensureTable(client, deskUsage, false);
         return new LocalMetadataTables(mft);
     }
 

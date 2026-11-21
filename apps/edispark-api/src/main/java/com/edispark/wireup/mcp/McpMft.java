@@ -23,11 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "edispark.mcp.enabled", havingValue = "true")
 final class McpMft {
     private static final int PAGE_SIZE = 32;
     private final MftEvidenceQuery evidence;

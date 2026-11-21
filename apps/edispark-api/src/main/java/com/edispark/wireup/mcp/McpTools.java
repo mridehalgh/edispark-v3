@@ -40,6 +40,9 @@ final class McpTools implements AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(McpTools.class);
     private static final int RESULT_LIMIT = 96 * 1024;
     private static final Duration DEADLINE = Duration.ofSeconds(8);
+    private record Entry(String scope, Map<String, Object> input, String description,
+                         BiFunction<Map<String, Object>, McpAccess.Principal, Map<String, Object>> handler) {}
+    private final Map<String, Entry> entries = new LinkedHashMap<>();
     private final Map<String, McpSyncTool> tools = new LinkedHashMap<>();
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(0, 16, 30, TimeUnit.SECONDS,
             new SynchronousQueue<>(), Thread.ofPlatform().daemon().name("edi-mcp-", 0).factory());
@@ -53,19 +56,20 @@ final class McpTools implements AutoCloseable {
         Arrays.setAll(tenantSlots, slot -> new Semaphore(2));
     }
 
-
     McpSyncToolRepository repository() {
         return new McpSyncToolRepository() {
             @Override
             public ToolsPage list(McpRequestContext context, String cursor) {
                 if (cursor != null) throw new IllegalArgumentException("Unexpected cursor");
-                return new ToolsPage(tools.values().stream().map(McpSyncTool::definition).toList(), null, 0L,
-                        McpSchema.CacheScope.PRIVATE);
+                var principal = (McpAccess.Principal) context.transportContext().get(PRINCIPAL);
+                var definitions = available(principal).stream().map(tools::get).map(McpSyncTool::definition).toList();
+                return new ToolsPage(definitions, null, 0L, McpSchema.CacheScope.PRIVATE);
             }
 
             @Override
             public McpSyncTool find(McpRequestContext context, String name) {
-                return tools.get(name);
+                var principal = (McpAccess.Principal) context.transportContext().get(PRINCIPAL);
+                return available(principal).contains(name) ? tools.get(name) : null;
             }
         };
     }
@@ -84,10 +88,60 @@ final class McpTools implements AutoCloseable {
                 .annotations(McpSchema.ToolAnnotations.builder().readOnlyHint(true).destructiveHint(false)
                         .idempotentHint(true).openWorldHint(false).build()).build();
         if (tools.containsKey(name)) throw new IllegalArgumentException("Duplicate MCP tool: " + name);
+        entries.put(name, new Entry(scope, input, description, handler));
         tools.put(name, McpSyncTool.of(definition, (context, request) -> {
             var principal = (McpAccess.Principal) context.transportContext().get(PRINCIPAL);
             return McpSyncResponse.result(execute(name, scope, principal, request.arguments(), handler));
         }));
+    }
+
+    private List<String> available(McpAccess.Principal principal) {
+        if (principal == null) return List.of();
+        return entries.entrySet().stream().filter(entry -> principal.scopes().contains(entry.getValue().scope()))
+                .map(Map.Entry::getKey).toList();
+    }
+
+    List<org.springframework.ai.tool.ToolCallback> callbacks(McpAccess.Principal principal, boolean member,
+            java.util.function.Consumer<String> progress, java.util.function.BiConsumer<String,Object> finished) {
+        var validator = McpConfiguration.schemaValidator();
+        return available(principal).stream().filter(name -> !member || switch (name) {
+            case "find_documents", "get_document_context", "get_document_workflow", "find_exchanges",
+                 "find_document_exceptions", "list_eligible_routes", "check_outbound_readiness",
+                 "prepare_related_document_draft", "prepare_document_correction", "validate_document_preview",
+                 "list_business_codes" -> true;
+            default -> false;
+        }).map(name -> {
+            var entry = entries.get(name);
+            var definition = org.springframework.ai.tool.definition.ToolDefinition.builder().name(name)
+                    .description(entry.description()).inputSchema(json.writeValueAsString(entry.input())).build();
+            return (org.springframework.ai.tool.ToolCallback) new org.springframework.ai.tool.ToolCallback() {
+                public org.springframework.ai.tool.definition.ToolDefinition getToolDefinition() { return definition; }
+                public String call(String input) {
+                    if (input.length() > 65536 || !validator.validate(entry.input(), input).valid()) {
+                        return "INVALID_OR_UNAVAILABLE_INPUT";
+                    }
+                    progress.accept(name);
+                    var arguments = json.readValue(input, new tools.jackson.core.type.TypeReference<Map<String,Object>>() {});
+                    var result = execute(name, entry.scope(), principal, arguments, (args, actor) ->
+                            searchForMatch(entry, args, actor)).structuredContent();
+                    finished.accept(name, result);
+                    return json.writeValueAsString(result);
+                }
+            };
+        }).toList();
+    }
+
+    private Map<String, Object> searchForMatch(Entry entry, Map<String, Object> args, McpAccess.Principal actor) {
+        var pageArgs = new LinkedHashMap<>(args);
+        var result = entry.handler().apply(pageArgs, actor);
+        // Filtered searches can scan a whole page of records without a single match.
+        for (int page = 1; page < 48 && result.get("matches") instanceof List<?> matches && matches.isEmpty()
+                && result.get("nextCursor") instanceof String next; page++) {
+            if (Thread.currentThread().isInterrupted()) throw new ToolFailure("CANCELLED");
+            if (next.equals(pageArgs.put("cursor", next))) break;
+            result = entry.handler().apply(pageArgs, actor);
+        }
+        return result;
     }
 
     private McpSchema.CallToolResult execute(String name, String scope, McpAccess.Principal principal,

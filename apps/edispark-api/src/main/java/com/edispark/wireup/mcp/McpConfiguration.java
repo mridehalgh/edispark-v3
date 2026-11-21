@@ -107,16 +107,6 @@ class McpConfiguration {
     }
 
     @Bean
-    McpTools mcpTools(McpExchanges exchanges, McpDocuments documents, McpMappings mappings,
-                      McpPartnerships partnerships, McpMft mft,
-                      com.edispark.integrationapplication.inbound.InboundEdiTranslator inbound,
-                      ObjectMapper json, MeterRegistry registry) {
-        var tools = new McpTools(json, registry);
-        McpToolCatalog.register(tools, new McpCursor(secret), exchanges, documents, mappings, partnerships, mft, inbound);
-        return tools;
-    }
-
-    @Bean
     McpServerCustomizer<McpServer.Builder> mcpToolFeature(McpTools tools) {
         return builder -> builder.feature(ToolsFeature.ofSync(tools.repository(), McpJsonDefaults.getMapper(),
                 schemaValidator(), 0, McpSchema.CacheScope.PRIVATE));
@@ -130,7 +120,7 @@ class McpConfiguration {
                 .orElse(McpTransportContext.EMPTY);
     }
 
-    private static JsonSchemaValidator schemaValidator() {
+    static JsonSchemaValidator schemaValidator() {
         var factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
         var json = new com.fasterxml.jackson.databind.ObjectMapper();
         return (schema, content) -> {

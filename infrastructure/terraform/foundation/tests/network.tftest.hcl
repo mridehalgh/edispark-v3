@@ -37,3 +37,24 @@ run "uk_foundation_has_no_nat_and_preserves_data" {
     error_message = "Documents must use the provisioned cell key store rather than an unconfigured encryption fallback."
   }
 }
+
+run "enabled_desk_has_versioned_protection_and_shared_limits" {
+  command = plan
+  variables {
+    account_id                             = "000000000002"
+    environment                            = "staging"
+    domain_name                            = "staging.example.invalid"
+    hosted_zone_id                         = "ZPLACEHOLDER"
+    enable_desk_agent                      = true
+    desk_ai_monthly_credits                = 1200
+    desk_ai_organisation_credit_allowances = { "2OnHVzeAJKwm0ThFLcy1HfLHGPm" = 0 }
+  }
+  assert {
+    condition     = length(module.desk_guardrail) == 1 && length(aws_iam_role_policy.desk_agent) == 1 && contains(keys(output.release_config.backend_environment), "EDISPARK_AGENT_VERSION")
+    error_message = "Enabled releases require a guardrail version and task policy."
+  }
+  assert {
+    condition     = output.release_config.backend_environment.EDISPARK_AGENT_MONTHLYCREDITS == "1200" && aws_dynamodb_table.desk_usage.deletion_protection_enabled && length(aws_dynamodb_table_item.desk_allowance) == 1
+    error_message = "Release configuration must preserve the shared monthly allowance and individual overrides."
+  }
+}

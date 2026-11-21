@@ -75,7 +75,7 @@ export function OverviewPage() {
     <p>Choose a workspace to see its dispatch activity.</p>
     <Link className={styles.textLink} to="/workspace">Choose workspace <ArrowRight size={16} aria-hidden="true" /></Link>
   </div>
-  const scope = `${session.user.id}:${organisation.id}`
+  const scope = `${session.user.id}:${organisation.id}:${access.organizationRole}`
 
   return <DispatchDesk key={scope + access.organizationRole} access={access} scope={scope} />
 }
@@ -130,7 +130,7 @@ function DispatchDesk({ access, scope }: { access: AccessContext; scope: string 
         <button className={styles.textLink} disabled={loading} onClick={() => setVersion((current) => current + 1)}>Try again</button>
       </div> : null}
 
-      <QuestionComposer scope={scope} mcp={Boolean(access.mcpSetup)} />
+      <QuestionComposer scope={scope} />
       <div className={styles.topGrid}>
         <section className={styles.sheet} aria-labelledby="dispatch-attention" aria-busy={loading}>
           <SheetHeading icon={<CircleAlert size={17} aria-hidden="true" />} title="Needs attention" id="dispatch-attention">

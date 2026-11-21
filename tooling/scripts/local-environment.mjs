@@ -16,6 +16,7 @@ export async function localEnvironment() {
     ...process.env,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? settings.betterAuthSecret,
     EDISPARK_INTERNAL_TOKEN: process.env.EDISPARK_INTERNAL_TOKEN ?? settings.internalServiceToken,
+    EDISPARK_AGENT_ENABLED: process.env.EDISPARK_AGENT_ENABLED ?? "true",
     EDISPARK_MCP_ORGANIZATIONS: process.env.EDISPARK_MCP_ORGANIZATIONS ?? "local-test-workspace",
     EDISPARK_MCP_ACCESS_SECRET: process.env.EDISPARK_MCP_ACCESS_SECRET
       ?? createHmac("sha256", settings.internalServiceToken).update("edispark-local-mcp").digest("base64url"),

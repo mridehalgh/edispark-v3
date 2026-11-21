@@ -228,24 +228,25 @@ resource "aws_lambdaweb_function_revision" "web" {
   }
   service_config {
     execution_role_arn              = var.foundation.web_role_arn
-    timeout_seconds                 = 30
+    timeout_seconds                 = lookup(var.foundation.backend_environment, "EDISPARK_AGENT_ENABLED", "false") == "true" ? 300 : 30
     max_concurrency_per_environment = 32
     environment_variables = {
-      AWS_LAMBDA_NODEJS_ENTRYPOINT = "index.mjs"
-      BETTER_AUTH_JWT_KMS_REGION   = "eu-west-2"
-      NODE_ENV                     = "production"
-      BETTER_AUTH_URL              = local.frontend_url
-      BETTER_AUTH_DSQL_HOST        = var.foundation.dsql_host
-      BETTER_AUTH_DSQL_USER        = "edispark_auth"
-      BETTER_AUTH_JWT_KMS_KEY_ID   = var.foundation.jwt_key_arn
-      BETTER_AUTH_JWT_KID          = "jwt-v1"
-      BETTER_AUTH_JWT_JWKS_URL     = "${local.frontend_url}/api/auth/jwks"
-      WEB_SECRET_ARN               = var.foundation.web_secret_arn
-      DOCUMENTS_API_URL            = local.backend_url
-      MFT_API_URL                  = local.backend_url
-      INTEGRATION_API_URL          = local.backend_url
-      RELEASE_ID                   = each.key
-      NEXT_TELEMETRY_DISABLED      = "1"
+      AWS_LAMBDA_NODEJS_ENTRYPOINT  = "index.mjs"
+      BETTER_AUTH_JWT_KMS_REGION    = "eu-west-2"
+      NODE_ENV                      = "production"
+      BETTER_AUTH_URL               = local.frontend_url
+      BETTER_AUTH_DSQL_HOST         = var.foundation.dsql_host
+      BETTER_AUTH_DSQL_USER         = "edispark_auth"
+      BETTER_AUTH_JWT_KMS_KEY_ID    = var.foundation.jwt_key_arn
+      BETTER_AUTH_JWT_KID           = "jwt-v1"
+      BETTER_AUTH_JWT_JWKS_URL      = "${local.frontend_url}/api/auth/jwks"
+      WEB_SECRET_ARN                = var.foundation.web_secret_arn
+      DOCUMENTS_API_URL             = local.backend_url
+      MFT_API_URL                   = local.backend_url
+      INTEGRATION_API_URL           = local.backend_url
+      RELEASE_ID                    = each.key
+      NEXT_TELEMETRY_DISABLED       = "1"
+      COPILOTKIT_TELEMETRY_DISABLED = "true"
     }
     telemetry_config {
       logging_config {

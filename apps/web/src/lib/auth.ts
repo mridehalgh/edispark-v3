@@ -190,11 +190,19 @@ async function defineJwtPayload({
     "SELECT role FROM platform_principal WHERE user_id = ?",
   ).get(userId) as { role: PlatformRole } | undefined
 
+  const tenantId = dsqlAccess ? await dsqlAccess.resolveTenantId(organizationId, createTenantId(1)) : resolveTenantId(organizationId)
+  const commercial = membership.role !== "member" && await hasMcpAccess({
+    organizationId, tenantId, subject: userId, clientId: "edispark-desk", scopes: ["edi:commercial"],
+  })
   return {
     ...user,
     organizationId,
-    tenant_id: dsqlAccess ? await dsqlAccess.resolveTenantId(organizationId, createTenantId(1)) : resolveTenantId(organizationId),
+    tenant_id: tenantId,
     organization_role: membership.role,
+    agent_scopes: membership.role === "member" ? ["edi:evidence", "edi:preview"] : [
+      "edi:evidence", "edi:preview", "mft:evidence",
+      ...(commercial ? ["edi:commercial"] : []),
+    ],
     ...(platformPrincipal ? { platform_role: platformPrincipal.role } : {}),
   }
 }
@@ -520,7 +528,7 @@ export async function hasMcpAccess(identity: {
   subject: string
   clientId: string
   scopes: string[]
-}) {
+}): Promise<boolean> {
   if (await mcpTenant(identity.organizationId, identity.subject) !== identity.tenantId) return false
   const { adapter } = await auth.$context
   const [client, resource, link, consent] = await Promise.all([

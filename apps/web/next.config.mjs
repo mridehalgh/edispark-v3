@@ -6,6 +6,7 @@ export default function nextConfig(phase) {
   return {
     // A production build must never replace chunks used by a running dev server.
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
+    serverExternalPackages: ["@copilotkit/runtime", "@ag-ui/client"],
     images: { unoptimized: true },
     output: "standalone",
     outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),

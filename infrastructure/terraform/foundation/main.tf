@@ -73,7 +73,7 @@ resource "aws_vpc_endpoint" "gateway" {
   route_table_ids   = [aws_route_table.tasks.id]
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
-      Effect   = "Allow", Principal = "*", Action = each.key == "s3" ? ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"] : ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:BatchGetItem", "dynamodb:BatchWriteItem", "dynamodb:TransactWriteItems", "dynamodb:DescribeTable"],
+      Effect   = "Allow", Principal = "*", Action = each.key == "s3" ? ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"] : ["dynamodb:GetItem", "dynamodb:ConditionCheckItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:BatchGetItem", "dynamodb:BatchWriteItem", "dynamodb:TransactWriteItems", "dynamodb:DescribeTable"],
       Resource = each.key == "s3" ? ["arn:aws:s3:::${local.name}-*", "arn:aws:s3:::prod-eu-west-2-starport-layer-bucket/*"] : ["arn:aws:dynamodb:eu-west-2:${var.account_id}:table/${local.name}-*"]
     }]
   })

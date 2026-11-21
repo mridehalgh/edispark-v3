@@ -153,12 +153,22 @@ final class McpExchanges {
     }
 
     private static Map<String, Object> summary(EdiExchange exchange) {
-        return fields("exchangeId", exchange.id(), "direction", exchange.direction(), "partnerId", exchange.partnerId(),
+        var result = fields("exchangeId", exchange.id(), "direction", exchange.direction(), "partnerId", exchange.partnerId(),
                 "agreementId", exchange.agreementId(), "agreementRevision", exchange.agreementRevision(),
                 "capabilityId", exchange.capabilityId(), "status", exchange.status(),
                 "messageOrdinal", exchange.messageOrdinal(), "transferId", exchange.mftTransferId(),
                 "createdAt", exchange.createdAt(), "updatedAt", exchange.updatedAt(),
                 "workspacePath", "/documents");
+        if (exchange.status() == ExchangeStatus.NEEDS_REVIEW) {
+            // Only these system-generated stage details explicitly confirm a stop before transport.
+            exchange.stages().stream().map(stage -> stage.detail()).filter(detail ->
+                    "Partner readiness failed. Nothing was submitted to transport.".equals(detail)
+                    || "Mapping stopped before transport because populated source fields were not represented".equals(detail))
+                    .findFirst().ifPresent(detail -> result.put("recordedReason", detail));
+            result.put("findings", exchange.warnings().stream().limit(FINDING_LIMIT)
+                    .map(warning -> finding(warning.code(), warning.sourcePath())).toList());
+        }
+        return result;
     }
 
     private static DocumentReference documentArgs(Map<String, Object> values) {

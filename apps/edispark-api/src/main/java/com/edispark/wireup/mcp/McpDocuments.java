@@ -18,11 +18,9 @@ import com.edispark.exchange.application.ExchangeService;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "edispark.mcp.enabled", havingValue = "true")
 final class McpDocuments {
     private static final int DETAIL_LIMIT = 32;
     private static final int RECONCILIATION_LIMIT = 128;

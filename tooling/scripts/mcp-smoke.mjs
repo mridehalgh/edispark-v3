@@ -277,13 +277,12 @@ const commercial = await rpc("tools/call", { name: "reconcile_invoice_and_remitt
 assert.ok(commercial.structuredContent.values.length, "the explicit commercial grant enables comparison values")
 // This grant belongs to the dedicated smoke client. Leave interactive consents alone.
 const limitedToken = await authorize("edi:evidence")
-const denied = await rpc("tools/call", {
-  name: "preview_mapping", arguments: { mappingRevisionId: route.structuredContent.mappingRevisionId, input: "{}", expected: "{}" },
-}, limitedToken)
-assert.equal(denied.isError, true)
-assert.equal(denied.structuredContent.code, "INSUFFICIENT_SCOPE")
-const deniedMft = await rpc("tools/call", { name: "trace_transfer", arguments: { transferId: waiting.id } }, limitedToken)
-assert.equal(deniedMft.structuredContent.code, "INSUFFICIENT_SCOPE")
+const limitedTools = (await rpc("tools/list", {}, limitedToken)).tools.map(tool => tool.name)
+for (const name of ["preview_mapping", "trace_transfer"]) {
+  assert.ok(!limitedTools.includes(name))
+  const denied = await rpcMessage("tools/call", { name, arguments: {} }, limitedToken, 400)
+  assert.ok(denied.error || denied.result?.isError, "A hidden tool cannot execute")
+}
 const consents = await auth("/oauth2/get-consents")
 const smokeConsent = consents.find(item => item.clientId === clientId
   && item.referenceId === organizationId && item.resources?.includes(resource))
@@ -346,7 +345,13 @@ async function authorize(scopes) {
 }
 
 async function rpc(method, params = {}, token = accessToken) {
-  const message = await json(resource, {
+  const message = await rpcMessage(method, params, token)
+  assert.ok(message.result, message.error?.message)
+  return message.result
+}
+
+async function rpcMessage(method, params, token, status = 200) {
+  const response = await request(resource, {
     method: "POST",
     headers: {
       ...rpcHeaders, ...bearer(token), "mcp-method": method, ...(params.name ? { "mcp-name": params.name } : {}),
@@ -363,8 +368,7 @@ async function rpc(method, params = {}, token = accessToken) {
       },
     }),
   })
-  assert.ok(message.result, message.error?.message)
-  return message.result
+  return (await expectStatus(response, status)).json()
 }
 
 function call(name, args) {

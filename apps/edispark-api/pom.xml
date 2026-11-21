@@ -12,7 +12,15 @@
   <artifactId>edispark-api</artifactId>
   <name>EdiSpark API</name>
   <description>Single Spring Boot composition root for all EdiSpark bounded contexts</description>
+  <dependencyManagement>
+    <dependencies>
+      <!-- Keep Bedrock, AgentCore and the local SSO provider on the same SDK runtime. -->
+      <dependency><groupId>software.amazon.awssdk</groupId><artifactId>bom</artifactId><version>2.55.14</version><type>pom</type><scope>import</scope></dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
+    <dependency><groupId>org.springframework.ai</groupId><artifactId>spring-ai-bedrock-converse</artifactId><version>${spring-ai.version}</version></dependency>
+    <dependency><groupId>org.springaicommunity</groupId><artifactId>spring-ai-agentcore-memory</artifactId><version>2.3.0</version></dependency>
     <dependency>
       <groupId>org.springframework.ai</groupId><artifactId>spring-ai-starter-mcp-server-webmvc</artifactId><version>${spring-ai.version}</version>
       <exclusions>
@@ -41,6 +49,8 @@
   <profiles>
     <profile><id>local-dev</id>
       <dependencies>
+        <dependency><groupId>software.amazon.awssdk</groupId><artifactId>sso</artifactId><scope>runtime</scope></dependency>
+        <dependency><groupId>software.amazon.awssdk</groupId><artifactId>ssooidc</artifactId><scope>runtime</scope></dependency>
         <dependency><groupId>com.edispark</groupId><artifactId>local-runtime</artifactId><version>${project.version}</version><scope>runtime</scope></dependency>
       </dependencies>
       <build><finalName>edispark-api-dev</finalName></build>

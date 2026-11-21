@@ -6,6 +6,12 @@ import java.util.List;
 
 public interface TransformationAcl {
     Result executePublished(ExchangeCapability capability, byte[] canonicalContent);
+    default Result previewPublished(ExchangeCapability capability, byte[] canonicalContent) {
+        return executePublished(capability, canonicalContent);
+    }
+
+    default Qualification previewQualification(ExchangeCapability capability) { return qualification(capability); }
+
     default Result prepareForDispatch(ExchangeCapability capability, byte[] canonicalContent, java.util.UUID exchangeId, Result checked) { return checked; }
 
     default Qualification qualification(ExchangeCapability capability) { return new Qualification(true, ""); }

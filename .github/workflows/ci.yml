@@ -90,6 +90,7 @@ jobs:
         pnpm --filter @edispark/web test
         pnpm --filter @edispark/web exec node --import tsx scripts/verify-local-auth.mts
         pnpm --filter @edispark/web exec node --import tsx scripts/generate-auth-migration.mts
+        pnpm --filter @edispark/web exec node --import tsx scripts/generate-auth-migration.mts --mcp
         git diff --exit-code -- apps/web/migrations
         pnpm --filter @edispark/web typecheck
     - name: Build production frontend
@@ -99,6 +100,22 @@ jobs:
       shell: bash
       run: BETTER_AUTH_SECRET="$(openssl rand -hex 32)" BETTER_AUTH_DATABASE_PATH="$RUNNER_TEMP/ci-auth.db" pnpm
         --filter @edispark/web build
+
+  mcp-smoke:
+    name: MCP smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      DO_NOT_TRACK: '1'
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5   # v4.3.1
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-java
+    - uses: ./.github/actions/setup-node
+    - name: Verify MCP through the local stack
+      run: pnpm smoke:mcp:stack
 
   contracts:
     name: API contracts and generated SDKs
@@ -151,7 +168,7 @@ jobs:
 
   # Preserve the original required check name; failed/skipped dependencies must fail this gate.
   build:
-    needs: [backend, frontend, contracts, security, dependency-security, infrastructure]
+    needs: [backend, frontend, mcp-smoke, contracts, security, dependency-security, infrastructure]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 2
@@ -159,6 +176,7 @@ jobs:
     - name: Require all CI checks to pass
       env:
         BACKEND_RESULT: ${{ needs.backend.result }}
+        MCP_SMOKE_RESULT: ${{ needs.mcp-smoke.result }}
         FRONTEND_RESULT: ${{ needs.frontend.result }}
         CONTRACTS_RESULT: ${{ needs.contracts.result }}
         SECURITY_RESULT: ${{ needs.security.result }}
@@ -167,6 +185,7 @@ jobs:
       run: |
         test "$BACKEND_RESULT" = success
         test "$FRONTEND_RESULT" = success
+        test "$MCP_SMOKE_RESULT" = success
         test "$CONTRACTS_RESULT" = success
         test "$SECURITY_RESULT" = success
         test "$DEPENDENCIES_RESULT" = success

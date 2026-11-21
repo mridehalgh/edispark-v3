@@ -2,6 +2,8 @@
 
 EdiSpark is a composable, multi-tenant EDI platform for receiving, validating, transforming, and routing business documents. This repository contains Documents and MFT bounded contexts, UBL and TRADACOMS standards support, Spring Boot APIs, a local AS2 peer, and a Next.js control plane.
 
+See the [AI-native EDI product strategy](docs/product-strategy.md) for the pitch, launch workflows, and pilot scorecard. See [MCP pilot setup](docs/edi/mcp.md) to connect a local client.
+
 ## Architecture 🏗️
 
 The repository is organized by responsibility rather than framework:

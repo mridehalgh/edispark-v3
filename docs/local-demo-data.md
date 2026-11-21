@@ -65,6 +65,8 @@ All local services must resolve the same internal tenant. A new tenant-aware ser
 | Local cryptographic isolation | Shared test root, tenant branch, resource-derived key; ciphertext bound to tenant and resource | `LocalKms` | `LocalKmsBehaviorTest`, payload integrity, and encrypted secret-store tests |
 | MFT organisation-admin guidance | `/mft/docs` partner setup, certificates, receipt statuses, troubleshooting, and compatibility guidance | MFT setup guide | Web typecheck/build and local route verification |
 
+When the MCP pilot is enabled, local auth registers the interactive MCP client and the dedicated smoke-test client, each linked to the MCP resource. The pilot uses the existing local owner and tenant, seeded inbound exchanges and mappings, and the Northstar and B&Q readiness fixtures. The local member remains ineligible for MCP access.
+
 ## Adding or changing a feature
 
 The document activity timeline reuses retained Integration exchange stages and mapping warnings in both the Documents inspector and the Order, Invoice and operational-document pages. It numbers events chronologically, retains multiple exchanges, exposes precise timestamps and recorded elapsed time, and offers mapping findings/report links and routing identifiers on demand. No new persisted state or fixtures are introduced by this presentation change. Verify against a retained needs-review exchange through the authenticated local BFF and both UI surfaces; `exchange-timeline.test.ts` covers ordering, equal timestamps, multiple exchanges, document identity and absent timestamps/history.

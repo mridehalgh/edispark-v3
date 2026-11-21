@@ -116,6 +116,12 @@
             <version>${aws.sdk.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>kms</artifactId>
+            <version>${aws.sdk.version}</version>
+        </dependency>
+
         <!-- AWS SDK v2 - S3 -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

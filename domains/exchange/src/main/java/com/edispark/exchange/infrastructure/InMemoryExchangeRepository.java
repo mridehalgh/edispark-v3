@@ -24,5 +24,15 @@ public final class InMemoryExchangeRepository implements ExchangeRepository, Exc
     }
     @Override public Optional<EdiExchange> find(UUID id) { String tenantId = TenantAccess.currentId(); return Optional.ofNullable(exchanges.get(tenantId + ":" + id)).filter(item -> item.tenantId().equals(tenantId)); }
     @Override public Optional<EdiExchange> findByIdempotencyKey(String key) { String tenantId = TenantAccess.currentId(); return Optional.ofNullable(idempotency.get(tenantId + ":" + key)).flatMap(id -> find(id)); }
+    @Override
+    public Page page(UUID after, int limit) {
+        var matches = list().stream()
+                .filter(exchange -> after == null || exchange.id().toString().compareTo(after.toString()) > 0)
+                .sorted(java.util.Comparator.comparing(exchange -> exchange.id().toString()))
+                .limit(limit + 1L).toList();
+        return matches.size() > limit ? new Page(matches.subList(0, limit), matches.get(limit - 1).id())
+                : new Page(matches, null);
+    }
+
     @Override public List<EdiExchange> list() { String tenantId = TenantAccess.currentId(); return exchanges.values().stream().filter(item -> item.tenantId().equals(tenantId)).toList(); }
 }

@@ -134,15 +134,30 @@ public final class ExchangeService {
 
     /** No files, exchanges or transfers are created by this dry run. Send always repeats it. */
     public ReadinessReport checkReadiness(UUID agreementId, UUID capabilityId, UUID setId, UUID documentId) {
-        var agreement = partnerships.findAgreement(agreementId)
-                .filter(item -> item.status() == AgreementStatus.ACTIVE).orElseThrow(() -> new IllegalArgumentException("Select an active partner agreement."));
-        var capability = agreement.capabilities().stream().filter(item -> item.id().equals(capabilityId)
-                && item.direction() == ExchangeDirection.OUTBOUND).findFirst().orElseThrow(() -> new IllegalArgumentException("Select an outbound route."));
-        return prepare(agreementId, capability, documents.describe(setId, documentId)).report();
+        return checkReadiness(agreementId, capabilityId, setId, documentId, null);
     }
 
+    public ReadinessReport checkReadiness(UUID agreementId, UUID capabilityId, UUID setId, UUID documentId,
+                                          DocumentReference expected) {
+        var agreement = partnerships.findAgreement(agreementId)
+                .filter(item -> item.status() == AgreementStatus.ACTIVE)
+                .orElseThrow(() -> new IllegalArgumentException("Select an active partner agreement."));
+        var capability = agreement.capabilities().stream().filter(item -> item.id().equals(capabilityId)
+                && item.direction() == ExchangeDirection.OUTBOUND).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Select an outbound route."));
+        var descriptor = documents.describe(setId, documentId);
+        if (expected != null && !expected.equals(descriptor.current())) throw new SourceChanged();
+        return prepare(agreement, capability, descriptor, expected != null).report();
+    }
+
+    public static final class SourceChanged extends IllegalArgumentException {}
+
     private Prepared prepare(UUID agreementId, ExchangeCapability capability, DocumentAcl.DocumentDescriptor descriptor) {
-        var agreement = partnerships.findAgreement(agreementId).orElseThrow();
+        return prepare(partnerships.findAgreement(agreementId).orElseThrow(), capability, descriptor, false);
+    }
+
+    private Prepared prepare(TradingAgreement agreement, ExchangeCapability capability,
+                             DocumentAcl.DocumentDescriptor descriptor, boolean preview) {
         List<ReadinessIssue> issues = new ArrayList<>();
         if (partnerships.findPartner(agreement.partnerId()).filter(partner -> partner.status() == com.edispark.partnerships.domain.model.PartnerStatus.ACTIVE).isEmpty()) {
             issues.add(ReadinessIssue.configuration("PARTNER_UNAVAILABLE", "The trading partner is unavailable or suspended."));
@@ -154,7 +169,8 @@ public final class ExchangeService {
             issues.add(ReadinessIssue.configuration("PARTNER_MISMATCH", "The selected route does not belong to this document's retained trading partner."));
         }
         issues.addAll(documents.validate(descriptor));
-        if (!currentTargetQualification(agreement, capability)) issues.add(ReadinessIssue.configuration("TARGET_QUALIFICATION_STALE",
+        var qualification = preview ? transformations.previewQualification(capability) : transformations.qualification(capability);
+        if (!currentTargetQualification(agreement, qualification)) issues.add(ReadinessIssue.configuration("TARGET_QUALIFICATION_STALE",
                 "The selected route has no current target validation proof. Ask an administrator to publish a tested mapping and requalify the agreement."));
         byte[] canonical = documents.content(descriptor.current());
         if (capability.documentProfileRevisionId() != null) {
@@ -167,7 +183,8 @@ public final class ExchangeService {
         TransformationAcl.Result transformed = null;
         if (issues.isEmpty()) {
             try {
-                transformed = transformations.executePublished(capability, canonical);
+                transformed = preview ? transformations.previewPublished(capability, canonical)
+                        : transformations.executePublished(capability, canonical);
                 for (var warning : transformed.warnings()) issues.add(new ReadinessIssue(warning.code(), warning.sourcePath(), warning.message(),
                         "MAPPING", capability.outboundLossPolicy() == OutboundLossPolicy.STRICT ? "ERROR" : "WARNING",
                         "Ask a mapping administrator to cover this field or document a reviewed omission in a new mapping revision."));
@@ -178,7 +195,7 @@ public final class ExchangeService {
             } catch (RuntimeException exception) { issues.add(ReadinessIssue.configuration("VALIDATION_UNAVAILABLE", "Partner readiness could not be completed. Nothing has been approved for delivery.")); }
         }
         return new Prepared(new ReadinessReport(issues.stream().noneMatch(issue -> issue.severity().equals("ERROR")), clock.instant(), descriptor.current(),
-                agreementId, agreement.revision(), capability.id(), capability.mappingRevisionId(), capability.documentProfileRevisionId(), List.copyOf(issues)), transformed);
+                agreement.id(), agreement.revision(), capability.id(), capability.mappingRevisionId(), capability.documentProfileRevisionId(), List.copyOf(issues)), transformed);
     }
 
     public record ReadinessReport(boolean ready, Instant checkedAt, DocumentReference sourceDocument, UUID agreementId,
@@ -186,10 +203,16 @@ public final class ExchangeService {
     private record Prepared(ReadinessReport report, TransformationAcl.Result transformation) {}
 
     private boolean currentTargetQualification(TradingAgreement agreement, ExchangeCapability capability) {
-        var evidence = transformations.qualification(capability);
+        return currentTargetQualification(agreement, transformations.qualification(capability));
+    }
+
+    private boolean currentTargetQualification(TradingAgreement agreement, TransformationAcl.Qualification evidence) {
         return evidence.valid() && (evidence.identity().isEmpty() || agreement.qualification() != null
                 && agreement.qualification().passed() && agreement.qualification().checks().contains(evidence.identity()));
     }
+
+    public java.util.Optional<EdiExchange> persisted(UUID id) { return exchanges.find(id); }
+    public ExchangeRepository.Page persistedPage(UUID after, int limit) { return exchanges.page(after, limit); }
 
     public List<EdiExchange> list() { return exchanges.list().stream().map(this::refreshReceipt).toList(); }
     public EdiExchange get(UUID id) { return refreshReceipt(exchanges.find(id).orElseThrow(() -> new IllegalArgumentException("Exchange was not found"))); }

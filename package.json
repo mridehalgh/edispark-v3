@@ -10,6 +10,8 @@
     "dev:integration-api": "pnpm dev:api",
     "dev:as2-simulator": "node tooling/scripts/dev-as2-simulator.mjs",
     "mft:lab:certs": "node tooling/scripts/generate-as2-lab-certs.mjs",
+    "smoke:mcp": "node tooling/scripts/mcp-smoke.mjs",
+    "smoke:mcp:stack": "node tooling/scripts/dev.mjs --mcp-smoke",
     "local:reset": "node tooling/scripts/reset-local.mjs",
     "contracts:export:api": "./mvnw -B -pl apps/edispark-api -am -Popenapi-export verify -DskipTests",
     "contracts:export:documents": "pnpm contracts:export:api",

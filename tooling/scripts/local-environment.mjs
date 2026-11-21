@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto"
+import { createHmac, randomBytes } from "node:crypto"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
 import { as2LabPaths } from "./as2-lab.mjs"
@@ -16,6 +16,9 @@ export async function localEnvironment() {
     ...process.env,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? settings.betterAuthSecret,
     EDISPARK_INTERNAL_TOKEN: process.env.EDISPARK_INTERNAL_TOKEN ?? settings.internalServiceToken,
+    EDISPARK_MCP_ORGANIZATIONS: process.env.EDISPARK_MCP_ORGANIZATIONS ?? "local-test-workspace",
+    EDISPARK_MCP_ACCESS_SECRET: process.env.EDISPARK_MCP_ACCESS_SECRET
+      ?? createHmac("sha256", settings.internalServiceToken).update("edispark-local-mcp").digest("base64url"),
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
     BETTER_AUTH_DATABASE_PATH: process.env.BETTER_AUTH_DATABASE_PATH ?? resolve(localDirectory, "auth.db"),
     BETTER_AUTH_AUTO_MIGRATE: process.env.BETTER_AUTH_AUTO_MIGRATE ?? "true",
@@ -39,6 +42,7 @@ export async function localEnvironment() {
     MFT_LOCAL_PARTNER_CERTIFICATE_PATH: process.env.MFT_LOCAL_PARTNER_CERTIFICATE_PATH ?? as2Lab.simulatorCertificate,
     LOCAL_SEED_TENANT_ID: process.env.LOCAL_SEED_TENANT_ID ?? seedTenantId,
     DYNAMODB_LOCAL_DATA_DIR: process.env.DYNAMODB_LOCAL_DATA_DIR ?? resolve(localDirectory, "dynamodb"),
+    DYNAMODB_LOCAL_NATIVE_DIR: process.env.DYNAMODB_LOCAL_NATIVE_DIR ?? resolve(workspace, "tooling/local-runtime/target/dependencies"),
     DYNAMODB_LOCAL_EMBEDDED: process.env.DYNAMODB_LOCAL_EMBEDDED ?? "true",
     MFT_LOCAL_DEMO_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-partner-id"),
     MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-tradacoms-partner-id"),

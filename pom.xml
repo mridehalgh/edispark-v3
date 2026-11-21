@@ -44,15 +44,16 @@
         <!-- Dependency versions -->
         <jackson.version>2.21.8</jackson.version>
         <jakarta.validation.version>3.1.1</jakarta.validation.version>
-        <spring.boot.version>4.0.9</spring.boot.version>
-        <junit.version>6.0.3</junit.version>
+        <spring.boot.version>4.2.0</spring.boot.version>
+        <spring-ai.version>2.1.0</spring-ai.version>
+        <junit.version>6.1.3</junit.version>
         <jqwik.version>1.9.3</jqwik.version>
         <assertj.version>3.27.6</assertj.version>
         <lombok.version>1.18.46</lombok.version>
         <aws.sdk.version>2.44.4</aws.sdk.version>
         <dynamodb.local.version>2.6.1</dynamodb.local.version>
         <sqlite4java.version>1.0.392</sqlite4java.version>
-        <springdoc.version>3.0.3</springdoc.version>
+        <springdoc.version>3.2.1</springdoc.version>
         <phase2.version>6.2.2</phase2.version>
         <bouncycastle.version>1.86</bouncycastle.version>
     </properties>
@@ -63,9 +64,7 @@
             <dependency><groupId>com.fasterxml.jackson</groupId><artifactId>jackson-bom</artifactId><version>${jackson.version}</version><type>pom</type><scope>import</scope></dependency>
             <dependency><groupId>tools.jackson</groupId><artifactId>jackson-bom</artifactId><version>3.1.8</version><type>pom</type><scope>import</scope></dependency>
             <dependency><groupId>io.netty</groupId><artifactId>netty-bom</artifactId><version>4.2.20.Final</version><type>pom</type><scope>import</scope></dependency>
-            <dependency><groupId>io.micrometer</groupId><artifactId>micrometer-bom</artifactId><version>1.16.8</version><type>pom</type><scope>import</scope></dependency>
             <dependency><groupId>com.google.guava</groupId><artifactId>guava</artifactId><version>33.8.0-jre</version></dependency>
-            <dependency><groupId>org.apache.httpcomponents.client5</groupId><artifactId>httpclient5</artifactId><version>5.6.3</version></dependency>
             <dependency><groupId>org.apache.httpcomponents.core5</groupId><artifactId>httpcore5</artifactId><version>5.4.4</version></dependency>
             <dependency><groupId>org.apache.httpcomponents.core5</groupId><artifactId>httpcore5-h2</artifactId><version>5.4.4</version></dependency>
             <dependency><groupId>org.apache.tomcat.embed</groupId><artifactId>tomcat-embed-core</artifactId><version>11.0.29</version></dependency>

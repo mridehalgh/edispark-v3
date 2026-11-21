@@ -54,24 +54,47 @@ public final class MappingService {
         return List.copyOf(combined.values());
     }
     public MappingRevision get(UUID id) { return promote(require(id)); }
+    public MappingRevision getPersisted(UUID id) { return require(id); }
     public MappingRevision createRevision(UUID id) {
         return repository.save(repository.fork(require(id), clock.instant()));
     }
 
     public TestResult test(UUID id, byte[] input, byte[] expected) {
+        var preview = preview(require(id), input, expected);
+        var failures = new ArrayList<String>();
+        if (Boolean.FALSE.equals(preview.expectedMatch())) failures.add("Output did not match the expected fixture");
+        preview.warnings().forEach(warning -> failures.add(warning.sourcePath() + ": " + warning.message()));
+        preview.findings().forEach(finding -> failures.add(finding.code() + " " + finding.path() + ": " + finding.message()));
+        return new TestResult(preview.passed(), preview.output(), List.copyOf(failures));
+    }
+
+    public PreviewResult preview(UUID id, byte[] input, byte[] expected) {
+        return preview(require(id), input, expected);
+    }
+
+    public PreviewResult previewRetained(UUID id, RetainedMappingSource.Reference reference,
+                                         RetainedMappingSource sources) {
         var mapping = require(id);
+        var compatibility = mapping.compatibility();
+        if (compatibility == null || !"OUTBOUND".equals(compatibility.direction())) {
+            throw new IllegalArgumentException("Retained document testing requires a compatible outbound mapping.");
+        }
+        return preview(mapping, sources.read(reference, compatibility.documentType()), null);
+    }
+
+    private PreviewResult preview(MappingRevision mapping, byte[] input, byte[] expected) {
         var execution = runtime.executeDetailed(mapping, input);
         byte[] output = execution.output();
-        boolean matches = expected == null || sameJson(expected, output);
-        var failures = new ArrayList<String>();
-        if (!matches) failures.add("Output did not match the expected fixture");
-        execution.warnings().forEach(warning -> failures.add(warning.sourcePath() + ": " + warning.message()));
-        if (requiresTargetEvidence(mapping)) {
-            validateTarget(mapping, input, output).findings().forEach(finding ->
-                    failures.add(finding.code() + " " + finding.path() + ": " + finding.message()));
-        }
-        return new TestResult(failures.isEmpty(), output, List.copyOf(failures));
+        Boolean matches = expected == null ? null : sameJson(expected, output);
+        var findings = requiresTargetEvidence(mapping) ? validateTarget(mapping, input, output).findings()
+                : List.<TargetContractValidator.Finding>of();
+        return new PreviewResult(!Boolean.FALSE.equals(matches) && execution.warnings().isEmpty() && findings.isEmpty(),
+                matches, output, execution.warnings(), findings);
     }
+
+    public record PreviewResult(boolean passed, Boolean expectedMatch, byte[] output,
+                                List<com.edispark.transformations.domain.MappingWarning> warnings,
+                                List<TargetContractValidator.Finding> findings) {}
 
     public byte[] executePublished(UUID id, byte[] input) {
         MappingRevision mapping = require(id);

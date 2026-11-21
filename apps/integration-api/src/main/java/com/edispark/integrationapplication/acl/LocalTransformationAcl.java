@@ -9,6 +9,7 @@ import com.edispark.transformations.application.MappingRuntime;
 import com.edispark.transformations.application.MappingService;
 import com.edispark.transformations.application.MappingFindingLocation;
 import com.edispark.transformations.domain.MappingStatus;
+import com.edispark.transformations.domain.MappingRevision;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 
@@ -28,13 +29,27 @@ public final class LocalTransformationAcl implements TransformationAcl {
         this.controls = controls;
     }
     @Override public Qualification qualification(ExchangeCapability capability) {
-        var mapping = mappings.get(capability.mappingRevisionId());
+        return qualification(mappings.get(capability.mappingRevisionId()));
+    }
+
+    @Override public Qualification previewQualification(ExchangeCapability capability) {
+        return qualification(mappings.getPersisted(capability.mappingRevisionId()));
+    }
+
+    private Qualification qualification(MappingRevision mapping) {
         if (!MappingService.requiresTargetEvidence(mapping)) return new Qualification(true, "");
         var evidence = mappings.qualificationEvidence(mapping.id());
         return new Qualification(evidence.valid(), evidence.identity());
     }
     @Override public Result executePublished(ExchangeCapability capability, byte[] canonicalContent) {
-        var mapping = mappings.get(capability.mappingRevisionId());
+        return executePublished(capability, canonicalContent, mappings.get(capability.mappingRevisionId()));
+    }
+
+    @Override public Result previewPublished(ExchangeCapability capability, byte[] canonicalContent) {
+        return executePublished(capability, canonicalContent, mappings.getPersisted(capability.mappingRevisionId()));
+    }
+
+    private Result executePublished(ExchangeCapability capability, byte[] canonicalContent, MappingRevision mapping) {
         if (mapping.status() != MappingStatus.PUBLISHED) {
             throw new IllegalArgumentException("Published mapping was not found");
         }

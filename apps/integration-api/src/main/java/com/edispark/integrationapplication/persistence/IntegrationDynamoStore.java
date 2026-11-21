@@ -117,6 +117,19 @@ final class IntegrationDynamoStore {
         return List.copyOf(results);
     }
 
+    Page page(String tenantId, String prefix, String after, int limit) {
+        var query = QueryRequest.builder().tableName(table).consistentRead(true).limit(limit)
+                .keyConditionExpression("pk = :pk AND begins_with(sk, :prefix)")
+                .expressionAttributeValues(Map.of(":pk", text(pk(tenantId)), ":prefix", text(prefix)));
+        if (after != null) query.exclusiveStartKey(Map.of("pk", text(pk(tenantId)), "sk", text(after)));
+        var response = dynamo.query(query.build());
+        var last = response.lastEvaluatedKey().get("sk");
+        return new Page(response.items().stream().map(row -> row.get("data").s()).toList(),
+                last == null ? null : last.s());
+    }
+
+    record Page(List<String> rows, String nextKey) {}
+
     private Map<String, AttributeValue> item(String tenantId, String sortKey, String type, String json) {
         return Map.of("pk", text(pk(tenantId)), "sk", text(sortKey), "entityType", text(type), "data", text(json));
     }

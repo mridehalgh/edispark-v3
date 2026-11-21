@@ -47,6 +47,14 @@ final class DynamoExchangeRepository implements ExchangeRepository, ExchangeCrea
     @Override public List<EdiExchange> list() { String tenantId = TenantAccess.currentId();
         return store.list(tenantId, "EXCHANGE#").stream().map(this::snapshot).map(Snapshot::toDomain).toList();
     }
+    @Override
+    public Page page(UUID after, int limit) {
+        String prefix = "EXCHANGE#";
+        var page = store.page(TenantAccess.currentId(), prefix, after == null ? null : prefix + after, limit);
+        return new Page(page.rows().stream().map(this::snapshot).map(Snapshot::toDomain).toList(),
+                page.nextKey() == null ? null : UUID.fromString(page.nextKey().substring(prefix.length())));
+    }
+
     private String write(Snapshot value) { try { return json.writeValueAsString(value); } catch (Exception e) { throw new IllegalStateException("Could not serialize exchange", e); } }
     private Snapshot snapshot(String value) { try { return json.readValue(value, Snapshot.class); } catch (Exception e) { throw new IllegalStateException("Could not read exchange", e); } }
 

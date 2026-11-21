@@ -20,7 +20,9 @@ Success means routine documents move with minimal manual effort, exceptions surf
 
 ## Positioning
 
-Retailer EDI without the traditional overhead: a clear operational workspace that makes complex retailer connections manageable for people who do not speak EDI.
+AI-native retailer EDI for supplier teams. EdiSpark helps operators resolve exceptions, integration analysts qualify partner mappings, and developers prove that an integration is ready. The web workspace gives each audience the same traceable evidence at the level of detail they need.
+
+See the [EdiSpark product strategy](../../docs/product-strategy.md) for the pitch, roadmap, and MCP pilot.
 
 ## Brand Personality
 

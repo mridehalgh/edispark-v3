@@ -19,6 +19,16 @@ export async function releasePorts(services) {
   }
 }
 
+export async function requireAvailablePorts(services) {
+  for (const service of services) {
+    const port = normalizePort(service.port)
+    if ((await listeningProcessIds(port)).length) {
+      throw new Error(`Cannot start the ${service.name}: port ${port} is already in use.`)
+    }
+    await assertPortAvailable(port, service.name)
+  }
+}
+
 export function localServices(env) {
   return [
     { name: "web application", port: new URL(env.BETTER_AUTH_URL).port || 3000 },

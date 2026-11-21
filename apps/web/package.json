@@ -18,6 +18,7 @@
     "@aws-sdk/client-kms": "^3.1094.0",
     "@aws-sdk/client-secrets-manager": "3.1094.0",
     "@aws/aurora-dsql-node-postgres-connector": "0.1.9",
+    "@better-auth/oauth-provider": "1.7.25",
     "@better-auth/passkey": "1.7.25",
     "@better-auth/sso": "1.7.25",
     "@edispark/documents-client": "workspace:*",

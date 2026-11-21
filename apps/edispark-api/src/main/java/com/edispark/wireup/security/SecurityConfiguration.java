@@ -1,5 +1,7 @@
 package com.edispark.wireup.security;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +24,8 @@ public class SecurityConfiguration {
         return http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(request -> request.getDispatcherType() == DispatcherType.ERROR
+                                && "/mcp".equals(request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI))).permitAll()
                         .requestMatchers("/api-docs", "/api-docs/**", "/swagger-ui/**", "/actuator/health",
                                 "/as2/**", "/internal/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/document-sets/**", "/api/schemas/**",

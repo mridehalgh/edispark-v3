@@ -9,6 +9,7 @@ Backend, frontend, security and Terraform verification start in parallel. Contra
 | --- | --- |
 | Backend | Full Maven reactor verification, including architecture tests; two reactor threads and one test JVM per module |
 | Frontend checks | Tooling tests, frontend tests, UBL view contracts and TypeScript |
+| MCP smoke | Start the seeded local stack and exercise MCP discovery, OAuth and tool calls through HTTP |
 | Frontend build | Production Next.js build with its compiler cache |
 | API contracts | Reuse the backend export for all three APIs; schema validation, parallel SDK generation/type-checks, drift detection and PR breaking-change comparisons |
 | Security | Secret history, source analysis and workflow checks; dependency scanning checks the built backend SBOM and JavaScript lockfile |

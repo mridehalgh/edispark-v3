@@ -1,4 +1,6 @@
 import { betterAuth } from "better-auth"
+import { APIError } from "better-auth/api"
+import { oauthProvider } from "@better-auth/oauth-provider"
 import { passkey } from "@better-auth/passkey"
 import { sso } from "@better-auth/sso"
 import { jwt, lastLoginMethod } from "better-auth/plugins"
@@ -130,6 +132,38 @@ const passkeyOrigins = process.env.BETTER_AUTH_PASSKEY_ORIGINS
   .filter(Boolean) ?? [appOrigin]
 const remoteJwtSigning = getRemoteJwtSigningConfig()
 
+export const mcpEnabled = process.env.EDISPARK_MCP_ENABLED === "true"
+  && process.env.NEXT_PHASE !== "phase-production-build"
+export const mcpResource = process.env.EDISPARK_MCP_RESOURCE ?? "http://localhost:8080/mcp"
+const mcpScopes = ["edi:evidence", "edi:preview"]
+const enabledMcpOrganizations = new Set(process.env.EDISPARK_MCP_ORGANIZATIONS?.split(",").map(value => value.trim()) ?? [])
+const localMcpClient = "edispark-local-mcp"
+const localMcpSmokeClient = "edispark-local-mcp-smoke"
+
+async function mcpTenant(organizationId: string, userId: string) {
+  if (!mcpEnabled || !enabledMcpOrganizations.has(organizationId)) return null
+  if (pool) {
+    const result = await pool.query<{ tenant_id: string }>(
+      `SELECT t.tenant_id FROM auth.organization_tenant t JOIN auth.member m ON m."organizationId" = t.organization_id
+        WHERE t.organization_id = $1 AND m."userId" = $2 AND m.role IN ('admin', 'owner')`,
+      [organizationId, userId],
+    )
+    return result.rows[0]?.tenant_id ?? null
+  }
+  const member = database.prepare(
+    `SELECT t.tenant_id FROM organization_tenant t JOIN member m ON m.organizationId = t.organization_id
+      WHERE t.organization_id = ? AND m.userId = ? AND m.role IN ('admin', 'owner')`,
+  ).get(organizationId, userId) as { tenant_id: string } | undefined
+  return member?.tenant_id ?? null
+}
+
+async function requireMcpTenant(organizationId: unknown, userId: string) {
+  const tenant = typeof organizationId === "string" ? await mcpTenant(organizationId, userId) : null
+  if (!tenant) throw new APIError("FORBIDDEN", { message: "MCP access is unavailable for this workspace." })
+  return tenant
+}
+
+
 async function defineJwtPayload({
   user,
   session,
@@ -260,6 +294,34 @@ export const auth = betterAuth({
             definePayload: defineJwtPayload,
           },
         }),
+    ...(mcpEnabled ? [oauthProvider({
+      scopes: mcpScopes,
+      grantTypes: ["authorization_code"],
+      loginPage: "/mcp/connect/login",
+      consentPage: "/mcp/connect/consent",
+      accessTokenExpiresIn: 300,
+      allowDynamicClientRegistration: false,
+      enforcePerClientResources: true,
+      silenceWarnings: { oauthAuthServerConfig: true },
+      postLogin: {
+        page: "/mcp/connect/consent",
+        shouldRedirect: () => false,
+        async consentReferenceId({ session, user }) {
+          await requireMcpTenant(session.activeOrganizationId, user.id)
+          return session.activeOrganizationId as string
+        },
+      },
+      async customAccessTokenClaims({ user, referenceId, resources }) {
+        if (!user || resources?.length !== 1 || resources[0] !== mcpResource) {
+          throw new APIError("FORBIDDEN", { message: "MCP requires a delegated resource request." })
+        }
+        return {
+          tenant_id: await requireMcpTenant(referenceId, user.id),
+          mcp_organization: referenceId,
+          mcp_delegated: true,
+        }
+      },
+    })] : []),
     lastLoginMethod({
       storeInDatabase: true,
       beforeStoreCookie: () => false,
@@ -352,6 +414,39 @@ async function prepareLocalAuth() {
     ON CONFLICT(id) DO UPDATE SET role = excluded.role
   `).run(LOCAL_OPERATIONS_MEMBER_ID, LOCAL_TEST_ORGANIZATION_ID, operations.id, "member", createdAt)
   ensureLocalOrganizationTenantMapping()
+
+  if (mcpEnabled) {
+    const redirectUris = (process.env.EDISPARK_MCP_LOCAL_REDIRECT_URIS ?? "http://127.0.0.1:9876/callback")
+      .split(",").map(value => new URL(value.trim())).map(url => {
+        if (url.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)
+          || url.username || url.password || url.hash) throw new Error("Local MCP client requires a loopback redirect")
+        return url.href
+      })
+    const adapter = context.adapter
+    const find = (model: string, field: string, value: string) => adapter.findOne({
+      model, where: [{ field, value }],
+    })
+    const now = new Date()
+    if (!await find("oauthResource", "identifier", mcpResource)) await adapter.create({
+      model: "oauthResource",
+      data: { identifier: mcpResource, name: "EdiSpark local MCP", allowedScopes: mcpScopes, createdAt: now, updatedAt: now },
+    })
+    for (const [clientId, name, callbacks] of [
+      [localMcpClient, "EdiSpark local MCP client", redirectUris],
+      [localMcpSmokeClient, "EdiSpark local MCP smoke tests", ["http://127.0.0.1:9876/callback"]],
+    ] as const) {
+      if (!await find("oauthClient", "clientId", clientId)) await adapter.create({
+        model: "oauthClient",
+        data: { clientId, name, redirectUris: [...callbacks],
+          scopes: mcpScopes, requirePKCE: true, applicationType: "native", tokenEndpointAuthMethod: "none",
+          grantTypes: ["authorization_code"], responseTypes: ["code"], createdAt: now, updatedAt: now },
+      })
+      const link = [{ field: "clientId", value: clientId }, { field: "resourceId", value: mcpResource }]
+      if (!await adapter.findOne({ model: "oauthClientResource", where: link })) await adapter.create({
+        model: "oauthClientResource", data: { clientId, resourceId: mcpResource, createdAt: now },
+      })
+    }
+  }
 }
 
 async function ensureLocalUser(email: string | undefined, password: string | undefined, name: string) {
@@ -398,6 +493,37 @@ export async function getRequestAccess(headers: Headers): Promise<AccessContext 
     organizationRole: membership.role,
     platformRole: platformPrincipal?.role,
   }
+}
+
+export async function hasMcpAccess(identity: {
+  organizationId: string
+  tenantId: string
+  subject: string
+  clientId: string
+  scopes: string[]
+}) {
+  if (await mcpTenant(identity.organizationId, identity.subject) !== identity.tenantId) return false
+  const { adapter } = await auth.$context
+  const [client, resource, link, consent] = await Promise.all([
+    adapter.findOne<{ disabled?: boolean; scopes?: string[] }>({
+      model: "oauthClient", where: [{ field: "clientId", value: identity.clientId }],
+    }),
+    adapter.findOne<{ disabled?: boolean; allowedScopes?: string[] }>({
+      model: "oauthResource", where: [{ field: "identifier", value: mcpResource }],
+    }),
+    adapter.findOne({
+      model: "oauthClientResource", where: [{ field: "clientId", value: identity.clientId },
+        { field: "resourceId", value: mcpResource }],
+    }),
+    adapter.findOne<{ scopes: string[]; resources?: string[] }>({
+      model: "oauthConsent", where: [{ field: "clientId", value: identity.clientId },
+        { field: "userId", value: identity.subject }, { field: "referenceId", value: identity.organizationId }],
+    }),
+  ])
+  return Boolean(client && !client.disabled && resource && !resource.disabled && link
+    && consent?.resources?.includes(mcpResource)
+    && identity.scopes.every(scope => mcpScopes.includes(scope) && consent.scopes.includes(scope)
+      && (client.scopes?.includes(scope) ?? true) && (resource.allowedScopes?.includes(scope) ?? true)))
 }
 
 export const authReady = process.env.BETTER_AUTH_AUTO_MIGRATE === "true"

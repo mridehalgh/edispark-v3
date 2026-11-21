@@ -1,4 +1,5 @@
 import { getSchema } from "better-auth/db"
+import { oauthProvider } from "@better-auth/oauth-provider"
 import { writeFile, mkdir } from "node:fs/promises"
 import { randomBytes } from "node:crypto"
 
@@ -9,14 +10,17 @@ process.env.BETTER_AUTH_DATABASE_PATH = ":memory:"
 process.env.BETTER_AUTH_AUTO_MIGRATE = "false"
 process.env.LOCAL_TEST_USER_BOOTSTRAP = "false"
 const { auth } = await import("../src/lib/auth")
-const schema = getSchema(auth.options)
+const oauth = process.argv.includes("--mcp")
+const schema = oauth
+  ? getSchema({ plugins: [oauthProvider({ loginPage: "/mcp/connect/login", consentPage: "/mcp/connect/consent" })] })
+  : getSchema(auth.options)
 const quote = (name: string) => {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) throw new Error(`Invalid schema identifier: ${name}`)
   return `"${name}"`
 }
-const types: Record<string, string> = { string: "TEXT", boolean: "BOOLEAN", number: "INTEGER", date: "TIMESTAMPTZ" }
-const pending = new Set(Object.keys(schema).filter(name => !schema[name].disableMigrations))
-const complete = new Set<string>()
+const types: Record<string, string> = { string: "TEXT", boolean: "BOOLEAN", number: "INTEGER", date: "TIMESTAMPTZ", json: "JSONB", "string[]": "TEXT", "number[]": "TEXT" }
+const pending = new Set(Object.keys(schema).filter(name => !schema[name].disableMigrations && (!oauth || name.startsWith("oauth"))))
+const complete = new Set<string>(oauth ? ["user", "session"] : [])
 const statements: string[] = []
 const indexes: string[] = []
 while (pending.size) {
@@ -40,9 +44,13 @@ while (pending.size) {
   pending.delete(name)
   complete.add(name)
 }
-statements.push(
+if (oauth) indexes.push(
+  'CREATE UNIQUE INDEX ASYNC "oauthClientResource_client_resource_idx" ON auth."oauthClientResource" ("clientId", "resourceId");',
+  'CREATE UNIQUE INDEX ASYNC "oauthConsent_client_user_reference_idx" ON auth."oauthConsent" ("clientId", "userId", "referenceId");',
+)
+else statements.push(
   "CREATE TABLE auth.platform_principal (user_id TEXT PRIMARY KEY REFERENCES auth.\"user\"(id) ON DELETE CASCADE, role TEXT NOT NULL CHECK (role = 'platform_admin'), created_at TIMESTAMPTZ NOT NULL);",
   "CREATE TABLE auth.organization_tenant (organization_id TEXT PRIMARY KEY REFERENCES auth.organization(id) ON DELETE CASCADE, tenant_id TEXT UNIQUE NOT NULL, created_at TIMESTAMPTZ NOT NULL);",
 )
 await mkdir("migrations", { recursive: true })
-await writeFile("migrations/001-auth.sql", `-- Generated from the pinned Better Auth configuration. Review changes; never rewrite an applied migration.\n${[...statements, ...indexes].join("\n\n")}\n`)
+await writeFile(oauth ? "migrations/002-mcp-oauth.sql" : "migrations/001-auth.sql", `-- Generated from the pinned Better Auth configuration. Review changes; never rewrite an applied migration.\n${[...statements, ...indexes].join("\n\n")}\n`)

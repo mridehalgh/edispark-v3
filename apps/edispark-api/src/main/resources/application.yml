@@ -5,6 +5,23 @@ server:
     include-binding-errors: never
 
 spring:
+  ai:
+    mcp:
+      server:
+        enabled: ${edispark.mcp.enabled}
+        protocol: MODERN
+        name: edispark
+        version: 1.0.0
+        instructions: Use persisted evidence and exact preview pins. Missing acknowledgement evidence is not acceptance.
+        capabilities:
+          # The custom tools feature uses the Documents-compatible schema validator.
+          tool: false
+          resource: false
+          prompt: false
+          completion: false
+        modern:
+          mcp-endpoint: /mcp
+          max-request-size: 96KB
   application:
     name: edispark-api
   servlet:
@@ -125,6 +142,11 @@ dynamodb:
 edispark:
   internal:
     token: ${EDISPARK_INTERNAL_TOKEN:}
+  mcp:
+    enabled: ${EDISPARK_MCP_ENABLED:false}
+    resource: ${EDISPARK_MCP_RESOURCE:http://localhost:8080/mcp}
+    issuer: ${EDISPARK_MCP_ISSUER:${AUTH_ISSUER:http://localhost:3000}/api/auth}
+    access-secret: ${EDISPARK_MCP_ACCESS_SECRET:}
 
 springdoc:
   api-docs:

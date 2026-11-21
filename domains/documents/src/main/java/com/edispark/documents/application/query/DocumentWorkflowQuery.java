@@ -12,6 +12,7 @@ import com.edispark.documents.domain.model.DocumentType;
 import com.edispark.documents.domain.model.Format;
 import com.edispark.documents.domain.repository.DocumentSetRepository;
 import com.edispark.pagination.PaginatedResult;
+import com.edispark.pagination.NewestFirstPagination;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -33,6 +34,7 @@ public final class DocumentWorkflowQuery {
         this.content = content;
     }
 
+    @NewestFirstPagination
     public PaginatedResult<Summary> find(Search search, String position) {
         var page = listing.handle(ListDocumentSetsQuery.of(SET_PAGE_SIZE, position));
         // shortcut: searches read bounded document-set pages until reference and lineage indexes are available

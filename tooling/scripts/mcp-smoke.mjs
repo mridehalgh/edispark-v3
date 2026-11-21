@@ -26,6 +26,16 @@ assert.equal(oauth.issuer, issuer)
 assert.equal(oauth.authorization_endpoint, issuer + "/oauth2/authorize")
 assert.equal(oauth.token_endpoint, issuer + "/oauth2/token")
 
+// Compile the token handler before it receives a single-use authorization code.
+const tokenHandlerProbe = () => request(oauth.token_endpoint, { method: "POST", body: new URLSearchParams() })
+let tokenProbe = await tokenHandlerProbe()
+if (tokenProbe.status === 500) {
+  await tokenProbe.body?.cancel()
+  tokenProbe = await tokenHandlerProbe()
+}
+assert.ok([400, 401].includes(tokenProbe.status), `Unexpected token handler response ${tokenProbe.status}`)
+await tokenProbe.body?.cancel()
+
 await expectStatus(await request(web + "/api/access"), 401)
 await auth("/sign-in/email", { email: env.LOCAL_TEST_USER_EMAIL, password: env.LOCAL_TEST_USER_PASSWORD })
 await auth("/organization/set-active", { organizationId })

@@ -19,6 +19,12 @@
       "skillPath": "better-auth/create-auth/SKILL.md",
       "computedHash": "4e261efac2ae9a2321c4495c846ef97cf239818fc8bd2ab7e92ed1f9d25470f7"
     },
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "acda6bf83f200405aa200eb245448fdc11cfce43d97bc2d9b8bf13a27f362d95"
+    },
     "email-and-password-best-practices": {
       "source": "better-auth/skills",
       "sourceType": "github",

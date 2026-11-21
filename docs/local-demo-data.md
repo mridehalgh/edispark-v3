@@ -65,7 +65,7 @@ All local services must resolve the same internal tenant. A new tenant-aware ser
 | Local cryptographic isolation | Shared test root, tenant branch, resource-derived key; ciphertext bound to tenant and resource | `LocalKms` | `LocalKmsBehaviorTest`, payload integrity, and encrypted secret-store tests |
 | MFT organisation-admin guidance | `/mft/docs` partner setup, certificates, receipt statuses, troubleshooting, and compatibility guidance | MFT setup guide | Web typecheck/build and local route verification |
 
-When the MCP pilot is enabled, local auth registers the interactive MCP client and the dedicated smoke-test client, each linked to the MCP resource. The pilot uses the existing local owner and tenant, seeded inbound exchanges and mappings, and the Northstar and B&Q readiness fixtures. The local member remains ineligible for MCP access.
+When the MCP pilot is enabled, local auth registers the interactive MCP client and the dedicated smoke-test client, each linked to the MCP resource. The pilot uses the existing local owner and tenant, seeded inbound exchanges and mappings, and the Northstar and B&Q readiness fixtures. The **AI** workspace page shows the B&Q missing-vendor example to local admins and owners. It offers the configured endpoint only when the pilot is enabled for the active organisation. The local member has no AI navigation entry or MCP setup metadata. The MCP smoke uses the existing PO-2026-0042 lineage for business lookup, reconciliation and Order Response smart-copy parity, plus seeded AS2 awaiting-MDN and retry transfers and their connection and certificate records. The smoke suite creates and removes its own draft profile to exercise profile evidence.
 
 ## Adding or changing a feature
 

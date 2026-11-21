@@ -55,7 +55,7 @@ final class McpAccess extends OncePerRequestFilter {
         String organization = token.getClaimAsString("mcp_organization");
         var tenant = TenantId.fromString(token.getClaimAsString("tenant_id"));
         var scopes = Arrays.stream(token.getClaimAsString("scope").split(" "))
-                .filter(scope -> scope.equals(McpTools.READ) || scope.equals(McpTools.PREVIEW)).collect(Collectors.toUnmodifiableSet());
+                .filter(McpTools.SUPPORTED_SCOPES::contains).collect(Collectors.toUnmodifiableSet());
         var principal = new Principal(tenant, token.getSubject(), client, scopes, UUID.randomUUID());
         response.setHeader("X-Correlation-Id", principal.correlation().toString());
         if (!checks.tryAcquire()) {
@@ -80,11 +80,11 @@ final class McpAccess extends OncePerRequestFilter {
 
     private int verify(Principal principal, String organization) {
         try {
+            var grant = new DelegatedGrant(principal.tenant().asString(), organization, principal.subject(),
+                    principal.client(), principal.scopes());
             var request = HttpRequest.newBuilder(lookup).timeout(CHECK_TIMEOUT)
                     .header("Authorization", "Bearer " + secret).header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(McpEvidence.fields(
-                            "tenantId", principal.tenant().asString(), "subject", principal.subject(),
-                            "clientId", principal.client(), "organizationId", organization, "scopes", principal.scopes())))).build();
+                    .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(grant))).build();
             int status = http.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
             return status == 204 || status == 403 ? status : 503;
         } catch (IOException exception) {
@@ -97,4 +97,5 @@ final class McpAccess extends OncePerRequestFilter {
     }
 
     record Principal(TenantId tenant, String subject, String client, Set<String> scopes, UUID correlation) {}
+    private record DelegatedGrant(String tenantId, String organizationId, String subject, String clientId, Set<String> scopes) { }
 }

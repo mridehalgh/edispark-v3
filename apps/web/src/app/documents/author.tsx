@@ -146,6 +146,7 @@ export function AuthorDocumentPage() {
   const [smartCopy, setSmartCopy] = useState<SmartCopyDraft>()
   const [copyLoading, setCopyLoading] = useState(false)
   const [copyError, setCopyError] = useState<string>()
+  const [verifiedCopySource, setVerifiedCopySource] = useState<string>()
   const [commercialReviewed, setCommercialReviewed] = useState(false)
   const [edited, setEdited] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
@@ -157,6 +158,11 @@ export function AuthorDocumentPage() {
   const definition = authoringDefinitions[documentType]
   const sourceSetId = search.get("fromSet")
   const sourceDocumentId = search.get("fromDocument")
+  const sourceRepresentationId = search.get("fromRepresentation")
+  const sourceContentHash = search.get("fromHash")
+  const pinnedCopy = sourceRepresentationId !== null || sourceContentHash !== null
+  const copySourceKey = [sourceSetId, sourceDocumentId, sourceRepresentationId, sourceContentHash, documentType, search.get("mode")].join("/")
+  const copySourcePending = pinnedCopy && verifiedCopySource !== copySourceKey
   const related = Boolean(sourceSetId && sourceDocumentId)
   const correction = search.get("mode") === "correct"
   const selectedProfile = profiles.find((profile) => profile.id === profileId)
@@ -266,8 +272,13 @@ export function AuthorDocumentPage() {
       documentType,
       controller.signal,
       correction,
+      pinnedCopy
+        ? { representationId: sourceRepresentationId ?? "", contentHash: sourceContentHash ?? "" }
+        : undefined,
     )
       .then((draft) => {
+        if (controller.signal.aborted) return
+        setVerifiedCopySource(copySourceKey)
         setSmartCopy(draft)
         applyDraft(draft)
       })
@@ -283,7 +294,7 @@ export function AuthorDocumentPage() {
         if (!controller.signal.aborted) setCopyLoading(false)
       })
     return () => controller.abort()
-  }, [documentType, sourceDocumentId, sourceSetId, correction])
+  }, [documentType, sourceDocumentId, sourceSetId, correction, sourceRepresentationId, sourceContentHash, pinnedCopy, copySourceKey])
 
   function markEdited(path: string) {
     setEdited((current) => new Set(current).add(path))
@@ -452,6 +463,7 @@ export function AuthorDocumentPage() {
 
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (copySourcePending) return
     if (smartCopy?.requiresCommercialReview && !commercialReviewed) {
       setError(
         "Review and confirm the copied quantities and amounts before saving.",
@@ -686,7 +698,7 @@ export function AuthorDocumentPage() {
                   Smart copy was unavailable
                 </strong>
                 <span className="text-muted-foreground">
-                  {copyError} You can still complete the document manually.
+                  {copyError} {pinnedCopy ? "Open the current source to start a fresh draft." : "You can still complete the document manually."}
                 </span>
               </span>
             </p>
@@ -1293,7 +1305,7 @@ export function AuthorDocumentPage() {
               </span>
             </label>
           ) : null}
-          <Button className="mt-5 w-full" disabled={busy || copyLoading}>
+          <Button className="mt-5 w-full" disabled={busy || copyLoading || copySourcePending}>
             {busy
               ? "Saving draft…"
               : copyLoading

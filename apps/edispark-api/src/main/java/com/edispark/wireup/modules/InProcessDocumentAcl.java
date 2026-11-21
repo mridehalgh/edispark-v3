@@ -9,7 +9,6 @@ import com.edispark.documents.domain.model.DerivativeId;
 import com.edispark.documents.domain.model.Document;
 import com.edispark.documents.domain.model.DocumentId;
 import com.edispark.documents.domain.model.DocumentSetId;
-import com.edispark.documents.domain.model.DocumentVersion;
 import com.edispark.documents.domain.model.Format;
 import com.edispark.documents.domain.repository.DocumentSetRepository;
 import com.edispark.exchange.application.DocumentAcl;
@@ -34,8 +33,8 @@ final class InProcessDocumentAcl implements DocumentAcl {
     @Override
     public DocumentDescriptor describe(UUID setId, UUID documentId) {
         Document document = document(setId, documentId);
-        Representation representation = canonical(document);
-        return new DocumentDescriptor(reference(setId, documentId, representation),
+        var representation = canonicalReference(setId, documentId, document);
+        return new DocumentDescriptor(representation,
                 BusinessDocumentType.valueOf(document.type().name()), "UBL_2_1_JSON", documentId.toString(),
                 document.lifecycleStatus().name(), metadataId(setId, "partnerId"), metadataId(setId, "mftPartnerId"));
     }
@@ -55,16 +54,17 @@ final class InProcessDocumentAcl implements DocumentAcl {
     @Override
     public byte[] content(DocumentReference reference) {
         Document document = document(reference.documentSetId(), reference.documentId());
-        Representation representation = canonical(document);
-        if (!reference.equals(reference(reference.documentSetId(), reference.documentId(), representation))) {
+        var current = canonicalReference(reference.documentSetId(), reference.documentId(), document);
+        if (!reference.equals(current)) {
             throw new IllegalArgumentException("Document source changed before exchange processing");
         }
-        if (representation.derivative() != null) {
-            return content.getDerivativeContent(new DocumentSetId(reference.documentSetId()),
-                    new DocumentId(reference.documentId()), representation.derivative().id()).bytes();
+        var version = document.getCurrentVersion();
+        var setId = new DocumentSetId(reference.documentSetId());
+        var documentId = new DocumentId(reference.documentId());
+        if (version.id().value().equals(current.representationId())) {
+            return content.getVersionContent(setId, documentId, version.versionNumber()).bytes();
         }
-        return content.getVersionContent(new DocumentSetId(reference.documentSetId()),
-                new DocumentId(reference.documentId()), representation.version().versionNumber()).bytes();
+        return content.getDerivativeContent(setId, documentId, new DerivativeId(current.representationId())).bytes();
     }
 
     @Override
@@ -90,25 +90,9 @@ final class InProcessDocumentAcl implements DocumentAcl {
                 .orElseThrow(() -> new IllegalArgumentException("Document was not returned"));
     }
 
-    private Representation canonical(Document document) {
-        DocumentVersion version = document.getCurrentVersion();
-        if (version.format() == Format.JSON) return new Representation(version, null);
-        Derivative derivative = document.derivatives().stream()
-                .filter(item -> item.targetFormat() == Format.JSON && item.sourceVersionId().equals(version.id()))
-                .filter(item -> item.variantKey().equals("canonical") || item.variantKey().equals("default"))
-                .findFirst()
+    private DocumentReference canonicalReference(UUID setId, UUID documentId, Document document) {
+        var representation = content.currentRepresentation(document)
                 .orElseThrow(() -> new IllegalArgumentException("Document has no canonical JSON representation"));
-        return new Representation(version, derivative);
+        return new DocumentReference(setId, documentId, representation.id(), representation.hash().toFullString());
     }
-
-    private DocumentReference reference(UUID setId, UUID documentId, Representation representation) {
-        UUID id = representation.derivative() == null
-                ? representation.version().id().value() : representation.derivative().id().value();
-        String hash = representation.derivative() == null
-                ? representation.version().contentHash().toFullString()
-                : representation.derivative().contentHash().toFullString();
-        return new DocumentReference(setId, documentId, id, hash);
-    }
-
-    private record Representation(DocumentVersion version, Derivative derivative) { }
 }

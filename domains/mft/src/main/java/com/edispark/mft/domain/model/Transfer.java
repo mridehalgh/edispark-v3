@@ -158,6 +158,10 @@ public final class Transfer {
         return List.copyOf(attempts);
     }
 
+    public boolean hasDeliveredReceipt() {
+        return status == TransferStatus.DELIVERED && mdnDisposition != null;
+    }
+
     private void requireStatus(TransferStatus... allowed) {
         for (TransferStatus candidate : allowed) if (status == candidate) return;
         throw new IllegalStateException("transition is not allowed from " + status);

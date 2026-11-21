@@ -37,6 +37,21 @@ public final class InboundEdiTranslator {
         return translate(messages.getFirst());
     }
 
+    public List<MessagePreview> preview(byte[] input, int limit) {
+        return split(input).stream().limit(limit).map(message -> {
+            try {
+                var translation = translate(message);
+                return new MessagePreview(message.ordinal(), message.messageCount(), message.standard(),
+                        translation.release(), translation.messageType(), translation.documentType(), true);
+            } catch (IllegalArgumentException | java.time.DateTimeException invalid) {
+                return new MessagePreview(message.ordinal(), message.messageCount(), message.standard(), null, null, null, false);
+            }
+        }).toList();
+    }
+
+    public record MessagePreview(int ordinal, int messageCount, EdiStandard standard,
+                                 String release, String messageType, BusinessDocumentType documentType, boolean valid) { }
+
     List<InboundEdiBatchSplitter.InboundMessage> split(byte[] input) {
         if (input == null || input.length == 0 || input.length > MAXIMUM_BYTES) {
             throw new IllegalArgumentException("Inbound EDI payload size is invalid");

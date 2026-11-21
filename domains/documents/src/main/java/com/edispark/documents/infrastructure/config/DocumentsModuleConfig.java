@@ -4,6 +4,8 @@ import com.edispark.documents.application.handler.DocumentSetCommandHandler;
 import com.edispark.documents.application.handler.SchemaCommandHandler;
 import com.edispark.documents.application.query.DocumentContentQueryService;
 import com.edispark.documents.application.query.DocumentSetQueryHandler;
+import com.edispark.documents.application.query.DocumentWorkflowQuery;
+import com.edispark.documents.application.reconciliation.DocumentReconciliation;
 import com.edispark.documents.application.tradacoms.InboundTradacomsIngestionService;
 import com.edispark.documents.application.tradacoms.TradacomsMessageParser;
 import com.edispark.documents.application.inbound.InboundCanonicalDocumentService;
@@ -224,6 +226,17 @@ public class DocumentsModuleConfig {
             DocumentSetRepository documentSetRepository,
             ContentStore contentStore) {
         return new DocumentContentQueryService(documentSetRepository, contentStore);
+    }
+
+    @Bean
+    public DocumentWorkflowQuery documentWorkflowQuery(DocumentSetRepository sets, DocumentSetQueryHandler listing,
+                                                      DocumentContentQueryService content) {
+        return new DocumentWorkflowQuery(sets, listing, content);
+    }
+
+    @Bean
+    public DocumentReconciliation documentReconciliation(DocumentContentQueryService content) {
+        return new DocumentReconciliation(content);
     }
 
     @Bean

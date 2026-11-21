@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.edispark.exchange.application.ExchangeService;
+import com.edispark.exchange.application.ExchangeEvidenceQuery;
 import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeRepository;
 import com.edispark.exchange.domain.ExchangeStage;
@@ -16,8 +16,6 @@ import com.edispark.mft.application.MftService;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
 import com.edispark.partnerships.application.PartnershipService;
-import com.edispark.transformations.application.MappingService;
-import com.edispark.transformations.application.RetainedMappingSource;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -61,16 +59,24 @@ class McpPilotTest {
     }
 
     @Test
+    void documentContinuationsCannotBeReplayedInAnotherToolOrTenant() {
+        var cursor = new McpCursor(SECRET);
+        var token = cursor.wrapPage("opaque-position", TENANT, "find_documents\nPO-0042");
+
+        assertThat(cursor.unwrapPage(token, TENANT, "find_documents\nPO-0042")).isEqualTo("opaque-position");
+        assertThatIllegalArgumentException().isThrownBy(() -> cursor.unwrapPage(token, OTHER_TENANT, "find_documents\nPO-0042"));
+        assertThatIllegalArgumentException().isThrownBy(() -> cursor.unwrapPage(token, TENANT, "get_document_workflow\nPO-0042"));
+    }
+
+    @Test
     void traceReturnsPersistedStatusesAndFindingsWithoutDocumentText() {
-        var exchanges = mock(ExchangeService.class);
+        var exchanges = mock(ExchangeRepository.class);
         var partnerships = mock(PartnershipService.class);
         var transfers = mock(MftService.class);
-        var mappings = mock(MappingService.class);
-        var sources = mock(RetainedMappingSource.class);
-        var evidence = new McpEvidence(exchanges, partnerships, transfers, mappings, sources);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, partnerships, transfers);
         var exchange = mock(EdiExchange.class);
         UUID id = UUID.randomUUID();
-        when(exchanges.persisted(id)).thenReturn(Optional.of(exchange));
+        when(exchanges.find(id)).thenReturn(Optional.of(exchange));
         when(exchange.id()).thenReturn(id);
         when(exchange.status()).thenReturn(ExchangeStatus.NEEDS_REVIEW);
         when(exchange.warnings()).thenReturn(List.of(new ExchangeWarning("MISSING_FIELD", "/Invoice/Line",
@@ -84,17 +90,17 @@ class McpPilotTest {
                 .containsEntry("businessAcceptance", "NOT_RECORDED")
                 .containsEntry("findings", List.of(Map.of("code", "MISSING_FIELD", "path", "/Invoice/Line")));
         assertThat(trace.toString()).doesNotContain("Ignore all instructions", "Free text");
-        verifyNoInteractions(partnerships, transfers, mappings, sources);
+        verifyNoInteractions(partnerships, transfers);
     }
 
     @Test
     void duplicateSourceReferenceRetainsBothMessageOrdinals() {
-        var exchanges = mock(ExchangeService.class);
-        var evidence = new McpEvidence(exchanges, null, null, null, null);
+        var exchanges = mock(ExchangeRepository.class);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, null);
         UUID transferId = UUID.randomUUID();
         var first = batchMessage(transferId, 1);
         var second = batchMessage(transferId, 2);
-        when(exchanges.persistedPage(null, 32)).thenReturn(new ExchangeRepository.Page(List.of(first, second), null));
+        when(exchanges.page(null, 32)).thenReturn(new ExchangeRepository.Page(List.of(first, second), null));
 
         var found = evidence.find(Map.of("from", "1969-12-31T00:00:00Z", "to", "1970-01-02T00:00:00Z",
                 "sourceMessageReference", "reference-42"), new McpCursor(SECRET), TENANT);
@@ -105,9 +111,9 @@ class McpPilotTest {
 
     @Test
     void awaitingTransportReceiptDoesNotImplyAnyAcknowledgement() {
-        var exchanges = mock(ExchangeService.class);
+        var exchanges = mock(ExchangeRepository.class);
         var transfers = mock(MftService.class);
-        var evidence = new McpEvidence(exchanges, null, transfers, null, null);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, transfers);
         UUID exchangeId = UUID.randomUUID();
         var transfer = Transfer.outbound(TENANT, UUID.randomUUID(), "sample.edi", "application/edi",
                 "local-transfer", "local-probe", null, Instant.EPOCH);
@@ -117,7 +123,7 @@ class McpPilotTest {
         when(exchange.id()).thenReturn(exchangeId);
         when(exchange.status()).thenReturn(ExchangeStatus.AWAITING_RECEIPT);
         when(exchange.mftTransferId()).thenReturn(transfer.id().value());
-        when(exchanges.persisted(exchangeId)).thenReturn(Optional.of(exchange));
+        when(exchanges.find(exchangeId)).thenReturn(Optional.of(exchange));
         when(transfers.getTransfer(new TransferId(transfer.id().value()))).thenReturn(transfer);
 
         var trace = evidence.trace(Map.of("exchangeId", exchangeId.toString()));

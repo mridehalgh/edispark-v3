@@ -11,6 +11,25 @@ import javax.crypto.spec.SecretKeySpec;
 
 record McpCursor(String secret) {
     static final int TOKEN_LENGTH = 64;
+    static final int PAGE_TOKEN_LENGTH = 4096;
+
+    String wrapPage(String position, String tenant, String filter) {
+        var base64 = Base64.getUrlEncoder().withoutPadding();
+        return base64.encodeToString(position.getBytes(StandardCharsets.UTF_8)) + "."
+                + base64.encodeToString(signature(position, tenant, filter));
+    }
+
+    String unwrapPage(String token, String tenant, String filter) {
+        if (token.length() > PAGE_TOKEN_LENGTH) throw new IllegalArgumentException();
+        var parts = token.split("\\.", -1);
+        if (parts.length != 2 || parts[0].isEmpty()) throw new IllegalArgumentException();
+        var decoder = Base64.getUrlDecoder();
+        var position = new String(decoder.decode(parts[0]), StandardCharsets.UTF_8);
+        if (!MessageDigest.isEqual(decoder.decode(parts[1]), signature(position, tenant, filter))) {
+            throw new IllegalArgumentException();
+        }
+        return position;
+    }
 
     String encode(UUID id, String tenant, String filter) {
         byte[] value = ByteBuffer.allocate(48).putLong(id.getMostSignificantBits()).putLong(id.getLeastSignificantBits())

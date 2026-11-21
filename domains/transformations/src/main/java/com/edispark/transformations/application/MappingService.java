@@ -55,6 +55,10 @@ public final class MappingService {
     }
     public MappingRevision get(UUID id) { return promote(require(id)); }
     public MappingRevision getPersisted(UUID id) { return require(id); }
+    public com.edispark.transformations.domain.MappingRevisionComparison comparePersisted(UUID baselineId, UUID candidateId) {
+        return com.edispark.transformations.domain.MappingRevisionComparison.between(getPersisted(baselineId), getPersisted(candidateId));
+    }
+
     public MappingRevision createRevision(UUID id) {
         return repository.save(repository.fork(require(id), clock.instant()));
     }

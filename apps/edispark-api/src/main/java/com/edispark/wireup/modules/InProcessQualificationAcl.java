@@ -35,6 +35,36 @@ final class InProcessQualificationAcl implements QualificationAcl {
                 .anyMatch(partner -> partner.id().equals(id) && partner.status() == PartnerStatus.ACTIVE);
     }
 
+    @Override
+    public QualificationAcl persistedView() {
+        return new QualificationAcl() {
+            @Override
+            public boolean publishedMappingMatches(UUID id, UUID sourceSchemaId, UUID targetSchemaId) {
+                try {
+                    var mapping = mappings.getPersisted(id);
+                    return mapping.status() == MappingStatus.PUBLISHED && mapping.sourceSchemaId().equals(sourceSchemaId)
+                            && mapping.targetSchemaId().equals(targetSchemaId);
+                } catch (IllegalArgumentException absent) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean activeAs2ConnectionExists(UUID id) {
+                try {
+                    return mft.persistedConnection(id).status() == PartnerStatus.ACTIVE;
+                } catch (com.edispark.mft.application.MftNotFoundException absent) {
+                    return false;
+                }
+            }
+
+            @Override
+            public RuleEvidence targetRuleEvidence(UUID id) {
+                return InProcessQualificationAcl.this.targetRuleEvidence(id);
+            }
+        };
+    }
+
     @Override public RuleEvidence targetRuleEvidence(UUID id) {
         var result = mappings.qualificationEvidence(id);
         return new RuleEvidence(result.valid(), result.identity(), result.failures());

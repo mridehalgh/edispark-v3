@@ -31,6 +31,38 @@ public final class InMemoryMftRepository implements MftPersistence {
     private final ConcurrentHashMap<String, DeliveryLease> mdnLeases = new ConcurrentHashMap<>();
 
     @Override
+    public EvidencePage<Transfer> pageTransfers(String tenantId, UUID after, int limit) {
+        return evidencePage(transfers.values().stream().filter(item -> item.tenantId().equals(tenantId)),
+                item -> item.id().value(), after, limit);
+    }
+
+    @Override
+    public EvidencePage<PartnerProfile> pagePartners(String tenantId, UUID after, int limit) {
+        return evidencePage(partners.values().stream().filter(item -> item.tenantId().equals(tenantId)),
+                PartnerProfile::id, after, limit);
+    }
+
+    @Override
+    public EvidencePage<CertificateRecord> pageCertificates(String tenantId, UUID after, int limit) {
+        return evidencePage(certificates.values().stream().filter(item -> item.tenantId().equals(tenantId)),
+                CertificateRecord::id, after, limit);
+    }
+
+    @Override
+    public EvidencePage<MdnDelivery> pageMdnDeliveries(String tenantId, UUID after, int limit) {
+        return evidencePage(mdnDeliveries.values().stream().filter(item -> item.tenantId().equals(tenantId)),
+                MdnDelivery::id, after, limit);
+    }
+
+    private static <T> EvidencePage<T> evidencePage(java.util.stream.Stream<T> scoped,
+            java.util.function.Function<T, UUID> id, UUID after, int limit) {
+        var items = scoped.filter(item -> after == null || id.apply(item).toString().compareTo(after.toString()) > 0)
+                .sorted(Comparator.comparing(item -> id.apply(item).toString())).limit(limit + 1L).toList();
+        return items.size() <= limit ? new EvidencePage<>(items, null)
+                : new EvidencePage<>(items.subList(0, limit), id.apply(items.get(limit - 1)));
+    }
+
+    @Override
     public synchronized PartnerProfile savePartner(PartnerProfile partner) { TenantAccess.requireOwner(partner.tenantId());
         if (partner.revision() > 1) {
             partners.put(partner.tenantId() + ":" + partner.id(), partner);

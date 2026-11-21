@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto"
 import { z } from "zod"
-import { authReady, hasMcpAccess, mcpEnabled } from "@/lib/auth"
+import { authReady, hasMcpAccess, mcpEnabled, mcpScopes } from "@/lib/auth"
 
 const id = z.string().regex(/^[A-Za-z0-9_:.~-]{1,128}$/)
 const identity = z.object({
@@ -8,7 +8,7 @@ const identity = z.object({
   tenantId: z.string().regex(/^[A-Za-z0-9]{27}$/),
   subject: id,
   clientId: id,
-  scopes: z.array(z.enum(["edi:evidence", "edi:preview"])).min(1).max(2),
+  scopes: z.array(z.enum(mcpScopes)).min(1).max(mcpScopes.length),
 }).strict()
 
 export async function POST(request: Request) {

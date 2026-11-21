@@ -40,3 +40,48 @@ THE EDI MCP Server SHALL provide persisted evidence and deterministic previews.
 - **GIVEN** a client holds a pin to an earlier representation of a document
 - **WHEN** the client checks outbound readiness with that pin
 - **THEN** the EDI MCP Server SHALL return a stale-source error without changing business state
+
+### Requirement: Workspace AI guide
+
+THE EdiSpark workspace SHALL provide organisation admins and owners with an AI showcase, client setup instructions, and a reference for every MCP tool.
+
+#### Scenario: Show workspace connection details
+
+- **GIVEN** an organisation administrator opens the AI guide
+- **WHEN** the active organisation is enrolled and the MCP endpoint is configured
+- **THEN** the guide SHALL display the endpoint for copying
+
+#### Scenario: Show the guide before enrolment
+
+- **GIVEN** an organisation administrator opens the AI guide
+- **WHEN** the active organisation has no eligible MCP setup
+- **THEN** the guide SHALL display setup guidance without an endpoint
+
+### Requirement: Document workflow and transport evidence
+
+THE EDI MCP Server SHALL support bounded tenant-scoped document search, recorded document links, qualified route lookup, and separately authorised AS2 evidence.
+
+#### Scenario: Follow a business document through the recorded workflow
+
+- **GIVEN** an approved client has document evidence access and knows an exact purchase order reference
+- **WHEN** the client finds the order and follows its document workflow
+- **THEN** the EDI MCP Server SHALL return recorded links and current lifecycle states with continuation where applicable
+
+#### Scenario: Reuse the order response authoring flow
+
+- **GIVEN** an approved client has preview access for a retained order
+- **WHEN** the client prepares an order response
+- **THEN** the EDI MCP Server SHALL return a pinned link to the existing smart-copy authoring form
+- **AND** the author SHALL review copied commercial values before saving
+
+#### Scenario: Inspect AS2 transport evidence
+
+- **GIVEN** an approved client has AS2 evidence access
+- **WHEN** the client traces a transfer
+- **THEN** the EDI MCP Server SHALL report the recorded attempts, retry timing and receipt evidence separately
+
+#### Scenario: Reconcile without exposing commercial values
+
+- **GIVEN** an approved client has document evidence access without the commercial scope
+- **WHEN** the client compares exact retained representation pins
+- **THEN** the EDI MCP Server SHALL return structured findings without amounts or quantities

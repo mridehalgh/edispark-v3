@@ -8,15 +8,18 @@ Expose stateless Streamable HTTP with the Spring AI 2.1 WebMVC MCP starter on Sp
 flowchart LR
     Client -->|OAuth with PKCE| Auth
     Client -->|Bound access token| MCP
-    MCP --> Exchange
-    MCP --> Mapping
-    MCP --> Partnerships
-    MCP --> MFT
+    MCP --> Documents[Documents queries and reconciliation]
+    MCP --> Exchange[Exchange evidence and readiness]
+    MCP --> Mapping[Transformations mapping queries]
+    MCP --> Partnerships[Partnerships configuration queries]
+    MCP --> MFT[MFT transfer and connection evidence]
 ```
 
 ## Components and Interfaces
 
-Tool declarations describe the five inputs and structured results. Spring Security validates the MCP audience. The control plane verifies active membership, tenant opt-in, and client consent.
+The Spring AI tool catalogue defines the wire contracts. The MCP runtime validates authorization, bounds execution, and logs the result of each call. The application adapters translate tool arguments into typed use-case inputs and select the fields returned to clients. Spring Security validates the MCP audience, and the control plane checks active membership, tenant opt-in, and consent.
+
+Documents owns canonical representation selection, lineage, and reconciliation. Exchange owns the evidence searches and exception categories. MFT owns transfer and receipt queries, certificate usage, and connection revision comparisons. Transformations owns mapping revision comparison. These services use tenant-scoped repositories within their own modules. The MCP adapters call those services directly in process.
 
 ## Data Models
 

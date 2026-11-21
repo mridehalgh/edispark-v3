@@ -37,12 +37,14 @@ async function loadCanonicalJson(
   client: Awaited<ReturnType<typeof createAuthenticatedDocumentsClient>>,
   setId: string,
   document: DocumentResponse,
+  representationId?: string,
 ) {
   const candidates: Array<() => Promise<Blob>> = []
   if (
     document.id &&
     document.currentVersion?.format === "JSON" &&
-    document.currentVersion.versionNumber
+    document.currentVersion.versionNumber &&
+    (!representationId || document.currentVersion.id === representationId)
   ) {
     candidates.push(async () => {
       const { data } = await client.getDocumentVersionContent({
@@ -60,7 +62,8 @@ async function loadCanonicalJson(
   ;[...(document.derivatives ?? [])]
     .filter(
       (derivative) =>
-        derivative.targetFormat === "JSON" && derivative.id && document.id,
+        derivative.targetFormat === "JSON" && derivative.id && document.id &&
+        (!representationId || derivative.id === representationId),
     )
     .sort((left, right) =>
       (right.createdAt ?? "").localeCompare(left.createdAt ?? ""),
@@ -92,11 +95,15 @@ export async function GET(request: Request, { params: pendingParams }: RouteCont
   const url = new URL(request.url)
   const sourceDocumentId = url.searchParams.get("sourceDocumentId")
   const targetType = url.searchParams.get("targetType")
+  const representationId = url.searchParams.get("representationId")
+  const contentHash = url.searchParams.get("contentHash")
   if (
     !isUuid(params.setId) ||
     !sourceDocumentId ||
     !isUuid(sourceDocumentId) ||
-    !isAuthorableType(targetType)
+    !isAuthorableType(targetType) ||
+    (representationId !== null || contentHash !== null) &&
+      (!representationId || !isUuid(representationId) || !contentHash || !/^sha-256:[0-9a-f]{64}$/i.test(contentHash))
   ) {
     return Response.json(
       {
@@ -148,6 +155,11 @@ export async function GET(request: Request, { params: pendingParams }: RouteCont
       )
     }
     const correction = url.searchParams.get("mode") === "correct" && primary.type === targetType
+    if (representationId && !matchesCurrentRepresentation(primary, representationId, contentHash!)) {
+      return Response.json({ error: {
+        code: "STALE_SOURCE", message: "The source document has changed. Reopen Create related from the current document.",
+      } }, { status: 409 })
+    }
     if (!correction && !smartCopyTransitions[primary.type].includes(targetType)) {
       return Response.json(
         {
@@ -214,6 +226,7 @@ export async function GET(request: Request, { params: pendingParams }: RouteCont
           client,
           setByDocument.get(document.id!) ?? params.setId,
           document,
+          index === 0 ? representationId ?? undefined : undefined,
         )
         if (!isCanonicalSmartCopyContent(type, content))
           throw new Error(
@@ -272,4 +285,13 @@ export async function GET(request: Request, { params: pendingParams }: RouteCont
   } catch (error) {
     return documentsErrorResponse(error)
   }
+}
+
+function matchesCurrentRepresentation(document: DocumentResponse, id: string, hash: string) {
+  const current = document.currentVersion
+  if (current?.format === "JSON") return current.id === id && current.contentHash === hash
+  return Boolean(current?.id && document.derivatives?.some(derivative =>
+    derivative.id === id && derivative.contentHash === hash && derivative.targetFormat === "JSON" &&
+    derivative.sourceVersionId === current.id && ["canonical", "default"].includes(derivative.variantKey ?? ""),
+  ))
 }

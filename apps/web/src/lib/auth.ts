@@ -135,7 +135,7 @@ const remoteJwtSigning = getRemoteJwtSigningConfig()
 export const mcpEnabled = process.env.EDISPARK_MCP_ENABLED === "true"
   && process.env.NEXT_PHASE !== "phase-production-build"
 export const mcpResource = process.env.EDISPARK_MCP_RESOURCE ?? "http://localhost:8080/mcp"
-const mcpScopes = ["edi:evidence", "edi:preview"]
+export const mcpScopes = ["edi:evidence", "edi:preview", "mft:evidence", "edi:commercial"] as const
 const enabledMcpOrganizations = new Set(process.env.EDISPARK_MCP_ORGANIZATIONS?.split(",").map(value => value.trim()) ?? [])
 const localMcpClient = "edispark-local-mcp"
 const localMcpSmokeClient = "edispark-local-mcp-smoke"
@@ -295,7 +295,7 @@ export const auth = betterAuth({
           },
         }),
     ...(mcpEnabled ? [oauthProvider({
-      scopes: mcpScopes,
+      scopes: [...mcpScopes],
       grantTypes: ["authorization_code"],
       loginPage: "/mcp/connect/login",
       consentPage: "/mcp/connect/consent",
@@ -429,7 +429,11 @@ async function prepareLocalAuth() {
     const now = new Date()
     if (!await find("oauthResource", "identifier", mcpResource)) await adapter.create({
       model: "oauthResource",
-      data: { identifier: mcpResource, name: "EdiSpark local MCP", allowedScopes: mcpScopes, createdAt: now, updatedAt: now },
+      data: { identifier: mcpResource, name: "EdiSpark local MCP", allowedScopes: [...mcpScopes], createdAt: now, updatedAt: now },
+    })
+    else await adapter.update({
+      model: "oauthResource", where: [{ field: "identifier", value: mcpResource }],
+      update: { allowedScopes: [...mcpScopes] },
     })
     for (const [clientId, name, callbacks] of [
       [localMcpClient, "EdiSpark local MCP client", redirectUris],
@@ -438,8 +442,12 @@ async function prepareLocalAuth() {
       if (!await find("oauthClient", "clientId", clientId)) await adapter.create({
         model: "oauthClient",
         data: { clientId, name, redirectUris: [...callbacks],
-          scopes: mcpScopes, requirePKCE: true, applicationType: "native", tokenEndpointAuthMethod: "none",
+          scopes: [...mcpScopes], requirePKCE: true, applicationType: "native", tokenEndpointAuthMethod: "none",
           grantTypes: ["authorization_code"], responseTypes: ["code"], createdAt: now, updatedAt: now },
+      })
+      else await adapter.update({
+        model: "oauthClient", where: [{ field: "clientId", value: clientId }],
+        update: { scopes: [...mcpScopes] },
       })
       const link = [{ field: "clientId", value: clientId }, { field: "resourceId", value: mcpResource }]
       if (!await adapter.findOne({ model: "oauthClientResource", where: link })) await adapter.create({
@@ -474,7 +482,7 @@ export function activateLocalTestWorkspace(email = process.env.LOCAL_TEST_USER_E
   `).run(LOCAL_TEST_ORGANIZATION_ID, user.id)
 }
 
-export async function getRequestAccess(headers: Headers): Promise<AccessContext | null> {
+export async function getRequestAccess(headers: Headers, { includeMcpSetup = false } = {}): Promise<AccessContext | null> {
   const result = await auth.api.getSession({ headers })
   const session = result?.session as { activeOrganizationId?: string } | undefined
   const user = result?.user as { id?: string } | undefined
@@ -489,10 +497,21 @@ export async function getRequestAccess(headers: Headers): Promise<AccessContext 
     "SELECT role FROM platform_principal WHERE user_id = ?",
   ).get(user.id) as { role: PlatformRole } | undefined
 
+  const endpoint = includeMcpSetup && (membership.role === "admin" || membership.role === "owner")
+    && await mcpTenant(session.activeOrganizationId, user.id) ? publicMcpEndpoint() : undefined
+
   return {
     organizationRole: membership.role,
     platformRole: platformPrincipal?.role,
+    ...(endpoint ? { mcpSetup: { endpoint } } : {}),
   }
+}
+
+function publicMcpEndpoint() {
+  const url = URL.parse(mcpResource)
+  if (!url || url.pathname !== "/mcp" || url.username || url.password || url.search || url.hash) return
+  if (url.protocol === "https:" || !productionRuntime && url.protocol === "http:"
+    && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return mcpResource
 }
 
 export async function hasMcpAccess(identity: {
@@ -522,7 +541,7 @@ export async function hasMcpAccess(identity: {
   ])
   return Boolean(client && !client.disabled && resource && !resource.disabled && link
     && consent?.resources?.includes(mcpResource)
-    && identity.scopes.every(scope => mcpScopes.includes(scope) && consent.scopes.includes(scope)
+    && identity.scopes.every(scope => mcpScopes.some(allowed => allowed === scope) && consent.scopes.includes(scope)
       && (client.scopes?.includes(scope) ?? true) && (resource.allowedScopes?.includes(scope) ?? true)))
 }
 

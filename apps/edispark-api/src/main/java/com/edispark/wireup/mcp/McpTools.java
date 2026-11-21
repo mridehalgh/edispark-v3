@@ -1,8 +1,6 @@
 package com.edispark.wireup.mcp;
 
 import com.edispark.exchange.application.ExchangeService;
-import com.edispark.exchange.domain.ExchangeStatus;
-import com.edispark.partnerships.domain.model.ExchangeDirection;
 import com.edispark.transformations.application.RetainedSourceChanged;
 import io.cottn.core.tenancy.TenantContext;
 import io.cottn.core.tenancy.TenantContextHolder;
@@ -35,17 +33,13 @@ import tools.jackson.databind.ObjectMapper;
 final class McpTools implements AutoCloseable {
     static final String READ = "edi:evidence";
     static final String PREVIEW = "edi:preview";
+    static final String MFT_READ = "mft:evidence";
+    static final String COMMERCIAL = "edi:commercial";
+    static final java.util.Set<String> SUPPORTED_SCOPES = java.util.Set.of(READ, PREVIEW, MFT_READ, COMMERCIAL);
     static final String PRINCIPAL = "principal";
     private static final Logger log = LoggerFactory.getLogger(McpTools.class);
     private static final int RESULT_LIMIT = 96 * 1024;
     private static final Duration DEADLINE = Duration.ofSeconds(8);
-    private static final Map<String, Object> ID = Map.of("type", "string", "format", "uuid",
-            "pattern", "^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$");
-    private static final Map<String, Object> INSTANT = Map.of("type", "string", "format", "date-time", "maxLength", 40);
-    private static final Map<String, Object> PINS = Map.of("documentSetId", ID, "documentId", ID, "representationId", ID,
-            "contentHash", Map.of("type", "string", "pattern", "^sha-256:[0-9a-fA-F]{64}$"));
-    private static final Map<String, Object> ROUTE = Map.of("agreementId", ID, "capabilityId", ID);
-
     private final Map<String, McpSyncTool> tools = new LinkedHashMap<>();
     private final ThreadPoolExecutor workers = new ThreadPoolExecutor(0, 16, 30, TimeUnit.SECONDS,
             new SynchronousQueue<>(), Thread.ofPlatform().daemon().name("edi-mcp-", 0).factory());
@@ -53,30 +47,12 @@ final class McpTools implements AutoCloseable {
     private final ObjectMapper json;
     private final MeterRegistry registry;
 
-    McpTools(McpEvidence evidence, McpCursor cursor, ObjectMapper json, MeterRegistry registry) {
+    McpTools(ObjectMapper json, MeterRegistry registry) {
         this.json = json;
         this.registry = registry;
         Arrays.setAll(tenantSlots, slot -> new Semaphore(2));
-        var filters = Map.<String, Object>of("exchangeId", ID, "from", INSTANT, "to", INSTANT, "partnerId", ID,
-                "sourceMessageReference", Map.of("type", "string", "maxLength", 128, "pattern", "^[^\\p{Cntrl}]+$"),
-                "direction", enumValues(ExchangeDirection.values()), "status", enumValues(ExchangeStatus.values()),
-                "cursor", boundedString(McpCursor.TOKEN_LENGTH));
-        add("find_exchanges", "Find an exchange by ID or page through a date window of up to 31 days.", READ,
-                schema(filters), "matches", (args, principal) -> evidence.find(args, cursor, principal.tenant().asString()));
-        add("trace_exchange", "Read persisted document, mapping, transfer and acknowledgement evidence.", READ,
-                schema(Map.of("exchangeId", ID), "exchangeId"), "exchangeId", (args, principal) -> evidence.trace(args));
-        add("get_route_context", "Read a persisted trading agreement capability and its qualification and revision pins.", READ,
-                schema(ROUTE, "agreementId", "capabilityId"), "capabilityId", (args, principal) -> evidence.route(args));
-        var mapping = new LinkedHashMap<>(PINS);
-        mapping.putAll(Map.of("mappingRevisionId", ID, "input", boundedString(32_768), "expected", boundedString(32_768)));
-        add("preview_mapping", "Test a mapping revision using synthetic input and expected JSON strings, or an exact retained outbound representation.",
-                PREVIEW, schema(mapping, "mappingRevisionId"), "passed", (args, principal) -> evidence.preview(args));
-        var readiness = new LinkedHashMap<>(PINS);
-        readiness.putAll(ROUTE);
-        add("check_outbound_readiness", "Check whether a pinned document is ready for the selected outbound route.", PREVIEW,
-                schema(readiness, "documentSetId", "documentId", "representationId", "contentHash", "agreementId", "capabilityId"),
-                "ready", (args, principal) -> evidence.readiness(args));
     }
+
 
     McpSyncToolRepository repository() {
         return new McpSyncToolRepository() {
@@ -94,11 +70,12 @@ final class McpTools implements AutoCloseable {
         };
     }
 
-    private void add(String name, String description, String scope, Map<String, Object> input, String outputField,
+    void register(String name, String description, String scope, Map<String, Object> input, String outputField,
                      BiFunction<Map<String, Object>, McpAccess.Principal, Map<String, Object>> handler) {
         String outputType = switch (outputField) {
-            case "matches" -> "array";
+            case "matches", "findings" -> "array";
             case "ready", "passed" -> "boolean";
+            case "messageCount" -> "integer";
             default -> "string";
         };
         var definition = McpSchema.Tool.builder(name, input).description(description)
@@ -106,6 +83,7 @@ final class McpTools implements AutoCloseable {
                         "properties", Map.of(outputField, Map.of("type", outputType))))
                 .annotations(McpSchema.ToolAnnotations.builder().readOnlyHint(true).destructiveHint(false)
                         .idempotentHint(true).openWorldHint(false).build()).build();
+        if (tools.containsKey(name)) throw new IllegalArgumentException("Duplicate MCP tool: " + name);
         tools.put(name, McpSyncTool.of(definition, (context, request) -> {
             var principal = (McpAccess.Principal) context.transportContext().get(PRINCIPAL);
             return McpSyncResponse.result(execute(name, scope, principal, request.arguments(), handler));
@@ -129,8 +107,11 @@ final class McpTools implements AutoCloseable {
             outcome = switch (exception) {
                 case ToolFailure failure -> failure.code;
                 case ExchangeService.SourceChanged ignored -> "STALE_SOURCE";
+                case com.edispark.documents.application.query.DocumentContentQueryService.CanonicalSourceChanged ignored -> "STALE_SOURCE";
+                case com.edispark.documents.application.handler.DocumentNotFoundException ignored -> "EVIDENCE_NOT_FOUND";
                 case RetainedSourceChanged ignored -> "STALE_SOURCE";
-                case McpEvidence.EvidenceMissing ignored -> "EVIDENCE_NOT_FOUND";
+                case McpResponseFields.EvidenceMissing ignored -> "EVIDENCE_NOT_FOUND";
+                case com.edispark.mft.application.MftNotFoundException ignored -> "EVIDENCE_NOT_FOUND";
                 case IllegalArgumentException ignored -> "INVALID_OR_UNAVAILABLE_INPUT";
                 case DateTimeParseException ignored -> "INVALID_OR_UNAVAILABLE_INPUT";
                 default -> "EVIDENCE_UNAVAILABLE";
@@ -178,18 +159,6 @@ final class McpTools implements AutoCloseable {
             if (exception.getCause() instanceof RuntimeException runtime) throw runtime;
             throw new ToolFailure("EVIDENCE_UNAVAILABLE");
         }
-    }
-
-    private static Map<String, Object> schema(Map<String, Object> properties, String... required) {
-        return Map.of("type", "object", "properties", properties, "required", List.of(required), "additionalProperties", false);
-    }
-
-    private static Map<String, Object> boundedString(int length) {
-        return Map.of("type", "string", "minLength", 1, "maxLength", length);
-    }
-
-    private static Map<String, Object> enumValues(Enum<?>[] values) {
-        return Map.of("type", "string", "enum", Arrays.stream(values).map(Enum::name).toList());
     }
 
     @Override

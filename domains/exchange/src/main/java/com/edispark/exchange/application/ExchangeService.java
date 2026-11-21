@@ -35,6 +35,14 @@ public final class ExchangeService {
     }
 
     public List<EligibleRoute> eligibleRoutes(UUID documentSetId, UUID documentId) {
+        return eligibleRoutes(documentSetId, documentId, false);
+    }
+
+    public List<EligibleRoute> previewEligibleRoutes(UUID documentSetId, UUID documentId) {
+        return eligibleRoutes(documentSetId, documentId, true);
+    }
+
+    private List<EligibleRoute> eligibleRoutes(UUID documentSetId, UUID documentId, boolean preview) {
         var document = documents.describe(documentSetId, documentId);
         return partnerships.listAgreements().stream()
                 .filter(item -> item.status() == AgreementStatus.ACTIVE)
@@ -44,7 +52,8 @@ public final class ExchangeService {
                         .filter(capability -> capability.direction() == ExchangeDirection.OUTBOUND)
                         .filter(capability -> capability.documentType() == document.type())
                         .filter(capability -> document.partnerId() != null || document.connectionId() == null || capability.as2ConnectionId().equals(document.connectionId()))
-                        .filter(capability -> currentTargetQualification(agreement, capability))
+                        .filter(capability -> currentTargetQualification(agreement, preview
+                                ? transformations.previewQualification(capability) : transformations.qualification(capability)))
                         .map(capability -> new EligibleRoute(agreement.id(), agreement.revision(), agreement.partnerId(),
                                 agreement.name(), capability)))
                 .toList();
@@ -202,17 +211,10 @@ public final class ExchangeService {
             int agreementRevision, UUID capabilityId, UUID mappingRevisionId, UUID documentProfileRevisionId, List<ReadinessIssue> issues) {}
     private record Prepared(ReadinessReport report, TransformationAcl.Result transformation) {}
 
-    private boolean currentTargetQualification(TradingAgreement agreement, ExchangeCapability capability) {
-        return currentTargetQualification(agreement, transformations.qualification(capability));
-    }
-
     private boolean currentTargetQualification(TradingAgreement agreement, TransformationAcl.Qualification evidence) {
         return evidence.valid() && (evidence.identity().isEmpty() || agreement.qualification() != null
                 && agreement.qualification().passed() && agreement.qualification().checks().contains(evidence.identity()));
     }
-
-    public java.util.Optional<EdiExchange> persisted(UUID id) { return exchanges.find(id); }
-    public ExchangeRepository.Page persistedPage(UUID after, int limit) { return exchanges.page(after, limit); }
 
     public List<EdiExchange> list() { return exchanges.list().stream().map(this::refreshReceipt).toList(); }
     public EdiExchange get(UUID id) { return refreshReceipt(exchanges.find(id).orElseThrow(() -> new IllegalArgumentException("Exchange was not found"))); }

@@ -12,6 +12,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface MftRepository extends MftCreation {
+    EvidencePage<Transfer> pageTransfers(UUID after, int limit);
+    EvidencePage<PartnerProfile> pagePartners(UUID after, int limit);
+    EvidencePage<CertificateRecord> pageCertificates(UUID after, int limit);
+    EvidencePage<MdnDelivery> pageMdnDeliveries(UUID after, int limit);
+
+    record EvidencePage<T>(List<T> items, UUID next) { }
+
     PartnerProfile savePartner(PartnerProfile partner);
     PartnerProfile updatePartner(PartnerProfile partner);
     List<PartnerProfile> listPartners();

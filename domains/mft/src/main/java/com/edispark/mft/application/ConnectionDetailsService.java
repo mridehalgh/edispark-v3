@@ -36,6 +36,11 @@ public final class ConnectionDetailsService {
                 .toList();
     }
 
+    public ConnectionDetails get(UUID connectionId) {
+        return repository.findPartner(connectionId).map(this::connectionDetails)
+                .orElseThrow(() -> new MftNotFoundException("Connection was not found"));
+    }
+
     private ConnectionDetails connectionDetails(PartnerProfile partner) {
         CertificateRecord certificate = repository.findCertificate(partner.localCertificateId())
                 .orElseThrow(() -> new MftNotFoundException("Organisation AS2 certificate was not found"));

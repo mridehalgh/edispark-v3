@@ -73,7 +73,7 @@ class McpConfiguration {
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder))
                         .protectedResourceMetadata(metadata -> metadata.protectedResourceMetadataCustomizer(builder ->
                                 builder.resource(resource.toString()).authorizationServer(issuer.toString())
-                                        .resourceName("EdiSpark EDI").scope(McpTools.READ).scope(McpTools.PREVIEW)
+                                        .resourceName("EdiSpark EDI").scope(McpTools.READ).scope(McpTools.PREVIEW).scope(McpTools.MFT_READ).scope(McpTools.COMMERCIAL)
                                         .tlsClientCertificateBoundAccessTokens(false)))
                         .authenticationEntryPoint((request, response, exception) -> {
                             response.setHeader("Cache-Control", "no-store");
@@ -96,7 +96,7 @@ class McpConfiguration {
                     && Boolean.TRUE.equals(token.getClaimAsBoolean("mcp_delegated"))
                     && identity(token.getSubject()) && identity(token.getClaimAsString("client_id"))
                     && identity(token.getClaimAsString("mcp_organization")) && scope != null && scope.length() <= 256
-                    && Arrays.stream(scope.split(" ")).anyMatch(value -> value.equals(McpTools.READ) || value.equals(McpTools.PREVIEW))) {
+                    && Arrays.stream(scope.split(" ")).anyMatch(McpTools.SUPPORTED_SCOPES::contains)) {
                 TenantId.fromString(token.getClaimAsString("tenant_id"));
                 return OAuth2TokenValidatorResult.success();
             }
@@ -107,8 +107,13 @@ class McpConfiguration {
     }
 
     @Bean
-    McpTools mcpTools(McpEvidence evidence, ObjectMapper json, MeterRegistry registry) {
-        return new McpTools(evidence, new McpCursor(secret), json, registry);
+    McpTools mcpTools(McpExchanges exchanges, McpDocuments documents, McpMappings mappings,
+                      McpPartnerships partnerships, McpMft mft,
+                      com.edispark.integrationapplication.inbound.InboundEdiTranslator inbound,
+                      ObjectMapper json, MeterRegistry registry) {
+        var tools = new McpTools(json, registry);
+        McpToolCatalog.register(tools, new McpCursor(secret), exchanges, documents, mappings, partnerships, mft, inbound);
+        return tools;
     }
 
     @Bean

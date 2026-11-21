@@ -123,6 +123,7 @@ function ReactRouterComponent() {
               { path: "/partners/new", element: <NewPartnerPage /> },
               { path: "/partners/:partnerId", element: <PartnerPage /> },
               { path: "/overview", element: <OverviewPage /> },
+              { path: "/ai", lazy: async () => ({ Component: (await import("@/app/ai/ai")).AiPage }) },
               { path: "/files", element: <FilesList /> },
               { path: "/files/send", element: <SendFilePage /> },
               { path: "/files/transfers/:transferId", element: <TransferPage /> },

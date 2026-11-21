@@ -385,6 +385,40 @@ public final class DynamoDbMftRepository implements MftPersistence {
         return item.isEmpty() ? Optional.empty() : Optional.of(item);
     }
 
+    @Override
+    public EvidencePage<Transfer> pageTransfers(String tenantId, UUID after, int limit) {
+        return evidencePage(tenantId, "TRANSFER#", after, limit, this::readTransfer);
+    }
+
+    @Override
+    public EvidencePage<PartnerProfile> pagePartners(String tenantId, UUID after, int limit) {
+        return evidencePage(tenantId, "PARTNER#", after, limit, item -> read(item, PartnerProfile.class));
+    }
+
+    @Override
+    public EvidencePage<CertificateRecord> pageCertificates(String tenantId, UUID after, int limit) {
+        return evidencePage(tenantId, "CERTIFICATE#", after, limit, item -> read(item, CertificateRecord.class));
+    }
+
+    @Override
+    public EvidencePage<MdnDelivery> pageMdnDeliveries(String tenantId, UUID after, int limit) {
+        return evidencePage(tenantId, "MDN_DELIVERY#", after, limit, item -> read(item, MdnDelivery.class));
+    }
+
+    private <T> EvidencePage<T> evidencePage(String tenantId, String prefix, UUID after, int limit,
+                                             java.util.function.Function<Map<String, AttributeValue>, T> read) {
+        String pk = tenantPk(tenantId);
+        var query = QueryRequest.builder().tableName(tableName)
+                .keyConditionExpression("pk = :pk AND begins_with(sk, :prefix)")
+                .expressionAttributeValues(Map.of(":pk", string(pk), ":prefix", string(prefix)))
+                .limit(limit);
+        if (after != null) query.exclusiveStartKey(Map.of("pk", string(pk), "sk", string(prefix + after)));
+        var result = dynamoDb.query(query.build());
+        var key = result.lastEvaluatedKey();
+        return new EvidencePage<>(result.items().stream().map(read).toList(),
+                key.isEmpty() ? null : UUID.fromString(key.get("sk").s().substring(prefix.length())));
+    }
+
     private List<Map<String, AttributeValue>> queryPrefix(String tenantId, String prefix) {
         return dynamoDb.query(QueryRequest.builder().tableName(tableName)
                 .keyConditionExpression("pk = :pk AND begins_with(sk, :prefix)")

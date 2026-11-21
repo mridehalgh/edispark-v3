@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, FileText, Files, Handshake, LayoutDashboard, Link2, Menu } from "lucide-react"
+import { Building2, FileText, Files, Handshake, LayoutDashboard, Link2, Menu, Sparkles } from "lucide-react"
 import { NavLink } from "react-router-dom"
 
 import Logo from "@/components/logo/logo"
@@ -20,6 +20,7 @@ const workLinks = [
 const networkLinks = [
   { label: "Partners", href: "/partners", icon: Handshake },
   { label: "Connections", href: "/connections", icon: Link2 },
+  { label: "AI", href: "/ai", icon: Sparkles },
 ]
 
 function NavigationLinks({ admin, mobile = false }: { admin: boolean; mobile?: boolean }) {

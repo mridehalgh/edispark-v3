@@ -210,6 +210,33 @@ public final class MftService {
                 original.contentType(), content, original.id(), original.provenance()));
     }
 
+    public PartnerProfile persistedConnection(UUID id) {
+        return requirePartner(id);
+    }
+
+    public List<String> checkConnectionReadiness(UUID id) {
+        var connection = persistedConnection(id);
+        if (connection.status() != PartnerStatus.ACTIVE) return List.of("CONNECTION_NOT_ACTIVE");
+        return checkConfiguration(connection);
+    }
+
+    public List<String> previewCertificateRollover(UUID connectionId, UUID signingId, UUID encryptionId) {
+        var connection = persistedConnection(connectionId);
+        return checkConfiguration(connection.withPartnerCertificates(signingId, encryptionId,
+                clock.instant().plus(certificateRolloverGrace)));
+    }
+
+    private List<String> checkConfiguration(PartnerProfile candidate) {
+        try {
+            validateForActivation(candidate);
+            return List.of();
+        } catch (MftNotFoundException absent) {
+            return List.of("CERTIFICATE_NOT_FOUND");
+        } catch (IllegalArgumentException invalid) {
+            return List.of("CONNECTION_CONFIGURATION_INVALID");
+        }
+    }
+
     public List<Transfer> listTransfers() {
         return repository.listTransfers();
     }

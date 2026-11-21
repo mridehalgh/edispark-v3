@@ -6,6 +6,7 @@ export type PlatformRole = "platform_admin"
 export interface AccessContext {
   organizationRole: OrganizationRole
   platformRole?: PlatformRole
+  mcpSetup?: { endpoint: string }
 }
 
 export function isOrganizationRole(value: unknown): value is OrganizationRole {

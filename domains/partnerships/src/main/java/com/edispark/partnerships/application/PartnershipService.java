@@ -145,6 +145,8 @@ public final class PartnershipService {
                 documentType, rules, generationMode, ssccIssuerId, clock.instant()));
     }
 
+    public DocumentProfile persistedDocumentProfile(UUID id) { return requireDocumentProfile(id); }
+
     public List<DocumentProfile> listDocumentProfiles(UUID partnerId) {
         requirePartner(partnerId);
         return repository.listDocumentProfiles(partnerId);
@@ -187,6 +189,15 @@ public final class PartnershipService {
 
     public TradingAgreement qualify(UUID agreementId) {
         TradingAgreement agreement = requireAgreement(agreementId);
+        var report = evaluateQualification(agreement, qualification);
+        return repository.saveAgreement(agreement.qualify(report, clock.instant()));
+    }
+
+    public QualificationReport previewQualification(UUID agreementId) {
+        return evaluateQualification(requireAgreement(agreementId), qualification.persistedView());
+    }
+
+    private QualificationReport evaluateQualification(TradingAgreement agreement, QualificationAcl evidenceSource) {
         List<String> checks = new ArrayList<>();
         List<String> failures = new ArrayList<>();
         if (agreement.capabilities().isEmpty()) failures.add("At least one exchange capability is required");
@@ -195,25 +206,24 @@ public final class PartnershipService {
             checks.add("Unique route " + capability.routingKey());
             if (!keys.add(capability.routingKey())) failures.add("Duplicate route " + capability.routingKey());
             checks.add("Published mapping " + capability.mappingRevisionId());
-            if (!qualification.publishedMappingMatches(capability.mappingRevisionId(), capability.sourceSchemaId(),
+            if (!evidenceSource.publishedMappingMatches(capability.mappingRevisionId(), capability.sourceSchemaId(),
                     capability.targetSchemaId())) {
                 failures.add("Mapping is not published for the capability schemas: " + capability.mappingRevisionId());
             }
             checks.add("Active AS2 connection " + capability.as2ConnectionId());
-            if (!qualification.activeAs2ConnectionExists(capability.as2ConnectionId())) {
+            if (!evidenceSource.activeAs2ConnectionExists(capability.as2ConnectionId())) {
                 failures.add("AS2 connection is not active: " + capability.as2ConnectionId());
             }
             validateStandardProfile(capability, failures);
             validateDocumentProfile(capability, agreement.partnerId(), checks, failures);
             if (requiresTargetEvidence(capability)) {
-                var evidence = qualification.targetRuleEvidence(capability.mappingRevisionId());
+                var evidence = evidenceSource.targetRuleEvidence(capability.mappingRevisionId());
                 if (evidence == null || !evidence.valid()) {
                     failures.addAll(evidence == null ? List.of("Target qualification is unavailable for Order Response.") : evidence.failures());
                 } else checks.add(evidence.identity());
             }
         }
-        QualificationReport report = new QualificationReport(failures.isEmpty(), checks, failures, clock.instant());
-        return repository.saveAgreement(agreement.qualify(report, clock.instant()));
+        return new QualificationReport(failures.isEmpty(), checks, failures, clock.instant());
     }
 
     public TradingAgreement activate(UUID agreementId) {

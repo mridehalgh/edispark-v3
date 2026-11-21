@@ -94,6 +94,15 @@ export function TransferPage() {
       {error ? <AdminNotice>{error}</AdminNotice> : null}
       {transfer.failureReason ? <AdminNotice>{transfer.failureReason}</AdminNotice> : null}
 
+      <details className="mb-6 rounded-lg border bg-card">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Explain this transfer</summary>
+        <div className="space-y-2 border-t px-4 py-4 text-sm text-muted-foreground">
+          <p>{transfer.status === "AWAITING_MDN" ? "The transfer is waiting for an AS2 receipt." : transfer.status === "RETRY_SCHEDULED" ? "A transfer retry is scheduled." : "See the timeline for the recorded transfer attempts."}</p>
+          <p>{transfer.mdnDisposition ? "An AS2 receipt is recorded. Check the linked exchange for any business acknowledgement." : "An AS2 receipt is not recorded."}</p>
+          {relatedDocument && <Link to={relatedDocument} className="text-primary underline-offset-4 hover:underline">Open linked business document</Link>}
+        </div>
+      </details>
+
       <dl className="grid border-y sm:grid-cols-2">
         <Definition label="Connection" value={connection?.name ?? "Unassigned"} href={connection?.id ? `/connections/${connection.id}` : undefined} />
         <Definition label="Direction" value={transfer.direction === "INBOUND" ? "Received" : "Sent"} />

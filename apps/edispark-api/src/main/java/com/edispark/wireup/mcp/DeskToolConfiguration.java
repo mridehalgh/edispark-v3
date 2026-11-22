@@ -72,10 +72,12 @@ class DeskToolConfiguration {
     McpTools mcpTools(McpExchanges exchanges, McpDocuments documents, McpMappings mappings,
                       McpPartnerships partnerships, McpMft mft,
                       InboundEdiTranslator inbound,
+                      org.springframework.beans.factory.ObjectProvider<com.edispark.integrationapplication.mig.MigGeneration> mig,
                       ObjectMapper json, MeterRegistry registry, @Value("${edispark.mcp.access-secret:}") String secret) {
         var tools = new McpTools(json, registry);
         var cursor = new McpCursor(secret.isBlank() ? UUID.randomUUID().toString() : secret);
         McpToolCatalog.register(tools, cursor, exchanges, documents, mappings, partnerships, mft, inbound);
+        mig.ifAvailable(workflow -> McpMigTools.register(tools, workflow));
         return tools;
     }
 }

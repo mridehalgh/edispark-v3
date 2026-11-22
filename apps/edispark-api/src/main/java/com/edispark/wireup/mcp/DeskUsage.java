@@ -35,7 +35,7 @@ final class DeskUsage {
         this.clock = clock;
     }
 
-    record Summary(BigDecimal monthlyCredits, BigDecimal usedCredits, BigDecimal remainingCredits, int roundsPerMinute, Instant resetsAt) {}
+    record Summary(BigDecimal monthlyCredits, BigDecimal usedCredits, BigDecimal reservedCredits, BigDecimal remainingCredits, int roundsPerMinute, Instant resetsAt) {}
     record Reservation(Map<String, AttributeValue> monthKey, String settlementId) {}
     static final class Refusal extends RuntimeException {
         final String code;
@@ -44,10 +44,11 @@ final class DeskUsage {
 
     Summary summary() {
         var month = YearMonth.now(clock);
-        var used = read(key("USAGE", month.toString())).get("amount");
-        long balance = used == null ? 0 : Long.parseLong(used.n());
+        var account = read(key("USAGE", month.toString()));
+        long balance = Long.parseLong(account.getOrDefault("amount", number(0)).n());
+        long reserved = Long.parseLong(account.getOrDefault("migReserved", number(0)).n());
         long allowance = allowanceMicros(read(key("POLICY", "ALLOWANCE")));
-        return new Summary(credits(allowance), credits(balance), credits(Math.max(0, allowance - balance)), roundsPerMinute,
+        return new Summary(credits(allowance), credits(balance - reserved), credits(reserved), credits(Math.max(0, allowance - balance)), roundsPerMinute,
                 month.plusMonths(1).atDay(1).atStartOfDay(ZoneOffset.UTC).toInstant());
     }
 

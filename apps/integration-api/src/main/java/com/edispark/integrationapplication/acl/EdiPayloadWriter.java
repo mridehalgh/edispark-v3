@@ -4,6 +4,7 @@ import com.edispark.partnerships.domain.model.BusinessDocumentType;
 import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
 import com.edispark.transformations.infrastructure.TescoUkMappings;
+import com.edispark.transformations.domain.MappingRevision;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
@@ -29,8 +30,20 @@ public final class EdiPayloadWriter {
     public EdiPayloadWriter(ObjectMapper mapper, Clock clock) { this.mapper = mapper; this.clock = clock; }
 
     public byte[] preview(ExchangeCapability capability, byte[] mappedJson) {
+        return preview(capability, mappedJson, capability.mappingRevisionId());
+    }
+
+    public byte[] preview(ExchangeCapability capability, byte[] mappedJson, UUID encoderRevision) {
         return bq(capability) ? write(capability, mappedJson, new com.edispark.tradacoms.ack.BqAcknowledgement.Control(1, 1))
-                : write(capability, mappedJson);
+                : write(capability, mappedJson, warning -> { throw new IllegalArgumentException(warning); }, encoderRevision);
+    }
+
+    public static boolean usesCatalogueEncoder(UUID mappingId) {
+        return TescoUkMappings.INVOICE.equals(mappingId) || TescoUkMappings.DESPATCH.equals(mappingId);
+    }
+
+    public static UUID encoderRevision(MappingRevision mapping) {
+        return usesCatalogueEncoder(mapping.derivedFromMappingId()) ? mapping.derivedFromMappingId() : mapping.id();
     }
 
     public byte[] write(ExchangeCapability capability, byte[] mappedJson, com.edispark.tradacoms.ack.BqAcknowledgement.Control control) {
@@ -44,13 +57,17 @@ public final class EdiPayloadWriter {
     }
 
     public byte[] write(ExchangeCapability capability, byte[] mappedJson) {
-        return write(capability, mappedJson, warning -> { throw new IllegalArgumentException(warning); });
+        return write(capability, mappedJson, warning -> { throw new IllegalArgumentException(warning); }, capability.mappingRevisionId());
     }
 
     public MappingPreview previewMapping(ExchangeCapability capability, byte[] mappedJson) {
+        return previewMapping(capability, mappedJson, capability.mappingRevisionId());
+    }
+
+    public MappingPreview previewMapping(ExchangeCapability capability, byte[] mappedJson, UUID encoderRevision) {
         if (bq(capability)) return new MappingPreview(preview(capability, mappedJson), List.of());
         var unsupported = new java.util.LinkedHashSet<String>();
-        byte[] output = write(capability, mappedJson, unsupported::add);
+        byte[] output = write(capability, mappedJson, unsupported::add, encoderRevision);
         return new MappingPreview(output, List.copyOf(unsupported));
     }
 
@@ -60,7 +77,7 @@ public final class EdiPayloadWriter {
         return "The target encoder cannot represent mapped field " + path + ". Map it to a supported field or review an explicit omission.";
     }
 
-    private byte[] write(ExchangeCapability capability, byte[] mappedJson, Consumer<String> warning) {
+    private byte[] write(ExchangeCapability capability, byte[] mappedJson, Consumer<String> warning, UUID encoderRevision) {
         try {
             if (capability.documentType() == BusinessDocumentType.ORDER_RESPONSE) {
                 if (bq(capability)) throw new IllegalArgumentException("B&Q ACK validation requires its partner contract and reserved sequential transmission controls.");
@@ -72,10 +89,9 @@ public final class EdiPayloadWriter {
                 return new OrderResponseTargetContract(mapper).write(mappedJson, control, clock.instant()).getBytes(StandardCharsets.US_ASCII);
             }
             JsonNode document = mapper.readTree(mappedJson);
-            if (capability.mappingRevisionId().equals(TescoUkMappings.INVOICE)
-                    || capability.mappingRevisionId().equals(TescoUkMappings.DESPATCH)) {
+            if (usesCatalogueEncoder(encoderRevision)) {
                 String control = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
-                String payload = capability.mappingRevisionId().equals(TescoUkMappings.INVOICE)
+                String payload = TescoUkMappings.INVOICE.equals(encoderRevision)
                         ? TescoUkPayload.invoice(document, control, clock.instant())
                         : TescoUkPayload.despatch(document, control, clock.instant());
                 return payload.getBytes(StandardCharsets.US_ASCII);
@@ -384,18 +400,24 @@ public final class EdiPayloadWriter {
         if (node.isObject()) { node.fields().forEachRemaining(entry -> verifySupportedFields(entry.getValue(), path + "/" + entry.getKey(), capability, unsupportedField)); return; }
         if (node.isArray()) { for (JsonNode child : node) verifySupportedFields(child, path + "/*", capability, unsupportedField); return; }
         if (node.isNull() || node.asText().isBlank()) return;
+        if (!supportsMappingDestination(capability.standard(), capability.documentType(), path)) unsupportedField.accept(path);
+    }
+
+    /** Destinations represented by the generic writer. The dedicated order-response contracts have their own models. */
+    public static boolean supportsMappingDestination(EdiStandard standard, BusinessDocumentType documentType, String pointer) {
+        String path = pointer.replaceAll("/[0-9]+(?=/|$)", "/*");
         var common = java.util.Set.of("/document/id", "/document/issueDate", "/document/currency", "/document/orderReference",
                 "/parties/sender", "/parties/receiver", "/lines/*/id", "/lines/*/quantity", "/lines/*/unitCode",
                 "/lines/*/gtin", "/lines/*/buyerItemId", "/lines/*/sellerItemId", "/lines/*/name", "/lines/*/description",
                 "/lines/*/price", "/lines/*/lineExtension", "/totals/lineExtension", "/totals/payable", "/tax/amount");
-        var extra = capability.standard() == EdiStandard.EDIFACT
+        var extra = standard == EdiStandard.EDIFACT
                 ? java.util.Set.of("/document/dueDate", "/delivery/requestedDate", "/delivery/locationId", "/delivery/terms",
                         "/document/totalPaymentAmount", "/totals/taxExclusive", "/lines/*/taxCategory", "/lines/*/taxPercent")
                 : java.util.Set.of("/document/totalPaymentAmount", "/delivery/locationId", "/totals/allowance");
-        boolean tradacoms = capability.standard() == EdiStandard.TRADACOMS;
-        boolean invoice = capability.documentType() == BusinessDocumentType.INVOICE;
-        boolean order = capability.documentType() == BusinessDocumentType.ORDER;
-        boolean response = capability.documentType() == BusinessDocumentType.ORDER_RESPONSE;
+        boolean tradacoms = standard == EdiStandard.TRADACOMS;
+        boolean invoice = documentType == BusinessDocumentType.INVOICE;
+        boolean order = documentType == BusinessDocumentType.ORDER;
+        boolean response = documentType == BusinessDocumentType.ORDER_RESPONSE;
         boolean unused = tradacoms && path.equals("/document/currency") && !order
                 || tradacoms && path.equals("/lines/*/lineExtension") && !invoice
                 || tradacoms && path.equals("/tax/amount") && !invoice
@@ -404,7 +426,7 @@ public final class EdiPayloadWriter {
                 || !tradacoms && path.equals("/document/dueDate") && !invoice
                 || path.startsWith("/delivery/") && !order
                 || path.startsWith("/lines/*/tax") && !invoice
-                || path.equals("/document/totalPaymentAmount") && capability.documentType() != BusinessDocumentType.REMITTANCE_ADVICE;
-        if (unused || !common.contains(path) && !extra.contains(path)) unsupportedField.accept(path);
+                || path.equals("/document/totalPaymentAmount") && documentType != BusinessDocumentType.REMITTANCE_ADVICE;
+        return !unused && (common.contains(path) || extra.contains(path));
     }
 }

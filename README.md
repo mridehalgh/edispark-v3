@@ -108,6 +108,8 @@ The `EdiSpark Local` organization is pinned one-to-one to `LOCAL_SEED_TENANT_ID`
 
 The local MFT adapter behaves like a small Hierarchical-keyring test double: it resolves a tenant branch beneath one disposable local root, derives resource-scoped AES material, and authenticates tenant/resource context during AES-GCM encryption. This gives local code the same isolation failure behavior without pretending to reproduce AWS ciphertext, DynamoDB key storage, or production cache custody. The repository-wide fixture contract is in [docs/local-demo-data.md](docs/local-demo-data.md); the detailed MFT model is in [docs/mft/local-development.md](docs/mft/local-development.md).
 
+Organisation admins and owners can open the deterministic **Generate from a MIG** demo from Document rules. The local demo uses separate encrypted guide storage and the same workflow and allowance ledger as deployment. [MIG generation and deployment guide](docs/mig-generation.md)
+
 ## Common commands 🧰
 
 | Command | Purpose |

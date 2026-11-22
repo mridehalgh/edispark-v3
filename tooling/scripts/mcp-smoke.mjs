@@ -60,8 +60,9 @@ const malformedResponse = await request(resource, {
 assert.equal((await malformedResponse.json()).error.code, -32700)
 assert.ok((await rpc("server/discover")).capabilities.tools)
 const advertised = (await rpc("tools/list")).tools
-assert.deepEqual(advertised.map(tool => tool.name).sort(), documentedTools.map(tool => tool.name).sort())
-for (const { name, examples } of documentedTools) {
+const baseTools = documentedTools.filter(tool => tool.scope !== "edi:mig:read")
+assert.deepEqual(advertised.map(tool => tool.name).sort(), baseTools.map(tool => tool.name).sort())
+for (const { name, examples } of baseTools) {
   const schema = advertised.find(tool => tool.name === name).inputSchema
   for (const example of examples) {
     assert.ok((schema.required ?? []).every(field => Object.hasOwn(example, field)), `${name} example omits a required argument`)
@@ -275,10 +276,25 @@ assert.equal(staleComparison.structuredContent.code, "STALE_SOURCE")
 const commercialToken = await authorize("edi:evidence edi:commercial")
 const commercial = await rpc("tools/call", { name: "reconcile_invoice_and_remittance", arguments: financialPins }, commercialToken)
 assert.ok(commercial.structuredContent.values.length, "the explicit commercial grant enables comparison values")
+const mig = await rest("/api/mappings/mig/availability")
+let migToken
+if (mig.enabled && mig.demoJobId) {
+  migToken = await authorize("edi:mig:read")
+  const migTools = (await rpc("tools/list", {}, migToken)).tools.map(tool => tool.name)
+  assert.deepEqual(migTools.sort(), documentedTools.filter(tool => tool.scope === "edi:mig:read").map(tool => tool.name).sort())
+  const status = await rpc("tools/call", { name: "get_mig_job", arguments: { jobId: mig.demoJobId } }, migToken)
+  assert.ok(status.structuredContent.state)
+  const evidence = await rpc("tools/call", { name: "read_mig_evidence", arguments: { jobId: mig.demoJobId } }, migToken)
+  assert.ok(evidence.structuredContent.matches.some(section => section.anchor.startsWith("PRIMARY/")))
+  const missing = await rpc("tools/call", {
+    name: "get_mig_job", arguments: { jobId: "909c1172-e94c-4cf8-88e8-9d03bde0e4d0" },
+  }, migToken)
+  assert.equal(missing.isError, true)
+}
 // This grant belongs to the dedicated smoke client. Leave interactive consents alone.
 const limitedToken = await authorize("edi:evidence")
 const limitedTools = (await rpc("tools/list", {}, limitedToken)).tools.map(tool => tool.name)
-for (const name of ["preview_mapping", "trace_transfer"]) {
+for (const name of ["preview_mapping", "trace_transfer", "get_mig_job"]) {
   assert.ok(!limitedTools.includes(name))
   const denied = await rpcMessage("tools/call", { name, arguments: {} }, limitedToken, 400)
   assert.ok(denied.error || denied.result?.isError, "A hidden tool cannot execute")
@@ -293,6 +309,14 @@ await expectStatus(await request(resource, {
   headers: { ...rpcHeaders, ...bearer(limitedToken), "mcp-method": "tools/list" },
   body: "{}",
 }), 403)
+if (migToken) {
+  await expectStatus(await request(resource, {
+    method: "POST",
+    headers: { ...rpcHeaders, ...bearer(migToken), "mcp-method": "tools/call", "mcp-name": "get_mig_job" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: ++requestId, method: "tools/call",
+      params: { name: "get_mig_job", arguments: { jobId: mig.demoJobId } } }),
+  }), 403)
+}
 cookies.clear()
 await auth("/sign-in/email", { email: env.LOCAL_MEMBER_USER_EMAIL, password: env.LOCAL_MEMBER_USER_PASSWORD })
 await auth("/organization/set-active", { organizationId })

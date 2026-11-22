@@ -48,6 +48,10 @@ run "enabled_desk_has_versioned_protection_and_shared_limits" {
     enable_desk_agent                      = true
     desk_ai_monthly_credits                = 1200
     desk_ai_organisation_credit_allowances = { "2OnHVzeAJKwm0ThFLcy1HfLHGPm" = 0 }
+    mig_london_pilot_verified              = true
+    mig_london_rates = {
+      sonnet_input = 3, sonnet_output = 15, nova_input = 1, nova_output = 2
+    }
   }
   assert {
     condition     = length(module.desk_guardrail) == 1 && length(aws_iam_role_policy.desk_agent) == 1 && contains(keys(output.release_config.backend_environment), "EDISPARK_AGENT_VERSION")
@@ -56,5 +60,9 @@ run "enabled_desk_has_versioned_protection_and_shared_limits" {
   assert {
     condition     = output.release_config.backend_environment.EDISPARK_AGENT_MONTHLYCREDITS == "1200" && aws_dynamodb_table.desk_usage.deletion_protection_enabled && length(aws_dynamodb_table_item.desk_allowance) == 1
     error_message = "Release configuration must preserve the shared monthly allowance and individual overrides."
+  }
+  assert {
+    condition     = length(aws_iam_role_policy.mig_pilot) == 1 && output.release_config.backend_environment.EDISPARK_MIG_LONDON_PILOT_VERIFIED == "true"
+    error_message = "A verified London deployment must configure MIG inference without a tenant list."
   }
 }

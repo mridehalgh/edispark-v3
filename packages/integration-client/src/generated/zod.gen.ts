@@ -2,6 +2,17 @@
 
 import * as z from 'zod';
 
+export const zActionableErrorBody = z.object({
+    code: z.string().optional(),
+    message: z.string().optional(),
+    timestamp: z.iso.datetime().optional(),
+    stage: z.string().optional(),
+    retryable: z.boolean().optional(),
+    recommendedAction: z.string().optional(),
+    correlationId: z.string().optional(),
+    details: z.record(z.string(), z.unknown()).optional()
+});
+
 export const zBusinessIdentity = z.object({
     scheme: z.string().optional(),
     value: z.string().optional()
@@ -548,6 +559,248 @@ export const zFilePreview = z.object({
     warnings: z.array(z.string()).optional()
 });
 
+export const zUploadRequest = z.object({
+    role: z.enum([
+        'PRIMARY',
+        'SUPPLEMENT',
+        'INPUT',
+        'EXPECTED',
+        'REFERENCE'
+    ]),
+    name: z.string().min(0).max(160),
+    edition: z.string().min(0).max(100).optional(),
+    base64: z.string().min(0).max(4194304)
+});
+
+export const zUpload = z.object({
+    id: z.uuid().optional(),
+    name: z.string().optional(),
+    role: z.enum([
+        'PRIMARY',
+        'SUPPLEMENT',
+        'INPUT',
+        'EXPECTED',
+        'REFERENCE'
+    ]).optional(),
+    edition: z.string().optional(),
+    digest: z.string().optional()
+});
+
+export const zCoordinates = z.object({
+    direction: z.string().min(1).regex(/INBOUND|OUTBOUND/),
+    documentType: z.string().min(1).regex(/[A-Z_]{1,32}/),
+    standard: z.string().min(1).regex(/EDIFACT|TRADACOMS/),
+    release: z.string().min(1).regex(/[A-Z0-9]{1,12}/),
+    messageType: z.string().min(1).regex(/[A-Z0-9]{1,12}/)
+});
+
+export const zEstimateRequest = z.object({
+    primary: z.uuid(),
+    supplements: z.array(z.uuid()).min(0).max(3).optional(),
+    input: z.uuid().optional(),
+    expected: z.uuid().optional(),
+    partnerId: z.uuid().optional(),
+    catalogueRevisionId: z.uuid().optional(),
+    target: zCoordinates,
+    reference: z.uuid().optional()
+});
+
+export const zEvidenceRevision = z.object({
+    id: z.uuid().optional(),
+    revision: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    digest: z.string().optional(),
+    category: z.string().optional()
+});
+
+export const zEvidenceManifest = z.object({
+    version: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    ublSchemaDigest: z.string().optional(),
+    runtimeDigest: z.string().optional(),
+    revisions: z.array(zEvidenceRevision).optional()
+});
+
+export const zGeneratedCase = z.object({
+    name: z.string().optional(),
+    passed: z.boolean().optional(),
+    detail: z.string().optional()
+});
+
+export const zGuideStructure = z.object({
+    area: z.string().optional(),
+    position: z.string().optional(),
+    tag: z.string().optional(),
+    usage: z.string().optional(),
+    maxRepeats: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    usageNote: z.string().optional(),
+    anchor: z.string().optional()
+});
+
+export const zInvocation = z.object({
+    id: z.uuid().optional(),
+    candidate: z.enum(['SONNET', 'NOVA']).optional(),
+    state: z.string().optional(),
+    reservedCredits: z.number().optional(),
+    settledCredits: z.number().optional()
+});
+
+export const zMigFinding = z.object({
+    code: z.string().optional(),
+    detail: z.string().optional(),
+    citations: z.array(z.string()).optional()
+});
+
+export const zFixtureResult = z.object({
+    check: z.string().optional(),
+    expectedMatch: z.boolean().optional(),
+    findings: z.array(zMigFinding).optional(),
+    generatedChecks: z.array(zGeneratedCase).optional(),
+    referenceFindings: z.array(zMigFinding).optional()
+});
+
+export const zRuleFacts = z.object({
+    presence: z.string().optional(),
+    segmentOrGroup: z.string().optional(),
+    qualifier: z.string().optional(),
+    cardinality: z.string().optional(),
+    valueType: z.string().optional(),
+    length: z.string().optional(),
+    codes: z.array(z.string()).optional(),
+    condition: z.string().optional()
+});
+
+export const zRule = z.object({
+    requirement: z.string().optional(),
+    citations: z.array(z.string()).optional(),
+    operation: zMappingNode.optional(),
+    gap: z.string().optional(),
+    facts: zRuleFacts.optional(),
+    profileRule: zDocumentFieldRule.optional(),
+    suggestedLookupRows: z.array(z.record(z.string(), z.string())).optional(),
+    correctionAllowed: z.boolean().optional()
+});
+
+export const zDifference = z.object({
+    id: z.string().optional(),
+    sonnet: zRule.optional(),
+    nova: zRule.optional(),
+    preselected: z.boolean().optional()
+});
+
+export const zProposal = z.object({
+    candidate: z.enum(['SONNET', 'NOVA']).optional(),
+    rules: z.array(zRule).optional(),
+    findings: z.array(zMigFinding).optional(),
+    fixture: zFixtureResult.optional()
+});
+
+export const zSection = z.object({
+    anchor: z.string().optional(),
+    excerpt: z.string().optional()
+});
+
+export const zSelection = z.object({
+    id: z.string().min(1),
+    candidate: z.enum(['SONNET', 'NOVA']),
+    reason: z.string().min(0).max(280).optional(),
+    override: zMappingNode.optional()
+});
+
+export const zStandardStructure = z.object({
+    position: z.string().optional(),
+    area: z.string().optional(),
+    groupPath: z.string().optional(),
+    tag: z.string().optional(),
+    usage: z.string().optional(),
+    maxRepeats: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+});
+
+export const zStructureComparison = z.object({
+    guide: zGuideStructure.optional(),
+    standard: zStandardStructure.optional(),
+    result: z.enum([
+        'MATCH',
+        'PARTNER_RESTRICTION',
+        'CONFLICT',
+        'NEEDS_REVIEW',
+        'ENVELOPE'
+    ]).optional(),
+    detail: z.string().optional()
+});
+
+export const zStandardsReview = z.object({
+    state: z.enum([
+        'COMPARED',
+        'DIRECTORY_UNAVAILABLE',
+        'GUIDE_RELEASE_MISMATCH'
+    ]).optional(),
+    source: z.string().optional(),
+    digest: z.string().optional(),
+    omittedRows: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
+    rows: z.array(zStructureComparison).optional()
+});
+
+export const zSupersession = z.object({
+    differenceId: z.string().min(1),
+    prevailingAnchor: z.string().min(1),
+    reason: z.string().min(0).max(280)
+});
+
+export const zJob = z.object({
+    id: z.uuid().optional(),
+    state: z.enum([
+        'ESTIMATED',
+        'QUEUED',
+        'RUNNING',
+        'CANCEL_REQUESTED',
+        'INCOMPLETE',
+        'RECONCILIATION',
+        'REVIEW',
+        'READY',
+        'IMPORTING',
+        'IMPORTED',
+        'CANCELLED'
+    ]).optional(),
+    target: zCoordinates.optional(),
+    uploads: z.array(zUpload).optional(),
+    evidenceDigest: z.string().optional(),
+    estimatedCredits: z.number().optional(),
+    reservedCredits: z.number().optional(),
+    settledCredits: z.number().optional(),
+    expiresAt: z.string().optional(),
+    sections: z.array(zSection).optional(),
+    findings: z.array(zMigFinding).optional(),
+    proposals: z.array(zProposal).optional(),
+    differences: z.array(zDifference).optional(),
+    selections: z.array(zSelection).optional(),
+    supersessions: z.array(zSupersession).optional(),
+    reviewedFixture: zFixtureResult.optional(),
+    draftId: z.uuid().optional(),
+    partnerId: z.uuid().optional(),
+    profileDraftId: z.uuid().optional(),
+    referenceTableRevisions: z.record(z.string(), z.uuid()).optional(),
+    manifest: zEvidenceManifest.optional(),
+    invocations: z.array(zInvocation).optional(),
+    standardsReview: zStandardsReview.optional(),
+    modelMode: z.enum([
+        'LOCAL_FIXTURE',
+        'LONDON_BEDROCK',
+        'UNRECORDED'
+    ]).optional(),
+    rerunOf: z.uuid().optional(),
+    uploadsExpireAt: z.string().optional()
+});
+
+export const zReviewRequest = z.object({
+    selections: z.array(zSelection).min(0).max(600),
+    supersessions: z.array(zSupersession).min(0).max(600).optional(),
+    referenceTableRevisions: z.record(z.string(), z.uuid()).optional()
+});
+
+export const zDraftRequest = z.object({
+    name: z.string().min(0).max(160),
+    includePartnerProfile: z.boolean().optional()
+});
+
 export const zRequest = z.object({
     requestId: z.uuid(),
     businessIdentity: zBusinessIdentity,
@@ -716,6 +969,16 @@ export const zExample = z.object({
     sourceRaw: z.string().optional(),
     targetDocument: z.string().optional(),
     targetRaw: z.string().optional()
+});
+
+export const zAvailability = z.object({
+    enabled: z.boolean().optional(),
+    demoJobId: z.uuid().optional(),
+    modelMode: z.enum([
+        'LOCAL_FIXTURE',
+        'LONDON_BEDROCK',
+        'UNRECORDED'
+    ]).optional()
 });
 
 export const zBusinessCode = z.object({
@@ -1208,6 +1471,78 @@ export const zArchiveMappingRevisionPath = z.object({
  */
 export const zArchiveMappingRevisionResponse = zMappingRevision;
 
+export const zUploadMigFileBody = zUploadRequest;
+
+/**
+ * Created
+ */
+export const zUploadMigFileResponse = zUpload;
+
+export const zEstimateMigJobBody = zEstimateRequest;
+
+/**
+ * Created
+ */
+export const zEstimateMigJobResponse = zJob;
+
+export const zStartMigJobPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zStartMigJobResponse = zJob;
+
+export const zReviewMigJobBody = zReviewRequest;
+
+export const zReviewMigJobPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zReviewMigJobResponse = zJob;
+
+export const zRetryMigJobPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zRetryMigJobResponse = zJob;
+
+export const zRerunMigJobPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * Created
+ */
+export const zRerunMigJobResponse = zJob;
+
+export const zCreateMigDraftBody = zDraftRequest;
+
+export const zCreateMigDraftPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zCreateMigDraftResponse = zJob;
+
+export const zCancelMigJobPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zCancelMigJobResponse = zJob;
+
 export const zApplyManagedPartnerTemplateBody = zRequest;
 
 export const zApplyManagedPartnerTemplatePath = z.object({
@@ -1343,6 +1678,20 @@ export const zGetMappingUsagePath = z.object({
  * OK
  */
 export const zGetMappingUsageResponse = zUsage;
+
+export const zGetMigJobPath = z.object({
+    jobId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetMigJobResponse = zJob;
+
+/**
+ * OK
+ */
+export const zGetMigGenerationAvailabilityResponse = zAvailability;
 
 /**
  * OK

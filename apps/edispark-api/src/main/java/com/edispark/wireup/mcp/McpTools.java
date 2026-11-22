@@ -35,7 +35,8 @@ final class McpTools implements AutoCloseable {
     static final String PREVIEW = "edi:preview";
     static final String MFT_READ = "mft:evidence";
     static final String COMMERCIAL = "edi:commercial";
-    static final java.util.Set<String> SUPPORTED_SCOPES = java.util.Set.of(READ, PREVIEW, MFT_READ, COMMERCIAL);
+    static final String MIG_READ = "edi:mig:read";
+    static final java.util.Set<String> SUPPORTED_SCOPES = java.util.Set.of(READ, PREVIEW, MFT_READ, COMMERCIAL, MIG_READ);
     static final String PRINCIPAL = "principal";
     private static final Logger log = LoggerFactory.getLogger(McpTools.class);
     private static final int RESULT_LIMIT = 96 * 1024;

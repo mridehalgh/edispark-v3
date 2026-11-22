@@ -22,6 +22,7 @@ import { JwtDebugPage } from "@/app/debug/jwt"
 import { MftPage } from "@/app/mft/mft"
 import { MftDocsPage } from "@/app/mft/docs"
 import { TradingNetworkPage } from "@/app/trading-network/trading-network"
+import { MigGenerationPage } from "@/app/mappings/mig-generation"
 import { MappingsPage } from "@/app/mappings/mappings"
 import { MappingWorkspacePage } from "@/app/mappings/mapping-workspace"
 import { NewDocumentRulePage } from "@/app/mappings/new-rule"
@@ -149,6 +150,7 @@ function ReactRouterComponent() {
               { path: "/organisation/certificates", element: <Navigate to="/connections/certificates" replace /> },
               { path: "/organisation/certificates/new", element: <Navigate to="/connections/certificates/new" replace /> },
               { path: "/organisation/document-rules", element: <MappingsPage /> },
+              { path: "/organisation/document-rules/generate", element: <MigGenerationPage /> },
               { path: "/organisation/document-rules/new", element: <NewDocumentRulePage /> },
               { path: "/organisation/document-rules/:mappingId", element: <MappingWorkspacePage /> },
               { path: "/settings/advanced/exchange", element: <TradingNetworkPage /> },

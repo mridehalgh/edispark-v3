@@ -135,7 +135,7 @@ const remoteJwtSigning = getRemoteJwtSigningConfig()
 export const mcpEnabled = process.env.EDISPARK_MCP_ENABLED === "true"
   && process.env.NEXT_PHASE !== "phase-production-build"
 export const mcpResource = process.env.EDISPARK_MCP_RESOURCE ?? "http://localhost:8080/mcp"
-export const mcpScopes = ["edi:evidence", "edi:preview", "mft:evidence", "edi:commercial"] as const
+export const mcpScopes = ["edi:evidence", "edi:preview", "mft:evidence", "edi:commercial", "edi:mig:read"] as const
 const enabledMcpOrganizations = new Set(process.env.EDISPARK_MCP_ORGANIZATIONS?.split(",").map(value => value.trim()) ?? [])
 const localMcpClient = "edispark-local-mcp"
 const localMcpSmokeClient = "edispark-local-mcp-smoke"

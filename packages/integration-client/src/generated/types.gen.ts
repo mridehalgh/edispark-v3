@@ -4,6 +4,19 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:18080' | (string & {});
 };
 
+export type ActionableErrorBody = {
+    code?: string;
+    message?: string;
+    timestamp?: string;
+    stage?: string;
+    retryable?: boolean;
+    recommendedAction?: string;
+    correlationId?: string;
+    details?: {
+        [key: string]: unknown;
+    };
+};
+
 export type BusinessIdentity = {
     scheme?: string;
     value?: string;
@@ -400,6 +413,216 @@ export type FilePreview = {
     warnings?: Array<string>;
 };
 
+export type UploadRequest = {
+    role: 'PRIMARY' | 'SUPPLEMENT' | 'INPUT' | 'EXPECTED' | 'REFERENCE';
+    name: string;
+    edition?: string;
+    base64: string;
+};
+
+export type Upload = {
+    id?: string;
+    name?: string;
+    role?: 'PRIMARY' | 'SUPPLEMENT' | 'INPUT' | 'EXPECTED' | 'REFERENCE';
+    edition?: string;
+    digest?: string;
+};
+
+export type Coordinates = {
+    direction: string;
+    documentType: string;
+    standard: string;
+    release: string;
+    messageType: string;
+};
+
+export type EstimateRequest = {
+    primary: string;
+    supplements?: Array<string>;
+    input?: string;
+    expected?: string;
+    partnerId?: string;
+    catalogueRevisionId?: string;
+    target: Coordinates;
+    reference?: string;
+};
+
+export type Difference = {
+    id?: string;
+    sonnet?: Rule;
+    nova?: Rule;
+    preselected?: boolean;
+};
+
+export type EvidenceManifest = {
+    version?: number;
+    ublSchemaDigest?: string;
+    runtimeDigest?: string;
+    revisions?: Array<EvidenceRevision>;
+};
+
+export type EvidenceRevision = {
+    id?: string;
+    revision?: number;
+    digest?: string;
+    category?: string;
+};
+
+export type FixtureResult = {
+    check?: string;
+    expectedMatch?: boolean;
+    findings?: Array<MigFinding>;
+    generatedChecks?: Array<GeneratedCase>;
+    referenceFindings?: Array<MigFinding>;
+};
+
+export type GeneratedCase = {
+    name?: string;
+    passed?: boolean;
+    detail?: string;
+};
+
+export type GuideStructure = {
+    area?: string;
+    position?: string;
+    tag?: string;
+    usage?: string;
+    maxRepeats?: number;
+    usageNote?: string;
+    anchor?: string;
+};
+
+export type Invocation = {
+    id?: string;
+    candidate?: 'SONNET' | 'NOVA';
+    state?: string;
+    reservedCredits?: number;
+    settledCredits?: number;
+};
+
+export type Job = {
+    id?: string;
+    state?: 'ESTIMATED' | 'QUEUED' | 'RUNNING' | 'CANCEL_REQUESTED' | 'INCOMPLETE' | 'RECONCILIATION' | 'REVIEW' | 'READY' | 'IMPORTING' | 'IMPORTED' | 'CANCELLED';
+    target?: Coordinates;
+    uploads?: Array<Upload>;
+    evidenceDigest?: string;
+    estimatedCredits?: number;
+    reservedCredits?: number;
+    settledCredits?: number;
+    expiresAt?: string;
+    sections?: Array<Section>;
+    findings?: Array<MigFinding>;
+    proposals?: Array<Proposal>;
+    differences?: Array<Difference>;
+    selections?: Array<Selection>;
+    supersessions?: Array<Supersession>;
+    reviewedFixture?: FixtureResult;
+    draftId?: string;
+    partnerId?: string;
+    profileDraftId?: string;
+    referenceTableRevisions?: {
+        [key: string]: string;
+    };
+    manifest?: EvidenceManifest;
+    invocations?: Array<Invocation>;
+    standardsReview?: StandardsReview;
+    modelMode?: 'LOCAL_FIXTURE' | 'LONDON_BEDROCK' | 'UNRECORDED';
+    rerunOf?: string;
+    uploadsExpireAt?: string;
+};
+
+export type MigFinding = {
+    code?: string;
+    detail?: string;
+    citations?: Array<string>;
+};
+
+export type Proposal = {
+    candidate?: 'SONNET' | 'NOVA';
+    rules?: Array<Rule>;
+    findings?: Array<MigFinding>;
+    fixture?: FixtureResult;
+};
+
+export type Rule = {
+    requirement?: string;
+    citations?: Array<string>;
+    operation?: MappingNode;
+    gap?: string;
+    facts?: RuleFacts;
+    profileRule?: DocumentFieldRule;
+    suggestedLookupRows?: Array<{
+        [key: string]: string;
+    }>;
+    correctionAllowed?: boolean;
+};
+
+export type RuleFacts = {
+    presence?: string;
+    segmentOrGroup?: string;
+    qualifier?: string;
+    cardinality?: string;
+    valueType?: string;
+    length?: string;
+    codes?: Array<string>;
+    condition?: string;
+};
+
+export type Section = {
+    anchor?: string;
+    excerpt?: string;
+};
+
+export type Selection = {
+    id: string;
+    candidate: 'SONNET' | 'NOVA';
+    reason?: string;
+    override?: MappingNode;
+};
+
+export type StandardStructure = {
+    position?: string;
+    area?: string;
+    groupPath?: string;
+    tag?: string;
+    usage?: string;
+    maxRepeats?: number;
+};
+
+export type StandardsReview = {
+    state?: 'COMPARED' | 'DIRECTORY_UNAVAILABLE' | 'GUIDE_RELEASE_MISMATCH';
+    source?: string;
+    digest?: string;
+    omittedRows?: number;
+    rows?: Array<StructureComparison>;
+};
+
+export type StructureComparison = {
+    guide?: GuideStructure;
+    standard?: StandardStructure;
+    result?: 'MATCH' | 'PARTNER_RESTRICTION' | 'CONFLICT' | 'NEEDS_REVIEW' | 'ENVELOPE';
+    detail?: string;
+};
+
+export type Supersession = {
+    differenceId: string;
+    prevailingAnchor: string;
+    reason: string;
+};
+
+export type ReviewRequest = {
+    selections: Array<Selection>;
+    supersessions?: Array<Supersession>;
+    referenceTableRevisions?: {
+        [key: string]: string;
+    };
+};
+
+export type DraftRequest = {
+    name: string;
+    includePartnerProfile?: boolean;
+};
+
 export type Request = {
     requestId: string;
     businessIdentity: BusinessIdentity;
@@ -548,6 +771,12 @@ export type Example = {
     sourceRaw?: string;
     targetDocument?: string;
     targetRaw?: string;
+};
+
+export type Availability = {
+    enabled?: boolean;
+    demoJobId?: string;
+    modelMode?: 'LOCAL_FIXTURE' | 'LONDON_BEDROCK' | 'UNRECORDED';
 };
 
 export type BusinessCode = {
@@ -1395,6 +1624,282 @@ export type ArchiveMappingRevisionResponses = {
 
 export type ArchiveMappingRevisionResponse = ArchiveMappingRevisionResponses[keyof ArchiveMappingRevisionResponses];
 
+export type UploadMigFileData = {
+    body: UploadRequest;
+    path?: never;
+    query?: never;
+    url: '/api/mappings/mig/uploads';
+};
+
+export type UploadMigFileErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type UploadMigFileError = UploadMigFileErrors[keyof UploadMigFileErrors];
+
+export type UploadMigFileResponses = {
+    /**
+     * Created
+     */
+    201: Upload;
+};
+
+export type UploadMigFileResponse = UploadMigFileResponses[keyof UploadMigFileResponses];
+
+export type EstimateMigJobData = {
+    body: EstimateRequest;
+    path?: never;
+    query?: never;
+    url: '/api/mappings/mig/jobs';
+};
+
+export type EstimateMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type EstimateMigJobError = EstimateMigJobErrors[keyof EstimateMigJobErrors];
+
+export type EstimateMigJobResponses = {
+    /**
+     * Created
+     */
+    201: Job;
+};
+
+export type EstimateMigJobResponse = EstimateMigJobResponses[keyof EstimateMigJobResponses];
+
+export type StartMigJobData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}/start';
+};
+
+export type StartMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type StartMigJobError = StartMigJobErrors[keyof StartMigJobErrors];
+
+export type StartMigJobResponses = {
+    /**
+     * OK
+     */
+    200: Job;
+};
+
+export type StartMigJobResponse = StartMigJobResponses[keyof StartMigJobResponses];
+
+export type ReviewMigJobData = {
+    body: ReviewRequest;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}/review';
+};
+
+export type ReviewMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type ReviewMigJobError = ReviewMigJobErrors[keyof ReviewMigJobErrors];
+
+export type ReviewMigJobResponses = {
+    /**
+     * OK
+     */
+    200: Job;
+};
+
+export type ReviewMigJobResponse = ReviewMigJobResponses[keyof ReviewMigJobResponses];
+
+export type RetryMigJobData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}/retry';
+};
+
+export type RetryMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type RetryMigJobError = RetryMigJobErrors[keyof RetryMigJobErrors];
+
+export type RetryMigJobResponses = {
+    /**
+     * OK
+     */
+    200: Job;
+};
+
+export type RetryMigJobResponse = RetryMigJobResponses[keyof RetryMigJobResponses];
+
+export type RerunMigJobData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}/rerun';
+};
+
+export type RerunMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type RerunMigJobError = RerunMigJobErrors[keyof RerunMigJobErrors];
+
+export type RerunMigJobResponses = {
+    /**
+     * Created
+     */
+    201: Job;
+};
+
+export type RerunMigJobResponse = RerunMigJobResponses[keyof RerunMigJobResponses];
+
+export type CreateMigDraftData = {
+    body: DraftRequest;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}/draft';
+};
+
+export type CreateMigDraftErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type CreateMigDraftError = CreateMigDraftErrors[keyof CreateMigDraftErrors];
+
+export type CreateMigDraftResponses = {
+    /**
+     * OK
+     */
+    200: Job;
+};
+
+export type CreateMigDraftResponse = CreateMigDraftResponses[keyof CreateMigDraftResponses];
+
+export type CancelMigJobData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}/cancel';
+};
+
+export type CancelMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type CancelMigJobError = CancelMigJobErrors[keyof CancelMigJobErrors];
+
+export type CancelMigJobResponses = {
+    /**
+     * OK
+     */
+    200: Job;
+};
+
+export type CancelMigJobResponse = CancelMigJobResponses[keyof CancelMigJobResponses];
+
 export type ApplyManagedPartnerTemplateData = {
     body: Request;
     path: {
@@ -1687,6 +2192,74 @@ export type GetMappingUsageResponses = {
 };
 
 export type GetMappingUsageResponse = GetMappingUsageResponses[keyof GetMappingUsageResponses];
+
+export type GetMigJobData = {
+    body?: never;
+    path: {
+        jobId: string;
+    };
+    query?: never;
+    url: '/api/mappings/mig/jobs/{jobId}';
+};
+
+export type GetMigJobErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type GetMigJobError = GetMigJobErrors[keyof GetMigJobErrors];
+
+export type GetMigJobResponses = {
+    /**
+     * OK
+     */
+    200: Job;
+};
+
+export type GetMigJobResponse = GetMigJobResponses[keyof GetMigJobResponses];
+
+export type GetMigGenerationAvailabilityData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/mappings/mig/availability';
+};
+
+export type GetMigGenerationAvailabilityErrors = {
+    /**
+     * Invalid MIG request
+     */
+    400: ActionableErrorBody;
+    /**
+     * MIG generation unavailable or resource missing
+     */
+    404: ActionableErrorBody;
+    /**
+     * Job state changed or AI credits unavailable
+     */
+    409: ActionableErrorBody;
+};
+
+export type GetMigGenerationAvailabilityError = GetMigGenerationAvailabilityErrors[keyof GetMigGenerationAvailabilityErrors];
+
+export type GetMigGenerationAvailabilityResponses = {
+    /**
+     * OK
+     */
+    200: Availability;
+};
+
+export type GetMigGenerationAvailabilityResponse = GetMigGenerationAvailabilityResponses[keyof GetMigGenerationAvailabilityResponses];
 
 export type ListBusinessCodeListsData = {
     body?: never;

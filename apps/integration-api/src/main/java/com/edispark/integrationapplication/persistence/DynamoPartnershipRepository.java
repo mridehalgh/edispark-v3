@@ -57,6 +57,12 @@ final class DynamoPartnershipRepository implements PartnershipRepository, Partne
         store.put(profile.tenantId(), "DOCUMENT_PROFILE#" + profile.id(), "DOCUMENT_PROFILE", write(profile));
         return profile;
     }
+    @Override public DocumentProfile createProfileIfAbsent(DocumentProfile profile) {
+        TenantAccess.requireOwner(profile.tenantId());
+        if (store.putVersionedIfCurrent(profile.tenantId(), "DOCUMENT_PROFILE#" + profile.id(),
+                "DOCUMENT_PROFILE", write(profile), 0)) return profile;
+        return findDocumentProfile(profile.id()).orElseThrow(() -> new IllegalStateException("The draft profile changed during creation."));
+    }
     @Override public Optional<DocumentProfile> findDocumentProfile(UUID id) { String tenantId = TenantAccess.currentId();
         return store.get(tenantId, "DOCUMENT_PROFILE#" + id).map(value -> read(value, DocumentProfile.class));
     }

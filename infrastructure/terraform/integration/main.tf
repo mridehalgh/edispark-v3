@@ -23,6 +23,11 @@ resource "aws_dynamodb_table" "metadata" {
     type = "S"
   }
 
+  ttl {
+    attribute_name = "expiresAt"
+    enabled        = true
+  }
+
   point_in_time_recovery { enabled = true }
   server_side_encryption { enabled = true }
   tags = local.tags
@@ -132,7 +137,7 @@ resource "aws_iam_policy" "application" {
       {
         Sid      = "TenantMetadata"
         Effect   = "Allow"
-        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:TransactWriteItems"]
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:TransactWriteItems"]
         Resource = aws_dynamodb_table.metadata.arn
       },
       {

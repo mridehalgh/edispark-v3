@@ -54,7 +54,7 @@ public final class MappingFilePreviewController {
         byte[] content = request.content().getBytes(StandardCharsets.UTF_8);
         if (content.length > MAXIMUM_CONTENT) throw new IllegalArgumentException("Mapping preview files must be 1 MiB or smaller.");
         if ("INBOUND".equals(compatibility.direction())) return new FilePreview(parse(content, compatibility), List.of());
-        var preview = writer.previewMapping(capability(mapping, compatibility), content);
+        var preview = writer.previewMapping(capability(mapping, compatibility), content, EdiPayloadWriter.encoderRevision(mapping));
         return new FilePreview(new String(preview.output(), StandardCharsets.US_ASCII), preview.warnings());
     }
 

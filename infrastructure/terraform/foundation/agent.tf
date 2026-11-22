@@ -119,3 +119,56 @@ resource "aws_iam_role_policy" "desk_agent" {
     ]
   })
 }
+
+variable "mig_london_pilot_verified" {
+  description = "Enable MIG infrastructure after direct London inference, guardrail enforcement and disabled invocation logging have been verified."
+  type        = bool
+  default     = false
+}
+
+variable "mig_london_rates" {
+  description = "Verified London model rates in integer US dollar millionths per million tokens."
+  type = object({
+    sonnet_input  = number
+    sonnet_output = number
+    nova_input    = number
+    nova_output   = number
+  })
+  default = null
+  validation {
+    condition = var.mig_london_rates == null ? true : alltrue([
+      for rate in values(var.mig_london_rates) : rate > 0 && rate == floor(rate) && rate <= 1000000000
+    ])
+    error_message = "Provide positive whole microdollar rates up to one billion."
+  }
+}
+
+locals {
+  mig_london_ready = var.mig_london_pilot_verified && var.enable_desk_agent && var.mig_london_rates != null
+}
+
+resource "aws_iam_role_policy" "mig_pilot" {
+  count = local.mig_london_ready ? 1 : 0
+  name  = "mig-london-pilot"
+  role  = aws_iam_role.task.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["bedrock:InvokeModel"]
+        Resource = [
+          "arn:aws:bedrock:eu-west-2::foundation-model/anthropic.claude-sonnet-4-6",
+          "arn:aws:bedrock:eu-west-2::foundation-model/amazon.nova-lite-v1:0"
+        ]
+        Condition = { StringEquals = { "bedrock:GuardrailIdentifier" = "${module.desk_guardrail[0].arn}:${module.desk_guardrail[0].version}" } }
+      },
+      {
+        Effect    = "Allow"
+        Action    = ["textract:AnalyzeDocument"]
+        Resource  = "*"
+        Condition = { StringEquals = { "aws:RequestedRegion" = "eu-west-2" } }
+      }
+    ]
+  })
+}

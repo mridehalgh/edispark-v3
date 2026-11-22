@@ -12,6 +12,7 @@ export async function localEnvironment() {
   await mkdir(localDirectory, { recursive: true })
   const settings = await readSettings()
   const as2Lab = as2LabPaths()
+  const migBedrock = settings.migBedrock
   return {
     ...process.env,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? settings.betterAuthSecret,
@@ -52,7 +53,14 @@ export async function localEnvironment() {
     DYNAMODB_LOCAL_EMBEDDED: process.env.DYNAMODB_LOCAL_EMBEDDED ?? "true",
     MFT_LOCAL_DEMO_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-partner-id"),
     MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE: process.env.MFT_LOCAL_DEMO_TRADACOMS_PARTNER_ID_FILE ?? resolve(localDirectory, "mft-demo-tradacoms-partner-id"),
-    SPRING_PROFILES_ACTIVE: process.env.SPRING_PROFILES_ACTIVE ?? "local",
+    EDISPARK_MIG_LOCAL_AWS_PROFILE: process.env.EDISPARK_MIG_LOCAL_AWS_PROFILE ?? migBedrock?.awsProfile,
+    EDISPARK_MIG_GUARDRAIL: process.env.EDISPARK_MIG_GUARDRAIL ?? migBedrock?.guardrailId,
+    EDISPARK_MIG_GUARDRAIL_VERSION: process.env.EDISPARK_MIG_GUARDRAIL_VERSION ?? migBedrock?.guardrailVersion,
+    EDISPARK_MIG_SONNET_INPUT_MICROS: process.env.EDISPARK_MIG_SONNET_INPUT_MICROS ?? migBedrock?.sonnetInputMicros,
+    EDISPARK_MIG_SONNET_OUTPUT_MICROS: process.env.EDISPARK_MIG_SONNET_OUTPUT_MICROS ?? migBedrock?.sonnetOutputMicros,
+    EDISPARK_MIG_NOVA_INPUT_MICROS: process.env.EDISPARK_MIG_NOVA_INPUT_MICROS ?? migBedrock?.novaInputMicros,
+    EDISPARK_MIG_NOVA_OUTPUT_MICROS: process.env.EDISPARK_MIG_NOVA_OUTPUT_MICROS ?? migBedrock?.novaOutputMicros,
+    SPRING_PROFILES_ACTIVE: process.env.SPRING_PROFILES_ACTIVE ?? (migBedrock?.awsProfile ? "local,mig-bedrock" : "local"),
   }
 }
 

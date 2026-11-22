@@ -60,6 +60,10 @@ public final class MappingService {
     public MappingRevision update(UUID id, List<MappingNode> nodes) { return repository.save(requireTenant(id).revise(nodes)); }
     public List<MappingRevision> list() {
         promoteDue();
+        return listPersisted();
+    }
+
+    public List<MappingRevision> listPersisted() {
         var combined = new LinkedHashMap<UUID, MappingRevision>();
         globalCatalog.list().forEach(mapping -> combined.put(mapping.id(), mapping));
         repository.list().forEach(mapping -> combined.putIfAbsent(mapping.id(), mapping));

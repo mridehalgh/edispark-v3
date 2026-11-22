@@ -1,6 +1,6 @@
 'use client'
 
-import type { MappingRevision } from '@edispark/integration-client'
+import type { Availability, MappingRevision } from '@edispark/integration-client'
 import { ArrowRight, ChevronDown, CircleAlert, FileCode2, Globe2, Plus, Search } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+
+import { migApi, migPath } from './mig-generation'
 
 async function readApi<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: 'no-store' })
@@ -31,6 +33,7 @@ function ruleFormat(mapping: MappingRevision) {
 export function MappingsPage() {
   const [mappings, setMappings] = useState<MappingRevision[]>([])
   const [query, setQuery] = useState('')
+  const [canGenerate, setCanGenerate] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
 
@@ -44,7 +47,14 @@ export function MappingsPage() {
     }
   }, [])
 
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => {
+    void refresh()
+    const controller = new AbortController()
+    void fetch(migApi, { signal: controller.signal }).then(async (response) => {
+      if (response.ok) setCanGenerate(Boolean((await response.json() as Availability).enabled))
+    }).catch(() => undefined)
+    return () => controller.abort()
+  }, [refresh])
 
   const families = useMemo(() => {
     const grouped = new Map<string, MappingRevision[]>()
@@ -60,7 +70,7 @@ export function MappingsPage() {
   }, [mappings, query])
 
   return <AdminPage>
-    <AdminPageHeader title="Document rules" actions={<Button asChild className="gap-2"><Link to="/organisation/document-rules/new"><Plus className="h-4 w-4" />New rule</Link></Button>} />
+    <AdminPageHeader title="Document rules" actions={<>{canGenerate && <Button asChild variant="outline"><Link to={migPath}>Generate from a MIG</Link></Button>}<Button asChild className="gap-2"><Link to="/organisation/document-rules/new"><Plus className="h-4 w-4" />New rule</Link></Button></>} />
     <div className="mb-6 border-l-2 border-primary bg-muted/30 px-4 py-3 text-sm">
       <p className="font-medium">Document rules translate fields from one document format into another.</p>
       <p className="mt-1 text-muted-foreground">Partner document routes use a specific revision, so a published setup never changes unexpectedly.</p>

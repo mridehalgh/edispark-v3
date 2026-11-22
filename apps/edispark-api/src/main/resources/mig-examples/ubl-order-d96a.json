@@ -1,0 +1,15 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:Order-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "Order": [{
+    "ID": [{ "_": "CATALOGUE-ORDER-002" }],
+    "IssueDate": [{ "_": "2026-11-20" }],
+    "BuyerCustomerParty": [{ "Party": [{ "EndpointID": [{ "_": "CATALOGUE-BUYER" }] }] }],
+    "SellerSupplierParty": [{ "Party": [{ "EndpointID": [{ "_": "CATALOGUE-SUPPLIER" }] }] }],
+    "OrderLine": [
+      { "LineItem": [{ "ID": [{ "_": "1" }], "Quantity": [{ "_": 12, "unitCode": "EA" }], "Item": [{ "StandardItemIdentification": [{ "ID": [{ "_": "05010000000015" }] }] }] }] },
+      { "LineItem": [{ "ID": [{ "_": "2" }], "Quantity": [{ "_": 3, "unitCode": "EA" }], "Item": [{ "StandardItemIdentification": [{ "ID": [{ "_": "05010000000022" }] }] }] }] }
+    ]
+  }]
+}

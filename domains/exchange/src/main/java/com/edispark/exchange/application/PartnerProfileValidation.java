@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Applies pinned partner rules on the server, independently of the authoring UI. */
-final class PartnerProfileValidation {
+public final class PartnerProfileValidation {
     private static final Map<String, String> FIELDS = Map.ofEntries(
             Map.entry("document.uuid", "UUID"), Map.entry("document.copyIndicator", "CopyIndicator"),
             Map.entry("order.typeCode", "OrderTypeCode"), Map.entry("order.customerReference", "CustomerReference"),
@@ -24,7 +24,9 @@ final class PartnerProfileValidation {
             Map.entry("receipt.lineCount", "LineCountNumeric"), Map.entry("invoice.payment.meansCode", "PaymentMeans/PaymentMeansCode"),
             Map.entry("despatch.shipment.id", "Shipment/ID"), Map.entry("despatch.shipment.handlingUnits[].sscc", "Shipment/TransportHandlingUnit/TraceID"));
 
-    static List<ReadinessIssue> validate(DocumentProfile profile, byte[] bytes) {
+    public static Map<String, String> supportedFields() { return FIELDS; }
+
+    public static List<ReadinessIssue> validate(DocumentProfile profile, byte[] bytes) {
         List<ReadinessIssue> issues = new ArrayList<>();
         try {
             JsonNode envelope = new ObjectMapper().readTree(bytes);

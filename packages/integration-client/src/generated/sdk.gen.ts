@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateSsccIssuerData, ActivateSsccIssuerResponses, ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ApplyManagedPartnerTemplateData, ApplyManagedPartnerTemplateResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, BindPartnerReferenceTableData, BindPartnerReferenceTableResponses, CheckExchangeReadinessData, CheckExchangeReadinessResponses, CreateManagedPartnerTemplateData, CreateManagedPartnerTemplateResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateSsccIssuerData, CreateSsccIssuerResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, EditManagedPartnerTemplateData, EditManagedPartnerTemplateResponses, GetExchangeData, GetExchangeResponses, GetManagedAgreementSetupData, GetManagedAgreementSetupResponses, GetMappingData, GetMappingExampleFilesData, GetMappingExampleFilesResponses, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetPartnerReferenceTableData, GetPartnerReferenceTableResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListManagedPartnerMappingsData, ListManagedPartnerMappingsResponses, ListManagedPartnerRevisionsData, ListManagedPartnerRevisionsResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListPartnerReferenceTablesData, ListPartnerReferenceTablesResponses, ListPublishedManagedPartnersData, ListPublishedManagedPartnersResponses, ListSsccIssuersData, ListSsccIssuersResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, MakeDefaultSsccIssuerData, MakeDefaultSsccIssuerResponses, PreviewMappingFileData, PreviewMappingFileResponses, PublishManagedPartnerTemplateData, PublishManagedPartnerTemplateResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, PublishPartnerReferenceTableData, PublishPartnerReferenceTableResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RecordManagedRetailerAcceptanceData, RecordManagedRetailerAcceptanceResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, ReserveSsccsData, ReserveSsccsResponses, RetireManagedPartnerTemplateData, RetireManagedPartnerTemplateResponses, RetireSsccIssuerData, RetireSsccIssuerResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, TestMappingRetainedSourceData, TestMappingRetainedSourceResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses, ValidateMappingDocumentData, ValidateMappingDocumentResponses } from './types.gen';
-import { zActivateSsccIssuerResponse, zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zApplyManagedPartnerTemplateResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zBindPartnerReferenceTableResponse, zCheckExchangeReadinessResponse, zCreateManagedPartnerTemplateResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateSsccIssuerResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zEditManagedPartnerTemplateResponse, zGetExchangeResponse, zGetManagedAgreementSetupResponse, zGetMappingExampleFilesResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetPartnerReferenceTableResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListManagedPartnerMappingsResponse, zListManagedPartnerRevisionsResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListPartnerReferenceTablesResponse, zListPublishedManagedPartnersResponse, zListSsccIssuersResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zMakeDefaultSsccIssuerResponse, zPreviewMappingFileResponse, zPublishManagedPartnerTemplateResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zPublishPartnerReferenceTableResponse, zQualifyTradingAgreementResponse, zRecordManagedRetailerAcceptanceResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zReserveSsccsResponse, zRetireManagedPartnerTemplateResponse, zRetireSsccIssuerResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zTestMappingRetainedSourceResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse, zValidateMappingDocumentResponse } from './zod.gen';
+import type { ActivateSsccIssuerData, ActivateSsccIssuerResponses, ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ApplyManagedPartnerTemplateData, ApplyManagedPartnerTemplateResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, BindPartnerReferenceTableData, BindPartnerReferenceTableResponses, CancelMigJobData, CancelMigJobErrors, CancelMigJobResponses, CheckExchangeReadinessData, CheckExchangeReadinessResponses, CreateManagedPartnerTemplateData, CreateManagedPartnerTemplateResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreateMigDraftData, CreateMigDraftErrors, CreateMigDraftResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateSsccIssuerData, CreateSsccIssuerResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, EditManagedPartnerTemplateData, EditManagedPartnerTemplateResponses, EstimateMigJobData, EstimateMigJobErrors, EstimateMigJobResponses, GetExchangeData, GetExchangeResponses, GetManagedAgreementSetupData, GetManagedAgreementSetupResponses, GetMappingData, GetMappingExampleFilesData, GetMappingExampleFilesResponses, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetMigGenerationAvailabilityData, GetMigGenerationAvailabilityErrors, GetMigGenerationAvailabilityResponses, GetMigJobData, GetMigJobErrors, GetMigJobResponses, GetPartnerReferenceTableData, GetPartnerReferenceTableResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListManagedPartnerMappingsData, ListManagedPartnerMappingsResponses, ListManagedPartnerRevisionsData, ListManagedPartnerRevisionsResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListPartnerReferenceTablesData, ListPartnerReferenceTablesResponses, ListPublishedManagedPartnersData, ListPublishedManagedPartnersResponses, ListSsccIssuersData, ListSsccIssuersResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, MakeDefaultSsccIssuerData, MakeDefaultSsccIssuerResponses, PreviewMappingFileData, PreviewMappingFileResponses, PublishManagedPartnerTemplateData, PublishManagedPartnerTemplateResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, PublishPartnerReferenceTableData, PublishPartnerReferenceTableResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RecordManagedRetailerAcceptanceData, RecordManagedRetailerAcceptanceResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, RerunMigJobData, RerunMigJobErrors, RerunMigJobResponses, ReserveSsccsData, ReserveSsccsResponses, RetireManagedPartnerTemplateData, RetireManagedPartnerTemplateResponses, RetireSsccIssuerData, RetireSsccIssuerResponses, RetryMigJobData, RetryMigJobErrors, RetryMigJobResponses, ReviewMigJobData, ReviewMigJobErrors, ReviewMigJobResponses, StartMigJobData, StartMigJobErrors, StartMigJobResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, TestMappingRetainedSourceData, TestMappingRetainedSourceResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses, UploadMigFileData, UploadMigFileErrors, UploadMigFileResponses, ValidateMappingDocumentData, ValidateMappingDocumentResponses } from './types.gen';
+import { zActivateSsccIssuerResponse, zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zApplyManagedPartnerTemplateResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zBindPartnerReferenceTableResponse, zCancelMigJobResponse, zCheckExchangeReadinessResponse, zCreateManagedPartnerTemplateResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreateMigDraftResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateSsccIssuerResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zEditManagedPartnerTemplateResponse, zEstimateMigJobResponse, zGetExchangeResponse, zGetManagedAgreementSetupResponse, zGetMappingExampleFilesResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetMigGenerationAvailabilityResponse, zGetMigJobResponse, zGetPartnerReferenceTableResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListManagedPartnerMappingsResponse, zListManagedPartnerRevisionsResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListPartnerReferenceTablesResponse, zListPublishedManagedPartnersResponse, zListSsccIssuersResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zMakeDefaultSsccIssuerResponse, zPreviewMappingFileResponse, zPublishManagedPartnerTemplateResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zPublishPartnerReferenceTableResponse, zQualifyTradingAgreementResponse, zRecordManagedRetailerAcceptanceResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zRerunMigJobResponse, zReserveSsccsResponse, zRetireManagedPartnerTemplateResponse, zRetireSsccIssuerResponse, zRetryMigJobResponse, zReviewMigJobResponse, zStartMigJobResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zTestMappingRetainedSourceResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse, zUploadMigFileResponse, zValidateMappingDocumentResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -660,6 +660,118 @@ export class IntegrationClient extends HeyApiClient {
         });
     }
 
+    /**
+     * Upload a guide or fixture
+     */
+    public uploadMigFile<ThrowOnError extends boolean = false>(options: Options<UploadMigFileData, ThrowOnError>): RequestResult<UploadMigFileResponses, UploadMigFileErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<UploadMigFileResponses, UploadMigFileErrors, ThrowOnError>({
+            responseValidator: async (data) => await zUploadMigFileResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/uploads',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Prepare evidence and estimate maximum AI credits
+     */
+    public estimateMigJob<ThrowOnError extends boolean = false>(options: Options<EstimateMigJobData, ThrowOnError>): RequestResult<EstimateMigJobResponses, EstimateMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<EstimateMigJobResponses, EstimateMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zEstimateMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Reserve AI credits and queue independent generation
+     */
+    public startMigJob<ThrowOnError extends boolean = false>(options: Options<StartMigJobData, ThrowOnError>): RequestResult<StartMigJobResponses, StartMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<StartMigJobResponses, StartMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zStartMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}/start',
+            ...options
+        });
+    }
+
+    /**
+     * Save analyst decisions and revalidate the reviewed mapping
+     */
+    public reviewMigJob<ThrowOnError extends boolean = false>(options: Options<ReviewMigJobData, ThrowOnError>): RequestResult<ReviewMigJobResponses, ReviewMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<ReviewMigJobResponses, ReviewMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zReviewMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}/review',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Reserve credits and retry an incomplete candidate
+     */
+    public retryMigJob<ThrowOnError extends boolean = false>(options: Options<RetryMigJobData, ThrowOnError>): RequestResult<RetryMigJobResponses, RetryMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<RetryMigJobResponses, RetryMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zRetryMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}/retry',
+            ...options
+        });
+    }
+
+    /**
+     * Create a new estimate using the previous job’s uploads and settings
+     */
+    public rerunMigJob<ThrowOnError extends boolean = false>(options: Options<RerunMigJobData, ThrowOnError>): RequestResult<RerunMigJobResponses, RerunMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<RerunMigJobResponses, RerunMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zRerunMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}/rerun',
+            ...options
+        });
+    }
+
+    /**
+     * Create an editable draft from a validated review
+     */
+    public createMigDraft<ThrowOnError extends boolean = false>(options: Options<CreateMigDraftData, ThrowOnError>): RequestResult<CreateMigDraftResponses, CreateMigDraftErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateMigDraftResponses, CreateMigDraftErrors, ThrowOnError>({
+            responseValidator: async (data) => await zCreateMigDraftResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}/draft',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    /**
+     * Cancel generation and release unused credits
+     */
+    public cancelMigJob<ThrowOnError extends boolean = false>(options: Options<CancelMigJobData, ThrowOnError>): RequestResult<CancelMigJobResponses, CancelMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).post<CancelMigJobResponses, CancelMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zCancelMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}/cancel',
+            ...options
+        });
+    }
+
     public applyManagedPartnerTemplate<ThrowOnError extends boolean = false>(options: Options<ApplyManagedPartnerTemplateData, ThrowOnError>): RequestResult<ApplyManagedPartnerTemplateResponses, unknown, ThrowOnError> {
         return (options.client ?? this.client).post<ApplyManagedPartnerTemplateResponses, unknown, ThrowOnError>({
             responseValidator: async (data) => await zApplyManagedPartnerTemplateResponse.parseAsync(data),
@@ -865,6 +977,30 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zGetMappingUsageResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/mappings/{mappingId}/usage',
+            ...options
+        });
+    }
+
+    /**
+     * Get job status, evidence, and results
+     */
+    public getMigJob<ThrowOnError extends boolean = false>(options: Options<GetMigJobData, ThrowOnError>): RequestResult<GetMigJobResponses, GetMigJobErrors, ThrowOnError> {
+        return (options.client ?? this.client).get<GetMigJobResponses, GetMigJobErrors, ThrowOnError>({
+            responseValidator: async (data) => await zGetMigJobResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/jobs/{jobId}',
+            ...options
+        });
+    }
+
+    /**
+     * Check organisation access to MIG generation
+     */
+    public getMigGenerationAvailability<ThrowOnError extends boolean = false>(options?: Options<GetMigGenerationAvailabilityData, ThrowOnError>): RequestResult<GetMigGenerationAvailabilityResponses, GetMigGenerationAvailabilityErrors, ThrowOnError> {
+        return (options?.client ?? this.client).get<GetMigGenerationAvailabilityResponses, GetMigGenerationAvailabilityErrors, ThrowOnError>({
+            responseValidator: async (data) => await zGetMigGenerationAvailabilityResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/mappings/mig/availability',
             ...options
         });
     }

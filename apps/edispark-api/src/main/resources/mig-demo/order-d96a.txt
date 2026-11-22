@@ -1,0 +1,26 @@
+Synthetic retail purchase order guide — edition 1.0 — EDIFACT release D96A
+RULE COPY /Order/0/ID/0/_ -> /document/id | BGM requires the buyer's purchase order number.
+RULE COPY /Order/0/IssueDate/0/_ -> /document/issueDate | DTM qualifier 137 carries the order issue date.
+RULE COPY /Order/0/SellerSupplierParty/0/Party/0/EndpointID/0/_ -> /parties/sender | UNB and NAD require the supplier identifier.
+RULE COPY /Order/0/BuyerCustomerParty/0/Party/0/EndpointID/0/_ -> /parties/receiver | UNB and NAD require the buyer identifier.
+RULE COPY /Order/0/OrderLine/*/LineItem/0/ID/0/_ -> /lines/*/id | LIN carries the identifier for every order line.
+RULE COPY /Order/0/OrderLine/*/LineItem/0/Quantity/0/_ -> /lines/*/quantity | QTY qualifier 21 carries the ordered quantity on each line.
+RULE COPY /Order/0/OrderLine/*/LineItem/0/Quantity/0/unitCode -> /lines/*/unitCode | The QTY composite includes the unit of measure.
+RULE COPY /Order/0/OrderLine/*/LineItem/0/Item/0/StandardItemIdentification/0/ID/0/_ -> /lines/*/gtin | LIN carries the product GTIN under qualifier EN.
+
+Heading:
+Pos | Tag | Segment Name | Status | Rep
+0020 | UNH | Message header | M | 1
+0030 | BGM | Beginning of message | M | 1
+0040 | DTM | Order issue date | M | 1
+0140 | Segment Group 2 | M | 2
+0150 | NAD | Name and address | M | 1
+
+Detail:
+0890 | Segment Group 25 | M | 200000
+0900 | LIN | Line item | M | 1
+0940 | QTY | Ordered quantity | M | 1
+
+Summary:
+2050 | UNS | Section control | M | 1
+2120 | UNT | Message trailer | M | 1

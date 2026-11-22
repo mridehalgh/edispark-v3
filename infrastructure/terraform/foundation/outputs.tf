@@ -33,6 +33,12 @@ output "release_config" {
       EDISPARK_AGENT_MONTHLYCREDITS  = tostring(var.desk_ai_monthly_credits)
       EDISPARK_AGENT_ROUNDSPERMINUTE = tostring(var.desk_ai_rounds_per_minute)
       AGENTCORE_MEMORY_MEMORYID      = aws_bedrockagentcore_memory.desk[0].id
+      } : {}, local.mig_london_ready ? {
+      EDISPARK_MIG_LONDON_PILOT_VERIFIED = "true"
+      EDISPARK_MIG_SONNET_INPUT_MICROS   = tostring(var.mig_london_rates.sonnet_input)
+      EDISPARK_MIG_SONNET_OUTPUT_MICROS  = tostring(var.mig_london_rates.sonnet_output)
+      EDISPARK_MIG_NOVA_INPUT_MICROS     = tostring(var.mig_london_rates.nova_input)
+      EDISPARK_MIG_NOVA_OUTPUT_MICROS    = tostring(var.mig_london_rates.nova_output)
     } : {})
   }
 }

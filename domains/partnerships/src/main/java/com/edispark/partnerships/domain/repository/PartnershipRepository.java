@@ -22,6 +22,9 @@ public interface PartnershipRepository extends PartnershipCreation {
     Optional<TradingAgreement> findAgreement(UUID id);
     List<TradingAgreement> listAgreements();
     void deleteAgreement(UUID id);
+    default DocumentProfile createProfileIfAbsent(DocumentProfile profile) {
+        return findDocumentProfile(profile.id()).orElseGet(() -> saveDocumentProfile(profile));
+    }
     DocumentProfile saveDocumentProfile(DocumentProfile profile);
     Optional<DocumentProfile> findDocumentProfile(UUID id);
     List<DocumentProfile> listDocumentProfiles(UUID partnerId);

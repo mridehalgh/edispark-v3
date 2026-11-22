@@ -21,6 +21,11 @@ final class DynamoMappingRepository implements MappingRepository, MappingCreatio
     @Override public MappingRevision save(MappingRevision mapping) { TenantAccess.requireOwner(mapping.tenantId());
         store.put(mapping.tenantId(), "MAPPING#" + mapping.id(), "MAPPING", write(mapping)); return mapping;
     }
+    @Override public MappingRevision createIfAbsent(MappingRevision mapping) {
+        TenantAccess.requireOwner(mapping.tenantId());
+        if (store.putVersionedIfCurrent(mapping.tenantId(), "MAPPING#" + mapping.id(), "MAPPING", write(mapping), 0)) return mapping;
+        return find(mapping.id()).orElseThrow(() -> new IllegalStateException("The draft changed during creation."));
+    }
     @Override public Optional<MappingRevision> find(UUID id) { String tenantId = TenantAccess.currentId();
         return store.get(tenantId, "MAPPING#" + id).map(this::read);
     }

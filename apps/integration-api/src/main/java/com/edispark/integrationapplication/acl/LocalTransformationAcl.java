@@ -75,7 +75,7 @@ public final class LocalTransformationAcl implements TransformationAcl {
                                     "Ask an administrator to test a new mapping revision against this document.");
             }).toList());
         }
-        return new Result(edi.preview(capability, result.output()), result.report(), warnings);
+        return new Result(edi.preview(capability, result.output(), EdiPayloadWriter.encoderRevision(mapping)), result.report(), warnings);
     }
 
     @Override public Result prepareForDispatch(ExchangeCapability capability, byte[] canonical, UUID exchangeId, Result checked) {

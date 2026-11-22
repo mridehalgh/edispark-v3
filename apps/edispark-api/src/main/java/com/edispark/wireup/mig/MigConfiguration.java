@@ -21,6 +21,7 @@ import java.time.*;
 import java.util.Map;
 import java.util.List;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.*;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
@@ -109,6 +110,18 @@ abstract class MigConfiguration {
         }
     }
 
+    static class LondonServicesEnabled extends AnyNestedCondition {
+        LondonServicesEnabled() { super(ConfigurationPhase.PARSE_CONFIGURATION); }
+
+        @Profile("local & !production & !openapi-export & mig-bedrock")
+        static class LocalWithBedrock { }
+
+        @Profile("production & !openapi-export")
+        @ConditionalOnProperty(name = "edispark.mig.london-pilot-verified", havingValue = "true")
+        static class VerifiedProduction { }
+    }
+
+    @Conditional(LondonServicesEnabled.class)
     static class LondonServices {
         @Bean(destroyMethod = "close", defaultCandidate = false)
         BedrockRuntimeClient migBedrock(@Qualifier("migAwsProfile") ObjectProvider<ProfileCredentialsProvider> credentials) {
@@ -135,12 +148,25 @@ abstract class MigConfiguration {
                 @Value("${edispark.mig.sonnet-input-micros}") long sonnetInput,
                 @Value("${edispark.mig.sonnet-output-micros}") long sonnetOutput,
                 @Value("${edispark.mig.nova-input-micros}") long novaInput,
-                @Value("${edispark.mig.nova-output-micros}") long novaOutput) {
+                @Value("${edispark.mig.nova-output-micros}") long novaOutput,
+                @Value("${edispark.mig.claude-model:anthropic.claude-sonnet-4-6}") String claude,
+                @Value("${typesafe.api-key:}") String jevKey,
+                @Value("${edispark.mig.jev-model:jev-1.14.0}") String jevModel) {
             if (sonnetInput <= 0 || sonnetOutput <= 0 || novaInput <= 0 || novaOutput <= 0)
                 throw new IllegalArgumentException("Configure positive verified London usage rates.");
-            return new LondonMigModel(bedrock, guardrail, version, Map.of(
-                    Candidate.SONNET, new MigCandidateModel.Rate(sonnetInput, sonnetOutput),
-                    Candidate.NOVA, new MigCandidateModel.Rate(novaInput, novaOutput)), localProfile.getIfAvailable() == null);
+            boolean local = localProfile.getIfAvailable() != null;
+            if (LondonMigModel.SONNET_EU.equals(claude) && !local) {
+                throw new IllegalArgumentException("European Sonnet 5.5 inference is configured for the local MIG runner.");
+            }
+            var claudeRate = switch (claude) {
+                case LondonMigModel.SONNET_EU -> new MigCandidateModel.Rate(2_200_000, 11_000_000);
+                case LondonMigModel.OPUS -> new MigCandidateModel.Rate(4_400_000, 22_000_000);
+                default -> new MigCandidateModel.Rate(sonnetInput, sonnetOutput);
+            };
+            var london = new LondonMigModel(bedrock, guardrail, version, Map.of(
+                    Candidate.SONNET, claudeRate, Candidate.NOVA, new MigCandidateModel.Rate(novaInput, novaOutput)),
+                    !local, claude);
+            return jevKey.isBlank() ? london : new BedrockAndJevMigModels(london, JevMigModel.connect(jevModel, jevKey));
         }
 
         private static ClientOverrideConfiguration settings(int seconds) {

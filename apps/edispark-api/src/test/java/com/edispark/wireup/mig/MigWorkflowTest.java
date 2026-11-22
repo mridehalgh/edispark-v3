@@ -2,11 +2,11 @@ package com.edispark.wireup.mig;
 
 import static com.edispark.integrationapplication.mig.MigGeneration.*;
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 import com.edispark.crypto.LocalTenantCipher;
 import com.edispark.transformations.domain.*;
 import com.edispark.transformations.application.MappingService;
+import com.edispark.transformations.infrastructure.ClasspathGlobalMappingCatalog;
 import com.edispark.integrationapplication.mapping.MappingExampleFiles;
 import io.cottn.core.tenancy.TenantExecution;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -219,7 +219,7 @@ class MigWorkflowTest {
         var review = new ReviewRequest(List.of(new Selection("field", Candidate.SONNET, "", null)), List.of(), Map.of());
         var job = new MigJob(UUID.randomUUID(), State.READY, NOW.getEpochSecond(), NOW.plusSeconds(3_600).getEpochSecond(),
                 pack, List.of(), 0, Map.of(), List.of(), List.of(), List.of(new Difference("field", rule, rule, true)),
-                review, new FixtureResult("UPLOADED_STRUCTURE", null, List.of()), null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null);
+                review, new FixtureResult("UPLOADED_STRUCTURE", null, List.of()), null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null, null);
         store.create(job);
         return job;
     }
@@ -238,7 +238,7 @@ class MigWorkflowTest {
         }
         @Override public MappingRevision save(MappingRevision m) { throw new UnsupportedOperationException(); }
         @Override public Optional<MappingRevision> find(UUID id) { throw new UnsupportedOperationException(); }
-        @Override public List<MappingRevision> list() { throw new UnsupportedOperationException(); }
+        @Override public List<MappingRevision> list() { return List.of(); }
         @Override public void delete(UUID id) { throw new UnsupportedOperationException(); }
         @Override public MappingRevision draft(String name, UUID source, UUID target, List<MappingNode> nodes, Instant at) {
             throw new UnsupportedOperationException();
@@ -261,7 +261,8 @@ class MigWorkflowTest {
         var json = new JsonMapper();
         var cipher = new LocalTenantCipher(files.resolve("root"), "edispark-mig");
         var store = new MigStore(db.client(), cipher, json, "integration", "allowance", allowance, clock);
-        var evidence = new MigEvidence(mock(MappingService.class), null, json, null, null);
+        var mappingService = new MappingService(new DraftFixture(), null, null, clock, new ClasspathGlobalMappingCatalog());
+        var evidence = new MigEvidence(mappingService, null, json, null, null);
         var preview = new MigPreview(null, null, null, null, null, null);
         var service = new MigWorkflow(store, new MigExtractor(), null, evidence, new MigReview(), preview, model, mappings,
                 null, new SimpleMeterRegistry(), clock, "");
@@ -275,7 +276,7 @@ class MigWorkflowTest {
         var pack = new MigEvidence.Pack(1, target, null, List.of(), text, List.of(), List.of(), "digest");
         var rates = Map.of(Candidate.SONNET, new MigCandidateModel.Rate(100, 300), Candidate.NOVA, new MigCandidateModel.Rate(100, 300));
         var job = new MigJob(id, State.ESTIMATED, NOW.getEpochSecond(), NOW.plusSeconds(3_600).getEpochSecond(),
-                pack, List.of(), 52, rates, List.of(), List.of(), List.of(), null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null);
+                pack, List.of(), 52, rates, List.of(), List.of(), List.of(), null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null, null);
         store.create(job);
         return job;
     }

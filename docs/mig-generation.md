@@ -36,9 +36,13 @@ The archive under `vendor/partners/migs` is an engineering reference. The workfl
 
 ## Local Bedrock
 
-The default local runner uses fixture declarations for deterministic development and CI. To process a real guide locally, configure `migBedrock` in the ignored `.local/settings.json` with an active AWS SSO profile, a published London guardrail and the verified rates for direct London inference. The local launcher activates the `mig-bedrock` Spring profile when those settings are present. Local files and job records stay in the local workspace. Bedrock and Textract process the relevant evidence in London. Local Nova uses a single call with the pinned evidence to avoid throttling during a tool follow-up.
+The default local runner uses fixture declarations for deterministic development and CI. To process a real guide locally, configure `migBedrock` in the ignored `.local/settings.json` with an active AWS SSO profile, a published London guardrail and the verified rates for direct London inference. The local launcher activates the `mig-bedrock` Spring profile when those settings are present. Local files and job records stay in the local workspace. The local runner sends Bedrock and Textract requests through the London endpoints. The European Sonnet 5.5 profile can route inference across its listed European regions. Local Nova uses a single call with the pinned evidence to avoid throttling during a tool follow-up.
 
 The settings fields are `awsProfile`, `guardrailId`, `guardrailVersion`, `sonnetInputMicros`, `sonnetOutputMicros`, `novaInputMicros` and `novaOutputMicros`. Rates are whole US dollar millionths per million tokens. A fresh estimate pins the runner and model rates. Start a new job when switching from the fixture runner to Bedrock. Set `SPRING_PROFILES_ACTIVE=local` for a fixture-only run with the settings still in place.
+
+Set `TYPESAFE_API_KEY` in the environment when starting the local workbench to compare Claude with Jev. Jev receives selected cited guide excerpts and a bounded list of mapping operations from the pinned catalogue. It selects from those operations with typed decisions. Low-confidence, unsupported and out-of-batch requirements appear as gaps. Claude and Jev run independently and use the same compiler, fixture preview and review. The cards report compiled rules, cited requirements and settled credits per candidate. Jev's model defaults to `jev-1.14.0`. It is billed for confirmed input tokens.
+
+Claude Sonnet 4.6 remains the default direct London model. Set `EDISPARK_MIG_CLAUDE_MODEL=eu.anthropic.claude-sonnet-5-5` for the European Sonnet 5.5 profile in the local runner. It is invoked through the London endpoint at $2.20 input and $11 output per million tokens. For direct London Opus 5.5, use `EDISPARK_MIG_CLAUDE_MODEL=anthropic.claude-opus-5-5` after the AWS account has model access. Start a fresh estimate, or rerun from an existing job, when changing the candidate models.
 
 ## London deployment
 

@@ -67,6 +67,7 @@ final class MigWorkflow implements MigGeneration {
     }
 
     @Override public ModelMode modelMode() { return models.mode(); }
+    @Override public Map<Candidate, String> modelIds() { return models.modelIds(); }
 
     @Override public UUID demoJobId() {
         if (!TenantAccess.currentId().equals(demoTenant)) return null;
@@ -78,7 +79,7 @@ final class MigWorkflow implements MigGeneration {
         if (!TenantAccess.currentId().equals(demoTenant)) return;
         var assets = List.of(demoAsset("order-d96a.txt", FileRole.PRIMARY),
                 demoAsset("order.json", FileRole.INPUT), demoAsset("order.edi", FileRole.EXPECTED));
-        if (store.demoMatches(DEMO_JOB, assets.stream().map(asset -> MigEvidence.digest(asset.bytes())).toList(), modelMode())) return;
+        if (store.demoMatches(DEMO_JOB, assets.stream().map(asset -> MigEvidence.digest(asset.bytes())).toList(), modelMode(), modelIds())) return;
         var ids = assets.stream().map(this::seedFile).toList();
         var target = new Coordinates("OUTBOUND", "ORDER", "EDIFACT", "D96A", "ORDERS");
         var job = estimate(new EstimateRequest(ids.get(0), List.of(), ids.get(1), ids.get(2), null, null, target, null), DEMO_JOB, null);
@@ -148,12 +149,14 @@ final class MigWorkflow implements MigGeneration {
         if (request.expected() != null) files.add(file(request.expected(), FileRole.EXPECTED));
         if (request.reference() != null) files.add(file(request.reference(), FileRole.REFERENCE));
         var pack = extract(request.target(), evidence.profile(request.target(), request.partnerId(), request.catalogueRevisionId()), guides, false);
-        var rates = Map.of(Candidate.SONNET, models.rate(Candidate.SONNET), Candidate.NOVA, models.rate(Candidate.NOVA));
-        long maximum = Arrays.stream(Candidate.values()).mapToLong(candidate -> maximum(rates.get(candidate))).sum();
+        var ids = modelIds();
+        var rates = new EnumMap<Candidate, MigCandidateModel.Rate>(Candidate.class);
+        ids.keySet().forEach(candidate -> rates.put(candidate, models.rate(candidate)));
+        long maximum = rates.values().stream().mapToLong(MigWorkflow::maximum).sum();
         long expiry = files.stream().mapToLong(MigStore.File::expiresAt).min().orElseThrow();
         return new MigJob(id, State.ESTIMATED, now(), expiry, pack, files.stream().map(MigStore.File::upload).toList(),
                 maximum, rates, List.of(), List.of(), List.of(), null, null, null, null, request.partnerId(), null, modelMode(),
-                request.catalogueRevisionId(), rerunOf);
+                request.catalogueRevisionId(), rerunOf, ids);
     }
 
     private MigEvidence.Pack extract(Coordinates target, MigEvidence.Profile profile, List<MigStore.File> files, boolean recover) {
@@ -188,11 +191,11 @@ final class MigWorkflow implements MigGeneration {
         var job = checkpoint.job();
         if (job.state() == State.QUEUED || job.state() == State.RUNNING) return job.view(evidence);
         require(job.state() == required, "This job is unavailable for dispatch in its current state.");
-        require(job.recordedMode() == modelMode(), "The model runner changed. Prepare a new job to get a matching credit estimate.");
+        require(matchesRunner(job), "The model runner changed. Prepare a new job to get a matching credit estimate.");
         require(job.attempts().size() < MAX_ATTEMPTS, "The candidate retry limit was reached.");
         require(job.expiry() - now() > LEASE_SECONDS, "The upload window is too close to expiry. Upload a fresh copy.");
         String month = YearMonth.from(clock.instant().atZone(ZoneOffset.UTC)).toString();
-        var fresh = Arrays.stream(Candidate.values()).filter(candidate -> job.proposals().stream().noneMatch(p -> p.candidate() == candidate))
+        var fresh = job.rates().keySet().stream().sorted().filter(candidate -> job.proposals().stream().noneMatch(p -> p.candidate() == candidate))
                 .map(candidate -> new MigJob.Attempt(UUID.randomUUID(), candidate, maximum(job.rates().get(candidate)),
                         null, month, HELD, null, null)).toList();
         long ceiling = fresh.stream().mapToLong(MigJob.Attempt::maximum).sum();
@@ -233,7 +236,7 @@ final class MigWorkflow implements MigGeneration {
             return;
         }
         if (checkpoint.job().state() != State.QUEUED && checkpoint.job().state() != State.RUNNING) return;
-        if (job.recordedMode() != modelMode()) {
+        if (!matchesRunner(job)) {
             finish(checkpoint, false);
             return;
         }
@@ -254,8 +257,19 @@ final class MigWorkflow implements MigGeneration {
                 List.of(store.replaceQueueDigest(job.id(), pack.digest())));
     }
 
+    private boolean matchesRunner(MigJob job) {
+        if (job.recordedMode() != modelMode() || !job.rates().keySet().equals(modelIds().keySet())) return false;
+        if (job.modelIds() != null) return job.modelIds().equals(modelIds());
+        return modelMode() != ModelMode.LONDON_BEDROCK
+                || LondonMigModel.SONNET.equals(modelIds().get(Candidate.SONNET));
+    }
+
+    private List<Candidate> jobCandidates(UUID id) {
+        return store.loadWorker(id).job().rates().keySet().stream().sorted().toList();
+    }
+
     private void dispatch(UUID id) {
-        for (var candidate : Candidate.values()) {
+        for (var candidate : jobCandidates(id)) {
             var checkpoint = store.loadWorker(id);
             if (checkpoint.job().state() == State.CANCEL_REQUESTED) break;
             var attempt = checkpoint.job().attempts().stream()

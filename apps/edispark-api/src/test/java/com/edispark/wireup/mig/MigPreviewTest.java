@@ -74,7 +74,7 @@ class MigPreviewTest {
                 MigEvidence.runtimeFingerprint(), List.of(), Set.of(), Set.of(), null, List.of(), List.of(), Map.of(), null);
         var pack = new MigEvidence.Pack(1, format, profile, List.of(), List.of(), List.of(), List.of(), "digest");
         var job = new MigJob(UUID.randomUUID(), State.REVIEW, 0L, Long.MAX_VALUE, pack, List.of(), 0,
-                Map.of(), List.of(), List.of(), List.of(), null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null);
+                Map.of(), List.of(), List.of(), List.of(), null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null, null);
         var rules = mapping.nodes().stream().map(node -> new Rule("Synthetic benchmark rule", List.of("fixture"),
                 node, null, null, null, List.of(), true)).toList();
 

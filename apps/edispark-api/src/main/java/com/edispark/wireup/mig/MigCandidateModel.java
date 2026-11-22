@@ -34,6 +34,10 @@ interface MigCandidateModel {
     }
 
     ModelMode mode();
+
+    default Map<Candidate, String> modelIds() {
+        return Map.of(Candidate.SONNET, "fixture-a", Candidate.NOVA, "fixture-b");
+    }
     Rate rate(Candidate candidate);
     Result propose(Candidate candidate, java.util.UUID invocationId, MigEvidence.Pack pack, byte[] evidence, Rate rate);
 

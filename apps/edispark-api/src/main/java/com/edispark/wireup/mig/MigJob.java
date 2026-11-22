@@ -10,10 +10,10 @@ record MigJob(UUID id, State state, Long created, long expiry, MigEvidence.Pack 
         long estimate, Map<Candidate, MigCandidateModel.Rate> rates, List<Attempt> attempts, List<Proposal> proposals,
         List<Difference> differences, ReviewRequest review, FixtureResult reviewed,
         UUID draftId, String draftName, UUID partnerId, UUID profileDraftId, ModelMode modelMode,
-        UUID catalogueRevisionId, UUID rerunOf) {
+        UUID catalogueRevisionId, UUID rerunOf, Map<Candidate, String> modelIds) {
     ModelMode recordedMode() {
         if (modelMode != null) return modelMode;
-        return rates.size() == Candidate.values().length && rates.values().stream().allMatch(LocalMigModel.FIXTURE_RATE::equals)
+        return rates.size() == 2 && rates.values().stream().allMatch(LocalMigModel.FIXTURE_RATE::equals)
                 ? ModelMode.LOCAL_FIXTURE : ModelMode.UNRECORDED;
     }
 
@@ -37,27 +37,27 @@ record MigJob(UUID id, State state, Long created, long expiry, MigEvidence.Pack 
                 review == null || review.referenceTableRevisions() == null ? Map.of() : review.referenceTableRevisions(),
                 evidence.manifest(pack), attempts.stream().map(attempt -> new Invocation(attempt.id(), attempt.candidate(),
                         attempt.phase().name(), credits(attempt.actual() == null ? attempt.maximum() : 0),
-                        credits(attempt.actual() == null ? 0 : attempt.actual()))).toList(), pack.standardsReview(), recordedMode(), rerunOf, Instant.ofEpochSecond(expiry).toString());
+                        credits(attempt.actual() == null ? 0 : attempt.actual()))).toList(), pack.standardsReview(), recordedMode(), rerunOf, Instant.ofEpochSecond(expiry).toString(), modelIds);
     }
 
     MigJob move(State next, List<Attempt> nextAttempts, List<Proposal> nextProposals, List<Difference> nextDifferences) {
         return new MigJob(id, next, created, expiry, pack, uploads, estimate, rates, nextAttempts, nextProposals, nextDifferences,
-                review, reviewed, draftId, draftName, partnerId, profileDraftId, modelMode, catalogueRevisionId, rerunOf);
+                review, reviewed, draftId, draftName, partnerId, profileDraftId, modelMode, catalogueRevisionId, rerunOf, modelIds);
     }
 
     MigJob replacePack(MigEvidence.Pack nextPack) {
         return new MigJob(id, state, created, expiry, nextPack, uploads, estimate, rates, attempts, proposals, differences, review,
-                reviewed, draftId, draftName, partnerId, profileDraftId, modelMode, catalogueRevisionId, rerunOf);
+                reviewed, draftId, draftName, partnerId, profileDraftId, modelMode, catalogueRevisionId, rerunOf, modelIds);
     }
 
     MigJob withReview(State next, ReviewRequest request, FixtureResult result) {
         return new MigJob(id, next, created, expiry, pack, uploads, estimate, rates, attempts, proposals, differences,
-                request, result, draftId, draftName, partnerId, profileDraftId, modelMode, catalogueRevisionId, rerunOf);
+                request, result, draftId, draftName, partnerId, profileDraftId, modelMode, catalogueRevisionId, rerunOf, modelIds);
     }
 
     MigJob importAs(State next, UUID mapping, String name, UUID profileDraft) {
         return new MigJob(id, next, created, expiry, pack, uploads, estimate, rates, attempts, proposals, differences,
-                review, reviewed, mapping, name, partnerId, profileDraft, modelMode, catalogueRevisionId, rerunOf);
+                review, reviewed, mapping, name, partnerId, profileDraft, modelMode, catalogueRevisionId, rerunOf, modelIds);
     }
 
     private static BigDecimal credits(long micros) {

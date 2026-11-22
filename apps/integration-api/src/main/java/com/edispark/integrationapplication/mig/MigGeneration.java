@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public interface MigGeneration {
     ModelMode modelMode();
+    Map<Candidate, String> modelIds();
     default UUID demoJobId() { return null; }
     Upload upload(UploadRequest request);
     Job estimate(EstimateRequest request);
@@ -27,11 +28,11 @@ public interface MigGeneration {
 
     enum FileRole { PRIMARY, SUPPLEMENT, INPUT, EXPECTED, REFERENCE }
     enum State { ESTIMATED, QUEUED, RUNNING, CANCEL_REQUESTED, INCOMPLETE, RECONCILIATION, REVIEW, READY, IMPORTING, IMPORTED, CANCELLED }
-    enum Candidate { SONNET, NOVA }
+    enum Candidate { SONNET, NOVA, JEV }
 
-    enum ModelMode { LOCAL_FIXTURE, LONDON_BEDROCK, UNRECORDED }
+    enum ModelMode { LOCAL_FIXTURE, LONDON_BEDROCK, BEDROCK_AND_JEV, UNRECORDED }
 
-    record Availability(boolean enabled, UUID demoJobId, ModelMode modelMode) { }
+    record Availability(boolean enabled, UUID demoJobId, ModelMode modelMode, Map<Candidate, String> modelIds) { }
     record UploadRequest(@NotNull FileRole role, @NotBlank @Size(max = 160) String name,
             @Size(max = 100) String edition, @NotBlank @Size(max = 4_194_304) String base64) { }
     record Upload(UUID id, String name, FileRole role, String edition, String digest) { }
@@ -71,7 +72,11 @@ public interface MigGeneration {
     }
     record GeneratedCase(String name, boolean passed, String detail) { }
     record Proposal(Candidate candidate, List<Rule> rules, List<MigFinding> findings, FixtureResult fixture) { }
-    record Difference(String id, Rule sonnet, Rule nova, boolean preselected) { }
+    record Difference(String id, Rule sonnet, Rule nova, boolean preselected, Rule jev) {
+        public Difference(String id, Rule sonnet, Rule nova, boolean preselected) {
+            this(id, sonnet, nova, preselected, null);
+        }
+    }
     record Selection(@NotBlank String id, @NotNull Candidate candidate, @Size(max = 280) String reason, @Valid MappingNode override) { }
     record ReviewRequest(@NotNull @Size(max = 600) List<@NotNull @Valid Selection> selections,
             @Size(max = 600) List<@NotNull @Valid Supersession> supersessions,
@@ -82,7 +87,7 @@ public interface MigGeneration {
             BigDecimal estimatedCredits, BigDecimal reservedCredits, BigDecimal settledCredits, String expiresAt,
             List<Section> sections, List<MigFinding> findings, List<Proposal> proposals, List<Difference> differences,
             List<Selection> selections, List<Supersession> supersessions, FixtureResult reviewedFixture, UUID draftId, UUID partnerId, UUID profileDraftId,
-            Map<String, UUID> referenceTableRevisions, EvidenceManifest manifest, List<Invocation> invocations, StandardsReview standardsReview, ModelMode modelMode, UUID rerunOf, String uploadsExpireAt) { }
+            Map<String, UUID> referenceTableRevisions, EvidenceManifest manifest, List<Invocation> invocations, StandardsReview standardsReview, ModelMode modelMode, UUID rerunOf, String uploadsExpireAt, Map<Candidate, String> modelIds) { }
     record Invocation(UUID id, Candidate candidate, String state, BigDecimal reservedCredits, BigDecimal settledCredits) { }
     record EvidenceManifest(int version, String ublSchemaDigest, String runtimeDigest, List<EvidenceRevision> revisions) { }
     record EvidenceRevision(UUID id, int revision, String digest, String category) { }

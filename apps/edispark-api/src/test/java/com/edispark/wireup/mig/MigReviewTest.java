@@ -44,6 +44,21 @@ class MigReviewTest {
     }
 
     @Test
+    void comparesClaudeAndJevAndLetsTheAnalystChooseTheJevOperation() {
+        var job = job(List.of(), true);
+        var requirement = requirement("Copy the order identifier", List.of(PRIMARY), "/document/id");
+        var difference = review.compare(List.of(compile(Candidate.SONNET, job, requirement),
+                compile(Candidate.JEV, job, requirement))).getFirst();
+
+        assertThat(difference.jev().operation()).isNotNull();
+        assertThat(difference.nova()).isNull();
+        var reviewed = job(List.of(difference), true);
+        var selection = new Selection(difference.id(), Candidate.JEV, "Confirmed against the primary guide.", null);
+        assertThat(review.selected(reviewed, new ReviewRequest(List.of(selection), List.of(), Map.of())).getFirst().operation())
+                .isEqualTo(difference.jev().operation());
+    }
+
+    @Test
     void keepsAldiD01bRequirementsCitedWhenTheReleaseIsUnavailable() {
         var job = job(List.of(), false);
         var model = new LocalMigModel();
@@ -137,6 +152,6 @@ class MigReviewTest {
                 new Upload(UUID.randomUUID(), "amendment.txt", FileRole.SUPPLEMENT, "2", "supplement"));
         var pack = new MigEvidence.Pack(1, targets, profile, guides, sections, List.of(), List.of(), "evidence");
         return new MigJob(UUID.randomUUID(), State.REVIEW, 0L, Long.MAX_VALUE, pack, guides, 100, Map.of(), List.of(),
-                List.of(), differences, null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null);
+                List.of(), differences, null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null, null);
     }
 }

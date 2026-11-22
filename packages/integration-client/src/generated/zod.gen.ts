@@ -637,7 +637,11 @@ export const zGuideStructure = z.object({
 
 export const zInvocation = z.object({
     id: z.uuid().optional(),
-    candidate: z.enum(['SONNET', 'NOVA']).optional(),
+    candidate: z.enum([
+        'SONNET',
+        'NOVA',
+        'JEV'
+    ]).optional(),
     state: z.string().optional(),
     reservedCredits: z.number().optional(),
     settledCredits: z.number().optional()
@@ -683,11 +687,16 @@ export const zDifference = z.object({
     id: z.string().optional(),
     sonnet: zRule.optional(),
     nova: zRule.optional(),
-    preselected: z.boolean().optional()
+    preselected: z.boolean().optional(),
+    jev: zRule.optional()
 });
 
 export const zProposal = z.object({
-    candidate: z.enum(['SONNET', 'NOVA']).optional(),
+    candidate: z.enum([
+        'SONNET',
+        'NOVA',
+        'JEV'
+    ]).optional(),
     rules: z.array(zRule).optional(),
     findings: z.array(zMigFinding).optional(),
     fixture: zFixtureResult.optional()
@@ -700,7 +709,11 @@ export const zSection = z.object({
 
 export const zSelection = z.object({
     id: z.string().min(1),
-    candidate: z.enum(['SONNET', 'NOVA']),
+    candidate: z.enum([
+        'SONNET',
+        'NOVA',
+        'JEV'
+    ]),
     reason: z.string().min(0).max(280).optional(),
     override: zMappingNode.optional()
 });
@@ -784,10 +797,12 @@ export const zJob = z.object({
     modelMode: z.enum([
         'LOCAL_FIXTURE',
         'LONDON_BEDROCK',
+        'BEDROCK_AND_JEV',
         'UNRECORDED'
     ]).optional(),
     rerunOf: z.uuid().optional(),
-    uploadsExpireAt: z.string().optional()
+    uploadsExpireAt: z.string().optional(),
+    modelIds: z.record(z.string(), z.string()).optional()
 });
 
 export const zReviewRequest = z.object({
@@ -977,8 +992,10 @@ export const zAvailability = z.object({
     modelMode: z.enum([
         'LOCAL_FIXTURE',
         'LONDON_BEDROCK',
+        'BEDROCK_AND_JEV',
         'UNRECORDED'
-    ]).optional()
+    ]).optional(),
+    modelIds: z.record(z.string(), z.string()).optional()
 });
 
 export const zBusinessCode = z.object({

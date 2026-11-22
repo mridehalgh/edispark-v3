@@ -452,6 +452,7 @@ export type Difference = {
     sonnet?: Rule;
     nova?: Rule;
     preselected?: boolean;
+    jev?: Rule;
 };
 
 export type EvidenceManifest = {
@@ -494,7 +495,7 @@ export type GuideStructure = {
 
 export type Invocation = {
     id?: string;
-    candidate?: 'SONNET' | 'NOVA';
+    candidate?: 'SONNET' | 'NOVA' | 'JEV';
     state?: string;
     reservedCredits?: number;
     settledCredits?: number;
@@ -526,9 +527,12 @@ export type Job = {
     manifest?: EvidenceManifest;
     invocations?: Array<Invocation>;
     standardsReview?: StandardsReview;
-    modelMode?: 'LOCAL_FIXTURE' | 'LONDON_BEDROCK' | 'UNRECORDED';
+    modelMode?: 'LOCAL_FIXTURE' | 'LONDON_BEDROCK' | 'BEDROCK_AND_JEV' | 'UNRECORDED';
     rerunOf?: string;
     uploadsExpireAt?: string;
+    modelIds?: {
+        [key: string]: string;
+    };
 };
 
 export type MigFinding = {
@@ -538,7 +542,7 @@ export type MigFinding = {
 };
 
 export type Proposal = {
-    candidate?: 'SONNET' | 'NOVA';
+    candidate?: 'SONNET' | 'NOVA' | 'JEV';
     rules?: Array<Rule>;
     findings?: Array<MigFinding>;
     fixture?: FixtureResult;
@@ -575,7 +579,7 @@ export type Section = {
 
 export type Selection = {
     id: string;
-    candidate: 'SONNET' | 'NOVA';
+    candidate: 'SONNET' | 'NOVA' | 'JEV';
     reason?: string;
     override?: MappingNode;
 };
@@ -776,7 +780,10 @@ export type Example = {
 export type Availability = {
     enabled?: boolean;
     demoJobId?: string;
-    modelMode?: 'LOCAL_FIXTURE' | 'LONDON_BEDROCK' | 'UNRECORDED';
+    modelMode?: 'LOCAL_FIXTURE' | 'LONDON_BEDROCK' | 'BEDROCK_AND_JEV' | 'UNRECORDED';
+    modelIds?: {
+        [key: string]: string;
+    };
 };
 
 export type BusinessCode = {

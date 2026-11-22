@@ -32,7 +32,7 @@ public final class MigGenerationController {
     public Availability availability() {
         var workflow = generation.getIfAvailable();
         boolean enabled = workflow != null;
-        return new Availability(enabled, enabled ? workflow.demoJobId() : null, enabled ? workflow.modelMode() : null);
+        return new Availability(enabled, enabled ? workflow.demoJobId() : null, enabled ? workflow.modelMode() : null, enabled ? workflow.modelIds() : Map.of());
     }
 
     @PostMapping("/uploads")

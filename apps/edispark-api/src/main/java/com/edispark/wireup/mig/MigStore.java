@@ -76,14 +76,14 @@ final class MigStore {
         transact(List.of(writeJob(job, null, 0)));
     }
 
-    boolean demoMatches(UUID id, List<String> digests, ModelMode mode) {
+    boolean demoMatches(UUID id, List<String> digests, ModelMode mode, Map<Candidate, String> modelIds) {
         var item = read(table, key(partition(), jobKey(id)));
         if (item.isEmpty()) return false;
         var previous = readEncrypted(item, MigJob.class);
         if (previous.state() == State.IMPORTED || previous.state() == State.IMPORTING) return true;
         if (previous.state() != State.ESTIMATED && (previous.expiry() > now()
                 || previous.attempts().stream().anyMatch(attempt -> attempt.actual() == null))) return true;
-        return previous.expiry() > now() && mode == previous.recordedMode() && previous.uploads().stream().map(Upload::digest).toList().equals(digests)
+        return previous.expiry() > now() && mode == previous.recordedMode() && modelIds.equals(previous.modelIds()) && previous.uploads().stream().map(Upload::digest).toList().equals(digests)
                 && previous.pack().profile() != null && MigEvidence.runtimeFingerprint().equals(previous.pack().profile().runtimeDigest());
     }
 

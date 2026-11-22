@@ -27,7 +27,7 @@ class LondonMigModelTest {
         var pack = new MigEvidence.Pack(1, new Coordinates("INBOUND", "ORDER", "EDIFACT", "D01B", "ORDERS"),
                 null, List.of(), List.of(new Section("PRIMARY/test/line 1", "Cited order identifier.")), List.of(), List.of(), "digest");
         var job = new MigJob(UUID.randomUUID(), State.RUNNING, 0L, 1, pack, List.of(), 0, Map.of(), List.of(), List.of(),
-                List.of(), null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null);
+                List.of(), null, null, null, null, null, null, ModelMode.LOCAL_FIXTURE, null, null, null);
         var tools = new MigCandidateTools(job, new MigReview(), null);
         var result = models.propose(Candidate.NOVA, UUID.randomUUID(), pack, "{}".getBytes(StandardCharsets.UTF_8), rate,
                 tools, (turn, phase, actual, receipt) -> phases.add(turn + ":" + phase));
@@ -45,6 +45,29 @@ class LondonMigModelTest {
         assertThat(result.proposal().requirements()).extracting(MigCandidateModel.Requirement::description)
                 .containsExactly("Order number");
         assertThat(result.actualMicros()).isEqualTo(24L);
+    }
+
+    @Test
+    void invokesTheEuropeanSonnetProfileWithoutUnsupportedSamplingParameters() {
+        var requests = new ArrayList<ConverseRequest>();
+        var client = (BedrockRuntimeClient) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class<?>[]{BedrockRuntimeClient.class}, (proxy, method, args) -> {
+                    requests.add((ConverseRequest) args[0]);
+                    return proposal();
+                });
+        var rate = new MigCandidateModel.Rate(2_200_000, 11_000_000);
+        var model = new LondonMigModel(client, "synthetic-guardrail", "1", Map.of(Candidate.SONNET, rate),
+                false, LondonMigModel.SONNET_EU);
+
+        var result = model.propose(Candidate.SONNET, UUID.randomUUID(), null, "{}".getBytes(StandardCharsets.UTF_8), rate);
+
+        assertThat(model.modelIds()).containsEntry(Candidate.SONNET, LondonMigModel.SONNET_EU);
+        assertThat(requests).singleElement().satisfies(request -> {
+            assertThat(request.modelId()).isEqualTo(LondonMigModel.SONNET_EU);
+            assertThat(request.inferenceConfig().temperature()).isNull();
+            assertThat(request.inferenceConfig().maxTokens()).isEqualTo(MigCandidateModel.OUTPUT_TOKENS);
+        });
+        assertThat(result.actualMicros()).isEqualTo(47L);
     }
 
     private ConverseResponse toolRequest() {

@@ -178,7 +178,8 @@ final class MigReview {
 
     List<Difference> compare(List<Proposal> candidates) {
         var first = byDestination(candidates, Candidate.SONNET);
-        var second = byDestination(candidates, Candidate.NOVA);
+        boolean useJev = candidates.stream().anyMatch(proposal -> proposal.candidate() == Candidate.JEV);
+        var second = byDestination(candidates, useJev ? Candidate.JEV : Candidate.NOVA);
         var ids = new TreeSet<>(first.keySet());
         ids.addAll(second.keySet());
         boolean checked = candidates.size() == 2 && candidates.stream().allMatch(branch -> branch.fixture() != null
@@ -189,7 +190,7 @@ final class MigReview {
             boolean agree = checked && a != null && b != null && executable(a) && executable(b) && Objects.equals(a.operation(), b.operation())
                     && Objects.equals(a.profileRule(), b.profileRule())
                     && a.facts().equals(b.facts()) && !Collections.disjoint(a.citations(), b.citations());
-            return new Difference(id, a, b, agree);
+            return new Difference(id, a, useJev ? null : b, agree, useJev ? b : null);
         }).toList();
     }
 
@@ -221,9 +222,13 @@ final class MigReview {
     }
 
     private Rule choose(Difference difference, MigJob job, Selection selection, Supersession supersession) {
-        var available = difference.sonnet() == null ? difference.nova() : difference.sonnet();
+        var available = difference.sonnet() == null ? secondary(difference) : difference.sonnet();
         if (selection == null) return blocked(available, "Select an operation and resolve this cited requirement.");
-        Rule chosen = selection.candidate() == Candidate.SONNET ? difference.sonnet() : difference.nova();
+        Rule chosen = switch (selection.candidate()) {
+            case SONNET -> difference.sonnet();
+            case NOVA -> difference.nova();
+            case JEV -> difference.jev();
+        };
         if (chosen == null) return blocked(available, "Choose an existing candidate for the requirement.");
         if (selection.override() != null) chosen = override(chosen, selection, job);
         if (!executable(chosen)) return blocked(chosen, "The selected requirement has no executable operation.");
@@ -255,9 +260,14 @@ final class MigReview {
         }
     }
 
+    private Rule secondary(Difference difference) {
+        return difference.jev() == null ? difference.nova() : difference.jev();
+    }
+
     private boolean requiresSupersession(Difference diff, MigJob job) {
-        if (diff.preselected() || diff.sonnet() == null || diff.nova() == null) return false;
-        var sources = java.util.stream.Stream.concat(diff.sonnet().citations().stream(), diff.nova().citations().stream())
+        var second = secondary(diff);
+        if (diff.preselected() || diff.sonnet() == null || second == null) return false;
+        var sources = java.util.stream.Stream.concat(diff.sonnet().citations().stream(), second.citations().stream())
                 .map(anchor -> anchor.split("/", 3)).filter(parts -> parts.length == 3).map(parts -> parts[1]).distinct().toList();
         return job.pack().guides().size() > 1 && sources.size() > 1;
     }

@@ -39,7 +39,7 @@ final class McpMigTools {
                             Map.of("side", entry.getKey(), "pointers", entry.getValue())).toList());
                 });
         tools.register("get_mig_preview", "Read an existing candidate's side-effect-free fixture preview and validation results.",
-                McpTools.MIG_READ, schema(Map.of("jobId", ID, "candidate", Map.of("type", "string", "enum", List.of("SONNET", "NOVA")),
+                McpTools.MIG_READ, schema(Map.of("jobId", ID, "candidate", Map.of("type", "string", "enum", List.of("SONNET", "NOVA", "JEV")),
                         "recheck", Map.of("type", "boolean"))),
                 "findings", (args, caller) -> {
                     var job = job(args, service);

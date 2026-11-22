@@ -16,6 +16,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 final class LondonMigModel implements MigCandidateModel {
     static final String SONNET = "anthropic.claude-sonnet-4-6";
+    static final String SONNET_EU = "eu.anthropic.claude-sonnet-5-5";
+    static final String OPUS = "anthropic.claude-opus-5-5";
     static final String NOVA = "amazon.nova-lite-v1:0";
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(LondonMigModel.class);
     private static final String SYSTEM = """
@@ -51,15 +53,16 @@ final class LondonMigModel implements MigCandidateModel {
     private final String guardrail;
     private final String version;
     private final boolean novaTools;
+    private final String claude;
     private final Map<Candidate, Rate> rates;
     private final BeanOutputConverter<ModelRules> output = new BeanOutputConverter<>(ModelRules.class);
     private final JsonMapper json = new JsonMapper();
 
     LondonMigModel(BedrockRuntimeClient bedrock, String guardrail, String version, Map<Candidate, Rate> rates) {
-        this(bedrock, guardrail, version, rates, true);
+        this(bedrock, guardrail, version, rates, true, SONNET);
     }
 
-    LondonMigModel(BedrockRuntimeClient bedrock, String guardrail, String version, Map<Candidate, Rate> rates, boolean novaTools) {
+    LondonMigModel(BedrockRuntimeClient bedrock, String guardrail, String version, Map<Candidate, Rate> rates, boolean novaTools, String claude) {
         if (guardrail.isBlank() || !version.matches("[1-9][0-9]*")) {
             throw new IllegalArgumentException("MIG generation requires a published London guardrail.");
         }
@@ -68,9 +71,15 @@ final class LondonMigModel implements MigCandidateModel {
         this.version = version;
         this.rates = Map.copyOf(rates);
         this.novaTools = novaTools;
+        if (!Set.of(SONNET, SONNET_EU, OPUS).contains(claude)) {
+            throw new IllegalArgumentException("Select a supported Claude model or European inference profile.");
+        }
+        this.claude = claude;
     }
 
     @Override public ModelMode mode() { return ModelMode.LONDON_BEDROCK; }
+
+    @Override public Map<Candidate, String> modelIds() { return Map.of(Candidate.SONNET, claude, Candidate.NOVA, NOVA); }
 
     @Override public Rate rate(Candidate candidate) { return rates.get(candidate); }
 
@@ -108,10 +117,13 @@ final class LondonMigModel implements MigCandidateModel {
         journal.checkpoint(turn, "DISPATCHED", null, null);
         ConverseResponse response;
         try {
-            var request = ConverseRequest.builder().modelId(candidate == Candidate.SONNET ? SONNET : NOVA)
+            String model = candidate == Candidate.SONNET ? claude : NOVA;
+            var inference = InferenceConfiguration.builder().maxTokens(OUTPUT_TOKENS);
+            if (SONNET.equals(model) || NOVA.equals(model)) inference.temperature(0.0f);
+            var request = ConverseRequest.builder().modelId(model)
                     .system(SystemContentBlock.fromText(system)).messages(messages)
                     .requestMetadata(Map.of("migInvocationId", invocation.toString(), "turn", Integer.toString(turn)))
-                    .inferenceConfig(i -> i.maxTokens(OUTPUT_TOKENS).temperature(0.0f))
+                    .inferenceConfig(inference.build())
                     .guardrailConfig(g -> g.guardrailIdentifier(guardrail).guardrailVersion(version).trace(GuardrailTrace.DISABLED));
             if (!tools.isEmpty()) request.toolConfig(config -> config.tools(tools));
             response = bedrock.converse(request.build());

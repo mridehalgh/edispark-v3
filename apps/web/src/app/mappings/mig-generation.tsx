@@ -29,10 +29,17 @@ const labels: Record<NonNullable<Job['state']>, string> = {
   INCOMPLETE: 'Candidate incomplete', RECONCILIATION: 'Usage reconciliation required', REVIEW: 'Review required',
   READY: 'Reviewed mapping passed', IMPORTING: 'Draft creation started', IMPORTED: 'Draft created', CANCELLED: 'Cancelled',
 }
-function labelsForMode(mode: Job['modelMode']) {
-  if (mode === 'LONDON_BEDROCK') return { SONNET: 'Claude Sonnet 4.6', NOVA: 'Amazon Nova Lite' }
-  if (mode === 'LOCAL_FIXTURE') return { SONNET: 'Local fixture candidate A', NOVA: 'Local fixture candidate B' }
-  return { SONNET: 'Candidate A', NOVA: 'Candidate B' }
+function labelsForMode(mode: Job['modelMode'], modelIds?: Job['modelIds']) {
+  const jev = modelIds?.JEV ? `TypeSafe Jev · ${modelIds.JEV}` : 'TypeSafe Jev'
+  if (mode === 'LONDON_BEDROCK' || mode === 'BEDROCK_AND_JEV') {
+    const claudeLabels: Record<string, string> = {
+      'eu.anthropic.claude-sonnet-5-5': 'Claude Sonnet 5.5 (Europe)',
+      'anthropic.claude-opus-5-5': 'Claude Opus 5.5',
+    }
+    return { SONNET: claudeLabels[modelIds?.SONNET ?? ''] ?? 'Claude Sonnet 4.6', NOVA: 'Amazon Nova Lite', JEV: jev }
+  }
+  if (mode === 'LOCAL_FIXTURE') return { SONNET: 'Local fixture candidate A', NOVA: 'Local fixture candidate B', JEV: jev }
+  return { SONNET: 'Candidate A', NOVA: 'Candidate B', JEV: jev }
 }
 
 export async function readMig<T>(path: string, init?: RequestInit): Promise<T> {
@@ -327,7 +334,7 @@ function Review({ job, busy, onReview }: { job: Job; busy: boolean; onReview: (b
   const supplied = new Map(job.selections?.map((selection) => [selection.id, selection]))
   const superseding = new Map(job.supersessions?.map((decision) => [decision.differenceId, decision]))
   const aliases = [...new Set(job.differences?.flatMap((difference) =>
-    [difference.sonnet?.operation?.tableLookup?.alias, difference.nova?.operation?.tableLookup?.alias].filter((alias): alias is string => Boolean(alias)),
+    [difference.sonnet?.operation?.tableLookup?.alias, difference.nova?.operation?.tableLookup?.alias, difference.jev?.operation?.tableLookup?.alias].filter((alias): alias is string => Boolean(alias)),
   ))]
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -338,7 +345,7 @@ function Review({ job, busy, onReview }: { job: Job; busy: boolean; onReview: (b
       for (const difference of job.differences ?? []) {
         if (!difference.id) continue
         const candidate = field(form, `choose-${difference.id}`)
-        if (candidate !== 'SONNET' && candidate !== 'NOVA') continue
+        if (candidate !== 'SONNET' && candidate !== 'NOVA' && candidate !== 'JEV') continue
         const reason = field(form, `reason-${difference.id}`)
         const correction = field(form, `override-${difference.id}`)
         let override: MappingNode | undefined
@@ -360,7 +367,7 @@ function Review({ job, busy, onReview }: { job: Job; busy: boolean; onReview: (b
   return <form onSubmit={submit} className="space-y-4 rounded-lg border bg-card p-5">
     <div><h2 className="font-semibold">Review mapping rules</h2><p className="text-sm text-muted-foreground">Choose an operation and record why for any difference. Confirm the prevailing source when editions conflict.</p></div>
     {job.differences?.map((difference) => difference.id && <RuleDecision key={difference.id} difference={difference} sections={sections}
-      initial={supplied.get(difference.id)} priorSupersession={superseding.get(difference.id)} modelMode={job.modelMode} />)}
+      initial={supplied.get(difference.id)} priorSupersession={superseding.get(difference.id)} modelMode={job.modelMode} modelIds={job.modelIds} />)}
     {aliases.map((alias) => <Field key={alias} label={`Approved reference table revision for ${alias}`}><Input name={`binding-${alias}`} defaultValue={job.referenceTableRevisions?.[alias]} placeholder="Revision UUID" /></Field>)}
     {localError && <AdminNotice>{localError}</AdminNotice>}
     {job.reviewedFixture && <div className="rounded-md bg-muted/40 p-4"><Fixture fixture={job.reviewedFixture} target={job.target} /></div>}
@@ -368,32 +375,34 @@ function Review({ job, busy, onReview }: { job: Job; busy: boolean; onReview: (b
   </form>
 }
 
-function RuleDecision({ difference, sections, initial, priorSupersession, modelMode }: {
-  difference: Difference; sections: Map<string, Section>; initial?: Selection; priorSupersession?: Supersession; modelMode?: Job['modelMode']
+function RuleDecision({ difference, sections, initial, priorSupersession, modelMode, modelIds }: {
+  difference: Difference; sections: Map<string, Section>; initial?: Selection; priorSupersession?: Supersession; modelMode?: Job['modelMode']; modelIds?: Job['modelIds']
 }) {
-  const modelLabels = labelsForMode(modelMode)
+  const modelLabels = labelsForMode(modelMode, modelIds)
+  const secondaryCandidate = modelMode === 'BEDROCK_AND_JEV' ? 'JEV' : 'NOVA'
+  const second = secondaryCandidate === 'JEV' ? difference.jev : difference.nova
   const id = difference.id
-  const anchors = [...new Set([...(difference.sonnet?.citations ?? []), ...(difference.nova?.citations ?? [])])]
+  const anchors = [...new Set([...(difference.sonnet?.citations ?? []), ...(second?.citations ?? [])])]
   const sources = new Set(anchors.map((anchor) => anchor.split('/')[1]))
   const showDecision = !difference.preselected || Boolean(initial?.override)
   return <fieldset className="space-y-3 rounded-md border p-4">
-    <legend className="max-w-full break-all px-1 text-sm font-medium">{difference.sonnet?.operation?.targetPointer ?? difference.nova?.operation?.targetPointer ?? 'Guide requirement'}</legend>
+    <legend className="max-w-full break-all px-1 text-sm font-medium">{difference.sonnet?.operation?.targetPointer ?? second?.operation?.targetPointer ?? 'Guide requirement'}</legend>
     {difference.preselected && <p className="text-xs font-medium text-muted-foreground">Candidates agree and checks passed</p>}
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="space-y-1"><h3 className="text-xs font-semibold">{modelLabels.SONNET}</h3><RuleEvidence rule={difference.sonnet} sections={sections} /></div>
-      <div className="space-y-1"><h3 className="text-xs font-semibold">{modelLabels.NOVA}</h3><RuleEvidence rule={difference.nova} sections={sections} /></div>
+      <div className="space-y-1"><h3 className="text-xs font-semibold">{modelLabels[secondaryCandidate]}</h3><RuleEvidence rule={second} sections={sections} /></div>
     </div>
     {showDecision ? <div className="grid gap-3 sm:grid-cols-2">
       <Field label="Use candidate"><Select name={`choose-${id}`} defaultValue={initial?.candidate ?? ''}>
         <option value="">Unresolved</option>
         {difference.sonnet && <option value="SONNET">{modelLabels.SONNET}</option>}
-        {difference.nova && <option value="NOVA">{modelLabels.NOVA}</option>}
+        {second && <option value={secondaryCandidate}>{modelLabels[secondaryCandidate]}</option>}
       </Select></Field>
       <Field label="Decision reason"><Input name={`reason-${id}`} defaultValue={initial?.reason} maxLength={280} /></Field>
       {sources.size > 1 && <Field label="Prevailing citation"><Select name={`prevail-${id}`} defaultValue={priorSupersession?.prevailingAnchor ?? ''}>
         <option value="">Select cited rule</option>{anchors.map((anchor) => <option key={anchor}>{anchor}</option>)}
       </Select></Field>}
-      {(difference.sonnet?.correctionAllowed || difference.nova?.correctionAllowed) && <details className="sm:col-span-2">
+      {(difference.sonnet?.correctionAllowed || second?.correctionAllowed) && <details className="sm:col-span-2">
         <summary className="cursor-pointer text-sm">Correct the mapping operation</summary>
         <Field label="Operation JSON"><textarea name={`override-${id}`} defaultValue={initial?.override && JSON.stringify(initial.override, null, 2)} rows={4}
           className="w-full rounded-md border bg-background p-2 font-mono text-xs"
@@ -403,12 +412,13 @@ function RuleDecision({ difference, sections, initial, priorSupersession, modelM
   </fieldset>
 }
 
-function JobSummary({ job, busy, action, activeMode }: { job: Job; busy: boolean; activeMode?: Job['modelMode']; action: (action: string, body?: DraftRequest) => void }) {
-  const runnerChanged = activeMode && job.modelMode !== activeMode
+function JobSummary({ job, busy, action, activeMode, activeModels }: { job: Job; busy: boolean; activeMode?: Job['modelMode']; activeModels?: Job['modelIds']; action: (action: string, body?: DraftRequest) => void }) {
+  const runnerChanged = activeMode && (job.modelMode !== activeMode
+    || Object.entries(job.modelIds ?? {}).some(([candidate, id]) => activeModels?.[candidate] !== id))
   const uploadsRetained = Boolean(job.uploadsExpireAt && Date.parse(job.uploadsExpireAt) > Date.now())
   const [name, setName] = useState('')
   const hasProfileRules = job.selections?.some((selection) => job.differences?.some((difference) =>
-    difference.id === selection.id && (selection.candidate === 'SONNET' ? difference.sonnet : difference.nova)?.profileRule,
+    difference.id === selection.id && (selection.candidate === 'SONNET' ? difference.sonnet : selection.candidate === 'JEV' ? difference.jev : difference.nova)?.profileRule,
   ))
   return <section aria-labelledby="mig-job-title" className="space-y-4 rounded-lg border bg-card p-5">
     <div><h2 id="mig-job-title" aria-live="polite" className="font-semibold">{job.state && labels[job.state]}</h2>
@@ -511,7 +521,12 @@ export function MigGenerationPage() {
     {error && <AdminNotice>{error}</AdminNotice>}
     {availability && !availability.enabled && <AdminNotice>MIG generation is unavailable in this deployment.</AdminNotice>}
     {availability?.modelMode === 'LOCAL_FIXTURE' && <AdminNotice>Local fixture mode processes synthetic guides with RULE declarations. Configure London Bedrock to process a real MIG.</AdminNotice>}
-    {availability?.modelMode === 'LONDON_BEDROCK' && <p className="text-sm text-muted-foreground">London Bedrock runs Claude Sonnet 4.6 and Amazon Nova Lite.</p>}
+    {availability?.modelMode === 'LONDON_BEDROCK' && <p className="text-sm text-muted-foreground">
+      Bedrock runs {labelsForMode(availability.modelMode, availability.modelIds).SONNET} and Amazon Nova Lite.
+    </p>}
+    {availability?.modelMode === 'BEDROCK_AND_JEV' && <p className="text-sm text-muted-foreground">
+      Comparing {labelsForMode(availability.modelMode, availability.modelIds).SONNET} on Bedrock with TypeSafe Jev.
+    </p>}
     {!availability && !error && <p role="status" className="text-sm text-muted-foreground">Checking access…</p>}
     {availability?.enabled && !jobId && <>
       {availability.demoJobId && <Button asChild variant="outline" className="mb-4"><Link to={`${migPath}?job=${availability.demoJobId}`}><FileText className="mr-2 h-4 w-4" />Open local demo job</Link></Button>}
@@ -525,10 +540,14 @@ export function MigGenerationPage() {
     {availability?.enabled && validJobId && !current && !error && <p role="status" className="text-sm text-muted-foreground">Loading job…</p>}
     {current && <div className="space-y-5">
       <div className="flex justify-end"><Button asChild variant="ghost"><Link to={migPath}>Generate another mapping</Link></Button></div>
-      <JobSummary key={`summary-${current.id}`} job={current} busy={busy} activeMode={availability?.modelMode} action={(action, body) => void run(() => postMig<Job>(`${migApi}/jobs/${current.id}?action=${action}`, body))} />
+      <JobSummary key={`summary-${current.id}`} job={current} busy={busy} activeMode={availability?.modelMode} activeModels={availability?.modelIds} action={(action, body) => void run(() => postMig<Job>(`${migApi}/jobs/${current.id}?action=${action}`, body))} />
       {current.proposals?.length ? <div className="grid gap-4 sm:grid-cols-2">
         {current.proposals.map((proposal, index) => <section key={proposal.candidate ?? index} className="space-y-2 rounded-lg border bg-card p-5">
-          <h2 className="font-semibold">{proposal.candidate && labelsForMode(current.modelMode)[proposal.candidate]}</h2><Findings findings={proposal.findings} /><Fixture fixture={proposal.fixture} target={current.target} />
+          <h2 className="font-semibold">{proposal.candidate && labelsForMode(current.modelMode, current.modelIds)[proposal.candidate]}</h2>
+          <p className="text-sm text-muted-foreground">
+            {proposal.rules?.filter((rule) => rule.operation || rule.profileRule).length ?? 0} compiled rules · {proposal.rules?.filter((rule) => rule.citations?.length).length ?? 0} cited requirements · {current.invocations?.filter((item) => item.candidate === proposal.candidate).reduce((total, item) => total + (item.settledCredits ?? 0), 0).toFixed(4) ?? '0'} settled credits
+          </p>
+          <Findings findings={proposal.findings} /><Fixture fixture={proposal.fixture} target={current.target} />
         </section>)}
       </div> : null}
       {(current.state === 'REVIEW' || current.state === 'READY') && <Review key={`review-${current.id}`} job={current} busy={busy}

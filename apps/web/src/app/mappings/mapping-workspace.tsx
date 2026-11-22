@@ -6,8 +6,10 @@ import type {
   TestResult,
   TestMappingRetainedSourceResponse,
 } from "@edispark/integration-client"
+import { ReferenceTableBindings } from "@/components/trading-network/reference-table-bindings"
 import {
   ArrowLeft,
+  ArrowRight,
   Beaker,
   BookOpen,
   Braces,
@@ -25,14 +27,16 @@ import {
   Trash2,
   X,
 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { previewMapping } from "@/lib/mapping-preview"
+import { previewMapping, readPointer } from "@/lib/mapping-preview"
 import { cn } from "@/lib/utils"
+import { bundledMappingInput, mappingTestRequest } from "@/lib/mapping-test-input"
+import styles from "./mapping-workspace.module.css"
 
 const DEFAULT_INPUT = JSON.stringify(
   {
@@ -167,14 +171,59 @@ function leafPointers(value: unknown, base = ""): string[] {
   )
 }
 
+function fieldLabel(pointer: string) {
+  const parts = pointer.split("/").filter((part) => part && !/^(?:[0-9]+|\*|_)$/.test(part))
+  const leaf = parts.at(-1) ?? pointer
+  const words = leaf === "id" || leaf === "ID" ? parts.slice(-2).join(" ") : leaf
+  const spaced = words.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
+const operationLabels: Record<NonNullable<MappingNode["operation"]>, string> = {
+  COPY: "Copy",
+  OPTIONAL_COPY: "Copy if present",
+  OPTIONAL_CODE_LOOKUP: "Translate if present",
+  OMIT: "Omit",
+  CONSTANT: "Fixed value",
+  CONCAT: "Join",
+  COALESCE: "First available",
+  UPPERCASE: "Uppercase",
+  LOWERCASE: "Lowercase",
+  CODE_LOOKUP: "Translate",
+  LOOKUP_TABLE: "Table lookup",
+}
+
 function JsonPane({ value, label }: { value: string; label: string }) {
+  const json = /^[{\[]/.test(value.trimStart())
   return (
     <div
-      className="h-full overflow-auto bg-[oklch(0.18_0.035_270)] p-4 text-[0.75rem] leading-6 text-[oklch(0.91_0.02_270)]"
+      className={cn("min-w-0 overflow-auto bg-muted/25 px-3 py-3 sm:px-4", styles.panelScroll)}
+      role="region"
+      tabIndex={0}
       aria-label={label}
     >
-      <pre className="font-mono whitespace-pre-wrap break-words">{value}</pre>
+      <pre className={cn("font-mono text-xs leading-6 text-foreground", json && styles.code)}>{json
+        ? value.split("\n").map((line, index) => {
+            const key = line.match(/^\s*"[^"]+"(?=:)/)?.[0]
+            return <span className={styles.line} key={index}>{key
+              ? <><span className="font-medium text-primary">{key}</span>{line.slice(key.length)}</>
+              : line}{"\n"}</span>
+          })
+        : value}</pre>
     </div>
+  )
+}
+
+function formatOutput(value?: string) {
+  const decoded = decodeOutput(value)
+  try { return JSON.stringify(JSON.parse(decoded), null, 2) }
+  catch { return decoded }
+}
+
+function availableInput(mapping: MappingRevision) {
+  return bundledMappingInput(mapping) ?? (
+    mapping.compatibility?.documentType === "ORDER" && mapping.compatibility.direction === "OUTBOUND"
+      ? DEFAULT_INPUT : undefined
   )
 }
 
@@ -240,7 +289,7 @@ export function MappingWorkspacePage() {
   const sourceQuery = sourceParams.toString()
   const [mapping, setMapping] = useState<MappingRevision>()
   const [nodes, setNodes] = useState<MappingNode[]>([])
-  const [input, setInput] = useState(DEFAULT_INPUT)
+  const [input, setInput] = useState("")
   const [activeNodeId, setActiveNodeId] = useState<string>()
   const [activePane, setActivePane] = useState<"source" | "mapping" | "output">(
     "mapping",
@@ -251,12 +300,31 @@ export function MappingWorkspacePage() {
   const [testOpen, setTestOpen] = useState(false)
   const [sampleOpen, setSampleOpen] = useState(false)
   const [testResult, setTestResult] = useState<TestResult>()
+  const [testError, setTestError] = useState<string>()
+  const [testing, setTesting] = useState(false)
+  const testRequest = useRef<AbortController | null>(null)
+  const [fixtureTables, setFixtureTables] = useState<Record<string, string>>({})
   const [effectiveAt, setEffectiveAt] = useState("")
   const [error, setError] = useState<string>()
   const [notice, setNotice] = useState<string>()
 
+  const clearTest = useCallback(() => {
+    testRequest.current?.abort()
+    testRequest.current = null
+    setTesting(false)
+    setTestResult(undefined)
+    setTestError(undefined)
+  }, [])
+
   const load = useCallback(async (signal: AbortSignal) => {
     if (!mappingId) return
+    clearTest()
+    setError(undefined)
+    setNotice(undefined)
+    setInput("")
+    setDirty(false)
+    setFixtureTables({})
+    setSearch("")
     try {
       const result = await readApi<MappingRevision>(
         `/api/integration/mappings/${mappingId}`,
@@ -265,7 +333,7 @@ export function MappingWorkspacePage() {
       setMapping(result)
       setNodes(result.nodes ?? [])
       setActiveNodeId(result.nodes?.[0]?.id)
-      if (result.sample?.sourceDocument) setInput(result.sample.sourceDocument)
+      setInput(availableInput(result) ?? "")
       const source = new URLSearchParams(sourceQuery)
       if (source.has("sourceSet")) {
         const retained = await readApi<TestMappingRetainedSourceResponse>(
@@ -276,7 +344,7 @@ export function MappingWorkspacePage() {
           }) },
         )
         if (retained.input) setInput(retained.input)
-        if (retained.test) setTestResult({ ...retained.test, output: decodeOutput(retained.test.output) })
+        if (retained.test) setTestResult({ ...retained.test, output: formatOutput(retained.test.output) })
         setNotice("Loaded and tested the exact retained document. Review the findings, create a draft revision, and test your changes before publishing.")
         setTestOpen(true)
       }
@@ -288,11 +356,14 @@ export function MappingWorkspacePage() {
           : "The document rule could not be loaded.",
       )
     }
-  }, [mappingId, sourceQuery])
+  }, [clearTest, mappingId, sourceQuery])
   useEffect(() => {
     const controller = new AbortController()
     void load(controller.signal)
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      testRequest.current?.abort()
+    }
   }, [load])
 
   const parsedInput = useMemo(() => {
@@ -302,20 +373,25 @@ export function MappingWorkspacePage() {
       return undefined
     }
   }, [input])
-  const preview = useMemo(
-    () =>
-      parsedInput === undefined
-        ? undefined
-        : previewMapping(parsedInput, nodes),
-    [nodes, parsedInput],
-  )
-  const previewText = useMemo(
-    () =>
-      preview === undefined
-        ? "Input is not valid JSON."
-        : JSON.stringify(preview, null, 2),
-    [preview],
-  )
+  const lookups = nodes.flatMap((node) => node.tableLookup ? [node.tableLookup] : [])
+  const hasLookups = nodes.some((node) => node.operation === "LOOKUP_TABLE")
+  const lookupAliases = [...new Set(lookups.flatMap((lookup) => lookup.alias ? [lookup.alias] : []))]
+  const referenceTableRevisions = Object.fromEntries(lookupAliases.flatMap((alias) =>
+    Object.hasOwn(fixtureTables, alias) ? [[alias, fixtureTables[alias]]] : [],
+  ))
+  const fixtureTablesReady = lookupAliases.every((alias) => Object.hasOwn(fixtureTables, alias))
+  const preview = useMemo(() => {
+    if (parsedInput === undefined || hasLookups) return undefined
+    try { return previewMapping(parsedInput, nodes) }
+    catch { return undefined }
+  }, [hasLookups, nodes, parsedInput])
+  const previewText = useMemo(() => {
+    if (testResult?.output) return testResult.output
+    if (!input.trim()) return "Add sample input in Test to see the mapping output."
+    if (parsedInput === undefined) return "Enter valid JSON to preview the mapping."
+    if (hasLookups) return "Select table revisions and run a test to see the output."
+    return preview === undefined ? "Run a test to check this input." : JSON.stringify(preview, null, 2)
+  }, [hasLookups, input, parsedInput, preview, testResult?.output])
   const sourcePointers = useMemo(
     () =>
       (parsedInput === undefined ? [] : leafPointers(parsedInput)).filter(
@@ -324,6 +400,17 @@ export function MappingWorkspacePage() {
     [parsedInput, search],
   )
   const editable = mapping?.status === "DRAFT"
+  const example = mapping ? availableInput(mapping) : undefined
+  const selectedNode = nodes.find((node) => node.id === activeNodeId)
+  const testBlocked = dirty ? "Save the draft before testing."
+    : !input.trim() ? "Add JSON input to run a test."
+    : parsedInput === undefined ? "Correct the JSON input before testing."
+    : !fixtureTablesReady ? "Select a revision for each reference table." : undefined
+
+  function changeInput(value: string) {
+    setInput(value)
+    clearTest()
+  }
 
   function updateNode(id: string | undefined, patch: Partial<MappingNode>) {
     if (!id || !editable) return
@@ -331,7 +418,7 @@ export function MappingWorkspacePage() {
       current.map((node) => (node.id === id ? { ...node, ...patch } : node)),
     )
     setDirty(true)
-    setTestResult(undefined)
+    clearTest()
   }
   function addNode() {
     const node: MappingNode = {
@@ -343,10 +430,13 @@ export function MappingWorkspacePage() {
     setNodes((current) => [...current, node])
     setActiveNodeId(node.id)
     setDirty(true)
+    clearTest()
   }
   function removeNode(id?: string) {
     setNodes((current) => current.filter((node) => node.id !== id))
+    if (id === activeNodeId) setActiveNodeId(undefined)
     setDirty(true)
+    clearTest()
   }
 
   async function save() {
@@ -377,41 +467,36 @@ export function MappingWorkspacePage() {
   }
 
   async function test() {
-    if (!mappingId || preview === undefined) return
+    if (!mappingId || !mapping || testBlocked || testing) return
+    clearTest()
+    const controller = new AbortController()
+    testRequest.current = controller
+    setTesting(true)
     try {
-      setBusy(true)
-      setError(undefined)
       const result = await readApi<TestResult>(
         `/api/integration/mappings/${mappingId}/test`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "Workspace preview",
-            input,
-            expected: previewText,
-          }),
+          body: JSON.stringify(mappingTestRequest(mapping, input, referenceTableRevisions)),
+          signal: controller.signal,
         },
       )
-      setTestResult({ ...result, output: decodeOutput(result.output) })
-      setNotice(
-        result.passed
-          ? "Test passed. The output matches the preview."
-          : undefined,
-      )
+      if (!controller.signal.aborted) setTestResult({ ...result, output: formatOutput(result.output) })
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "The document rule test could not run.",
-      )
+      if (!controller.signal.aborted) {
+        setTestError(requestError instanceof Error ? requestError.message : "The test could not run.")
+      }
     } finally {
-      setBusy(false)
+      if (testRequest.current === controller) {
+        testRequest.current = null
+        setTesting(false)
+      }
     }
   }
 
   async function publish() {
-    if (!mappingId || !testResult?.passed) return
+    if (!mappingId || dirty || !testResult?.passed || !testResult.output) return
     try {
       setBusy(true)
       setError(undefined)
@@ -422,7 +507,8 @@ export function MappingWorkspacePage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fixtures: [
-              { name: "Workspace qualification", input, expected: previewText },
+              { name: "Workspace qualification", input, expected: testResult.output,
+                referenceTableRevisions },
             ],
             effectiveAt: effectiveAt
               ? new Date(effectiveAt).toISOString()
@@ -476,127 +562,61 @@ export function MappingWorkspacePage() {
     )
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] flex-col bg-muted/20">
-      <header className="sticky top-16 z-10 border-b bg-background">
-        <div className="flex min-h-16 flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-          <Button asChild variant="ghost" size="icon">
-            <Link
-              to="/organisation/document-rules"
-              aria-label="Back to document rules"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-lg font-semibold">
-                {mapping?.name ?? "Document rule unavailable"}
-              </h1>
-              <Badge variant="secondary">r{mapping?.revision ?? 1}</Badge>
-              <Badge
-                className={cn(
-                  "border-0",
-                  mapping?.status === "PUBLISHED"
-                    ? "bg-success/30 text-success-foreground"
-                    : "bg-muted text-foreground",
-                )}
-              >
-                {mapping?.status?.toLowerCase()}
-              </Badge>
-              {mapping?.scope === "GLOBAL" && (
-                <Badge
-                  variant="outline"
-                  className="gap-1 border-primary/30 text-primary"
-                >
-                  <Globe2 className="h-3 w-3" />
-                  {mapping.vendor}
-                </Badge>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {mapping?.sample && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSampleOpen((value) => !value)
-                  setTestOpen(false)
-                }}
-                className="gap-2"
-              >
-                <BookOpen className="h-4 w-4" />
-                Samples
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setTestOpen((value) => !value)
-                setSampleOpen(false)
-              }}
-              className="gap-2"
-            >
-              <Beaker className="h-4 w-4" />
-              Test
-            </Button>
-            {editable ? (
-              <>
-                <span
-                  className="hidden text-xs text-muted-foreground sm:inline"
-                  role="status"
-                >
-                  {dirty ? "Unsaved changes" : "Draft saved"}
-                </span>
-                <Button
-                  size="sm"
-                  onClick={() => void save()}
-                  disabled={busy || !dirty || nodes.length === 0}
-                  className="gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  Save draft
-                </Button>
-              </>
-            ) : (
-              <Button
-                size="sm"
-                onClick={() => void revise()}
-                disabled={busy}
-                className="gap-2"
-              >
-                <History className="h-4 w-4" />
-                {mapping?.scope === "GLOBAL"
-                  ? "Use as starting point"
-                  : "Create new revision"}
-              </Button>
-            )}
-          </div>
-        </div>
-        <nav
-          className="flex border-t px-4 xl:hidden"
-          aria-label="Document rule panels"
+    <div className={cn("min-h-[calc(100dvh-4rem)] bg-background", styles.workspace)}>
+      <header className="border-b bg-background px-4 pt-4 sm:px-6">
+        <Link
+          to="/organisation/document-rules"
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-sm text-sm font-medium text-primary hover:underline"
         >
-          {(["source", "mapping", "output"] as const).map((pane) => (
-            <button
-              key={pane}
-              onClick={() => setActivePane(pane)}
-              className={cn(
-                "min-h-11 border-b-2 px-4 text-sm font-medium capitalize",
-                activePane === pane
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground",
-              )}
-            >
-              {pane === "mapping" ? "Field rules" : pane}
-            </button>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Document rules
+        </Link>
+        <div className="flex flex-wrap items-end justify-between gap-3 pb-4 pt-1">
+          <div className="min-w-0 space-y-2">
+            <h1 className="break-words text-balance text-2xl font-semibold tracking-tight">
+              {mapping?.name ?? "Document rule unavailable"}
+            </h1>
+            {mapping && <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span>Revision {mapping.revision ?? 1}</span>
+              {mapping.status && <Badge variant="secondary" className={cn(
+                "capitalize", mapping.status === "PUBLISHED" && "bg-success/25 text-success-foreground",
+              )}>{mapping.status === "PUBLISHED" && <Check className="mr-1 h-3 w-3" aria-hidden="true" />}{mapping.status.toLowerCase()}</Badge>}
+              {mapping.scope === "GLOBAL" && <span className="inline-flex items-center gap-1.5">
+                <Globe2 className="h-3.5 w-3.5" aria-hidden="true" />{mapping.vendor ?? "EdiSpark"}
+              </span>}
+              {editable && <span role="status">{dirty ? "Unsaved changes" : "Draft saved"}</span>}
+            </div>}
+          </div>
+          {mapping && (editable ? (
+            <Button size="sm" onClick={() => void save()} disabled={busy || testing || !dirty || !nodes.length}
+              className={cn("gap-2", styles.tool)}>
+              <Save className="h-4 w-4" aria-hidden="true" />Save draft
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => void revise()} disabled={busy || testing} className={cn("gap-2", styles.tool)}>
+              <History className="h-4 w-4" aria-hidden="true" />
+              {mapping.scope === "GLOBAL" ? "Use as starting point" : "Create new revision"}
+            </Button>
           ))}
-        </nav>
+        </div>
+        {mapping && <nav className="-mb-px flex gap-5" aria-label="Document rule views">
+          <button type="button" aria-pressed={!testOpen && !sampleOpen} onClick={() => { setTestOpen(false); setSampleOpen(false) }}
+            className={cn("min-h-11 border-b-2 px-1 text-sm font-medium hover:text-primary", !testOpen && !sampleOpen ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+            Mapping
+          </button>
+          <button type="button" aria-pressed={testOpen} onClick={() => { setTestOpen(true); setSampleOpen(false) }}
+            className={cn("inline-flex min-h-11 items-center gap-1.5 border-b-2 px-1 text-sm font-medium hover:text-primary", testOpen ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+            <Beaker className="h-4 w-4" aria-hidden="true" />Test
+          </button>
+          {mapping.sample && <button type="button" aria-pressed={sampleOpen} onClick={() => { setSampleOpen(true); setTestOpen(false) }}
+            className={cn("inline-flex min-h-11 items-center gap-1.5 border-b-2 px-1 text-sm font-medium hover:text-primary", sampleOpen ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+            <BookOpen className="h-4 w-4" aria-hidden="true" />Samples
+          </button>}
+        </nav>}
       </header>
 
-      {editable && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
+      {editable && !testOpen && !sampleOpen && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
           <p className="max-w-xl text-xs leading-5 text-muted-foreground">
             Map repeated lines with * in both paths. Unmapped populated fields
             block publication; use a reviewed omission only when the partner
@@ -630,7 +650,7 @@ export function MappingWorkspacePage() {
               )
               setNodes([...unique.values()])
               setDirty(true)
-              setTestResult(undefined)
+              clearTest()
             }}
           >
             Apply rules to every line
@@ -667,61 +687,73 @@ export function MappingWorkspacePage() {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(15rem,0.8fr)_minmax(32rem,1.65fr)_minmax(18rem,1fr)]">
+      {mapping && !testOpen && !sampleOpen && <section aria-label="Mapping workspace" className="px-4 pb-6 pt-4 sm:px-6">
+        <nav className="mb-3 flex gap-4 border-b xl:hidden" aria-label="Mapping panels">
+          {([["source", "Source"], ["mapping", "Field rules"], ["output", "Output"]] as const).map(([pane, label]) => (
+            <button key={pane} type="button" aria-pressed={activePane === pane} onClick={() => setActivePane(pane)}
+              className={cn("min-h-11 border-b-2 px-1 text-sm font-medium", activePane === pane ? "border-primary text-primary" : "border-transparent text-muted-foreground")}>
+              {label}
+            </button>
+          ))}
+        </nav>
+        <div className={cn("grid min-w-0 rounded-lg border bg-background xl:divide-x", styles.workbench)}>
         <aside
           className={cn(
-            "min-h-0 border-r bg-background",
+            "min-w-0 bg-muted/15",
             activePane !== "source" && "hidden xl:block",
           )}
           aria-labelledby="source-fields-title"
         >
-          <div className="border-b p-4">
-            <div className="flex items-center gap-2">
+          <div className="border-b p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2">
               <FileJson2 className="h-4 w-4 text-primary" />
               <h2 id="source-fields-title" className="text-sm font-semibold">
                 Source fields
               </h2>
-            </div>
+            </div><span className="text-xs tabular-nums text-muted-foreground">{sourcePointers.length}</span></div>
             <label className="relative mt-3 block">
               <span className="sr-only">Search source fields</span>
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search paths"
-                className="h-9 pl-8 font-mono text-xs"
+                placeholder="Find a source field"
+                className="h-9 pl-8 text-sm"
               />
             </label>
           </div>
-          <div className="max-h-[calc(100vh-15rem)] overflow-y-auto p-2">
-            {sourcePointers.map((pointer) => (
-              <button
-                key={pointer}
-                disabled={!editable || !activeNodeId}
-                onClick={() =>
-                  updateNode(activeNodeId, { sourcePointers: [pointer] })
-                }
-                className="group flex min-h-10 w-full items-center gap-2 rounded-md px-2 text-left font-mono text-xs hover:bg-accent disabled:opacity-50"
-              >
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{pointer}</span>
-                <Copy className="ml-auto h-3.5 w-3.5 opacity-0 group-hover:opacity-100" />
-              </button>
-            ))}
+          <div className={cn("divide-y overflow-auto", styles.panelScroll)}>
+            {sourcePointers.map((pointer) => {
+              const selected = selectedNode?.sourcePointers?.includes(pointer)
+              const content = <>
+                <span className="block break-all font-mono text-xs font-medium">{pointer}</span>
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">{JSON.stringify(readPointer(parsedInput, pointer))}</span>
+              </>
+              const className = cn("block w-full min-w-0 px-3 py-2.5 text-left sm:px-4", selected && "bg-accent text-primary")
+              return editable && activeNodeId ? (
+                <button key={pointer} type="button" aria-label={`Use source field ${pointer}`} aria-pressed={selected ?? false}
+                  className={cn(className, "min-h-11 hover:bg-accent focus-visible:ring-inset")}
+                  onClick={() => updateNode(activeNodeId, { sourcePointers: [pointer] })}>{content}</button>
+              ) : <div key={pointer} className={className}>{content}</div>
+            })}
+            {!sourcePointers.length && <p className="px-4 py-6 text-sm text-muted-foreground">
+              {search ? "No fields match your search." : "Add valid JSON in Test to see source fields."}
+            </p>}
           </div>
         </aside>
 
-        <main
+        <section
           className={cn(
-            "min-h-0 bg-background",
+            "min-w-0",
             activePane !== "mapping" && "hidden xl:block",
           )}
           aria-labelledby="rules-title"
         >
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <h2 id="rules-title" className="text-sm font-semibold">
-              Rules
-            </h2>
+          <div className="flex min-h-14 items-center justify-between gap-2 border-b px-3 py-2 sm:px-4">
+            <div className="flex items-center gap-2">
+              <h2 id="rules-title" className="text-sm font-semibold">Field rules</h2>
+              <span className="text-xs tabular-nums text-muted-foreground">{nodes.length}</span>
+            </div>
             {editable && (
               <Button
                 size="sm"
@@ -734,42 +766,42 @@ export function MappingWorkspacePage() {
               </Button>
             )}
           </div>
-          <div className="max-h-[calc(100vh-13rem)] overflow-y-auto divide-y">
-            {nodes.map((node, index) => (
-              <article
-                key={node.id ?? index}
-                onClick={() => setActiveNodeId(node.id)}
-                className={cn(
-                  "px-4 py-3 transition-colors",
-                  activeNodeId === node.id
-                    ? "bg-accent/75"
-                    : "hover:bg-muted/30",
-                )}
-              >
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums">
-                      {index + 1}
-                    </span>
-                    <span className="truncate font-mono text-xs font-medium text-primary">
-                      {node.targetPointer}
-                    </span>
-                  </div>
-                  {editable && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        removeNode(node.id)
-                      }}
-                      aria-label={`Remove rule ${index + 1}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
+          <div aria-hidden="true" className="grid grid-cols-[1fr_6.25rem_1fr] gap-2 border-b bg-muted/45 px-3 py-2 text-xs font-medium text-muted-foreground sm:px-4">
+            <span>Source</span><span className="text-center">Operation</span><span>Target</span>
+          </div>
+          <div className={cn("divide-y overflow-auto", styles.panelScroll)}>
+            {nodes.map((node, index) => {
+              const selected = activeNodeId === node.id
+              const sourcePath = node.sourcePointers?.join(", ") ?? ""
+              const targetPath = node.targetPointer ?? ""
+              return <article key={node.id ?? index} className={cn(selected && "bg-accent/50")}>
+                <button type="button" onClick={() => setActiveNodeId(node.id)} aria-pressed={selected}
+                  className="grid min-h-14 w-full min-w-0 grid-cols-[1fr_6.25rem_1fr] items-center gap-2 px-3 py-2 text-left hover:bg-accent/60 focus-visible:ring-inset sm:px-4">
+                  {node.operation === "CONSTANT"
+                    ? <span className="truncate font-mono text-xs" title={node.constant}>{node.constant || "Set a value"}</span>
+                    : <span className="min-w-0" title={sourcePath}>
+                      <span className="block truncate text-sm font-medium">{sourcePath ? fieldLabel(node.sourcePointers?.[0] ?? "") : "Select a field"}</span>
+                      <span className="block truncate font-mono text-xs text-muted-foreground">{sourcePath}</span>
+                    </span>}
+                  <span className="flex min-w-0 items-center justify-center gap-1 rounded bg-background/80 px-1 py-1 text-center text-xs leading-tight text-muted-foreground">
+                    {node.operation ? operationLabels[node.operation] : "Rule"}
+                    <ArrowRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0" title={targetPath}>
+                    <span className="block truncate text-sm font-medium">{targetPath ? fieldLabel(targetPath) : "Set a target"}</span>
+                    <span className="block truncate font-mono text-xs text-muted-foreground">{targetPath}</span>
+                  </span>
+                </button>
+                {selected && !editable && node.operation === "OMIT" && node.constant && <p className="px-4 pb-3 text-sm text-muted-foreground">{node.constant}</p>}
+                {selected && !editable && (node.operation === "CODE_LOOKUP" || node.operation === "OPTIONAL_CODE_LOOKUP") &&
+                  <div className="px-4 pb-3"><CodeMapEditor node={node} editable={false} onChange={() => {}} /></div>}
+                {selected && editable && <div className="border-t px-3 py-3 sm:px-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-sm font-medium">Edit field rule</h3>
+                    <Button variant="ghost" size="icon" onClick={() => removeNode(node.id)} aria-label={`Remove rule ${index + 1}`}>
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
-                  )}
-                </div>
+                  </div>
                 <div className="grid gap-2 sm:grid-cols-[8.5rem_1fr]">
                   <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                     Operation
@@ -780,6 +812,8 @@ export function MappingWorkspacePage() {
                         updateNode(node.id, {
                           operation: event.target
                             .value as MappingNode["operation"],
+                          tableLookup: event.target.value === "LOOKUP_TABLE"
+                            ? node.tableLookup ?? { alias: "", resultColumn: "" } : undefined,
                           ...(event.target.value === "CODE_LOOKUP" &&
                           !node.codeMap
                             ? { codeMap: {} }
@@ -800,6 +834,7 @@ export function MappingWorkspacePage() {
                       <option value="UPPERCASE">Uppercase</option>
                       <option value="LOWERCASE">Lowercase</option>
                       <option value="CODE_LOOKUP">Translate code</option>
+                      <option value="LOOKUP_TABLE">Look up in table</option>
                     </select>
                   </label>
                   <label className="grid gap-1 text-xs font-medium text-muted-foreground">
@@ -845,6 +880,20 @@ export function MappingWorkspacePage() {
                       onChange={(codeMap) => updateNode(node.id, { codeMap })}
                     />
                   )}
+                  {node.operation === "LOOKUP_TABLE" && <>
+                    <label className="grid gap-1 text-xs font-medium">Table alias
+                      <Input disabled={!editable} value={node.tableLookup?.alias ?? ""} placeholder="sites"
+                        onChange={(event) => updateNode(node.id, {
+                          tableLookup: { ...node.tableLookup, alias: event.target.value },
+                        })} />
+                    </label>
+                    <label className="grid gap-1 text-xs font-medium">Return column
+                      <Input disabled={!editable} value={node.tableLookup?.resultColumn ?? ""} placeholder="erpSite"
+                        onChange={(event) => updateNode(node.id, {
+                          tableLookup: { ...node.tableLookup, resultColumn: event.target.value },
+                        })} />
+                    </label>
+                  </>}
                   {node.operation === "OMIT" && (
                     <label className="grid gap-1 text-xs font-medium sm:col-span-2">
                       Business reason for omitting this field
@@ -860,8 +909,9 @@ export function MappingWorkspacePage() {
                     </label>
                   )}
                 </div>
+                </div>}
               </article>
-            ))}
+            })}
             {nodes.length === 0 && (
               <div className="px-6 py-16 text-center">
                 <Braces className="mx-auto h-6 w-6 text-muted-foreground" />
@@ -874,36 +924,30 @@ export function MappingWorkspacePage() {
               </div>
             )}
           </div>
-        </main>
+        </section>
 
         <aside
           className={cn(
-            "min-h-0 border-l bg-[oklch(0.18_0.035_270)]",
+            "min-w-0",
             activePane !== "output" && "hidden xl:block",
           )}
           aria-labelledby="output-title"
         >
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white">
-            <h2 id="output-title" className="text-sm font-semibold">
-              Output
-            </h2>
-            <Braces className="h-4 w-4 text-[oklch(0.88_0.13_155)]" />
+          <div className="flex min-h-14 items-center justify-between gap-2 border-b px-3 py-2 sm:px-4">
+            <h2 id="output-title" className="text-sm font-semibold">{testResult?.output ? "Test output" : "Output preview"}</h2>
+            <Braces className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </div>
-          <div className="h-[calc(100vh-12.25rem)]">
-            <JsonPane
-              value={previewText}
-              label="Generated document rule output"
-            />
-          </div>
+          <JsonPane value={previewText} label="Generated document rule output" />
         </aside>
-      </div>
+        </div>
+      </section>}
 
       {sampleOpen && mapping?.sample && (
         <section
-          className="fixed inset-x-0 bottom-0 z-40 max-h-[82vh] overflow-y-auto border-t bg-background lg:left-60"
+          className="m-4 min-w-0 overflow-hidden rounded-lg border bg-background sm:mx-6"
           aria-labelledby="samples-title"
         >
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-4 py-3">
+          <div className="flex items-center justify-between border-b bg-background px-4 py-3">
             <h2 id="samples-title" className="text-sm font-semibold">
               Samples
             </h2>
@@ -916,43 +960,23 @@ export function MappingWorkspacePage() {
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <div className="grid xl:grid-cols-3">
-            <div className="grid min-h-80 border-r">
-              <span className="border-b px-4 py-2 text-xs font-medium">
-                {mapping.sample.sourceFormat}
-              </span>
-              <JsonPane
-                value={mapping.sample.sourceDocument ?? ""}
-                label="Source sample document"
-              />
-            </div>
-            {(mapping.sample.sourceRaw || mapping.sample.targetRaw) && (
-              <div className="grid min-h-80 border-r">
-                <span className="border-b px-4 py-2 text-xs font-medium">
-                  Raw EDI
-                </span>
-                <JsonPane
-                  value={
-                    mapping.sample.sourceRaw ?? mapping.sample.targetRaw ?? ""
-                  }
-                  label="Raw EDI sample"
-                />
+          <div className="grid grid-cols-[minmax(0,1fr)] divide-y xl:grid-cols-[repeat(auto-fit,minmax(0,1fr))] xl:divide-x xl:divide-y-0">
+            {[
+              { stage: "raw-input", label: "Raw EDI input", value: mapping.sample.sourceRaw },
+              { stage: "source", label: mapping.sample.sourceFormat ?? "Source JSON", value: mapping.sample.sourceDocument },
+              { stage: "target", label: mapping.sample.targetFormat ?? "Target JSON", value: mapping.sample.targetDocument },
+              { stage: "raw-output", label: "Raw EDI output", value: mapping.sample.targetRaw },
+            ].filter(({ value }) => value).map(({ stage, label, value }) => (
+              <div key={stage} className="grid min-w-0 content-start max-xl:min-h-40">
+                <h3 className="border-b px-4 py-2 text-xs font-medium">{label}</h3>
+                <JsonPane value={value ?? ""} label={label} />
               </div>
-            )}
-            <div className="grid min-h-80">
-              <span className="border-b px-4 py-2 text-xs font-medium">
-                {mapping.sample.targetFormat}
-              </span>
-              <JsonPane
-                value={mapping.sample.targetDocument ?? ""}
-                label="Target sample document"
-              />
-            </div>
+            ))}
           </div>
           <footer className="flex justify-end border-t px-4 py-3">
             <Button
               onClick={() => {
-                setInput(mapping.sample?.sourceDocument ?? DEFAULT_INPUT)
+                changeInput(mapping.sample?.sourceDocument ?? "")
                 setSampleOpen(false)
                 setTestOpen(true)
               }}
@@ -965,95 +989,76 @@ export function MappingWorkspacePage() {
         </section>
       )}
 
-      {testOpen && (
-        <section
-          className="fixed inset-x-0 bottom-0 z-40 max-h-[82vh] overflow-y-auto border-t bg-background lg:left-60"
-          aria-labelledby="test-title"
-        >
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-4 py-3">
-            <h2 id="test-title" className="text-sm font-semibold">
-              Test
-            </h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTestOpen(false)}
-              aria-label="Close test"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+      {testOpen && mapping && (
+        <section aria-label="Mapping test" aria-busy={testing} className="m-4 min-w-0 rounded-lg border bg-background sm:mx-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b px-3 py-3 sm:px-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h2 className="text-base font-semibold">Test mapping</h2>
+              {testResult && <span role="status" className={cn(
+                "inline-flex items-center gap-1.5 text-sm font-medium",
+                testResult.passed ? "text-success-foreground" : "text-destructive",
+              )}>
+                {testResult.passed ? <Check className="h-4 w-4" aria-hidden="true" /> : <CircleAlert className="h-4 w-4" aria-hidden="true" />}
+                {testResult.passed ? "Passed" : "Needs attention"}
+              </span>}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {example && <Button variant="outline" size="sm" type="button" disabled={testing || busy || input === example}
+                onClick={() => changeInput(example)} className={styles.tool}>
+                Load sample
+              </Button>}
+              <Button size="sm" type="button" onClick={() => void test()} disabled={busy || testing || !!testBlocked}
+                className={cn("gap-2", styles.tool)}>
+                <Beaker className="h-4 w-4" aria-hidden="true" />{testing ? "Running test…" : "Run test"}
+              </Button>
+            </div>
           </div>
-          <div className="grid lg:grid-cols-2">
-            <label className="grid min-h-72 border-r">
-              <span className="border-b px-4 py-2 text-xs font-medium">
-                Input
-              </span>
+          {testBlocked && <p role="status" className="border-b bg-muted/25 px-4 py-2 text-sm text-muted-foreground">{testBlocked}</p>}
+          {(testError || !!testResult?.failures?.length) && (
+            <div role="alert" className="border-b bg-destructive/10 px-4 py-3 text-sm">
+              {testError
+                ? <p className="break-words text-destructive">{testError}</p>
+                : <ul className="list-disc space-y-1 pl-4">{testResult?.failures?.map((failure, index) =>
+                    <li key={index} className="break-words">{failure}</li>)}</ul>}
+            </div>
+          )}
+          {lookups.length > 0 && <ReferenceTableBindings lookups={lookups} bindings={fixtureTables} busy={busy || testing}
+            onSelect={(alias, revisionId) => {
+              setFixtureTables((current) => ({ ...current, [alias]: revisionId }))
+              clearTest()
+            }} />}
+          <div className="grid min-w-0 divide-y lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            <label className="grid min-w-0 content-start">
+              <span className="border-b px-4 py-3 text-sm font-medium">Input JSON</span>
               <textarea
                 value={input}
-                onChange={(event) => {
-                  setInput(event.target.value)
-                  setTestResult(undefined)
-                }}
+                onChange={(event) => changeInput(event.target.value)}
+                readOnly={testing}
                 spellCheck={false}
-                className="min-h-72 resize-y bg-[oklch(0.18_0.035_270)] p-4 font-mono text-xs leading-6 text-white focus-visible:outline-none"
+                placeholder="Paste a JSON document"
+                aria-invalid={!!input.trim() && parsedInput === undefined}
+                className="h-[clamp(16rem,47vh,32rem)] w-full resize-y bg-background px-4 py-3 font-mono text-xs leading-6 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               />
             </label>
-            <div className="grid min-h-72">
-              <span className="border-b px-4 py-2 text-xs font-medium">
-                Output
-              </span>
+            <div className="grid min-w-0 content-start">
+              <h3 className="border-b px-4 py-3 text-sm font-medium">{testResult?.output ? "Test output" : "Output preview"}</h3>
               <JsonPane
-                value={testResult?.output || previewText}
-                label="Document rule test output"
+                value={previewText}
+                label={testResult?.output ? "Document rule test output" : "Document rule output preview"}
               />
             </div>
           </div>
-          {Boolean(testResult?.failures?.length) && <div role="alert" className="border-t p-4 text-sm"><p className="font-semibold text-destructive">Resolve these findings before publication</p><ul className="mt-2 max-h-60 space-y-2 overflow-y-auto">{testResult!.failures!.map((failure, index) => <li key={index} className="break-words text-xs leading-5">{failure}</li>)}</ul></div>}
-          <footer className="flex flex-col justify-between gap-3 border-t px-4 py-3 sm:flex-row sm:items-end">
-            <div className="flex flex-wrap items-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => void test()}
-                disabled={busy || dirty || preview === undefined}
-                className="gap-2"
-              >
-                <Beaker className="h-4 w-4" />
-                Run test
-              </Button>
-              {testResult?.passed && (
-                <span className="flex h-10 items-center gap-2 text-sm font-medium text-success-foreground">
-                  <Check className="h-4 w-4" />
-                  Passed
-                </span>
-              )}{" "}
-              {dirty && (
-                <span className="h-10 content-center text-xs text-muted-foreground">
-                  Save before testing.
-                </span>
-              )}
-            </div>
-            {editable && (
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="grid gap-1 text-xs font-medium">
-                  Publish at (optional)
-                  <Input
-                    type="datetime-local"
-                    value={effectiveAt}
-                    onChange={(event) => setEffectiveAt(event.target.value)}
-                    className="h-9"
-                  />
-                </label>
-                <Button
-                  onClick={() => void publish()}
-                  disabled={busy || !testResult?.passed}
-                  className="gap-2"
-                >
-                  <Send className="h-4 w-4" />
-                  {effectiveAt ? "Schedule publication" : "Publish revision"}
-                </Button>
-              </div>
-            )}
-          </footer>
+          {editable && <footer className="flex flex-wrap items-end justify-end gap-3 border-t px-4 py-3">
+            <label className="grid gap-1 text-sm font-medium">
+              Publish at (optional)
+              <Input type="datetime-local" value={effectiveAt} onChange={(event) => setEffectiveAt(event.target.value)} />
+            </label>
+            <Button onClick={() => void publish()} disabled={busy || testing || dirty || !testResult?.passed}
+              className={cn("gap-2", styles.tool)}>
+              <Send className="h-4 w-4" aria-hidden="true" />
+              {effectiveAt ? "Schedule publication" : "Publish revision"}
+            </Button>
+          </footer>}
         </section>
       )}
     </div>

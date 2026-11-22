@@ -137,7 +137,8 @@ export const zCapabilityRequest = z.object({
         'REMITTANCE_ADVICE',
         'RECEIPT_ADVICE'
     ]).optional(),
-    documentProfileRevisionId: z.uuid().optional()
+    documentProfileRevisionId: z.uuid().optional(),
+    referenceTableRevisions: z.record(z.string(), z.uuid()).optional()
 });
 
 export const zExchangeCapability = z.object({
@@ -184,7 +185,8 @@ export const zExchangeCapability = z.object({
         'REMITTANCE_ADVICE',
         'RECEIPT_ADVICE'
     ]).optional(),
-    documentProfileRevisionId: z.uuid().optional()
+    documentProfileRevisionId: z.uuid().optional(),
+    referenceTableRevisions: z.record(z.string(), z.uuid()).optional()
 });
 
 export const zQualificationReport = z.object({
@@ -279,6 +281,11 @@ export const zManagedTemplate = z.object({
     changedAt: z.iso.datetime().optional()
 });
 
+export const zTableLookup = z.object({
+    alias: z.string().optional(),
+    resultColumn: z.string().optional()
+});
+
 export const zMappingNode = z.object({
     id: z.uuid().optional(),
     operation: z.enum([
@@ -291,6 +298,7 @@ export const zMappingNode = z.object({
         'CODE_LOOKUP',
         'OPTIONAL_COPY',
         'OPTIONAL_CODE_LOOKUP',
+        'LOOKUP_TABLE',
         'OMIT'
     ]).optional(),
     sourcePointers: z.array(z.string()).optional(),
@@ -317,7 +325,8 @@ export const zMappingNode = z.object({
         'UBL_2_1',
         'EDIFACT_D96A',
         'TRADACOMS_9'
-    ]).optional()
+    ]).optional(),
+    tableLookup: zTableLookup.optional()
 });
 
 export const zUpdateMappingRequest = z.object({
@@ -376,6 +385,11 @@ export const zMappingRevision = z.object({
     derivedFromMappingId: z.uuid().optional(),
     targetValidationEvidence: zTargetValidationEvidence.optional(),
     compatibility: zMappingCompatibility.readonly().optional()
+});
+
+export const zBinding = z.object({
+    alias: z.string().min(1).regex(/[a-zA-Z][a-zA-Z0-9_]{0,63}/),
+    revisionId: z.uuid()
 });
 
 export const zDocumentProfileRequest = z.object({
@@ -472,7 +486,8 @@ export const zCreateMappingRequest = z.object({
 export const zMappingFixtureRequest = z.object({
     name: z.string().min(1),
     input: z.string().min(1),
-    expected: z.string().optional()
+    expected: z.string().optional(),
+    referenceTableRevisions: z.record(z.string(), z.uuid()).optional()
 });
 
 export const zTestResult = z.object({
@@ -524,6 +539,22 @@ export const zManagedSetupResult = z.object({
     partnerId: z.uuid().optional(),
     connectionId: z.uuid().optional(),
     agreementId: z.uuid().optional()
+});
+
+export const zPublish = z.object({
+    id: z.uuid(),
+    previousRevisionId: z.uuid().optional(),
+    name: z.string().min(0).max(120),
+    keyColumn: z.string().min(0).max(64),
+    rows: z.array(z.record(z.string(), z.string())).min(0).max(1000)
+});
+
+export const zReferenceTableRevision = z.object({
+    id: z.uuid().optional(),
+    previousRevisionId: z.uuid().optional(),
+    name: z.string().optional(),
+    keyColumn: z.string().optional(),
+    rows: z.array(z.record(z.string(), z.string())).optional()
 });
 
 export const zAcceptanceRequest = z.object({
@@ -682,6 +713,15 @@ export const zPublished = z.object({
     definition: zDefinition.optional()
 });
 
+export const zSummary = z.object({
+    id: z.uuid().optional(),
+    previousRevisionId: z.uuid().optional(),
+    name: z.string().optional(),
+    keyColumn: z.string().optional(),
+    columns: z.array(z.string()).optional(),
+    rowCount: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional()
+});
+
 export const zManagedAgreement = z.object({
     setup: zManagedSetupResult.optional(),
     requiresRetailerAcceptance: z.boolean().optional(),
@@ -790,6 +830,18 @@ export const zUpdateMappingDraftPath = z.object({
  * OK
  */
 export const zUpdateMappingDraftResponse = zMappingRevision;
+
+export const zBindPartnerReferenceTableBody = zBinding;
+
+export const zBindPartnerReferenceTablePath = z.object({
+    agreementId: z.uuid(),
+    capabilityId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zBindPartnerReferenceTableResponse = zTradingAgreement;
 
 /**
  * OK
@@ -1103,6 +1155,18 @@ export const zApplyManagedPartnerTemplatePath = z.object({
  */
 export const zApplyManagedPartnerTemplateResponse = zManagedSetupResult;
 
+/**
+ * OK
+ */
+export const zListPartnerReferenceTablesResponse = z.array(zSummary);
+
+export const zPublishPartnerReferenceTableBody = zPublish;
+
+/**
+ * Created
+ */
+export const zPublishPartnerReferenceTableResponse = zReferenceTableRevision;
+
 export const zRecordManagedRetailerAcceptanceBody = zAcceptanceRequest;
 
 export const zRecordManagedRetailerAcceptancePath = z.object({
@@ -1224,6 +1288,15 @@ export const zListBusinessCodeListsResponse = z.array(zBusinessCodeListDefinitio
  * OK
  */
 export const zListPublishedManagedPartnersResponse = z.array(zPublished);
+
+export const zGetPartnerReferenceTablePath = z.object({
+    revisionId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetPartnerReferenceTableResponse = zReferenceTableRevision;
 
 export const zGetManagedAgreementSetupPath = z.object({
     agreementId: z.uuid()

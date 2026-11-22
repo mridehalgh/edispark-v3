@@ -1,0 +1,53 @@
+.workspace {
+  --rule-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+.code {
+  counter-reset: mapping-line;
+}
+
+.line {
+  counter-increment: mapping-line;
+}
+
+.line::before {
+  content: counter(mapping-line);
+  display: inline-block;
+  width: 2.5ch;
+  margin-right: 1.25ch;
+  color: oklch(var(--muted-foreground));
+  text-align: right;
+  user-select: none;
+}
+
+.tool {
+  transition: background-color 160ms var(--rule-ease), border-color 160ms var(--rule-ease), transform 160ms var(--rule-ease);
+}
+
+.tool:active:not(:disabled) {
+  transform: scale(.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool {
+    transition: none;
+  }
+
+  .tool:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+.panelScroll {
+  max-height: 32rem;
+}
+
+@media (min-width: 80rem) {
+  .workbench {
+    grid-template-columns: minmax(12rem, 1fr) minmax(23rem, 2.2fr) minmax(15rem, 1.35fr);
+  }
+
+  .panelScroll {
+    max-height: max(25rem, calc(100dvh - 17rem));
+  }
+}

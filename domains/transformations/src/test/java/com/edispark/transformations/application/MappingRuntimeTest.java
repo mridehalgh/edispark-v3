@@ -1,10 +1,12 @@
 package com.edispark.transformations.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.edispark.transformations.domain.MappingNode;
 import com.edispark.transformations.domain.MappingOperation;
 import com.edispark.transformations.domain.MappingRevision;
+import com.edispark.transformations.domain.ReferenceTableRevision;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -15,6 +17,39 @@ import org.junit.jupiter.api.Test;
 
 class MappingRuntimeTest {
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @Test
+    void resolvesRepeatedFieldsFromAPinnedTableAndRetainsTheRevisionInEvidence() throws Exception {
+        var node = new MappingNode(UUID.randomUUID(), MappingOperation.LOOKUP_TABLE, List.of("/items/*/code"),
+                "/lines/*/location", null, null, Map.of(), null, null, null,
+                new MappingNode.TableLookup("sites", "erpSite"));
+        var mapping = MappingRevision.draft("tenant", "Resolve locations", UUID.randomUUID(), UUID.randomUUID(),
+                List.of(node), Instant.now());
+        var runtime = new MappingRuntime(mapper);
+        var original = new ReferenceTableRevision(UUID.randomUUID(), null, "Sites", "external",
+                List.of(Map.of("external", "0001", "erpSite", "A"), Map.of("external", "1", "erpSite", "B")));
+        var updated = new ReferenceTableRevision(UUID.randomUUID(), original.id(), "Sites", "external",
+                List.of(Map.of("external", "0001", "erpSite", "C"), Map.of("external", "1", "erpSite", "B")));
+        byte[] input = """
+                {"items":[{"code":"0001"},{"code":"1"}]}
+                """.getBytes(StandardCharsets.UTF_8);
+
+        var next = runtime.executeDetailed(mapping, input, Map.of("sites", updated));
+        var replay = runtime.executeDetailed(mapping, input, Map.of("sites", original));
+
+        assertThat(mapper.readTree(next.output()).at("/lines/0/location").asText()).isEqualTo("C");
+        assertThat(mapper.readTree(replay.output()).at("/lines/0/location").asText()).isEqualTo("A");
+        assertThat(mapper.readTree(replay.output()).at("/lines/1/location").asText()).isEqualTo("B");
+        assertThat(mapper.readTree(replay.report()).at("/referenceTableRevisions/sites").asText())
+                .isEqualTo(original.id().toString());
+        assertThat(replay.warnings()).isEmpty();
+        assertThatThrownBy(() -> runtime.execute(mapping, input)).hasMessageContaining("sites");
+        var unknown = """
+                {"items":[{"code":"002"}]}
+                """.getBytes(StandardCharsets.UTF_8);
+        assertThatThrownBy(() -> runtime.executeDetailed(mapping, unknown, Map.of("sites", original)))
+                .hasMessageContaining("has no match");
+    }
 
     @Test
     void repeatsEveryLineAndKeepsUnexpectedFieldsVisible() throws Exception {

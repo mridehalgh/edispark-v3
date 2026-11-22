@@ -5,7 +5,6 @@ import com.edispark.exchange.application.ReadinessFailure;
 import com.edispark.exchange.application.ReadinessIssue;
 import com.edispark.exchange.domain.ExchangeWarning;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
-import com.edispark.transformations.application.MappingRuntime;
 import com.edispark.transformations.application.MappingService;
 import com.edispark.transformations.application.MappingFindingLocation;
 import com.edispark.transformations.domain.MappingStatus;
@@ -16,16 +15,15 @@ import org.springframework.stereotype.Component;
 @Component
 public final class LocalTransformationAcl implements TransformationAcl {
     private final MappingService mappings;
-    private final MappingRuntime runtime;
     private final EdiPayloadWriter edi;
     private final com.edispark.exchange.application.OutboundControlAllocator controls;
-    public LocalTransformationAcl(MappingService mappings, MappingRuntime runtime, EdiPayloadWriter edi) {
-        this(mappings, runtime, edi, com.edispark.exchange.application.OutboundControlAllocator.unavailable());
+    public LocalTransformationAcl(MappingService mappings, EdiPayloadWriter edi) {
+        this(mappings, edi, com.edispark.exchange.application.OutboundControlAllocator.unavailable());
     }
     @org.springframework.beans.factory.annotation.Autowired
-    public LocalTransformationAcl(MappingService mappings, MappingRuntime runtime, EdiPayloadWriter edi,
+    public LocalTransformationAcl(MappingService mappings, EdiPayloadWriter edi,
             com.edispark.exchange.application.OutboundControlAllocator controls) {
-        this.mappings = mappings; this.runtime = runtime; this.edi = edi;
+        this.mappings = mappings; this.edi = edi;
         this.controls = controls;
     }
     @Override public Qualification qualification(ExchangeCapability capability) {
@@ -56,7 +54,7 @@ public final class LocalTransformationAcl implements TransformationAcl {
         if (!mapping.sourceSchemaId().equals(capability.sourceSchemaId()) || !mapping.targetSchemaId().equals(capability.targetSchemaId())) {
             throw new IllegalArgumentException("The pinned mapping does not match the route's source and target schemas.");
         }
-        var result = runtime.executeDetailed(mapping, canonicalContent);
+        var result = mappings.executeWithReferenceTables(mapping, canonicalContent, capability.referenceTableRevisions());
         var warnings = result.warnings().stream()
                 .map(warning -> new ExchangeWarning(warning.code(), warning.sourcePath(), warning.disposition(),
                         warning.message()))
@@ -86,7 +84,8 @@ public final class LocalTransformationAcl implements TransformationAcl {
         var verified = executePublished(capability, canonical);
         if (!verified.warnings().isEmpty()) throw new ReadinessFailure(java.util.List.of(ReadinessIssue.configuration(
                 "BQ_ACK_SOURCE_COVERAGE", "Complete the B&Q mapping's source dispositions before allocating transmission controls.")));
-        var mapped = runtime.executeDetailed(mappings.get(capability.mappingRevisionId()), canonical);
+        var mapped = mappings.executeWithReferenceTables(mappings.get(capability.mappingRevisionId()), canonical,
+                capability.referenceTableRevisions());
         var reserved = controls.reserve(capability.as2ConnectionId(), exchangeId);
         var control = new com.edispark.tradacoms.ack.BqAcknowledgement.Control(reserved.transmission(), reserved.fileGeneration());
         return new Result(edi.write(capability, mapped.output(), control), verified.report(), verified.warnings());

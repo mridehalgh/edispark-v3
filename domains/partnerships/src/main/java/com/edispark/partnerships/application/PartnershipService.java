@@ -122,6 +122,15 @@ public final class PartnershipService {
         return repository.saveAgreement(requireAgreement(agreementId).addCapability(capability, clock.instant()));
     }
 
+    public TradingAgreement bindReferenceTable(UUID agreementId, UUID capabilityId, String alias, UUID revisionId) {
+        var agreement = requireAgreement(agreementId);
+        var capability = agreement.capabilities().stream().filter(item -> item.id().equals(capabilityId))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("The exchange capability was not found."));
+        if (revisionId.equals(capability.referenceTableRevisions().get(alias))) return agreement;
+        var updated = capability.withReferenceTable(alias, revisionId);
+        return repository.saveAgreement(agreement.replaceCapability(capabilityId, updated, clock.instant()));
+    }
+
     public TradingAgreement replaceCapability(UUID agreementId, UUID capabilityId, ExchangeCapability capability) {
         return repository.saveAgreement(requireAgreement(agreementId)
                 .replaceCapability(capabilityId, capability, clock.instant()));
@@ -214,6 +223,7 @@ public final class PartnershipService {
             if (!evidenceSource.activeAs2ConnectionExists(capability.as2ConnectionId())) {
                 failures.add("AS2 connection is not active: " + capability.as2ConnectionId());
             }
+            failures.addAll(evidenceSource.referenceTableFailures(capability));
             validateStandardProfile(capability, failures);
             validateDocumentProfile(capability, agreement.partnerId(), checks, failures);
             if (requiresTargetEvidence(capability)) {
@@ -232,7 +242,8 @@ public final class PartnershipService {
 
     public TradingAgreement activate(UUID agreementId, Instant effectiveAt) {
         TradingAgreement candidate = requireAgreement(agreementId);
-        var managedFailures = qualification.managedQualificationFailures(candidate);
+        var managedFailures = new ArrayList<>(qualification.managedQualificationFailures(candidate));
+        candidate.capabilities().forEach(capability -> managedFailures.addAll(qualification.referenceTableFailures(capability)));
         if (!managedFailures.isEmpty()) throw new IllegalStateException(String.join(" ", managedFailures));
         validateCurrentTargetEvidence(candidate);
         Instant now = clock.instant();

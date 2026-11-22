@@ -83,6 +83,9 @@ export type CapabilityRequest = {
     approvalPolicy?: 'NONE' | 'AUTHORIZED_MEMBER' | 'FOUR_EYES';
     responseDocumentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
     documentProfileRevisionId?: string;
+    referenceTableRevisions?: {
+        [key: string]: string;
+    };
 };
 
 export type ExchangeCapability = {
@@ -103,6 +106,9 @@ export type ExchangeCapability = {
     approvalPolicy?: 'NONE' | 'AUTHORIZED_MEMBER' | 'FOUR_EYES';
     responseDocumentType?: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
     documentProfileRevisionId?: string;
+    referenceTableRevisions?: {
+        [key: string]: string;
+    };
 };
 
 export type QualificationReport = {
@@ -175,7 +181,7 @@ export type ManagedTemplate = {
 
 export type MappingNode = {
     id?: string;
-    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE' | 'CODE_LOOKUP' | 'OPTIONAL_COPY' | 'OPTIONAL_CODE_LOOKUP' | 'OMIT';
+    operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE' | 'CODE_LOOKUP' | 'OPTIONAL_COPY' | 'OPTIONAL_CODE_LOOKUP' | 'LOOKUP_TABLE' | 'OMIT';
     sourcePointers?: Array<string>;
     targetPointer?: string;
     constant?: string;
@@ -186,6 +192,12 @@ export type MappingNode = {
     codeList?: 'UNIT_OF_MEASURE' | 'WEIGHT_UNIT' | 'CURRENCY' | 'COUNTRY' | 'PAYMENT_MEANS' | 'TAX_CATEGORY' | 'ORDER_RESPONSE' | 'HANDLING_UNIT_TYPE';
     sourceSyntax?: 'UBL_2_1' | 'EDIFACT_D96A' | 'TRADACOMS_9';
     targetSyntax?: 'UBL_2_1' | 'EDIFACT_D96A' | 'TRADACOMS_9';
+    tableLookup?: TableLookup;
+};
+
+export type TableLookup = {
+    alias?: string;
+    resultColumn?: string;
 };
 
 export type UpdateMappingRequest = {
@@ -238,6 +250,11 @@ export type TargetValidationEvidence = {
     ruleFingerprint?: string;
     mappingHash?: string;
     fixtureHashes?: Array<string>;
+};
+
+export type Binding = {
+    alias: string;
+    revisionId: string;
 };
 
 export type DocumentProfileRequest = {
@@ -320,6 +337,9 @@ export type MappingFixtureRequest = {
     name: string;
     input: string;
     expected?: string;
+    referenceTableRevisions?: {
+        [key: string]: string;
+    };
 };
 
 export type TestResult = {
@@ -371,6 +391,26 @@ export type ManagedSetupResult = {
     partnerId?: string;
     connectionId?: string;
     agreementId?: string;
+};
+
+export type Publish = {
+    id: string;
+    previousRevisionId?: string;
+    name: string;
+    keyColumn: string;
+    rows: Array<{
+        [key: string]: string;
+    }>;
+};
+
+export type ReferenceTableRevision = {
+    id?: string;
+    previousRevisionId?: string;
+    name?: string;
+    keyColumn?: string;
+    rows?: Array<{
+        [key: string]: string;
+    }>;
 };
 
 export type AcceptanceRequest = {
@@ -496,6 +536,15 @@ export type Published = {
     id?: string;
     revision?: number;
     definition?: Definition;
+};
+
+export type Summary = {
+    id?: string;
+    previousRevisionId?: string;
+    name?: string;
+    keyColumn?: string;
+    columns?: Array<string>;
+    rowCount?: number;
 };
 
 export type ManagedAgreement = {
@@ -644,6 +693,25 @@ export type UpdateMappingDraftResponses = {
 };
 
 export type UpdateMappingDraftResponse = UpdateMappingDraftResponses[keyof UpdateMappingDraftResponses];
+
+export type BindPartnerReferenceTableData = {
+    body: Binding;
+    path: {
+        agreementId: string;
+        capabilityId: string;
+    };
+    query?: never;
+    url: '/api/managed-partners/reference-tables/agreements/{agreementId}/capabilities/{capabilityId}';
+};
+
+export type BindPartnerReferenceTableResponses = {
+    /**
+     * OK
+     */
+    200: TradingAgreement;
+};
+
+export type BindPartnerReferenceTableResponse = BindPartnerReferenceTableResponses[keyof BindPartnerReferenceTableResponses];
 
 export type ListTradingPartnersData = {
     body?: never;
@@ -1258,6 +1326,38 @@ export type ApplyManagedPartnerTemplateResponses = {
 
 export type ApplyManagedPartnerTemplateResponse = ApplyManagedPartnerTemplateResponses[keyof ApplyManagedPartnerTemplateResponses];
 
+export type ListPartnerReferenceTablesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/managed-partners/reference-tables';
+};
+
+export type ListPartnerReferenceTablesResponses = {
+    /**
+     * OK
+     */
+    200: Array<Summary>;
+};
+
+export type ListPartnerReferenceTablesResponse = ListPartnerReferenceTablesResponses[keyof ListPartnerReferenceTablesResponses];
+
+export type PublishPartnerReferenceTableData = {
+    body: Publish;
+    path?: never;
+    query?: never;
+    url: '/api/managed-partners/reference-tables';
+};
+
+export type PublishPartnerReferenceTableResponses = {
+    /**
+     * Created
+     */
+    201: ReferenceTableRevision;
+};
+
+export type PublishPartnerReferenceTableResponse = PublishPartnerReferenceTableResponses[keyof PublishPartnerReferenceTableResponses];
+
 export type RecordManagedRetailerAcceptanceData = {
     body: AcceptanceRequest;
     path: {
@@ -1531,6 +1631,24 @@ export type ListPublishedManagedPartnersResponses = {
 };
 
 export type ListPublishedManagedPartnersResponse = ListPublishedManagedPartnersResponses[keyof ListPublishedManagedPartnersResponses];
+
+export type GetPartnerReferenceTableData = {
+    body?: never;
+    path: {
+        revisionId: string;
+    };
+    query?: never;
+    url: '/api/managed-partners/reference-tables/{revisionId}';
+};
+
+export type GetPartnerReferenceTableResponses = {
+    /**
+     * OK
+     */
+    200: ReferenceTableRevision;
+};
+
+export type GetPartnerReferenceTableResponse = GetPartnerReferenceTableResponses[keyof GetPartnerReferenceTableResponses];
 
 export type GetManagedAgreementSetupData = {
     body?: never;

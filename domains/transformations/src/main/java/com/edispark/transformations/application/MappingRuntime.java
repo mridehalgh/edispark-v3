@@ -4,6 +4,7 @@ import com.edispark.transformations.domain.MappingNode;
 import com.edispark.transformations.domain.MappingOperation;
 import com.edispark.transformations.domain.MappingRevision;
 import com.edispark.transformations.domain.MappingWarning;
+import com.edispark.transformations.domain.ReferenceTableRevision;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.LinkedHashSet;
 import org.springframework.stereotype.Service;
@@ -28,12 +30,17 @@ public final class MappingRuntime {
     }
 
     public ExecutionResult executeDetailed(MappingRevision mapping, byte[] input) {
+        return executeDetailed(mapping, input, Map.of());
+    }
+
+    public ExecutionResult executeDetailed(MappingRevision mapping, byte[] input,
+            Map<String, ReferenceTableRevision> tables) {
         if (input.length > MAX_INPUT_BYTES) throw new IllegalArgumentException("Mapping input exceeds 25 MiB");
         try {
             JsonNode source = mapper.readTree(input);
             ObjectNode target = mapper.createObjectNode();
             List<String> consumed = new ArrayList<>();
-            for (MappingNode node : mapping.nodes()) apply(source, target, node, consumed);
+            for (MappingNode node : mapping.nodes()) apply(source, target, node, consumed, tables);
             byte[] output = mapper.writeValueAsBytes(target);
             if (output.length > MAX_OUTPUT_BYTES) throw new IllegalArgumentException("Mapping output exceeds 25 MiB");
             List<MappingWarning> warnings = unmappedWarnings(source, consumed);
@@ -47,6 +54,10 @@ public final class MappingRuntime {
             report.put("mappingName", mapping.name());
             report.put("sourceSchemaId", mapping.sourceSchemaId().toString());
             report.put("targetSchemaId", mapping.targetSchemaId().toString());
+            if (!tables.isEmpty()) {
+                var revisions = report.putObject("referenceTableRevisions");
+                tables.forEach((alias, table) -> revisions.put(alias, table.id().toString()));
+            }
             report.set("warnings", mapper.valueToTree(warnings));
             return new ExecutionResult(output, mapper.writeValueAsBytes(report), warnings);
         } catch (IllegalArgumentException exception) {
@@ -77,13 +88,14 @@ public final class MappingRuntime {
         return true;
     }
 
-    private void apply(JsonNode source, ObjectNode target, MappingNode node, List<String> consumed) {
+    private void apply(JsonNode source, ObjectNode target, MappingNode node, List<String> consumed,
+            Map<String, ReferenceTableRevision> tables) {
         if (node.operation() == MappingOperation.OMIT) { consumed.addAll(node.sourcePointers()); return; }
         String repeated = node.sourcePointers().stream().filter(pointer -> pointer.contains("/*/")).findFirst().orElse(null);
         if (repeated == null) {
             if (node.targetPointer().contains("/*/")) throw new IllegalArgumentException("A repeated target requires an aligned source collection");
             if (optional(node) && node.sourcePointers().stream().allMatch(pointer -> source.at(pointer).isMissingNode() || source.at(pointer).isNull())) return;
-            write(target, node.targetPointer(), value(source, node));
+            write(target, node.targetPointer(), value(source, node, tables));
             if (node.operation() != MappingOperation.CONSTANT) {
                 var available = node.sourcePointers().stream().filter(pointer -> !source.at(pointer).isMissingNode() && !source.at(pointer).isNull());
                 consumed.addAll(node.operation() == MappingOperation.CONCAT ? available.toList() : available.limit(1).toList());
@@ -103,8 +115,8 @@ public final class MappingRuntime {
             String replacement = "/" + index + "/";
             MappingNode expanded = new MappingNode(node.id(), node.operation(), node.sourcePointers().stream()
                     .map(pointer -> pointer.replace("/*/", replacement)).toList(), node.targetPointer().replace("/*/", replacement),
-                    node.constant(), node.separator(), node.codeMap(), node.codeList(), node.sourceSyntax(), node.targetSyntax());
-            apply(source, target, expanded, consumed);
+                    node.constant(), node.separator(), node.codeMap(), node.codeList(), node.sourceSyntax(), node.targetSyntax(), node.tableLookup());
+            apply(source, target, expanded, consumed, tables);
         }
     }
 
@@ -135,7 +147,7 @@ public final class MappingRuntime {
         @Override public byte[] report() { return report.clone(); }
     }
 
-    private JsonNode value(JsonNode source, MappingNode node) {
+    private JsonNode value(JsonNode source, MappingNode node, Map<String, ReferenceTableRevision> tables) {
         if (node.operation() == MappingOperation.CONSTANT) return mapper.getNodeFactory().textNode(node.constant());
         List<JsonNode> values = new ArrayList<>();
         for (String pointer : node.sourcePointers()) {
@@ -150,9 +162,20 @@ public final class MappingRuntime {
             case UPPERCASE -> mapper.getNodeFactory().textNode(first(values, node).asText().toUpperCase(java.util.Locale.ROOT));
             case LOWERCASE -> mapper.getNodeFactory().textNode(first(values, node).asText().toLowerCase(java.util.Locale.ROOT));
             case CODE_LOOKUP, OPTIONAL_CODE_LOOKUP -> codeLookup(values, node);
+            case LOOKUP_TABLE -> lookup(first(values, node), node.tableLookup(), tables);
             case CONSTANT -> throw new IllegalStateException("Handled above");
             case OMIT -> throw new IllegalStateException("Omissions do not emit target values");
         };
+    }
+
+    private JsonNode lookup(JsonNode value, MappingNode.TableLookup lookup, Map<String, ReferenceTableRevision> tables) {
+        var table = tables.get(lookup.alias());
+        if (table == null) throw new IllegalArgumentException("Bind a published reference table to " + lookup.alias() + ".");
+        if (!value.isTextual()) throw new IllegalArgumentException("A reference lookup source must be text.");
+        var result = table.requireRow(value.textValue()).get(lookup.resultColumn());
+        if (result == null) throw new IllegalArgumentException("Reference table " + lookup.alias()
+                + " has no column " + lookup.resultColumn() + ".");
+        return mapper.getNodeFactory().textNode(result);
     }
 
     private JsonNode codeLookup(List<JsonNode> values, MappingNode node) {

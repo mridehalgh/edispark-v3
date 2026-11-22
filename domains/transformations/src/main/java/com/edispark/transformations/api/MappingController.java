@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -59,7 +60,7 @@ public final class MappingController {
 
     @PostMapping("/{mappingId}/test") @Operation(operationId = "testMapping", summary = "Run a mapping against a synthetic fixture")
     public MappingService.TestResult test(@PathVariable UUID mappingId, @Valid @RequestBody MappingFixtureRequest request) {
-        return service.test(mappingId, bytes(request.input()), request.expected() == null ? null : bytes(request.expected()));
+        return service.test(mappingId, bytes(request.input()), request.expected() == null ? null : bytes(request.expected()), request.referenceTableRevisions());
     }
 
     @PostMapping("/{mappingId}/test-retained-source")
@@ -72,7 +73,7 @@ public final class MappingController {
     @PostMapping("/{mappingId}/publish") @Operation(operationId = "publishMapping", summary = "Publish an immutable mapping revision")
     public MappingRevision publish(@PathVariable UUID mappingId, @Valid @RequestBody PublishMappingRequest request) {
         return service.publish(mappingId, request.fixtures().stream()
-                .map(item -> new MappingService.Fixture(item.name(), bytes(item.input()), item.expected() == null ? null : bytes(item.expected()))).toList(),
+                .map(item -> new MappingService.Fixture(item.name(), bytes(item.input()), item.expected() == null ? null : bytes(item.expected()), item.referenceTableRevisions())).toList(),
                 request.effectiveAt());
     }
 
@@ -97,7 +98,8 @@ public final class MappingController {
     public record CreateMappingRequest(@NotBlank @Size(max = 160) String name, @NotNull UUID sourceSchemaId,
                                        @NotNull UUID targetSchemaId, @NotEmpty List<@Valid MappingNode> nodes) { }
     public record UpdateMappingRequest(@NotEmpty List<@Valid MappingNode> nodes) { }
-    public record MappingFixtureRequest(@NotBlank String name, @NotBlank String input, String expected) { }
+    public record MappingFixtureRequest(@NotBlank String name, @NotBlank String input, String expected,
+            @Size(max = 20) Map<String, UUID> referenceTableRevisions) { }
     public record RetainedSourceRequest(@NotNull UUID documentSetId, @NotNull UUID documentId,
             @NotNull UUID representationId, @NotBlank @jakarta.validation.constraints.Pattern(regexp = "sha-256:[a-f0-9]{64}") String contentHash) { }
     public record PublishMappingRequest(@NotEmpty List<@Valid MappingFixtureRequest> fixtures,

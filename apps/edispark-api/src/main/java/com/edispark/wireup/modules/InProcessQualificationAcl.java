@@ -2,6 +2,7 @@ package com.edispark.wireup.modules;
 
 import com.edispark.wireup.managed.ManagedSetup;
 import com.edispark.partnerships.domain.model.TradingAgreement;
+import com.edispark.partnerships.domain.model.ExchangeCapability;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import com.edispark.mft.application.MftService;
@@ -65,6 +66,11 @@ final class InProcessQualificationAcl implements QualificationAcl {
             }
 
             @Override
+            public List<String> referenceTableFailures(ExchangeCapability capability) {
+                return InProcessQualificationAcl.this.referenceTableFailures(capability);
+            }
+
+            @Override
             public RuleEvidence targetRuleEvidence(UUID id) {
                 return InProcessQualificationAcl.this.targetRuleEvidence(id);
             }
@@ -74,6 +80,15 @@ final class InProcessQualificationAcl implements QualificationAcl {
     @Override public List<String> managedQualificationFailures(TradingAgreement agreement) {
         var setup = managed.getIfAvailable();
         return setup == null ? List.of() : setup.qualificationFailures(agreement);
+    }
+
+    @Override public List<String> referenceTableFailures(ExchangeCapability capability) {
+        try {
+            mappings.validateReferenceTables(capability.mappingRevisionId(), capability.referenceTableRevisions());
+            return List.of();
+        } catch (IllegalArgumentException exception) {
+            return List.of(exception.getMessage());
+        }
     }
 
     @Override public RuleEvidence targetRuleEvidence(UUID id) {

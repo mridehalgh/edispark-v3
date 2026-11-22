@@ -41,6 +41,6 @@ public record ReferenceTableRevision(UUID id, UUID previousRevisionId, String na
 
     public Map<String, String> requireRow(String key) {
         return rows.stream().filter(row -> row.get(keyColumn).equals(key)).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Reference table " + id + " has no match for " + keyColumn + "=" + key));
+                .orElseThrow(() -> new IllegalArgumentException("Reference table " + id + " has no match in key column " + keyColumn));
     }
 }

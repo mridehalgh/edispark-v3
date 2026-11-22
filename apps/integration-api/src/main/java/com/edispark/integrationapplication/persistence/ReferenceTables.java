@@ -1,16 +1,18 @@
 package com.edispark.integrationapplication.persistence;
 
 import com.edispark.transformations.domain.ReferenceTableRevision;
+import com.edispark.transformations.domain.ReferenceTableReader;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cottn.core.tenancy.TenantAccess;
 import java.util.UUID;
+import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
 @Repository
 @Profile("!openapi-export")
-public final class ReferenceTables {
+public final class ReferenceTables implements ReferenceTableReader {
     private static final String PREFIX = "REFERENCE_TABLE#";
     private static final int MAX_STORAGE_BYTES = 300_000;
     private final IntegrationDynamoStore store;
@@ -21,10 +23,20 @@ public final class ReferenceTables {
         this.mapper = mapper;
     }
 
+    @Override
     public ReferenceTableRevision require(UUID id) {
         return store.get(TenantAccess.currentId(), PREFIX + id).map(this::decode)
                 .orElseThrow(() -> new IllegalArgumentException("The reference table revision is unavailable."));
     }
+
+    public List<Summary> list() {
+        return store.list(TenantAccess.currentId(), PREFIX).stream().map(this::decode)
+                .map(table -> new Summary(table.id(), table.previousRevisionId(), table.name(), table.keyColumn(),
+                        table.rows().getFirst().keySet().stream().sorted().toList(), table.rows().size())).toList();
+    }
+
+    public record Summary(UUID id, UUID previousRevisionId, String name, String keyColumn,
+                          List<String> columns, int rowCount) { }
 
     public ReferenceTableRevision publish(ReferenceTableRevision revision) {
         if (revision.previousRevisionId() != null) require(revision.previousRevisionId());

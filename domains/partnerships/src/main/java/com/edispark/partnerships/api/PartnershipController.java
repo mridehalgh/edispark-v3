@@ -197,13 +197,13 @@ public final class PartnershipController {
             @NotNull UUID as2ConnectionId, @NotNull AcknowledgementPolicy acknowledgementPolicy,
             @NotNull BatchingPolicy batchingPolicy, OutboundLossPolicy outboundLossPolicy,
             WorkflowAutomationMode automationMode, WorkflowApprovalPolicy approvalPolicy,
-            BusinessDocumentType responseDocumentType, UUID documentProfileRevisionId) {
+            BusinessDocumentType responseDocumentType, UUID documentProfileRevisionId, java.util.Map<String, UUID> referenceTableRevisions) {
         ExchangeCapability toDomain() { return toDomain(UUID.randomUUID()); }
         ExchangeCapability toDomain(UUID id) {
             return new ExchangeCapability(id, direction, documentType, standard, release, messageType,
                     sourceSchemaId, targetSchemaId, mappingRevisionId, as2ConnectionId, acknowledgementPolicy,
                     batchingPolicy, outboundLossPolicy, automationMode, approvalPolicy, responseDocumentType,
-                    documentProfileRevisionId);
+                    documentProfileRevisionId, referenceTableRevisions);
         }
     }
     public record DocumentProfileRequest(@NotBlank @Size(max = 120) String name,

@@ -26,7 +26,7 @@ class BqAcknowledgementReadinessTest {
         var mappings = new MappingService(new InMemoryMappingRepository(), runtime, json, Clock.systemUTC(), new ClasspathGlobalMappingCatalog(), validation);
         var controls = mock(OutboundControlAllocator.class);
         var writer = new EdiPayloadWriter(json, Clock.fixed(java.time.Instant.parse("2026-11-09T00:00:00Z"), java.time.ZoneOffset.UTC));
-        var transformations = new LocalTransformationAcl(mappings, runtime, writer, controls);
+        var transformations = new LocalTransformationAcl(mappings, writer, controls);
         var capability = new ExchangeCapability(UUID.randomUUID(), ExchangeDirection.OUTBOUND, BusinessDocumentType.ORDER_RESPONSE,
                 EdiStandard.TRADACOMS, "9", "ORDRSP", UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac16"),
                 UUID.fromString("d9c01ea5-f555-4c6d-9c87-1465ea78ac34"), LocalBqAcknowledgementFixture.MAPPING,

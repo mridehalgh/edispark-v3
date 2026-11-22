@@ -1,4 +1,4 @@
-import type { AcceptanceRequest, Request as SetupRequest } from "@edispark/integration-client"
+import type { AcceptanceRequest, Binding, Publish, Request as SetupRequest } from "@edispark/integration-client"
 
 import { createAuthenticatedIntegrationClient, integrationErrorResponse, isIntegrationResourceId, managedPartnerBody } from "@/lib/integration-server"
 
@@ -9,10 +9,30 @@ async function handle(request: Request, { params }: Context) {
   try {
     const client = await createAuthenticatedIntegrationClient(request)
     const parts = (await params).operation ?? []
-    const [first, second, third, fourth] = parts
+    const [first, second, third, fourth, fifth] = parts
     if (request.method === "GET" && !parts.length) {
       const { data } = await client.listPublishedManagedPartners({ throwOnError: true })
       return Response.json(data, { headers: { "Cache-Control": "private, no-store" } })
+    }
+    if (first === "reference-tables") {
+      if (request.method === "GET" && parts.length === 1) {
+        const { data } = await client.listPartnerReferenceTables({ throwOnError: true })
+        return Response.json(data, { headers: { "Cache-Control": "private, no-store" } })
+      }
+      if (request.method === "POST" && parts.length === 1) {
+        const { data } = await client.publishPartnerReferenceTable({
+          body: await managedPartnerBody<Publish>(request), throwOnError: true,
+        })
+        return Response.json(data, { status: 201 })
+      }
+      if (request.method === "PUT" && parts.length === 5 && second === "agreements"
+        && third && isIntegrationResourceId(third) && fourth === "capabilities" && fifth && isIntegrationResourceId(fifth)) {
+        const { data } = await client.bindPartnerReferenceTable({
+          path: { agreementId: third, capabilityId: fifth },
+          body: await managedPartnerBody<Binding>(request), throwOnError: true,
+        })
+        return Response.json(data)
+      }
     }
     if (first === "agreements" && second && isIntegrationResourceId(second)) {
       const path = { agreementId: second }
@@ -37,4 +57,4 @@ async function handle(request: Request, { params }: Context) {
   }
 }
 
-export { handle as GET, handle as POST }
+export { handle as GET, handle as POST, handle as PUT }

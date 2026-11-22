@@ -90,14 +90,22 @@ public final class InboundMftEventProcessor {
     private Prepared prepare(InboundMftPayloadEvent event, TradingPartner partner,
             InboundEdiBatchSplitter.InboundMessage message) {
         InboundEdiTranslator.Translation translation = translator.translate(message);
+        var previous = exchanges.findByIdempotencyKey(inboundKey(event.transferId(), translation.messageOrdinal()));
+        if (previous.isPresent() && previous.get().sourceDocument() != null) {
+            var exchange = previous.get();
+            var source = exchange.sourceDocument();
+            return new Prepared(translation, null, null, new MessageResult(translation.messageOrdinal(),
+                    translation.sourceMessageReference(), exchange.id(), source.documentSetId(),
+                    source.documentId(), MessageStatus.STORED));
+        }
         Route route = resolve(event, partner, translation);
         if (route.capability().mappingRevisionId().equals(com.edispark.transformations.infrastructure.TescoUkMappings.ORDER)
                 && !"EAN008".equals(translation.association())) {
             throw new IllegalArgumentException("The Tesco UK order route requires ORDERS:D:96A:UN:EAN008.");
         }
         byte[] canonical = mappings.executePublished(
-                route.capability().mappingRevisionId(), translation.mappingInputJson());
-        return new Prepared(translation, route, canonical);
+                route.capability().mappingRevisionId(), translation.mappingInputJson(), route.capability().referenceTableRevisions());
+        return new Prepared(translation, route, canonical, null);
     }
 
     private Result result(List<MessageResult> messages) {
@@ -170,6 +178,7 @@ public final class InboundMftEventProcessor {
     }
 
     private MessageResult store(InboundMftPayloadEvent event, byte[] payload, Prepared prepared) {
+        if (prepared.retained() != null) return prepared.retained();
         InboundEdiTranslator.Translation translation = prepared.translation();
         byte[] raw = translation.messageCount() == 1 ? payload : translation.rawMessage();
         InboundModuleAccess.StoredDocument response = modules.store(new InboundModuleAccess.InboundDocument(
@@ -238,7 +247,8 @@ public final class InboundMftEventProcessor {
     }
 
     private record Route(TradingAgreement agreement, ExchangeCapability capability) { }
-    private record Prepared(InboundEdiTranslator.Translation translation, Route route, byte[] canonical) { }
+    private record Prepared(InboundEdiTranslator.Translation translation, Route route, byte[] canonical,
+                            MessageResult retained) { }
     public enum MessageStatus { STORED, NEEDS_REVIEW }
     public record MessageResult(int messageOrdinal, String sourceMessageReference, UUID exchangeId,
                                 UUID documentSetId, UUID documentId, MessageStatus status) { }

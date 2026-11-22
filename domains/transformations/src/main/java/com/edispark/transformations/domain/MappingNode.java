@@ -8,7 +8,9 @@ import java.util.UUID;
 public record MappingNode(UUID id, MappingOperation operation, List<String> sourcePointers,
                           String targetPointer, String constant, String separator, Map<String, String> codeMap,
                           BusinessCodeList codeList, BusinessCodeSyntax sourceSyntax,
-                          BusinessCodeSyntax targetSyntax) {
+                          BusinessCodeSyntax targetSyntax,
+                          @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                          TableLookup tableLookup) {
     public MappingNode {
         Objects.requireNonNull(id);
         Objects.requireNonNull(operation);
@@ -27,6 +29,10 @@ public record MappingNode(UUID id, MappingOperation operation, List<String> sour
         }
         if ((operation == MappingOperation.CODE_LOOKUP || operation == MappingOperation.OPTIONAL_CODE_LOOKUP) && codeMap.isEmpty()) {
             throw new IllegalArgumentException("codeMap is required for CODE_LOOKUP");
+        }
+        if ((operation == MappingOperation.LOOKUP_TABLE) != (tableLookup != null)
+                || (tableLookup != null && sourcePointers.size() != 1)) {
+            throw new IllegalArgumentException("A table lookup requires one source field, a table alias and a result column.");
         }
         boolean hasCodeMetadata = codeList != null || sourceSyntax != null || targetSyntax != null;
         if (hasCodeMetadata && (codeList == null || sourceSyntax == null || targetSyntax == null)) {
@@ -47,6 +53,25 @@ public record MappingNode(UUID id, MappingOperation operation, List<String> sour
     public MappingNode(UUID id, MappingOperation operation, List<String> sourcePointers,
             String targetPointer, String constant, String separator, Map<String, String> codeMap) {
         this(id, operation, sourcePointers, targetPointer, constant, separator, codeMap, null, null, null);
+    }
+
+    public MappingNode(UUID id, MappingOperation operation, List<String> sourcePointers, String targetPointer,
+            String constant, String separator, Map<String, String> codeMap, BusinessCodeList codeList,
+            BusinessCodeSyntax sourceSyntax, BusinessCodeSyntax targetSyntax) {
+        this(id, operation, sourcePointers, targetPointer, constant, separator, codeMap, codeList, sourceSyntax,
+                targetSyntax, null);
+    }
+
+    public record TableLookup(String alias, String resultColumn) {
+        public TableLookup {
+            if (!validName(alias) || !validName(resultColumn)) {
+                throw new IllegalArgumentException("Use bounded names for the table alias and result column.");
+            }
+        }
+
+        private static boolean validName(String name) {
+            return name != null && name.matches("[a-zA-Z][a-zA-Z0-9_]{0,63}");
+        }
     }
 
     private static boolean invalidCode(String value) {

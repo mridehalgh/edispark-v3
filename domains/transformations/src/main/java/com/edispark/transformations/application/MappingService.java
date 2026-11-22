@@ -2,6 +2,8 @@ package com.edispark.transformations.application;
 
 import com.edispark.transformations.domain.GlobalMappingCatalog;
 import com.edispark.transformations.domain.MappingNode;
+import com.edispark.transformations.domain.ReferenceTableReader;
+import com.edispark.transformations.domain.ReferenceTableRevision;
 import com.edispark.transformations.domain.MappingRepository;
 import com.edispark.transformations.domain.MappingRevision;
 import com.edispark.transformations.domain.MappingStatus;
@@ -14,6 +16,8 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.ArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,18 +31,26 @@ public final class MappingService {
     private final Clock clock;
     private final GlobalMappingCatalog globalCatalog;
     private final TargetContractValidator targetValidator;
+    private final Optional<ReferenceTableReader> referenceTables;
 
     public MappingService(MappingRepository repository, MappingRuntime runtime, ObjectMapper mapper, Clock clock,
             GlobalMappingCatalog globalCatalog) {
         this(repository, runtime, mapper, clock, globalCatalog, TargetContractValidator.unavailable());
     }
 
-    @Autowired
     public MappingService(MappingRepository repository, MappingRuntime runtime, ObjectMapper mapper, Clock clock,
             GlobalMappingCatalog globalCatalog, TargetContractValidator targetValidator) {
+        this(repository, runtime, mapper, clock, globalCatalog, targetValidator, Optional.empty());
+    }
+
+    @Autowired
+    public MappingService(MappingRepository repository, MappingRuntime runtime, ObjectMapper mapper, Clock clock,
+            GlobalMappingCatalog globalCatalog, TargetContractValidator targetValidator,
+            Optional<ReferenceTableReader> referenceTables) {
         this.repository = repository; this.runtime = runtime; this.mapper = mapper; this.clock = clock;
         this.globalCatalog = globalCatalog;
         this.targetValidator = targetValidator;
+        this.referenceTables = referenceTables;
     }
 
     public MappingRevision create(String name, UUID sourceSchemaId, UUID targetSchemaId, List<MappingNode> nodes) {
@@ -64,7 +76,11 @@ public final class MappingService {
     }
 
     public TestResult test(UUID id, byte[] input, byte[] expected) {
-        var preview = preview(require(id), input, expected);
+        return test(id, input, expected, Map.of());
+    }
+
+    public TestResult test(UUID id, byte[] input, byte[] expected, Map<String, UUID> bindings) {
+        var preview = preview(require(id), input, expected, bindings);
         var failures = new ArrayList<String>();
         if (Boolean.FALSE.equals(preview.expectedMatch())) failures.add("Output did not match the expected fixture");
         preview.warnings().forEach(warning -> failures.add(warning.sourcePath() + ": " + warning.message()));
@@ -73,7 +89,7 @@ public final class MappingService {
     }
 
     public PreviewResult preview(UUID id, byte[] input, byte[] expected) {
-        return preview(require(id), input, expected);
+        return preview(require(id), input, expected, Map.of());
     }
 
     public PreviewResult previewRetained(UUID id, RetainedMappingSource.Reference reference,
@@ -83,11 +99,11 @@ public final class MappingService {
         if (compatibility == null || !"OUTBOUND".equals(compatibility.direction())) {
             throw new IllegalArgumentException("Retained document testing requires a compatible outbound mapping.");
         }
-        return preview(mapping, sources.read(reference, compatibility.documentType()), null);
+        return preview(mapping, sources.read(reference, compatibility.documentType()), null, Map.of());
     }
 
-    private PreviewResult preview(MappingRevision mapping, byte[] input, byte[] expected) {
-        var execution = runtime.executeDetailed(mapping, input);
+    private PreviewResult preview(MappingRevision mapping, byte[] input, byte[] expected, Map<String, UUID> bindings) {
+        var execution = executeWithReferenceTables(mapping, input, bindings);
         byte[] output = execution.output();
         Boolean matches = expected == null ? null : sameJson(expected, output);
         var findings = requiresTargetEvidence(mapping) ? validateTarget(mapping, input, output).findings()
@@ -101,11 +117,47 @@ public final class MappingService {
                                 List<TargetContractValidator.Finding> findings) {}
 
     public byte[] executePublished(UUID id, byte[] input) {
+        return executePublished(id, input, Map.of());
+    }
+
+    public byte[] executePublished(UUID id, byte[] input, Map<String, UUID> bindings) {
         MappingRevision mapping = require(id);
         if (mapping.status() != MappingStatus.PUBLISHED) {
             throw new IllegalArgumentException("Published mapping was not found");
         }
-        return runtime.execute(mapping, input);
+        return executeWithReferenceTables(mapping, input, bindings).output();
+    }
+
+    public MappingRuntime.ExecutionResult executeWithReferenceTables(MappingRevision mapping, byte[] input,
+            Map<String, UUID> bindings) {
+        return runtime.executeDetailed(mapping, input, resolveTables(mapping, bindings));
+    }
+
+    public void validateReferenceTables(UUID mappingId, Map<String, UUID> bindings) {
+        resolveTables(require(mappingId), bindings);
+    }
+
+    private Map<String, ReferenceTableRevision> resolveTables(MappingRevision mapping, Map<String, UUID> bindings) {
+        var resolved = new LinkedHashMap<String, ReferenceTableRevision>();
+        var configured = bindings == null ? Map.<String, UUID>of() : bindings;
+        for (var node : mapping.nodes()) {
+            var lookup = node.tableLookup();
+            if (lookup == null) continue;
+            var id = configured.get(lookup.alias());
+            if (id == null) {
+                throw new IllegalArgumentException("Bind a published reference table to " + lookup.alias() + ".");
+            }
+            var table = resolved.computeIfAbsent(lookup.alias(), alias -> referenceTables
+                    .orElseThrow(() -> new IllegalArgumentException("Reference table access is unavailable.")).require(id));
+            if (!table.rows().getFirst().containsKey(lookup.resultColumn())) {
+                throw new IllegalArgumentException("Reference table " + lookup.alias()
+                        + " has no column " + lookup.resultColumn() + ".");
+            }
+        }
+        if (!resolved.keySet().containsAll(configured.keySet())) {
+            throw new IllegalArgumentException("Bind only aliases declared by this mapping.");
+        }
+        return resolved;
     }
 
     public MappingRevision publish(UUID id, List<Fixture> fixtures) {
@@ -117,12 +169,12 @@ public final class MappingService {
         if (mapping.status() != MappingStatus.DRAFT) throw new IllegalStateException("Only drafts can be published");
         if (fixtures == null || fixtures.isEmpty()) throw new IllegalArgumentException("At least one passing fixture is required");
         for (Fixture fixture : fixtures) {
-            TestResult result = test(id, fixture.input(), fixture.expected());
+            TestResult result = test(id, fixture.input(), fixture.expected(), fixture.referenceTableRevisions());
             if (!result.passed()) throw new IllegalArgumentException("Mapping fixture failed: " + fixture.name());
         }
         if (requiresTargetEvidence(mapping)) {
             var fixture = fixtures.getFirst();
-            var target = validateTarget(mapping, fixture.input(), runtime.execute(mapping, fixture.input()));
+            var target = validateTarget(mapping, fixture.input(), executeWithReferenceTables(mapping, fixture.input(), fixture.referenceTableRevisions()).output());
             mapping = mapping.withTargetEvidence(new TargetValidationEvidence(target.ruleSet(), target.fingerprint(),
                     hash(mapping), fixtures.stream().map(item -> digest(item.input())).toList()));
         }
@@ -223,7 +275,11 @@ public final class MappingService {
         catch (java.security.NoSuchAlgorithmException exception) { throw new IllegalStateException(exception); }
     }
 
-    public record Fixture(String name, byte[] input, byte[] expected) { }
+    public record Fixture(String name, byte[] input, byte[] expected, Map<String, UUID> referenceTableRevisions) {
+        public Fixture(String name, byte[] input, byte[] expected) {
+            this(name, input, expected, Map.of());
+        }
+    }
     public record TestResult(boolean passed, byte[] output, List<String> failures) { }
     public record QualificationEvidence(boolean valid, String identity, List<String> failures) { }
     public record Usage(boolean deletable, List<Dependency> dependencies) { }

@@ -113,6 +113,13 @@ final class McpDocuments {
         return authoringLink(setId, documentId, source, "");
     }
 
+    Map<String, Object> invoiceLink(UUID setId, UUID documentId) {
+        var source = workflow.invoiceSource(new DocumentSetId(setId), new DocumentId(documentId));
+        var result = authoringLink(setId, documentId, source, "");
+        result.put("guidance", "Review the copied order details and lines. Confirm prices and tax, then enter your invoice number before saving.");
+        return result;
+    }
+
     Map<String, Object> correctionLink(UUID setId, UUID documentId) {
         var source = workflow.correctionSource(new DocumentSetId(setId), new DocumentId(documentId));
         return authoringLink(setId, documentId, source, "&mode=correct");

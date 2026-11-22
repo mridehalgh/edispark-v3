@@ -46,6 +46,34 @@ class DeskAgentTest {
     }
 
     @Test
+    void attachedInvoiceRequestOffersTheReviewActionOnlyWithPreviewScope() throws Exception {
+        var set = UUID.randomUUID();
+        var document = UUID.randomUUID();
+        var path = "/documents/" + set + "/" + document;
+        var review = "/documents/new?type=INVOICE&fromSet=" + set + "&fromDocument=" + document;
+        var model = mock(ChatModel.class);
+        var docs = mock(McpDocuments.class);
+        var guard = mock(DeskGuardrail.class);
+        when(guard.identifier()).thenReturn("test");
+        try (var tools = new McpTools(json, new SimpleMeterRegistry())) {
+            var input = Map.<String, Object>of("type", "object", "properties", Map.of("documentSetId", Map.of("type", "string"),
+                    "documentId", Map.of("type", "string")), "required", List.of("documentSetId", "documentId"));
+            tools.register("get_document_context", "Read the source", McpTools.READ, input, "documentId",
+                    (args, principal) -> Map.of("documentSetId", set, "documentId", document));
+            tools.register("find_exchanges", "Read exchanges", McpTools.READ, input, "matches",
+                    (args, principal) -> Map.of("matches", List.of()));
+            tools.register("prepare_invoice_draft", "Prepare invoice", McpTools.PREVIEW, input, "workspacePath",
+                    (args, principal) -> Map.of("workspacePath", review, "guidance", "Check the copied details."));
+            var desk = new DeskAgent(model, tools, docs, json, null, null, "", mock(DeskUsage.class), guard, null);
+            assertThat(run(desk, member("viewer"), UUID.randomUUID(), "Create an invoice off this please", path))
+                    .contains("Your access doesn’t allow invoice preparation").doesNotContain(review);
+            assertThat(run(desk, member("author", McpTools.PREVIEW), UUID.randomUUID(), "Create an invoice off this please", path))
+                    .contains("deskArtifacts", "Review invoice draft", review, "Check the copied details.");
+            org.mockito.Mockito.verifyNoInteractions(model);
+        }
+    }
+
+    @Test
     void investigatesThroughAnAuthorisedToolAndKeepsFollowUpsPrivate() throws Exception {
         var user = member("operator");
         var set = UUID.randomUUID();
@@ -102,16 +130,20 @@ class DeskAgentTest {
     }
 
     private String run(DeskAgent desk, JwtAuthenticationToken user, UUID id, String question) throws Exception {
+        return run(desk, user, id, question, "");
+    }
+
+    private String run(DeskAgent desk, JwtAuthenticationToken user, UUID id, String question, String record) throws Exception {
         var response = new MockHttpServletResponse();
         desk.run(user, json.valueToTree(Map.of("threadId", thread, "runId", UUID.randomUUID(), "messages",
-                List.of(Map.of("role", "user", "content", question, "id", id)))), response);
+                List.of(Map.of("role", "user", "content", question, "id", id)), "forwardedProps", Map.of("record", record))), response);
         return response.getContentAsString();
     }
 
-    private JwtAuthenticationToken member(String subject) {
+    private JwtAuthenticationToken member(String subject, String... scopes) {
         return new JwtAuthenticationToken(Jwt.withTokenValue("test").header("alg", "test")
                 .subject(subject).claim("tenant_id", "2OnHVzeAJKwm0ThFLcy1HfLHGPm")
-                .claim("organization_role", "member").claim("agent_scopes", List.of(McpTools.READ))
+                .claim("organization_role", "member").claim("agent_scopes", scopes.length == 0 ? List.of(McpTools.READ) : List.of(scopes))
                 .expiresAt(Instant.now().plusSeconds(300)).build());
     }
 }

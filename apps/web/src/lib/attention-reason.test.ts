@@ -45,6 +45,13 @@ describe("attention reason", () => {
       .toBe("Format must be EDI")
   })
 
+  it("keeps triage available when a failed exchange has no recorded reason", () => {
+    expect(latestDocumentAttentionReason([{
+      status: "FAILED",
+      sourceDocument: { documentSetId: "set-1", documentId: "document-1" },
+    }], "set-1", "document-1")).toContain("needs review")
+  })
+
   it("clears an older reason after a newer exchange succeeds", () => {
     const failed = exchange("set-1", "document-1", "2026-11-04T12:00:00Z", "Older failure")
     const delivered = {

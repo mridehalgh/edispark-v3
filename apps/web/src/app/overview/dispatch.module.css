@@ -298,3 +298,24 @@
 .usage summary:focus-visible { outline: 2px solid var(--dispatch-link, #4228d1); outline-offset: 2px; }
 .usage[open] > div { position: absolute; z-index: 2; width: min(18rem, 69vw); background: var(--dispatch-sheet); border: 1px solid var(--dispatch-rule); border-radius: 6px; padding: 12px 16px; }
 .usage p { margin-top: 6px; line-height: 1.45; }
+
+.thread .artifacts {
+  padding: 0;
+  list-style: none;
+  border-block: 1px solid var(--dispatch-rule);
+}
+.artifactRow, .artifactAction { padding: 10px 12px; }
+.artifacts > li + li { border-top: 1px solid var(--dispatch-rule); }
+.artifactRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; }
+.artifactLink { align-items: center; gap: 8px; min-height: 32px; color: var(--dispatch-link); font-weight: 650; }
+.artifactLink > svg { flex-shrink: 0; }
+.artifactStatus, .artifactDetail { font-size: .875rem; color: var(--dispatch-muted); }
+.artifactStatus { text-align: right; }
+.artifactDetail { grid-column: 1 / -1; }
+.artifactAction { background: var(--dispatch-docket); }
+.artifactAction a { gap: 8px; width: fit-content; }
+.thread .artifactAction p { margin: 0 0 8px; max-width: 65ch; }
+@media (max-width: 480px) {
+  .artifactRow { grid-template-columns: minmax(0, 1fr); }
+  .artifactStatus { text-align: left; }
+}

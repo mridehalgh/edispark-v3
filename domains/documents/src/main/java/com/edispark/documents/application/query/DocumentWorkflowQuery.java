@@ -50,7 +50,7 @@ public final class DocumentWorkflowQuery {
 
     public DocumentContext describe(DocumentSetId setId, DocumentId docId) {
         var document = requireDocument(setId, docId);
-        return new DocumentContext(summary(setId, document, null, null),
+        return new DocumentContext(summary(setId, document, content.businessReference(document).orElse(null), null),
                 content.currentRepresentation(document).orElse(null),
                 document.derivatives().stream().limit(DETAIL_LIMIT)
                         .map(item -> new Artifact(item.id().value(), item.targetFormat())).toList(),
@@ -72,6 +72,14 @@ public final class DocumentWorkflowQuery {
         var document = requireDocument(setId, docId);
         if (document.type() != DocumentType.ORDER) throw new IllegalArgumentException("An Order Response requires an Order");
         return authoringSource(document, DocumentType.ORDER_RESPONSE);
+    }
+
+    public AuthoringSource invoiceSource(DocumentSetId setId, DocumentId docId) {
+        var document = requireDocument(setId, docId);
+        return switch (document.type()) {
+            case ORDER, ORDER_RESPONSE, DESPATCH_ADVICE, RECEIPT_ADVICE -> authoringSource(document, DocumentType.INVOICE);
+            default -> throw new IllegalArgumentException("This document type cannot be used to prepare an invoice");
+        };
     }
 
     public AuthoringSource correctionSource(DocumentSetId setId, DocumentId docId) {

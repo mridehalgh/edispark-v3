@@ -2,7 +2,7 @@
 
 import { useAgent } from "@copilotkit/react-core/v2/headless"
 import { CopilotKitContext, CopilotKitCoreReact, EMPTY_SET } from "@copilotkit/react-core/v2/context"
-import { ArrowUp, History, Plus, X } from "lucide-react"
+import { ArrowRight, ArrowUp, FileText, History, Plus, X } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Link, useLocation, useSearchParams } from "react-router-dom"
 import Markdown from "react-markdown"
@@ -11,9 +11,9 @@ import styles from "./dispatch.module.css"
 
 type RecordContext = { label: string; path: string }
 type Thread = { id: string; createdAt: string }
-type Evidence = { path: string; label: string }
+type Evidence = { path: string; label: string; guidance?: string; status?: string; detail?: string }
 type Turn = { id: string; question: string; answer: string; links: Evidence[] }
-type Props = { scope: string; record?: RecordContext; prompts: string[] }
+type Props = { scope: string; record?: RecordContext; prompts: string[]; initialQuestion?: string }
 
 export default function AgentChat(props: Props) {
   const { state } = useLocation()
@@ -33,6 +33,7 @@ export default function AgentChat(props: Props) {
     return typeof supplied === "string" && /^[a-f0-9-]{36}$/.test(supplied) ? supplied : crypto.randomUUID()
   })
   useEffect(() => { sessionStorage.setItem(activeKey, thread) }, [activeKey, thread])
+  const [initialQuestion, setInitialQuestion] = useState(props.initialQuestion)
   const [recent, setRecent] = useState<Thread[]>([])
   const [error, setError] = useState("")
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -60,7 +61,7 @@ export default function AgentChat(props: Props) {
     {historyOpen && <div>{error || (!recent.length && "No saved conversations.")}{recent.map(t =>
       <button key={t.id} className={styles.textLink} onClick={() => {setThread(t.id); setHistoryOpen(false); expandChat()}}>{new Date(t.createdAt).toLocaleString("en-GB")}</button>)}</div>}
     <CopilotKitContext.Provider value={runtime}>
-      <Conversation key={thread} {...props} thread={thread} onSend={expandChat} />
+      <Conversation key={thread} {...props} initialQuestion={initialQuestion} thread={thread} onInitialSend={() => setInitialQuestion(undefined)} onSend={expandChat} />
     </CopilotKitContext.Provider>
   </section>
 }
@@ -76,6 +77,7 @@ function UsageDisclosure() {
       .then(async response => {
         if (!response.ok) throw Error()
         const { monthlyCredits, remainingCredits, resetsAt } = await response.json()
+        if (!Number.isFinite(monthlyCredits) || !Number.isFinite(remainingCredits)) throw Error()
         const credits = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 })
         const reset = new Date(resetsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" })
         if (!controller.signal.aborted) setDescription(`${credits.format(Math.floor(remainingCredits * 100) / 100)} of ${credits.format(monthlyCredits)} credits left. Resets on ${reset} (UTC).`)
@@ -89,7 +91,7 @@ function UsageDisclosure() {
   </details>
 }
 
-function Conversation({ thread, scope, record, prompts, onSend }: Props & { thread: string; onSend: () => void }) {
+function Conversation({ thread, scope, record, prompts, initialQuestion, onInitialSend, onSend }: Props & { thread: string; onSend: () => void; onInitialSend: () => void }) {
   const { agent, isReady } = useAgent({ agentId: "desk-" + thread, runtimeAgentId: "default", threadId: thread })
   const { messages, isRunning: isLoading } = agent
   const scrollArea = useRef<HTMLDivElement>(null)
@@ -123,7 +125,10 @@ function Conversation({ thread, scope, record, prompts, onSend }: Props & { thre
   }, [thread, isLoading])
   useEffect(() => {
     const subscription = agent?.subscribe({
-      onStepStartedEvent: ({ event }) => setStatus(event.stepName.replaceAll("_", " ")),
+      onStepStartedEvent: ({ event }) => setStatus(
+        event.stepName === "prepare_invoice_draft" ? "Preparing invoice for review…" :
+          event.stepName === "prepare_document_correction" ? "Preparing correction for review…" : "Checking workspace records…",
+      ),
       onRunErrorEvent: ({ event }) => {
         if (event.code?.startsWith("AI_")) refusal.current = event.message
         setFailed(true)
@@ -131,7 +136,7 @@ function Conversation({ thread, scope, record, prompts, onSend }: Props & { thre
       },
       onRunFailed: () => { setFailed(true); setStatus(refusal.current || "The agent is unavailable. Try again.") },
       onCustomEvent: ({ event }) => {
-        if (event.name === "documentReferences" && Array.isArray(event.value)) {
+        if ((event.name === "deskArtifacts" || event.name === "documentReferences") && Array.isArray(event.value)) {
           setLinks(event.value.filter((ref): ref is Evidence =>
             ref && typeof ref.label === "string" && /^\/(documents|files|connections)\//.test(ref.path)))
         }
@@ -154,15 +159,15 @@ function Conversation({ thread, scope, record, prompts, onSend }: Props & { thre
     setDraft(value)
     try { sessionStorage.setItem(key, JSON.stringify({ draft: value })) } catch {}
   }
-  async function send() {
-    if (!draft.trim() || isLoading) return
+  async function send(question = draft) {
+    if (!question.trim() || isLoading) return
     follow.current = true
     onSend()
     refusal.current = ""
     setStatus("Investigating…")
     setFailed(false)
     try {
-      const content = draft.trim()
+      const content = question.trim()
       const retry = failed && lastAttempt.current?.content === content
       const attempt = retry && lastAttempt.current ? lastAttempt.current : { id: crypto.randomUUID(), content }
       lastAttempt.current = attempt
@@ -171,6 +176,15 @@ function Conversation({ thread, scope, record, prompts, onSend }: Props & { thre
       await agent.runAgent({ forwardedProps: { record: attached?.path } })
     } catch { setStatus(refusal.current || "The agent could not complete this question. Try again."); setFailed(true) }
   }
+  const sentInitial = useRef(false)
+  useEffect(() => {
+    if (!initialQuestion || sentInitial.current || !isReady || isLoading || unavailable) return
+    sentInitial.current = true
+    onInitialSend()
+    if (!draft.trim()) update(initialQuestion)
+    void send(initialQuestion)
+  })
+
   const references = new Map([...saved.flatMap(t => t.links), ...links].map(ref => [ref.path, ref]))
   const visible = new Set(messages.map(m => m.id))
   return <>
@@ -180,8 +194,24 @@ function Conversation({ thread, scope, record, prompts, onSend }: Props & { thre
     }} role="region" aria-label="Conversation" tabIndex={messages.length || saved.length ? 0 : undefined}>
       {saved.filter(t => !visible.has(t.id)).map(t => <div key={t.id}><strong>You</strong><p>{t.question}</p><strong>EDI Spark</strong><Answer text={t.answer} /></div>)}
       {messages.map(m => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && <div key={m.id}><strong>{m.role === "user" ? "You" : "EDI Spark"}</strong>{m.role === "user" ? <p>{m.content}</p> : <Answer text={m.content} />}</div>)}
-      {[...references.values()].map(ref => <Link className={styles.textLink} key={ref.path}
-        to={ref.path} state={{ agentThread: thread }}>{record?.path === ref.path ? record.label : ref.label}</Link>)}
+      {references.size > 0 && <ul className={styles.artifacts} aria-label="Records and actions">
+        {[...references.values()].map(ref => (
+          <li key={ref.path} className={ref.guidance ? styles.artifactAction : styles.artifactRow}>
+            {ref.guidance ? <>
+              <p>{ref.guidance}</p>
+              <Link className={styles.primaryButton} to={ref.path}>{ref.label}<ArrowRight size={16} aria-hidden="true" /></Link>
+            </> : <>
+              <Link to={ref.path} className={styles.artifactLink} state={{ agentThread: thread }}>
+                <FileText size={16} aria-hidden="true" />
+                <span>{record?.path === ref.path ? record.label : ref.label}</span>
+                <ArrowRight size={14} aria-hidden="true" />
+              </Link>
+              {ref.status && <span className={styles.artifactStatus}>{ref.status}</span>}
+              {ref.detail && <span className={styles.artifactDetail}>{ref.detail}</span>}
+            </>}
+          </li>
+        ))}
+      </ul>}
     </div>
     <form className={styles.questionForm} onSubmit={e => { e.preventDefault(); void send() }}>
       {attached && <div className={styles.context}>Attached record <strong>{attached.label}</strong><button aria-label="Remove attached record" type="button" onClick={() => setAttached(undefined)}><X size={16} aria-hidden="true" /></button></div>}

@@ -23,5 +23,6 @@ export function latestDocumentAttentionReason(records: AttentionRecord[], docume
       && record.sourceDocument.documentId === documentId)
     .sort((left, right) => (right.updatedAt ?? "").localeCompare(left.updatedAt ?? ""))
     .at(0)
-  return latest ? attentionReason(latest) : undefined
+  if (!latest || !ATTENTION_STATUSES.has(latest.status ?? "")) return undefined
+  return attentionReason(latest) ?? "The latest exchange needs review. Open the timeline for the recorded details."
 }

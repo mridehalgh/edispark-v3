@@ -2,6 +2,8 @@ package com.edispark.wireup.mcp;
 
 import static com.edispark.wireup.mcp.McpResponseFields.*;
 
+import com.edispark.documents.application.handler.DocumentNotFoundException;
+import com.edispark.documents.domain.model.DocumentType;
 import com.edispark.exchange.application.ExchangeEvidenceQuery;
 import com.edispark.exchange.application.ExchangeEvidenceQuery.DateWindow;
 import com.edispark.exchange.application.ExchangeEvidenceQuery.Page;
@@ -9,10 +11,12 @@ import com.edispark.exchange.application.ExchangeService;
 import com.edispark.exchange.domain.DocumentReference;
 import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeStatus;
+import com.edispark.exchange.domain.ExchangeWarning;
 import com.edispark.mft.application.MftService;
 import com.edispark.mft.domain.model.TransferId;
 import com.edispark.partnerships.application.PartnershipService;
 import com.edispark.partnerships.domain.model.ExchangeDirection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,12 +31,14 @@ final class McpExchanges {
     private final ExchangeService exchanges;
     private final PartnershipService partnerships;
     private final MftService transfers;
+    private final McpDocuments documents;
 
-    McpExchanges(ExchangeEvidenceQuery evidence, ExchangeService exchanges, PartnershipService partnerships, MftService transfers) {
+    McpExchanges(ExchangeEvidenceQuery evidence, ExchangeService exchanges, PartnershipService partnerships, MftService transfers, McpDocuments documents) {
         this.evidence = evidence;
         this.exchanges = exchanges;
         this.partnerships = partnerships;
         this.transfers = transfers;
+        this.documents = documents;
     }
 
     Map<String, Object> find(Map<String, Object> values, McpCursor cursor, String tenant) {
@@ -56,21 +62,37 @@ final class McpExchanges {
         var reference = args.optionalText("sourceMessageReference");
         var status = args.optionalEnum("status", ExchangeStatus.class);
         var direction = args.optionalEnum("direction", ExchangeDirection.class);
+        var type = args.optionalEnum("documentType", DocumentType.class);
         // Keep the binding used by existing exchange-search clients.
         String binding = String.join("\n", window.from().toString(), window.to().toString(),
                 java.util.Objects.toString(partner, ""), java.util.Objects.toString(reference, ""),
                 java.util.Objects.toString(status, ""), java.util.Objects.toString(direction, ""));
+        if (type != null) binding += "\ndocumentType=" + type.name();
         var search = new ExchangeEvidenceQuery.Search(window, partner, reference, status, direction);
-        return page(evidence.find(search, args.uuidPosition(cursor, tenant, binding)), cursor, tenant, binding, McpExchanges::summary);
+        var result = evidence.find(search, args.uuidPosition(cursor, tenant, binding));
+        if (type == null) return page(result, cursor, tenant, binding, McpExchanges::summary);
+        var matches = result.results().stream().map(this::withSourceDetails)
+                .filter(row -> row.get("sourceDocument") instanceof Map<?, ?> source
+                        && type.name().equals(source.get("documentType"))).toList();
+        return page(new Page<>(matches, result.next()), cursor, tenant, binding, Function.identity());
     }
 
     Map<String, Object> documentExceptions(Map<String, Object> values, McpCursor cursor, String tenant) {
         var args = new McpArguments(values);
         var binding = args.cursorBinding("find_document_exceptions");
         var result = evidence.documentExceptions(window(args), args.optionalId("partnerId"), args.uuidPosition(cursor, tenant, binding));
+        if (Boolean.TRUE.equals(values.get("groupByDocument"))) {
+            var grouped = new LinkedHashMap<List<UUID>, ExchangeEvidenceQuery.DocumentException>();
+            for (var item : result.results()) {
+                var source = item.exchange().sourceDocument();
+                grouped.merge(List.of(source.documentSetId(), source.documentId()), item, (first, second) ->
+                        second.exchange().updatedAt().isAfter(first.exchange().updatedAt()) ? second : first);
+            }
+            result = new Page<>(List.copyOf(grouped.values()), result.next());
+        }
         return page(result, cursor, tenant, binding, item -> {
-            var summary = summary(item.exchange());
-            summary.putAll(fields("sourceDocument", document(item.exchange().sourceDocument()), "exceptionKind", item.kind()));
+            var summary = withSourceDetails(item.exchange());
+            summary.putAll(fields("exceptionKind", item.kind()));
             return summary;
         });
     }
@@ -82,6 +104,22 @@ final class McpExchanges {
         return page(result, cursor, tenant, binding, exchange -> fields("exchangeId", exchange.id(),
                 "messageOrdinal", exchange.messageOrdinal(), "status", exchange.status(),
                 "sourceDocument", document(exchange.sourceDocument()), "generatedDocument", document(exchange.generatedDocument())));
+    }
+
+    private Map<String, Object> withSourceDetails(EdiExchange exchange) {
+        var result = summary(exchange);
+        var source = exchange.sourceDocument();
+        if (source != null && documents != null) {
+            try {
+                var details = documents.context(source.documentSetId(), source.documentId());
+                var reference = document(source);
+                reference.putAll(fields("documentType", details.get("documentType"), "businessReference", details.get("businessReference")));
+                result.put("sourceDocument", reference);
+            } catch (DocumentNotFoundException unavailable) {
+                // The exchange remains evidence even when its source document is unavailable.
+            }
+        }
+        return result;
     }
 
     private static DateWindow window(McpArguments args) {
@@ -103,7 +141,7 @@ final class McpExchanges {
                 "timeline", tail(exchange.stages()).stream().map(stage ->
                         fields("status", stage.status(), "occurredAt", stage.occurredAt())).toList(),
                 "findings", exchange.warnings().stream().limit(FINDING_LIMIT)
-                        .map(warning -> finding(warning.code(), warning.sourcePath())).toList(),
+                        .map(McpExchanges::finding).toList(),
                 "findingsTruncated", exchange.warnings().size() > FINDING_LIMIT,
                 "functionalAcknowledgement", "NOT_RECORDED", "businessAcceptance", "NOT_RECORDED"));
         try {
@@ -157,6 +195,8 @@ final class McpExchanges {
                 "agreementId", exchange.agreementId(), "agreementRevision", exchange.agreementRevision(),
                 "capabilityId", exchange.capabilityId(), "status", exchange.status(),
                 "messageOrdinal", exchange.messageOrdinal(), "transferId", exchange.mftTransferId(),
+                "sourceDocument", document(exchange.sourceDocument()), "generatedDocument", document(exchange.generatedDocument()),
+                "messageReference", exchange.sourceMessageReference(),
                 "createdAt", exchange.createdAt(), "updatedAt", exchange.updatedAt(),
                 "workspacePath", "/documents");
         if (exchange.status() == ExchangeStatus.NEEDS_REVIEW) {
@@ -165,8 +205,14 @@ final class McpExchanges {
                     "Partner readiness failed. Nothing was submitted to transport.".equals(detail)
                     || "Mapping stopped before transport because populated source fields were not represented".equals(detail))
                     .findFirst().ifPresent(detail -> result.put("recordedReason", detail));
+            exchange.stages().stream().map(stage -> stage.detail()).filter(java.util.Objects::nonNull)
+                    .filter(detail -> detail.startsWith("MESSAGE_REJECTED:")).findFirst()
+                    .ifPresent(detail -> result.put("reasonCode", "MESSAGE_REJECTED"));
+            if ("Mapping stopped before transport because populated source fields were not represented".equals(result.get("recordedReason"))) {
+                result.put("reasonCode", "MAPPING");
+            }
             result.put("findings", exchange.warnings().stream().limit(FINDING_LIMIT)
-                    .map(warning -> finding(warning.code(), warning.sourcePath())).toList());
+                    .map(McpExchanges::finding).toList());
         }
         return result;
     }
@@ -181,8 +227,17 @@ final class McpExchanges {
                 "representationId", reference.representationId(), "contentHash", reference.contentHash());
     }
 
-    private static Map<String, Object> finding(String code, String path) {
-        return fields("code", safeCode(code), "path", safePath(path));
+    private static Map<String, Object> finding(ExchangeWarning warning) {
+        var finding = fields("code", safeCode(warning.code()), "path", safePath(warning.sourcePath()));
+        String code = safeCode(warning.code());
+        String owner = "BQ_VENDOR_NUMBER_REQUIRED".equals(code) ? "DOCUMENT" : warning.disposition();
+        if (Set.of("DOCUMENT", "CONFIGURATION", "MAPPING").contains(java.util.Objects.toString(owner, ""))) {
+            String advice = java.util.Objects.requireNonNullElse(DeskTriage.guidance(code), DeskTriage.guidance(owner));
+            boolean correctable = "DOCUMENT".equals(owner) && !Set.of("DOCUMENT_NOT_FINAL", "BQ_ACK_DECISION_UNSUPPORTED",
+                    "RESPONSE_STATUS_CONFLICT").contains(code);
+            finding.putAll(fields("owner", owner, "operatorAction", advice, "recovery", correctable ? "CORRECT_DOCUMENT" : null));
+        }
+        return finding;
     }
 
     private static <T> List<T> tail(List<T> values) {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import {
   AlertCircle,
-  ArrowLeft,
+  ArrowDown,
   Building2,
   CreditCard,
   ReceiptText,
@@ -68,7 +68,7 @@ function addressLines(address?: UblAddress) {
 function PartyBlock({ label, party }: { label: string; party: UblParty }) {
   const lines = addressLines(party.address)
   return (
-    <section aria-label={label} className="min-w-0">
+    <section aria-label={label} className="min-w-0 break-words">
       <div className="flex items-center gap-2 text-primary">
         <Building2 className="h-4 w-4" aria-hidden="true" />
         <h2 className="text-sm font-semibold text-foreground">{label}</h2>
@@ -114,7 +114,7 @@ function PartyBlock({ label, party }: { label: string; party: UblParty }) {
 
 function MetaItem({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0 break-words">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-sm">{value}</dd>
     </div>
@@ -123,10 +123,10 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 
 function InvoiceLoading() {
   return (
-    <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8" aria-label="Loading invoice">
+    <LayoutBody className="mx-auto w-full max-w-[96rem] pt-0" aria-label="Loading invoice">
       <div className="animate-pulse">
         <div className="h-4 w-28 rounded bg-muted" />
-        <div className="mt-6 h-8 w-72 rounded bg-muted" />
+        <div className="mt-6 h-8 w-72 max-w-full rounded bg-muted" />
         <div className="mt-3 h-4 w-48 rounded bg-muted" />
         <div className="mt-8 grid gap-6 border-y py-6 md:grid-cols-2">
           <div className="h-40 rounded bg-muted" />
@@ -217,11 +217,7 @@ export function InvoiceDocumentPage() {
 
   if (error || !invoice) {
     return (
-      <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-        <Link to="/documents" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to documents
-        </Link>
+      <LayoutBody className="mx-auto w-full max-w-[96rem] pt-0">
         <section className="mt-8 max-w-xl rounded-lg border bg-card p-6">
           <AlertCircle className="h-6 w-6 text-destructive" aria-hidden="true" />
           <h1 className="mt-4 text-lg font-semibold">Invoice view unavailable</h1>
@@ -253,23 +249,16 @@ export function InvoiceDocumentPage() {
   ] as const
 
   return (
-    <LayoutBody className="mx-auto w-full max-w-[96rem] py-7 sm:py-8">
-      <Link to="/documents" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary hover:underline">
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to documents
-      </Link>
-
-      <header className="mt-3 flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-primary">Invoice</span>
-          </div>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">{invoice.id}</h1>
+    <LayoutBody className="mx-auto w-full max-w-[96rem] pt-0">
+      <header className="flex flex-col gap-4 border-b pb-5 pt-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-primary">Invoice</p>
+          <h1 className="mt-1 break-words text-balance text-2xl font-semibold tracking-tight">{invoice.id}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Issued {formatDate(invoice.issueDate)}{invoice.issueTime ? ` at ${invoice.issueTime}` : ""}
           </p>
         </div>
-        <div className="sm:text-right">
+        <div className="sm:max-w-[50%] sm:text-right">
           <p className="text-xs font-medium text-muted-foreground">Amount due</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">
             {formatMoney(invoice.totals.payable, invoice.currency)}
@@ -277,20 +266,20 @@ export function InvoiceDocumentPage() {
           {invoice.dueDate && (
             <p className="mt-1 text-xs text-muted-foreground">Due {formatDate(invoice.dueDate)}</p>
           )}
-          {setId && documentId && <div className="mt-3 grid justify-items-end gap-2"><CreateNextDocument setId={setId} documentId={documentId} sourceType="INVOICE" /><SendDocument key={documentId} documentType="INVOICE" documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
+          {setId && documentId && <div className="mt-3 flex flex-wrap items-start gap-2 sm:justify-end"><CreateNextDocument setId={setId} documentId={documentId} sourceType="INVOICE" /><SendDocument key={documentId} documentType="INVOICE" documentSetId={setId} documentId={documentId} lifecycleStatus={lifecycleStatus} /></div>}
         </div>
       </header>
       {setId && documentId ? <DocumentAttention documentSetId={setId} documentId={documentId} /> : null}
-      <a href="#document-activity" className="mt-3 inline-flex min-h-10 items-center text-sm font-medium text-primary hover:underline">View processing timeline ↓</a>
+      <a href="#document-activity" className="my-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline">Processing timeline <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" /></a>
 
-      <dl className="grid gap-x-8 gap-y-5 border-b py-5 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-x-5 gap-y-4 rounded-lg bg-muted/65 px-4 py-4 sm:px-5 xl:grid-cols-4">
         <MetaItem label="Order reference" value={invoice.orderReference ?? "Not supplied"} />
         <MetaItem label="Buyer reference" value={invoice.buyerReference ?? "Not supplied"} />
         <MetaItem label="Invoice type code" value={invoice.invoiceType ?? "Not supplied"} />
         <MetaItem label="Document currency" value={invoice.currency ?? "Not supplied"} />
       </dl>
 
-      <div className="grid gap-8 border-b py-7 md:grid-cols-2">
+      <div className="grid gap-6 border-b py-6 md:grid-cols-2">
         <PartyBlock label="Supplier" party={invoice.supplier} />
         <PartyBlock label="Bill to" party={invoice.customer} />
       </div>

@@ -202,7 +202,7 @@ export function SendDocument({
     const reason = attentionReason(exchange)
     return (
       <div
-        className={`mt-3 flex max-w-md items-start gap-2 rounded-md px-3 py-2 text-left text-xs ${needsAttention ? "bg-destructive/10 text-destructive" : "bg-success/25 text-success-foreground"}`}
+        className={`flex max-w-md items-start gap-2 rounded-md px-3 py-2 text-left text-xs ${needsAttention ? "bg-destructive/10 text-destructive" : "bg-success/25 text-success-foreground"}`}
         role="status"
       >
         {needsAttention ? (
@@ -229,7 +229,7 @@ export function SendDocument({
 
   if (currentLifecycle === "DRAFT") {
     return (
-      <div className="mt-3 flex max-w-xl flex-col items-start gap-2 text-left">
+      <div className="flex max-w-xl flex-col items-start gap-2 text-left">
         <Button
           type="button"
           className="gap-2"
@@ -262,7 +262,7 @@ export function SendDocument({
 
   if (currentLifecycle === "CANCELLED")
     return (
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         This document was cancelled and cannot be sent.
       </p>
     )
@@ -282,7 +282,7 @@ export function SendDocument({
       <SheetTrigger asChild>
         <Button
           type="button"
-          className="mt-3 gap-2"
+          className="gap-2 motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
           onClick={() => void openRoutes()}
           disabled={loading || sending}
         >

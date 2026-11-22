@@ -107,7 +107,7 @@ final class McpTools implements AutoCloseable {
         return available(principal).stream().filter(name -> !member || switch (name) {
             case "find_documents", "get_document_context", "get_document_workflow", "find_exchanges",
                  "find_document_exceptions", "list_eligible_routes", "check_outbound_readiness",
-                 "prepare_related_document_draft", "prepare_document_correction", "validate_document_preview",
+                 "prepare_related_document_draft", "prepare_invoice_draft", "prepare_document_correction", "validate_document_preview",
                  "list_business_codes" -> true;
             default -> false;
         }).map(name -> {

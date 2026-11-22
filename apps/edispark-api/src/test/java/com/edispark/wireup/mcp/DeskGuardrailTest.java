@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import software.amazon.awssdk.core.interceptor.Context;
@@ -30,8 +31,11 @@ class DeskGuardrailTest {
     @Test
     void requiresExplicitClearanceBeforeToolEvidenceReachesInference() {
         var result = ToolResponseMessage.builder().responses(List.of(new ToolResponseMessage.ToolResponse("id","find_documents","sample EDI record"))).build();
-        var evidence = guard.newEvidence(List.of(new UserMessage("Find my order"), result));
-        assertThat(evidence).contains("sample EDI record");
+        var action = ToolResponseMessage.builder().responses(List.of(new ToolResponseMessage.ToolResponse(
+                "review", "prepare_document_correction", "review link"))).build();
+        var evidence = guard.newEvidence(List.of(result, new UserMessage("Find my order"), result,
+                new AssistantMessage(""), action));
+        assertThat(evidence).containsOnlyOnce("sample EDI record").contains("review link");
         var client = mock(BedrockRuntimeClient.class);
         when(client.applyGuardrail(org.mockito.ArgumentMatchers.<Consumer<ApplyGuardrailRequest.Builder>>any()))
                 .thenReturn(ApplyGuardrailResponse.builder().action(GuardrailAction.GUARDRAIL_INTERVENED).build());

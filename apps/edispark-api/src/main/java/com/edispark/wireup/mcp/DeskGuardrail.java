@@ -1,8 +1,10 @@
 package com.edispark.wireup.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import software.amazon.awssdk.core.SdkRequest;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
@@ -24,10 +26,17 @@ record DeskGuardrail(String identifier, String version) implements ExecutionInte
                 .streamProcessingMode(GuardrailStreamProcessingMode.SYNC).trace(GuardrailTrace.DISABLED)).build();
     }
 
-    // Converse does not screen toolResult blocks. Screen the newly added results before each inference.
+    // Converse does not screen toolResult blocks. Screen evidence from the current turn before inference.
     String newEvidence(List<Message> messages) {
-        if (identifier.isBlank() || !(messages.getLast() instanceof ToolResponseMessage tool)) return "";
-        String evidence = String.join("\n", tool.getResponses().stream().map(ToolResponseMessage.ToolResponse::responseData).toList());
+        if (identifier.isBlank()) return "";
+        var evidenceBlocks = new ArrayList<String>();
+        for (var message : messages.reversed()) {
+            if (message instanceof UserMessage) break;
+            if (message instanceof ToolResponseMessage tool) {
+                tool.getResponses().forEach(response -> evidenceBlocks.add(response.responseData()));
+            }
+        }
+        String evidence = String.join("\n", evidenceBlocks);
         if (evidence.length() > 96_000)
             throw new DeskUsage.Refusal("AI_CONTEXT_LIMIT", "The tool returned too much evidence. Narrow the question to one record.");
         return evidence;

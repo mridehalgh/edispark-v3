@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.edispark.exchange.application.ExchangeEvidenceQuery;
+import com.edispark.exchange.domain.DocumentReference;
 import com.edispark.exchange.domain.EdiExchange;
 import com.edispark.exchange.domain.ExchangeRepository;
 import com.edispark.exchange.domain.ExchangeStage;
@@ -16,6 +17,7 @@ import com.edispark.mft.application.MftService;
 import com.edispark.mft.domain.model.Transfer;
 import com.edispark.mft.domain.model.TransferId;
 import com.edispark.partnerships.application.PartnershipService;
+import com.edispark.partnerships.domain.model.ExchangeDirection;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -73,7 +75,7 @@ class McpPilotTest {
         var exchanges = mock(ExchangeRepository.class);
         var partnerships = mock(PartnershipService.class);
         var transfers = mock(MftService.class);
-        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, partnerships, transfers);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, partnerships, transfers, null);
         var exchange = mock(EdiExchange.class);
         UUID id = UUID.randomUUID();
         when(exchanges.find(id)).thenReturn(Optional.of(exchange));
@@ -96,7 +98,7 @@ class McpPilotTest {
     @Test
     void duplicateSourceReferenceRetainsBothMessageOrdinals() {
         var exchanges = mock(ExchangeRepository.class);
-        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, null);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, null, null);
         UUID transferId = UUID.randomUUID();
         var first = batchMessage(transferId, 1);
         var second = batchMessage(transferId, 2);
@@ -110,10 +112,57 @@ class McpPilotTest {
     }
 
     @Test
+    void inboundOrderSearchExcludesInboundReceiptAdvice() {
+        var exchanges = mock(ExchangeRepository.class);
+        var documents = mock(McpDocuments.class);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, null, documents);
+        var order = batchMessage(UUID.randomUUID(), 1);
+        var receipt = batchMessage(UUID.randomUUID(), 2);
+        var orderRef = new DocumentReference(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "pinned");
+        var receiptRef = new DocumentReference(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "pinned");
+        when(order.direction()).thenReturn(ExchangeDirection.INBOUND);
+        when(receipt.direction()).thenReturn(ExchangeDirection.INBOUND);
+        when(order.sourceDocument()).thenReturn(orderRef);
+        when(receipt.sourceDocument()).thenReturn(receiptRef);
+        when(documents.context(orderRef.documentSetId(), orderRef.documentId()))
+                .thenReturn(Map.of("documentType", "ORDER", "businessReference", "PO-42"));
+        when(documents.context(receiptRef.documentSetId(), receiptRef.documentId()))
+                .thenReturn(Map.of("documentType", "RECEIPT_ADVICE", "businessReference", "REC-42"));
+        when(exchanges.page(null, 32)).thenReturn(new ExchangeRepository.Page(List.of(order, receipt), null));
+
+        var found = evidence.find(Map.of("from", "1969-12-31T00:00:00Z", "to", "1970-01-02T00:00:00Z",
+                "direction", "INBOUND", "documentType", "ORDER"), new McpCursor(SECRET), TENANT);
+
+        assertThat((List<?>) found.get("matches")).hasSize(1);
+        assertThat(found.toString()).contains("PO-42", "pinned").doesNotContain("REC-42");
+    }
+
+    @Test
+    void dashboardAttentionKeepsTheLatestExceptionForEachDocument() {
+        var exchanges = mock(ExchangeRepository.class);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, null, null);
+        var earlier = batchMessage(UUID.randomUUID(), 1);
+        var latest = batchMessage(UUID.randomUUID(), 2);
+        var source = new DocumentReference(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "pinned");
+        when(earlier.sourceDocument()).thenReturn(source);
+        when(latest.sourceDocument()).thenReturn(source);
+        when(earlier.updatedAt()).thenReturn(Instant.EPOCH);
+        when(latest.updatedAt()).thenReturn(Instant.EPOCH.plusSeconds(60));
+        when(earlier.status()).thenReturn(ExchangeStatus.FAILED);
+        when(latest.status()).thenReturn(ExchangeStatus.NEEDS_REVIEW);
+        when(exchanges.page(null, 32)).thenReturn(new ExchangeRepository.Page(List.of(earlier, latest), null));
+        var result = evidence.documentExceptions(Map.of("from", "1969-12-31T00:00:00Z", "to", "1970-01-02T00:00:00Z",
+                "groupByDocument", true), new McpCursor(SECRET), TENANT);
+
+        assertThat((List<?>) result.get("matches")).hasSize(1);
+        assertThat(result.toString()).contains(latest.id().toString()).doesNotContain(earlier.id().toString());
+    }
+
+    @Test
     void awaitingTransportReceiptDoesNotImplyAnyAcknowledgement() {
         var exchanges = mock(ExchangeRepository.class);
         var transfers = mock(MftService.class);
-        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, transfers);
+        var evidence = new McpExchanges(new ExchangeEvidenceQuery(exchanges), null, null, transfers, null);
         UUID exchangeId = UUID.randomUUID();
         var transfer = Transfer.outbound(TENANT, UUID.randomUUID(), "sample.edi", "application/edi",
                 "local-transfer", "local-probe", null, Instant.EPOCH);

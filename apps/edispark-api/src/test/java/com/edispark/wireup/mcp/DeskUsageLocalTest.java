@@ -58,15 +58,18 @@ class DeskUsageLocalTest {
             start.countDown();
             assertThat(calls.get(0).get() ^ calls.get(1).get()).isTrue();
         }
-        assertThat(TenantExecution.get(tenant, first::summary).usedCredits()).isGreaterThan("3.4");
+        assertThat(TenantExecution.get(tenant, first::summary).usedCredits()).isEqualByComparingTo("3.4062");
         assertThat(TenantExecution.get(other, first::summary).usedCredits()).isZero();
         assertThat(TenantExecution.get(tenant, new DeskUsage(db, table, 30_000, 8, dec)::summary).usedCredits()).isZero();
-        var burst = new DeskUsage(db, table, 5_000_000, 1, nov);
+        assertThat(DeskUsage.configuredAllowance("1000", 0)).isEqualTo(5_000_000);
+        assertThat(DeskUsage.configuredAllowance("", 500)).isEqualTo(5_000_000);
+        var burst = new DeskUsage(db, table, DeskUsage.configuredAllowance("1000", 0), 1, nov);
         TenantExecution.run(other, () -> {
             var hold = burst.reserve(8);
             burst.settle(hold, new DefaultUsage(1000, 100));
             burst.settle(hold, new DefaultUsage(1000, 100));
             assertThat(burst.summary().usedCredits()).isEqualByComparingTo("0.826");
+            assertThat(burst.summary().remainingCredits()).isEqualByComparingTo("999.174");
             assertThatThrownBy(() -> burst.reserve(8)).hasMessageContaining("minute");
         });
         var policyKey = Map.of("pk", AttributeValue.fromS("POLICY#" + other), "sk", AttributeValue.fromS("ALLOWANCE"));

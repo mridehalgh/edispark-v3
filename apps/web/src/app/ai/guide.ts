@@ -93,6 +93,14 @@ export const tools = [
     result: "workspacePath, documentType, status",
   },
   {
+    name: "prepare_invoice_draft",
+    scope: "edi:preview",
+    summary: "Prepare an invoice review from an order, order response, despatch advice or receipt advice.",
+    usage: "Pass the source document IDs. Follow workspacePath to review the copied values and save in Documents.",
+    examples: [documentIds],
+    result: "workspacePath, documentType, status, guidance",
+  },
+  {
     name: "find_transfers",
     scope: "mft:evidence",
     summary: "Find standalone or document-linked AS2 transfers.",

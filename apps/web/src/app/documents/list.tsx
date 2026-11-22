@@ -9,7 +9,6 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   CheckCircle2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -260,6 +259,10 @@ export function DocumentsList() {
               >
                 {child ? documentLabels[document.type] : document.partner}
               </span>
+              <span className="block break-words text-xs text-muted-foreground lg:hidden">
+                {document.direction === "Not recorded" ? "Direction not recorded" : document.direction.toLowerCase()}
+                <span className="tabular-nums sm:hidden"> · {date(document.updatedAt)}</span>
+              </span>
               {child && !visibleKeys.has(document.key) && (
                 <span className="block text-xs text-muted-foreground">
                   Related context · outside filters
@@ -292,15 +295,10 @@ export function DocumentsList() {
   }
 
   return (
-    <LayoutBody className="mx-auto w-full max-w-[110rem] py-6 sm:py-7">
+    <LayoutBody className="mx-auto w-full max-w-[96rem] py-6 sm:py-7">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Keep every exchange moving.
-          </p>
-        </div>
-        <Button asChild>
+        <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
+        <Button asChild className="motion-safe:transition-[background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]">
           <Link to="/documents/new">
             <Plus className="mr-2 h-4 w-4" />
             Create document
@@ -309,7 +307,7 @@ export function DocumentsList() {
       </header>
       <nav
         aria-label="Document views"
-        className="mb-4 flex gap-5 overflow-x-auto border-b"
+        className="mb-4 flex flex-wrap gap-x-4 border-b sm:gap-x-6"
       >
         {(
           [
@@ -343,25 +341,25 @@ export function DocumentsList() {
           </button>
         ))}
       </nav>
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <label className="relative min-w-[12rem] flex-1">
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 p-3">
+        <label className="relative w-full min-w-0 xl:w-auto xl:min-w-48 xl:flex-1">
           <span className="sr-only">Search references or partners</span>
           <Search
-            className="absolute left-3 top-3 h-4 w-4 text-muted-foreground"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search references or partners"
-            className="pl-9"
+            className="min-h-11 bg-background pl-9"
           />
         </label>
         <select
           aria-label="Filter by partner"
           value={partner}
           onChange={(event) => setPartner(event.target.value)}
-          className="h-10 max-w-[13rem] rounded-md border bg-background px-2 text-xs"
+          className="min-h-11 w-[calc((100%-0.5rem)/2)] min-w-0 rounded-md border border-input bg-background px-2 text-sm sm:w-auto sm:max-w-52"
         >
           <option value="">All partners</option>
           {[...new Set(documents.map((document) => document.partner))]
@@ -374,7 +372,7 @@ export function DocumentsList() {
           aria-label="Filter by document type"
           value={type}
           onChange={(event) => setType(event.target.value)}
-          className="h-10 max-w-[12rem] rounded-md border bg-background px-2 text-xs"
+          className="min-h-11 w-[calc((100%-0.5rem)/2)] min-w-0 rounded-md border border-input bg-background px-2 text-sm sm:w-auto sm:max-w-48"
         >
           <option value="">All types</option>
           {Object.entries(documentLabels).map(([key, label]) => (
@@ -387,7 +385,7 @@ export function DocumentsList() {
           aria-label="Filter by direction"
           value={direction}
           onChange={(event) => setDirection(event.target.value)}
-          className="h-10 rounded-md border bg-background px-2 text-xs"
+          className="min-h-11 w-[calc((100%-0.5rem)/2)] min-w-0 rounded-md border border-input bg-background px-2 text-sm sm:w-auto"
         >
           <option value="">All directions</option>
           <option value="INBOUND">Inbound (received)</option>
@@ -398,14 +396,15 @@ export function DocumentsList() {
           aria-label="Filter by date"
           value={period}
           onChange={(event) => setPeriod(event.target.value)}
-          className="h-10 rounded-md border bg-background px-2 text-xs"
+          className="min-h-11 w-[calc((100%-0.5rem)/2)] min-w-0 rounded-md border border-input bg-background px-2 text-sm sm:w-auto"
         >
           <option value="">All dates</option>
           <option value="7">Last 7 days</option>
           <option value="30">Last 30 days</option>
         </select>
         <div
-          className="flex rounded-md border p-0.5"
+          className="flex rounded-md border border-input bg-background p-0.5"
+          role="group"
           aria-label="Document grouping"
         >
           {[false, true].map((value) => (
@@ -414,7 +413,7 @@ export function DocumentsList() {
               aria-pressed={grouped === value}
               onClick={() => setGrouped(value)}
               className={cn(
-                "min-h-9 rounded px-3 text-xs font-medium",
+                "min-h-10 rounded px-3 text-sm font-medium transition-colors",
                 grouped === value
                   ? "bg-accent text-primary"
                   : "text-muted-foreground hover:bg-muted",
@@ -466,11 +465,11 @@ export function DocumentsList() {
           aria-label="Document stream"
           className={cn("min-w-0 flex-1", selected && "hidden xl:block")}
         >
-          <p className="mb-2 text-xs text-muted-foreground">
-            {hasNext
-              ? "Search, filters and counts apply to loaded documents. Load more to include older exchanges."
-              : "Grouped using recorded document relationships. Unlinked documents remain visible."}
-          </p>
+          {hasNext && (
+            <p className="mb-2 text-sm text-muted-foreground">
+              Search and filters cover loaded documents. Load more to include older records.
+            </p>
+          )}
           {loading ? (
             <div
               aria-label="Loading documents"
@@ -491,16 +490,16 @@ export function DocumentsList() {
           ) : (
             <>
               <table className="w-full table-fixed text-left text-sm">
-                <thead className="border-y text-xs text-muted-foreground">
+                <thead className="border-y bg-muted/60 text-xs text-muted-foreground">
                   <tr>
-                    <th className="w-[46%] px-3 py-3 font-medium">
+                    <th className="w-[60%] px-3 sm:w-[46%] py-3 font-medium">
                       {grouped ? "Exchange / document" : "Document"}
                     </th>
                     <th className="hidden px-3 py-3 font-medium lg:table-cell">
                       Partner / type
                     </th>
-                    <th className="px-3 py-3 font-medium">Status</th>
-                    <th className="hidden px-3 py-3 font-medium sm:table-cell">
+                    <th className="w-[40%] px-3 py-3 font-medium sm:w-[27%] lg:w-auto">Status</th>
+                    <th className="hidden px-3 py-3 font-medium sm:table-cell sm:w-[27%] lg:w-auto">
                       Updated
                     </th>
                   </tr>
@@ -547,13 +546,9 @@ export function DocumentsList() {
                                         onClick={() => toggle(group.key)}
                                         className="flex min-h-11 w-full items-center gap-2 text-left"
                                       >
-                                        {open ? (
-                                          <ChevronDown className="h-4 w-4 shrink-0" />
-                                        ) : (
-                                          <ChevronRight className="h-4 w-4 shrink-0" />
-                                        )}
-                                        <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" />
-                                        <span>
+                                        <ChevronRight className={cn("h-4 w-4 shrink-0 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out", open && "rotate-90")} aria-hidden="true" />
+                                        <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                                        <span className="min-w-0">
                                           <span className="block break-words font-semibold">
                                             {group.root.reference}
                                           </span>
@@ -583,16 +578,16 @@ export function DocumentsList() {
                                         >
                                           <thead className="text-xs text-muted-foreground">
                                             <tr>
-                                              <th className="w-[46%] px-3 py-2 font-medium">
+                                              <th className="w-[60%] px-3 sm:w-[46%] py-2 font-medium">
                                                 Document
                                               </th>
                                               <th className="hidden px-3 py-2 font-medium lg:table-cell">
                                                 Type / direction
                                               </th>
-                                              <th className="px-3 py-2 font-medium">
+                                              <th className="w-[40%] px-3 py-2 font-medium sm:w-[27%] lg:w-auto">
                                                 Status
                                               </th>
-                                              <th className="hidden px-3 py-2 font-medium sm:table-cell">
+                                              <th className="hidden px-3 py-2 font-medium sm:table-cell sm:w-[27%] lg:w-auto">
                                                 Updated
                                               </th>
                                             </tr>
@@ -631,11 +626,7 @@ export function DocumentsList() {
                               aria-expanded={expanded.has("unlinked")}
                               className="flex min-h-11 w-full items-center gap-2 text-left text-sm font-medium"
                             >
-                              {expanded.has("unlinked") ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
+                              <ChevronRight className={cn("h-4 w-4 shrink-0 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out", expanded.has("unlinked") && "rotate-90")} aria-hidden="true" />
                               Unlinked documents
                               <span className="text-xs text-muted-foreground">
                                 {
@@ -761,7 +752,7 @@ function DocumentInspector({
       aria-label={`Details for ${document.reference}`}
       className="w-full min-w-0 xl:sticky xl:top-6 xl:w-[22rem] xl:shrink-0 xl:border-l xl:pl-6 2xl:w-[25rem]"
     >
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <div className="flex gap-1">
           <Button
             variant="outline"
@@ -811,7 +802,7 @@ function DocumentInspector({
       </Button>
       <nav
         aria-label="Document detail views"
-        className="mb-5 flex gap-5 border-b"
+        className="mb-4 flex flex-wrap gap-x-4 border-b"
       >
         {["overview", "relationships", "activity"].map((key) => (
           <button

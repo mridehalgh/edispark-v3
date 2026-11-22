@@ -57,3 +57,7 @@ MCP is disabled by default. To prepare a staging pilot, apply the additive OAuth
 Configure `EDISPARK_MCP_ENABLED=true` and the same HTTPS `EDISPARK_MCP_RESOURCE` on the API and web runtimes. Configure `EDISPARK_MCP_ORGANIZATIONS` on the web runtime with the opted-in organization IDs. Both runtimes need the same dedicated `EDISPARK_MCP_ACCESS_SECRET` through their secret provider. The API derives its default OAuth issuer from `AUTH_ISSUER` with the `/api/auth` suffix. Set `EDISPARK_MCP_ISSUER` only when overriding that default.
 
 Verify discovery and sign-in on staging with the chosen client before enabling customer access. Review `edispark.mcp.tool` timings and outcomes, and correlate denials and tool calls through their audit correlation IDs. Disable the endpoint to roll back the pilot. Removing a tenant opt-in, membership, client link, or consent blocks subsequent access checks. Access tokens expire after five minutes.
+
+## Document triage
+
+The [Desk triage runbook](../../apps/edispark-api/src/main/resources/desk-triage.md) is packaged with the agent. The document warning opens the assistant with the current record attached. Triage uses exchange evidence, and it checks the linked transfer when the user can access Files. Document corrections use the existing review form. Transport recovery follows the [AS2 operations runbook](../mft/operations-runbook.md).

@@ -38,6 +38,7 @@ final class McpToolCatalog {
                 "sourceMessageReference", Map.of("type", "string", "maxLength", 128, "pattern", "^[^\\p{Cntrl}]+$"),
                 "direction", enumValues(ExchangeDirection.values()), "status", enumValues(ExchangeStatus.values()),
                 "cursor", boundedString(McpCursor.TOKEN_LENGTH)));
+        filters.put("documentType", enumValues(DocumentType.values()));
         filters.putAll(DOCUMENT);
         tools.register("find_exchanges", "Find exchanges by ID, document, or a date window of up to 31 days.", READ,
                 schema(filters), "matches", (args, principal) -> exchanges.find(args, cursor, principal.tenant().asString()));
@@ -75,6 +76,8 @@ final class McpToolCatalog {
                 (args, principal) -> documents.routes(new McpArguments(args).id("documentSetId"), new McpArguments(args).id("documentId")));
         tools.register("prepare_related_document_draft", "Open the existing smart-copy authoring form for an order response.", PREVIEW,
                 schema(DOCUMENT, "documentSetId", "documentId"), "workspacePath", (args, principal) -> documents.orderResponseLink(new McpArguments(args).id("documentSetId"), new McpArguments(args).id("documentId")));
+        tools.register("prepare_invoice_draft", "Prepare a review link for a related invoice from a recorded order, order response, despatch advice or receipt advice. The link opens an editable smart-copy form. It does not save or send an invoice.", PREVIEW,
+                schema(DOCUMENT, "documentSetId", "documentId"), "workspacePath", (args, principal) -> documents.invoiceLink(new McpArguments(args).id("documentSetId"), new McpArguments(args).id("documentId")));
         tools.register("prepare_document_correction", "Open the existing smart-copy form for a corrected draft of a finalized document.", PREVIEW,
                 schema(DOCUMENT, "documentSetId", "documentId"), "workspacePath", (args, principal) -> documents.correctionLink(new McpArguments(args).id("documentSetId"), new McpArguments(args).id("documentId")));
         var reconciliationPins = schema(PINS, "documentSetId", "documentId", "representationId", "contentHash");
@@ -106,7 +109,8 @@ final class McpToolCatalog {
                 schema(PINS, "documentSetId", "documentId", "representationId", "contentHash"), "passed",
                 (args, principal) -> documents.validate(args));
         tools.register("find_document_exceptions", "Find recorded document review, processing failure, and pending receipt states.", READ,
-                schema(Map.of("from", INSTANT, "to", INSTANT, "partnerId", ID, "cursor", boundedString(McpCursor.TOKEN_LENGTH)),
+                schema(Map.of("from", INSTANT, "to", INSTANT, "partnerId", ID, "cursor", boundedString(McpCursor.TOKEN_LENGTH),
+                        "groupByDocument", Map.of("type", "boolean")),
                         "from", "to"), "matches", (args, principal) -> exchanges.documentExceptions(args, cursor, principal.tenant().asString()));
         tools.register("trace_interchange", "Find recorded business exchanges split from or linked to a transfer.", READ,
                 schema(Map.of("transferId", ID, "cursor", boundedString(McpCursor.TOKEN_LENGTH)), "transferId"), "matches",

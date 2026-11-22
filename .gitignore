@@ -169,3 +169,5 @@ stats.json
 # Misc
 *.tgz
 .ci-tools/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

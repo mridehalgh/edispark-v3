@@ -102,6 +102,29 @@ public final class MftService {
         return repository.savePartner(partner);
     }
 
+    public PartnerProfile managedDraft(UUID id, CreatePartner command) {
+        PartnerProfile draft = new PartnerProfile(id, io.cottn.core.tenancy.TenantAccess.currentId(), command.name(),
+                command.localAs2Id(), command.remoteAs2Id(), command.endpoint(), command.localCertificateId(),
+                command.partnerSigningCertificateId(), command.partnerEncryptionCertificateId(), null, null,
+                command.asynchronousMdnEndpoint(), command.mdnMode(), command.signingRequired(),
+                command.encryptionRequired(), command.compressionEnabled(), false, PartnerStatus.DRAFT, clock.instant());
+        validateForActivation(draft);
+        if (repository.as2IdentityPairInUse(draft.localAs2Id(), draft.remoteAs2Id(), id)) {
+            throw new IllegalStateException("The AS2 identity pair is already assigned. Select different connection IDs.");
+        }
+        return draft;
+    }
+
+    public PartnerProfile saveManagedDraft(PartnerProfile draft) {
+        var existing = repository.findPartner(draft.id());
+        if (existing.isPresent()) return existing.get();
+        try {
+            return repository.savePartner(draft);
+        } catch (IllegalArgumentException conflict) {
+            return repository.findPartner(draft.id()).orElseThrow(() -> conflict);
+        }
+    }
+
     public PartnerProfile activatePartner(UUID partnerId) {
         PartnerProfile partner = requirePartner(partnerId);
         validateForActivation(partner);

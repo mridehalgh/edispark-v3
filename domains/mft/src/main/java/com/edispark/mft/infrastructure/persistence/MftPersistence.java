@@ -18,6 +18,10 @@ import com.edispark.mft.domain.repository.MftRepository;
 
 /** Explicit tenant primitives for trusted persistence and ingress adapters only. */
 public interface MftPersistence extends MftRepository, MftDiscovery, MftCreationAdapter {
+    @Override default boolean as2IdentityPairInUse(String localAs2Id, String remoteAs2Id, UUID except) {
+        return findInboundPartner(localAs2Id, remoteAs2Id).filter(partner -> !partner.id().equals(except)).isPresent();
+    }
+
     EvidencePage<Transfer> pageTransfers(String tenantId, UUID after, int limit);
     default EvidencePage<Transfer> pageTransfers(UUID after, int limit) { return pageTransfers(TenantAccess.currentId(), after, limit); }
     EvidencePage<PartnerProfile> pagePartners(String tenantId, UUID after, int limit);

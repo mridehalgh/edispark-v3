@@ -131,6 +131,48 @@ export type TradingAgreement = {
     version?: number;
 };
 
+export type Capability = {
+    direction: 'INBOUND' | 'OUTBOUND';
+    documentType: 'ORDER' | 'ORDER_RESPONSE' | 'DESPATCH_ADVICE' | 'INVOICE' | 'REMITTANCE_ADVICE' | 'RECEIPT_ADVICE';
+    standard: 'TRADACOMS' | 'EDIFACT';
+    release: string;
+    messageType: string;
+    sourceSchemaId: string;
+    targetSchemaId: string;
+    mappingRevisionId: string;
+};
+
+export type Definition = {
+    name: string;
+    verification: 'UNVERIFIED' | 'SIMULATOR_TESTED' | 'LOCAL_DEMO';
+    inboundFileFailurePolicy: 'REJECT_FILE' | 'KEEP_VALID_MESSAGES';
+    transport: Transport;
+    capabilities: Array<Capability>;
+};
+
+export type Edit = {
+    revision?: number;
+    version?: number;
+    definition: Definition;
+};
+
+export type Transport = {
+    mdnMode: 'SYNCHRONOUS' | 'ASYNCHRONOUS';
+    signingRequired?: boolean;
+    encryptionRequired?: boolean;
+    compressionEnabled?: boolean;
+};
+
+export type ManagedTemplate = {
+    id?: string;
+    revision?: number;
+    version?: number;
+    status?: 'DRAFT' | 'PUBLISHED' | 'RETIRED';
+    definition?: Definition;
+    changedBy?: string;
+    changedAt?: string;
+};
+
 export type MappingNode = {
     id?: string;
     operation?: 'COPY' | 'CONSTANT' | 'CONCAT' | 'COALESCE' | 'UPPERCASE' | 'LOWERCASE' | 'CODE_LOOKUP' | 'OPTIONAL_COPY' | 'OPTIONAL_CODE_LOOKUP' | 'OMIT';
@@ -262,6 +304,11 @@ export type SsccIssuer = {
     updatedAt?: string;
 };
 
+export type Revision = {
+    revision?: number;
+    version?: number;
+};
+
 export type CreateMappingRequest = {
     name: string;
     sourceSchemaId: string;
@@ -304,6 +351,37 @@ export type Result = {
 export type PublishMappingRequest = {
     fixtures: Array<MappingFixtureRequest>;
     effectiveAt?: string;
+};
+
+export type Request = {
+    requestId: string;
+    businessIdentity: BusinessIdentity;
+    localAs2Id: string;
+    remoteAs2Id: string;
+    endpoint: string;
+    asynchronousMdnEndpoint?: string;
+    localCertificateId: string;
+    partnerSigningCertificateId: string;
+    partnerEncryptionCertificateId: string;
+};
+
+export type ManagedSetupResult = {
+    templateId?: string;
+    templateRevision?: number;
+    partnerId?: string;
+    connectionId?: string;
+    agreementId?: string;
+};
+
+export type AcceptanceRequest = {
+    reference: string;
+};
+
+export type Acceptance = {
+    reference?: string;
+    actor?: string;
+    recordedAt?: string;
+    configuration?: string;
 };
 
 export type SubmitExchangeRequest = {
@@ -393,6 +471,11 @@ export type Usage = {
     dependencies?: Array<Dependency>;
 };
 
+export type MappingOption = {
+    name?: string;
+    capability?: Capability;
+};
+
 export type BusinessCode = {
     code?: string;
     label?: string;
@@ -407,6 +490,18 @@ export type BusinessCodeListDefinition = {
     version?: string;
     partnerExtensionsAllowed?: boolean;
     values?: Array<BusinessCode>;
+};
+
+export type Published = {
+    id?: string;
+    revision?: number;
+    definition?: Definition;
+};
+
+export type ManagedAgreement = {
+    setup?: ManagedSetupResult;
+    requiresRetailerAcceptance?: boolean;
+    retailerAcceptanceCurrent?: boolean;
 };
 
 export type EligibleRoute = {
@@ -513,6 +608,24 @@ export type ReplaceExchangeCapabilityResponses = {
 };
 
 export type ReplaceExchangeCapabilityResponse = ReplaceExchangeCapabilityResponses[keyof ReplaceExchangeCapabilityResponses];
+
+export type EditManagedPartnerTemplateData = {
+    body: Edit;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/platform/managed-partners/{id}';
+};
+
+export type EditManagedPartnerTemplateResponses = {
+    /**
+     * OK
+     */
+    200: ManagedTemplate;
+};
+
+export type EditManagedPartnerTemplateResponse = EditManagedPartnerTemplateResponses[keyof EditManagedPartnerTemplateResponses];
 
 export type UpdateMappingDraftData = {
     body: UpdateMappingRequest;
@@ -936,6 +1049,74 @@ export type ActivateSsccIssuerResponses = {
 
 export type ActivateSsccIssuerResponse = ActivateSsccIssuerResponses[keyof ActivateSsccIssuerResponses];
 
+export type ListManagedPartnerRevisionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/platform/managed-partners';
+};
+
+export type ListManagedPartnerRevisionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<ManagedTemplate>;
+};
+
+export type ListManagedPartnerRevisionsResponse = ListManagedPartnerRevisionsResponses[keyof ListManagedPartnerRevisionsResponses];
+
+export type CreateManagedPartnerTemplateData = {
+    body: Definition;
+    path?: never;
+    query?: never;
+    url: '/api/platform/managed-partners';
+};
+
+export type CreateManagedPartnerTemplateResponses = {
+    /**
+     * Created
+     */
+    201: ManagedTemplate;
+};
+
+export type CreateManagedPartnerTemplateResponse = CreateManagedPartnerTemplateResponses[keyof CreateManagedPartnerTemplateResponses];
+
+export type RetireManagedPartnerTemplateData = {
+    body: Revision;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/platform/managed-partners/{id}/retire';
+};
+
+export type RetireManagedPartnerTemplateResponses = {
+    /**
+     * OK
+     */
+    200: ManagedTemplate;
+};
+
+export type RetireManagedPartnerTemplateResponse = RetireManagedPartnerTemplateResponses[keyof RetireManagedPartnerTemplateResponses];
+
+export type PublishManagedPartnerTemplateData = {
+    body: Revision;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/platform/managed-partners/{id}/publish';
+};
+
+export type PublishManagedPartnerTemplateResponses = {
+    /**
+     * OK
+     */
+    200: ManagedTemplate;
+};
+
+export type PublishManagedPartnerTemplateResponse = PublishManagedPartnerTemplateResponses[keyof PublishManagedPartnerTemplateResponses];
+
 export type ListMappingsData = {
     body?: never;
     path?: never;
@@ -1057,6 +1238,43 @@ export type ArchiveMappingRevisionResponses = {
 };
 
 export type ArchiveMappingRevisionResponse = ArchiveMappingRevisionResponses[keyof ArchiveMappingRevisionResponses];
+
+export type ApplyManagedPartnerTemplateData = {
+    body: Request;
+    path: {
+        id: string;
+        revision: number;
+    };
+    query?: never;
+    url: '/api/managed-partners/{id}/revisions/{revision}/apply';
+};
+
+export type ApplyManagedPartnerTemplateResponses = {
+    /**
+     * Created
+     */
+    201: ManagedSetupResult;
+};
+
+export type ApplyManagedPartnerTemplateResponse = ApplyManagedPartnerTemplateResponses[keyof ApplyManagedPartnerTemplateResponses];
+
+export type RecordManagedRetailerAcceptanceData = {
+    body: AcceptanceRequest;
+    path: {
+        agreementId: string;
+    };
+    query?: never;
+    url: '/api/managed-partners/agreements/{agreementId}/acceptance';
+};
+
+export type RecordManagedRetailerAcceptanceResponses = {
+    /**
+     * OK
+     */
+    200: Acceptance;
+};
+
+export type RecordManagedRetailerAcceptanceResponse = RecordManagedRetailerAcceptanceResponses[keyof RecordManagedRetailerAcceptanceResponses];
 
 export type ListExchangesData = {
     body?: never;
@@ -1212,6 +1430,22 @@ export type GetTradingAgreementUsageResponses = {
 
 export type GetTradingAgreementUsageResponse = GetTradingAgreementUsageResponses[keyof GetTradingAgreementUsageResponses];
 
+export type ListManagedPartnerMappingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/platform/managed-partners/mappings';
+};
+
+export type ListManagedPartnerMappingsResponses = {
+    /**
+     * OK
+     */
+    200: Array<MappingOption>;
+};
+
+export type ListManagedPartnerMappingsResponse = ListManagedPartnerMappingsResponses[keyof ListManagedPartnerMappingsResponses];
+
 export type DeleteMappingDraftData = {
     body?: never;
     path: {
@@ -1281,6 +1515,40 @@ export type ListBusinessCodeListsResponses = {
 };
 
 export type ListBusinessCodeListsResponse = ListBusinessCodeListsResponses[keyof ListBusinessCodeListsResponses];
+
+export type ListPublishedManagedPartnersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/managed-partners';
+};
+
+export type ListPublishedManagedPartnersResponses = {
+    /**
+     * OK
+     */
+    200: Array<Published>;
+};
+
+export type ListPublishedManagedPartnersResponse = ListPublishedManagedPartnersResponses[keyof ListPublishedManagedPartnersResponses];
+
+export type GetManagedAgreementSetupData = {
+    body?: never;
+    path: {
+        agreementId: string;
+    };
+    query?: never;
+    url: '/api/managed-partners/agreements/{agreementId}';
+};
+
+export type GetManagedAgreementSetupResponses = {
+    /**
+     * OK
+     */
+    200: ManagedAgreement;
+};
+
+export type GetManagedAgreementSetupResponse = GetManagedAgreementSetupResponses[keyof GetManagedAgreementSetupResponses];
 
 export type GetExchangeData = {
     body?: never;

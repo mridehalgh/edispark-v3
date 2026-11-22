@@ -21,6 +21,18 @@ final class DynamoPartnershipRepository implements PartnershipRepository, Partne
     private final ObjectMapper json;
     DynamoPartnershipRepository(IntegrationDynamoStore store, ObjectMapper json) { this.store = store; this.json = json; }
 
+    @Override public TradingPartner insertPartnerDraft(TradingPartner draft) {
+        TenantAccess.requireOwner(draft.tenantId());
+        if (store.putVersionedIfCurrent(draft.tenantId(), "PARTNER#" + draft.id(), "PARTNER", write(draft), 0)) return draft;
+        return findPartner(draft.id()).orElseThrow();
+    }
+
+    @Override public TradingAgreement insertAgreementDraft(TradingAgreement draft) {
+        TenantAccess.requireOwner(draft.tenantId());
+        if (store.putVersionedIfCurrent(draft.tenantId(), "AGREEMENT#" + draft.id(), "AGREEMENT", write(draft), 0)) return draft;
+        return findAgreement(draft.id()).orElseThrow();
+    }
+
     @Override public TradingPartner savePartner(TradingPartner partner) { TenantAccess.requireOwner(partner.tenantId());
         store.put(partner.tenantId(), "PARTNER#" + partner.id(), "PARTNER", write(partner)); return partner;
     }

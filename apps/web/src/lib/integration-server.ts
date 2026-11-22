@@ -2,8 +2,8 @@ import 'server-only'
 
 import { IntegrationClientError, createIntegrationClient } from '@edispark/integration-client'
 
-import { canManageOrganization } from '@/lib/access'
-import { auth, getRequestAccess } from '@/lib/auth'
+import { canManageOrganization, isPlatformAdmin } from '@/lib/access'
+import { auth, getRequestAccess, getRequestPlatformRole } from '@/lib/auth'
 
 const DEFAULT_INTEGRATION_API_URL = 'http://localhost:8080'
 
@@ -14,13 +14,19 @@ export class IntegrationBffError extends Error {
   }
 }
 
-export async function createAuthenticatedIntegrationClient(request: Request, required: 'member' | 'admin' = 'admin') {
+export async function createAuthenticatedIntegrationClient(request: Request, required: 'member' | 'admin' | 'platform' = 'admin') {
   const authHeaders = request.headers
   const session = await auth.api.getSession({ headers: authHeaders })
   if (!session) throw new IntegrationBffError(401, 'UNAUTHENTICATED', 'Sign in to manage your trading network.')
-  const access = await getRequestAccess(authHeaders)
-  if (!access || (required === 'admin' && !canManageOrganization(access.organizationRole))) {
-    throw new IntegrationBffError(403, 'FORBIDDEN', 'Organization administrator access is required.')
+  if (required === 'platform') {
+    if (!isPlatformAdmin(await getRequestPlatformRole(authHeaders))) {
+      throw new IntegrationBffError(403, 'FORBIDDEN', 'System administrator access is required.')
+    }
+  } else {
+    const access = await getRequestAccess(authHeaders)
+    if (!access || (required === 'admin' && !canManageOrganization(access.organizationRole))) {
+      throw new IntegrationBffError(403, 'FORBIDDEN', 'Organization administrator access is required.')
+    }
   }
 
   let tokenPromise: Promise<string> | undefined
@@ -34,6 +40,19 @@ export async function createAuthenticatedIntegrationClient(request: Request, req
     accessToken,
     headers: { 'X-Correlation-ID': request.headers.get('x-correlation-id') ?? crypto.randomUUID() },
   })
+}
+
+export async function managedPartnerBody<T>(request: Request): Promise<T> {
+  const expectedOrigin = new URL(process.env.BETTER_AUTH_URL ?? request.url).origin
+  if (request.headers.get("origin") !== expectedOrigin) {
+    throw new IntegrationBffError(403, "FORBIDDEN", "Submit managed partner changes from the application.")
+  }
+
+  try {
+    return await request.json() as T
+  } catch {
+    throw new IntegrationBffError(400, "INVALID_REQUEST", "Submit valid managed partner settings.")
+  }
 }
 
 export function integrationErrorResponse(error: unknown) {

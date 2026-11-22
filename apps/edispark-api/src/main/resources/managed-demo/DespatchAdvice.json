@@ -1,0 +1,26 @@
+{
+  "_D": "urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2",
+  "_A": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+  "_B": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+  "DespatchAdvice": [{
+    "UBLVersionID": [{"_": "2.1"}],
+    "ID": [{"_": "42900"}],
+    "IssueDate": [{"_": "2026-11-22"}],
+    "IssueTime": [{"_": "09:30:00Z"}],
+    "OrderReference": [{"ID": [{"_": "LM00000000042"}]}],
+    "DespatchSupplierParty": [{"Party": [{"EndpointID": [{"_": "0501000000022"}], "PartyName": [{"Name": [{"_": "DEMO SUPPLIER"}]}]}]}],
+    "DeliveryCustomerParty": [{"Party": [{"EndpointID": [{"_": "0501000000015"}]}]}],
+    "Shipment": [{
+      "ID": [{"_": "42900"}],
+      "Delivery": [{"DeliveryLocation": [{"ID": [{"_": "0501000000039"}]}], "EstimatedDeliveryPeriod": [{"StartDate": [{"_": "2026-11-23"}], "StartTime": [{"_": "09:00:00Z"}]}]}],
+      "TransportHandlingUnit": [
+        {"ID": [{"_": "PALLET-1"}], "TransportHandlingUnitTypeCode": [{"_": "201"}], "HandlingUnitDespatchLine": [{"ID": [{"_": "1-1"}], "DeliveredQuantity": [{"_": 1, "unitCode": "CS"}], "OrderLineReference": [{"LineID": [{"_": "1"}]}], "Item": [{"StandardItemIdentification": [{"ID": [{"_": "5010000000015"}]}]}]}, {"ID": [{"_": "2-1"}], "DeliveredQuantity": [{"_": 4, "unitCode": "CS"}], "OrderLineReference": [{"LineID": [{"_": "2"}]}], "Item": [{"StandardItemIdentification": [{"ID": [{"_": "5010000000022"}]}]}]}], "TraceID": [{"_": "000000000000000017"}]},
+        {"ID": [{"_": "PALLET-2"}], "TransportHandlingUnitTypeCode": [{"_": "201"}], "HandlingUnitDespatchLine": [{"ID": [{"_": "1-2"}], "DeliveredQuantity": [{"_": 2, "unitCode": "CS"}], "OrderLineReference": [{"LineID": [{"_": "1"}]}], "Item": [{"StandardItemIdentification": [{"ID": [{"_": "5010000000015"}]}]}]}], "TraceID": [{"_": "000000000000000024"}]}
+      ]
+    }],
+    "DespatchLine": [
+      {"ID": [{"_": "1"}], "DeliveredQuantity": [{"_": 3, "unitCode": "CS"}], "OrderLineReference": [{"LineID": [{"_": "1"}]}], "Item": [{"StandardItemIdentification": [{"ID": [{"_": "5010000000015"}]}], "ItemInstance": [{"BestBeforeDate": [{"_": "2026-12-01"}]}], "AdditionalItemProperty": [{"Name": [{"_": "Tesco packaging"}], "Value": [{"_": "BOX"}]}]}]},
+      {"ID": [{"_": "2"}], "DeliveredQuantity": [{"_": 4, "unitCode": "CS"}], "OrderLineReference": [{"LineID": [{"_": "2"}]}], "Item": [{"StandardItemIdentification": [{"ID": [{"_": "5010000000022"}]}], "ItemInstance": [{"BestBeforeDate": [{"_": "2026-12-01"}]}], "AdditionalItemProperty": [{"Name": [{"_": "Tesco packaging"}], "Value": [{"_": "BOX"}]}]}]}
+    ]
+  }]
+}

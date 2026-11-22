@@ -29,6 +29,8 @@ export async function localEnvironment() {
     LOCAL_TEST_USER_BOOTSTRAP: process.env.LOCAL_TEST_USER_BOOTSTRAP ?? "true",
     LOCAL_TEST_USER_EMAIL: process.env.LOCAL_TEST_USER_EMAIL ?? "local@edispark.test",
     LOCAL_TEST_USER_PASSWORD: process.env.LOCAL_TEST_USER_PASSWORD ?? "EdiSpark-Local-2026!",
+    LOCAL_PLATFORM_USER_EMAIL: process.env.LOCAL_PLATFORM_USER_EMAIL ?? "platform@edispark.test",
+    LOCAL_PLATFORM_USER_PASSWORD: process.env.LOCAL_PLATFORM_USER_PASSWORD ?? "EdiSpark-Platform-Local-2026!",
     LOCAL_TEST_USER_NAME: process.env.LOCAL_TEST_USER_NAME ?? "Local Tester",
     LOCAL_MEMBER_USER_EMAIL: process.env.LOCAL_MEMBER_USER_EMAIL ?? "operations@edispark.test",
     LOCAL_MEMBER_USER_PASSWORD: process.env.LOCAL_MEMBER_USER_PASSWORD ?? "EdiSpark-Member-2026!",

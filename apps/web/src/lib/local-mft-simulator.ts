@@ -75,3 +75,22 @@ export function localMftSample(direction: LocalSimulationDirection) {
 export function isLocalSimulationDirection(value: unknown): value is LocalSimulationDirection {
   return value === "INBOUND" || value === "OUTBOUND"
 }
+
+
+export function localTescoOrderSample() {
+  const message = [
+    "UNH+1+ORDERS:D:96A:UN:EAN008", "BGM+220+LM00000000042+9",
+    "DTM+137:20261122:102", "DTM+64:202611230900:203", "RFF+CT:DEMO42",
+    "NAD+BY+0501000000015::9", "NAD+DP+0501000000039::9",
+    "LOC+7+0501000000039::9", "NAD+SE+0501000000022::9", "CUX+2:GBP:4",
+    "LIN+1++5010000000015:EN", "PIA+1+DEMO-1:IN", "QTY+21:3",
+    "LIN+2++5010000000022:EN", "PIA+1+DEMO-2:IN", "QTY+21:4",
+    "UNS+S", "CNT+2:2",
+  ]
+  return {
+    filename: "tesco-uk-depot-order.edi",
+    contentType: "application/edifact",
+    content: ["UNB+UNOA:3+0501000000015:14+0501000000022:14+261122:0930+DEMO42++ORDERS",
+      ...message, "UNT+" + (message.length + 1) + "+1", "UNZ+1+DEMO42"].join("'") + "'",
+  }
+}

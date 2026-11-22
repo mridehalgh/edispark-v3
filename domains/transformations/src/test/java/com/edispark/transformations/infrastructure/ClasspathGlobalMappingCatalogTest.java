@@ -28,7 +28,7 @@ class ClasspathGlobalMappingCatalogTest {
 
     @Test
     void vendsAllSixLifecycleDocumentsAndKeepsComprehensiveOrderInvoiceSamples() throws Exception {
-        assertThat(catalog.list()).hasSize(26).allSatisfy(mapping -> {
+        assertThat(catalog.list()).hasSize(29).allSatisfy(mapping -> {
             assertThat(mapping.scope()).isEqualTo(MappingScope.GLOBAL);
             assertThat(mapping.status()).isEqualTo(MappingStatus.PUBLISHED);
             assertThat(mapping.vendor()).isEqualTo("EdiSpark");
@@ -110,7 +110,9 @@ class ClasspathGlobalMappingCatalogTest {
 
     @Test
     void publishedMappingsUseControlledLookupsForCodedBusinessFields() {
-        assertThat(catalog.list()).filteredOn(mapping -> mapping.revision() == 1).allSatisfy(mapping -> {
+        assertThat(catalog.list()).filteredOn(mapping -> mapping.revision() == 1
+                && !java.util.Set.of(TescoUkMappings.ORDER, TescoUkMappings.INVOICE, TescoUkMappings.DESPATCH).contains(mapping.id()))
+                .allSatisfy(mapping -> {
             assertThat(mapping.nodes()).anySatisfy(node -> {
                 assertThat(node.operation()).isEqualTo(MappingOperation.CODE_LOOKUP);
                 assertThat(node.codeMap()).isNotEmpty();

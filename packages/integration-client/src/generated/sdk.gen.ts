@@ -2,8 +2,8 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ActivateSsccIssuerData, ActivateSsccIssuerResponses, ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CheckExchangeReadinessData, CheckExchangeReadinessResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateSsccIssuerData, CreateSsccIssuerResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, GetExchangeData, GetExchangeResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListSsccIssuersData, ListSsccIssuersResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, MakeDefaultSsccIssuerData, MakeDefaultSsccIssuerResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, ReserveSsccsData, ReserveSsccsResponses, RetireSsccIssuerData, RetireSsccIssuerResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, TestMappingRetainedSourceData, TestMappingRetainedSourceResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
-import { zActivateSsccIssuerResponse, zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCheckExchangeReadinessResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateSsccIssuerResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zGetExchangeResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListSsccIssuersResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zMakeDefaultSsccIssuerResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zQualifyTradingAgreementResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zReserveSsccsResponse, zRetireSsccIssuerResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zTestMappingRetainedSourceResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
+import type { ActivateSsccIssuerData, ActivateSsccIssuerResponses, ActivateTradingAgreementData, ActivateTradingAgreementResponses, ActivateTradingPartnerRevisionData, ActivateTradingPartnerRevisionResponses, AddExchangeCapabilityData, AddExchangeCapabilityResponses, ApplyManagedPartnerTemplateData, ApplyManagedPartnerTemplateResponses, ArchiveMappingRevisionData, ArchiveMappingRevisionResponses, ArchivePartnerDocumentProfileData, ArchivePartnerDocumentProfileResponses, ArchiveTradingAgreementRevisionData, ArchiveTradingAgreementRevisionResponses, ArchiveTradingPartnerRevisionData, ArchiveTradingPartnerRevisionResponses, CheckExchangeReadinessData, CheckExchangeReadinessResponses, CreateManagedPartnerTemplateData, CreateManagedPartnerTemplateResponses, CreateMappingData, CreateMappingResponses, CreateMappingRevisionData, CreateMappingRevisionResponses, CreatePartnerDocumentProfileData, CreatePartnerDocumentProfileResponses, CreatePartnerDocumentProfileRevisionData, CreatePartnerDocumentProfileRevisionResponses, CreateSsccIssuerData, CreateSsccIssuerResponses, CreateTradingAgreementData, CreateTradingAgreementResponses, CreateTradingAgreementRevisionData, CreateTradingAgreementRevisionResponses, CreateTradingPartnerData, CreateTradingPartnerResponses, CreateTradingPartnerRevisionData, CreateTradingPartnerRevisionResponses, DeleteMappingDraftData, DeleteMappingDraftResponses, DeletePartnerDocumentProfileDraftData, DeletePartnerDocumentProfileDraftResponses, DeleteTradingAgreementDraftData, DeleteTradingAgreementDraftResponses, DeleteTradingPartnerDraftData, DeleteTradingPartnerDraftResponses, EditManagedPartnerTemplateData, EditManagedPartnerTemplateResponses, GetExchangeData, GetExchangeResponses, GetManagedAgreementSetupData, GetManagedAgreementSetupResponses, GetMappingData, GetMappingResponses, GetMappingUsageData, GetMappingUsageResponses, GetTradingAgreementData, GetTradingAgreementResponses, GetTradingAgreementUsageData, GetTradingAgreementUsageResponses, GetTradingPartnerData, GetTradingPartnerResponses, ListBusinessCodeListsData, ListBusinessCodeListsResponses, ListEligibleExchangeRoutesData, ListEligibleExchangeRoutesResponses, ListExchangesData, ListExchangesResponses, ListManagedPartnerMappingsData, ListManagedPartnerMappingsResponses, ListManagedPartnerRevisionsData, ListManagedPartnerRevisionsResponses, ListMappingsData, ListMappingsResponses, ListPartnerDocumentProfilesData, ListPartnerDocumentProfilesResponses, ListPublishedManagedPartnersData, ListPublishedManagedPartnersResponses, ListSsccIssuersData, ListSsccIssuersResponses, ListTradingAgreementsData, ListTradingAgreementsResponses, ListTradingPartnersData, ListTradingPartnersResponses, MakeDefaultSsccIssuerData, MakeDefaultSsccIssuerResponses, PublishManagedPartnerTemplateData, PublishManagedPartnerTemplateResponses, PublishMappingData, PublishMappingResponses, PublishPartnerDocumentProfileData, PublishPartnerDocumentProfileResponses, QualifyTradingAgreementData, QualifyTradingAgreementResponses, RecordManagedRetailerAcceptanceData, RecordManagedRetailerAcceptanceResponses, RemoveExchangeCapabilityData, RemoveExchangeCapabilityResponses, ReplaceExchangeCapabilityData, ReplaceExchangeCapabilityResponses, ReserveSsccsData, ReserveSsccsResponses, RetireManagedPartnerTemplateData, RetireManagedPartnerTemplateResponses, RetireSsccIssuerData, RetireSsccIssuerResponses, SubmitOutboundExchangeData, SubmitOutboundExchangeResponses, SuspendTradingAgreementData, SuspendTradingAgreementResponses, TestMappingData, TestMappingResponses, TestMappingRetainedSourceData, TestMappingRetainedSourceResponses, UpdateMappingDraftData, UpdateMappingDraftResponses, UpdatePartnerDocumentProfileDraftData, UpdatePartnerDocumentProfileDraftResponses, UpdateTradingPartnerDraftData, UpdateTradingPartnerDraftResponses } from './types.gen';
+import { zActivateSsccIssuerResponse, zActivateTradingAgreementResponse, zActivateTradingPartnerRevisionResponse, zAddExchangeCapabilityResponse, zApplyManagedPartnerTemplateResponse, zArchiveMappingRevisionResponse, zArchivePartnerDocumentProfileResponse, zArchiveTradingAgreementRevisionResponse, zArchiveTradingPartnerRevisionResponse, zCheckExchangeReadinessResponse, zCreateManagedPartnerTemplateResponse, zCreateMappingResponse, zCreateMappingRevisionResponse, zCreatePartnerDocumentProfileResponse, zCreatePartnerDocumentProfileRevisionResponse, zCreateSsccIssuerResponse, zCreateTradingAgreementResponse, zCreateTradingAgreementRevisionResponse, zCreateTradingPartnerResponse, zCreateTradingPartnerRevisionResponse, zDeleteMappingDraftResponse, zDeletePartnerDocumentProfileDraftResponse, zDeleteTradingAgreementDraftResponse, zDeleteTradingPartnerDraftResponse, zEditManagedPartnerTemplateResponse, zGetExchangeResponse, zGetManagedAgreementSetupResponse, zGetMappingResponse, zGetMappingUsageResponse, zGetTradingAgreementResponse, zGetTradingAgreementUsageResponse, zGetTradingPartnerResponse, zListBusinessCodeListsResponse, zListEligibleExchangeRoutesResponse, zListExchangesResponse, zListManagedPartnerMappingsResponse, zListManagedPartnerRevisionsResponse, zListMappingsResponse, zListPartnerDocumentProfilesResponse, zListPublishedManagedPartnersResponse, zListSsccIssuersResponse, zListTradingAgreementsResponse, zListTradingPartnersResponse, zMakeDefaultSsccIssuerResponse, zPublishManagedPartnerTemplateResponse, zPublishMappingResponse, zPublishPartnerDocumentProfileResponse, zQualifyTradingAgreementResponse, zRecordManagedRetailerAcceptanceResponse, zRemoveExchangeCapabilityResponse, zReplaceExchangeCapabilityResponse, zReserveSsccsResponse, zRetireManagedPartnerTemplateResponse, zRetireSsccIssuerResponse, zSubmitOutboundExchangeResponse, zSuspendTradingAgreementResponse, zTestMappingResponse, zTestMappingRetainedSourceResponse, zUpdateMappingDraftResponse, zUpdatePartnerDocumentProfileDraftResponse, zUpdateTradingPartnerDraftResponse } from './zod.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -110,6 +110,19 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zReplaceExchangeCapabilityResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/trading-partners/agreements/{agreementId}/capabilities/{capabilityId}',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    public editManagedPartnerTemplate<ThrowOnError extends boolean = false>(options: Options<EditManagedPartnerTemplateData, ThrowOnError>): RequestResult<EditManagedPartnerTemplateResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).put<EditManagedPartnerTemplateResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zEditManagedPartnerTemplateResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/platform/managed-partners/{id}',
             ...options,
             headers: {
                 'Content-Type': 'application/json',
@@ -442,6 +455,54 @@ export class IntegrationClient extends HeyApiClient {
         });
     }
 
+    public listManagedPartnerRevisions<ThrowOnError extends boolean = false>(options?: Options<ListManagedPartnerRevisionsData, ThrowOnError>): RequestResult<ListManagedPartnerRevisionsResponses, unknown, ThrowOnError> {
+        return (options?.client ?? this.client).get<ListManagedPartnerRevisionsResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zListManagedPartnerRevisionsResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/platform/managed-partners',
+            ...options
+        });
+    }
+
+    public createManagedPartnerTemplate<ThrowOnError extends boolean = false>(options: Options<CreateManagedPartnerTemplateData, ThrowOnError>): RequestResult<CreateManagedPartnerTemplateResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<CreateManagedPartnerTemplateResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zCreateManagedPartnerTemplateResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/platform/managed-partners',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    public retireManagedPartnerTemplate<ThrowOnError extends boolean = false>(options: Options<RetireManagedPartnerTemplateData, ThrowOnError>): RequestResult<RetireManagedPartnerTemplateResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<RetireManagedPartnerTemplateResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zRetireManagedPartnerTemplateResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/platform/managed-partners/{id}/retire',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    public publishManagedPartnerTemplate<ThrowOnError extends boolean = false>(options: Options<PublishManagedPartnerTemplateData, ThrowOnError>): RequestResult<PublishManagedPartnerTemplateResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<PublishManagedPartnerTemplateResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zPublishManagedPartnerTemplateResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/platform/managed-partners/{id}/publish',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
     /**
      * List visual mappings
      */
@@ -539,6 +600,32 @@ export class IntegrationClient extends HeyApiClient {
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/mappings/{mappingId}/archive',
             ...options
+        });
+    }
+
+    public applyManagedPartnerTemplate<ThrowOnError extends boolean = false>(options: Options<ApplyManagedPartnerTemplateData, ThrowOnError>): RequestResult<ApplyManagedPartnerTemplateResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<ApplyManagedPartnerTemplateResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zApplyManagedPartnerTemplateResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/managed-partners/{id}/revisions/{revision}/apply',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+    }
+
+    public recordManagedRetailerAcceptance<ThrowOnError extends boolean = false>(options: Options<RecordManagedRetailerAcceptanceData, ThrowOnError>): RequestResult<RecordManagedRetailerAcceptanceResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).post<RecordManagedRetailerAcceptanceResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zRecordManagedRetailerAcceptanceResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/managed-partners/agreements/{agreementId}/acceptance',
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
         });
     }
 
@@ -658,6 +745,15 @@ export class IntegrationClient extends HeyApiClient {
         });
     }
 
+    public listManagedPartnerMappings<ThrowOnError extends boolean = false>(options?: Options<ListManagedPartnerMappingsData, ThrowOnError>): RequestResult<ListManagedPartnerMappingsResponses, unknown, ThrowOnError> {
+        return (options?.client ?? this.client).get<ListManagedPartnerMappingsResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zListManagedPartnerMappingsResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/platform/managed-partners/mappings',
+            ...options
+        });
+    }
+
     /**
      * Permanently delete an unused mapping draft
      */
@@ -702,6 +798,24 @@ export class IntegrationClient extends HeyApiClient {
             responseValidator: async (data) => await zListBusinessCodeListsResponse.parseAsync(data),
             security: [{ scheme: 'bearer', type: 'http' }],
             url: '/api/mappings/code-lists',
+            ...options
+        });
+    }
+
+    public listPublishedManagedPartners<ThrowOnError extends boolean = false>(options?: Options<ListPublishedManagedPartnersData, ThrowOnError>): RequestResult<ListPublishedManagedPartnersResponses, unknown, ThrowOnError> {
+        return (options?.client ?? this.client).get<ListPublishedManagedPartnersResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zListPublishedManagedPartnersResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/managed-partners',
+            ...options
+        });
+    }
+
+    public getManagedAgreementSetup<ThrowOnError extends boolean = false>(options: Options<GetManagedAgreementSetupData, ThrowOnError>): RequestResult<GetManagedAgreementSetupResponses, unknown, ThrowOnError> {
+        return (options.client ?? this.client).get<GetManagedAgreementSetupResponses, unknown, ThrowOnError>({
+            responseValidator: async (data) => await zGetManagedAgreementSetupResponse.parseAsync(data),
+            security: [{ scheme: 'bearer', type: 'http' }],
+            url: '/api/managed-partners/agreements/{agreementId}',
             ...options
         });
     }

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
+import { useAccess } from "@/lib/use-access"
 import { getPasskeyError } from "@/lib/passkey-errors"
 
 function AuthShell({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
@@ -255,6 +256,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
 export function WorkspaceSelectionPage() {
   const navigate = useNavigate()
+  const { access, loading: accessLoading } = useAccess()
   const { data: session, isPending: isSessionPending } = authClient.useSession()
   const { data: organizations, isPending: isOrganizationsPending } = authClient.useListOrganizations()
   const [error, setError] = useState<string | null>(null)
@@ -262,14 +264,16 @@ export function WorkspaceSelectionPage() {
 
   useEffect(() => {
     if (!isSessionPending && !session) navigate("/sign-in", { replace: true })
-    if (!isOrganizationsPending && organizationList.length === 0) navigate("/workspace/setup", { replace: true })
+    if (!accessLoading && session && !isOrganizationsPending && organizationList.length === 0) {
+      navigate(access?.platformRole ? "/platform" : "/workspace/setup", { replace: true })
+    }
     if (!isOrganizationsPending && organizationList.length === 1) {
       authClient.organization.setActive({ organizationId: organizationList[0].id }).then((result) => {
         if (result.error) setError(result.error.message ?? "Unable to select your workspace.")
         else navigate("/", { replace: true })
       })
     }
-  }, [isOrganizationsPending, isSessionPending, navigate, organizationList, session])
+  }, [access?.platformRole, accessLoading, isOrganizationsPending, isSessionPending, navigate, organizationList, session])
 
   async function choose(organizationId: string) {
     setError(null)

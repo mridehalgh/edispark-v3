@@ -3,6 +3,7 @@ import {
   isLocalDevelopmentEnabled,
   isLocalSimulationDirection,
   localMftSample,
+  localTescoOrderSample,
 } from "@/lib/local-mft-simulator"
 
 export const dynamic = "force-dynamic"
@@ -34,8 +35,12 @@ export async function POST(request: Request) {
       )
     }
 
-    const { client, partnerId } = await simulatorPartner(request)
-    const sample = localMftSample(body.direction)
+    const tesco = body.profile === "TESCO"
+    if (body.profile !== undefined && (!tesco || body.direction !== "INBOUND")) {
+      return Response.json({ error: { code: "INVALID_SIMULATION", message: "The Tesco profile receives orders." } }, { status: 400 })
+    }
+    const { client, partnerId } = await simulatorPartner(request, tesco)
+    const sample = tesco ? localTescoOrderSample() : localMftSample(body.direction)
     if (body.direction === "OUTBOUND") {
       const { data } = await client.submitMftTransfer({
         body: { file: new File([sample.content], sample.filename, { type: sample.contentType }) },
@@ -47,6 +52,7 @@ export async function POST(request: Request) {
     }
 
     const form = new FormData()
+    if (tesco) form.set("profile", "TESCO")
     form.set("file", new File([sample.content], sample.filename, { type: sample.contentType }))
     const result = await simulatorRequest("/api/simulator/send", { method: "POST", body: form })
     return Response.json({ direction: body.direction, filename: sample.filename, result }, { status: 201 })
@@ -55,11 +61,11 @@ export async function POST(request: Request) {
   }
 }
 
-async function simulatorPartner(request: Request) {
+async function simulatorPartner(request: Request, tesco = false) {
   const client = await createAuthenticatedMftClient(request)
   const { data: partners } = await client.listMftPartners({ throwOnError: true })
   const partner = partners.find(({ localAs2Id, remoteAs2Id }) => (
-    localAs2Id === "EDISPARK" && remoteAs2Id === "SIMULATOR"
+    localAs2Id === "EDISPARK" && remoteAs2Id === (tesco ? "SIMULATOR_TESCO" : "SIMULATOR")
   ))
   if (!partner?.id) {
     throw new MftBffError(409, "LOCAL_SIMULATOR_NOT_READY", "The local simulator partner is not ready yet.")

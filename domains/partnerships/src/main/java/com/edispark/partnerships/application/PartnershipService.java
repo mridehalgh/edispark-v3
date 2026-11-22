@@ -199,7 +199,7 @@ public final class PartnershipService {
 
     private QualificationReport evaluateQualification(TradingAgreement agreement, QualificationAcl evidenceSource) {
         List<String> checks = new ArrayList<>();
-        List<String> failures = new ArrayList<>();
+        List<String> failures = new ArrayList<>(evidenceSource.managedQualificationFailures(agreement));
         if (agreement.capabilities().isEmpty()) failures.add("At least one exchange capability is required");
         var keys = new HashSet<String>();
         for (ExchangeCapability capability : agreement.capabilities()) {
@@ -232,6 +232,8 @@ public final class PartnershipService {
 
     public TradingAgreement activate(UUID agreementId, Instant effectiveAt) {
         TradingAgreement candidate = requireAgreement(agreementId);
+        var managedFailures = qualification.managedQualificationFailures(candidate);
+        if (!managedFailures.isEmpty()) throw new IllegalStateException(String.join(" ", managedFailures));
         validateCurrentTargetEvidence(candidate);
         Instant now = clock.instant();
         if (effectiveAt != null && effectiveAt.isAfter(now)) {

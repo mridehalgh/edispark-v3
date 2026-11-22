@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ManagedRetailerAcceptance } from "./managed-setup"
 import { cn } from "@/lib/utils"
 import { findPublishedMapping, unavailableExchangeMessage, type CompatibleMapping } from "@/lib/mapping-compatibility"
 
@@ -405,6 +406,8 @@ export function PartnerPage() {
         <TabsContent value="documents" className="mt-4 lg:mt-0">
       <section className="border-t" aria-labelledby="documents-title">
         <header className="flex flex-wrap items-center gap-3 border-b py-3"><FileText className="h-4 w-4 text-primary" aria-hidden="true" /><div><h2 id="documents-title" className="text-base font-semibold">Documents</h2><p className="mt-0.5 text-sm text-muted-foreground">Choose which documents you exchange and what should happen when each one arrives.</p></div>{agreement ? <Badge variant="secondary">{agreement.status === "ACTIVE" ? "On" : stateLabel(agreement.status)}</Badge> : null}<div className="ml-auto flex gap-2">{agreement?.status === "DRAFT" ? <Button size="sm" variant="ghost" onClick={() => void discardDocumentEdit()} disabled={busy}><Trash2 className="mr-2 h-4 w-4" />Discard</Button> : null}{agreement?.status === "DRAFT" || agreement?.status === "QUALIFYING" ? <><Button size="sm" variant="ghost" onClick={() => void changeDocumentStatus("qualify")} disabled={busy || !capabilities.length}>Check</Button>{agreement.status === "QUALIFYING" && agreement.qualification?.passed ? <Button size="sm" onClick={() => void changeDocumentStatus("activate")} disabled={busy}>Turn on</Button> : null}</> : null}{agreement?.status === "ACTIVE" ? <Button size="sm" variant="ghost" onClick={() => void changeDocumentStatus("suspend")} disabled={busy}>Pause</Button> : null}<Button size="sm" variant="outline" onClick={() => void editDocuments()} disabled={busy}>{addingDocument ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}{agreement?.status === "ACTIVE" ? "Edit" : "Add"}</Button></div></header>
+        {agreement?.id && <ManagedRetailerAcceptance key={agreement.id + ":" + agreement.version + ":" + connection?.version}
+          agreementId={agreement.id} editable={agreement.status === "DRAFT" || agreement.status === "QUALIFYING"} />}
         {capabilities.length ? <div className="flex items-center gap-1 border-b py-2" aria-label="Filter document routes by direction">{([['ALL', 'All'], ['OUTBOUND', 'Send'], ['INBOUND', 'Receive']] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={documentDirection === value} onClick={() => setDocumentDirection(value)} className={cn("min-h-9 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", documentDirection === value && "bg-accent text-primary")}>{label}</button>)}</div> : null}
         {visibleCapabilities.length ? <div>{(['OUTBOUND', 'INBOUND'] as const).map((direction) => {
           const routes = visibleCapabilities.filter((item) => item.direction === direction)

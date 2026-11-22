@@ -106,8 +106,9 @@ public class SimulatorController {
         return switch (profile.toUpperCase(java.util.Locale.ROOT)) {
             case "EDIFACT" -> senderId;
             case "TRADACOMS" -> tradacomsSenderId;
+            case "TESCO" -> "SIMULATOR_TESCO";
             default -> throw new IllegalArgumentException(
-                    "Unknown simulator profile. Choose EDIFACT or TRADACOMS.");
+                    "Unknown simulator profile. Choose EDIFACT, TRADACOMS or TESCO.");
         };
     }
 

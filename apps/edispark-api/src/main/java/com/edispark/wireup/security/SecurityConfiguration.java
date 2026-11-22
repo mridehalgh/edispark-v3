@@ -28,6 +28,7 @@ public class SecurityConfiguration {
                                 && "/mcp".equals(request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI))).permitAll()
                         .requestMatchers("/api-docs", "/api-docs/**", "/swagger-ui/**", "/actuator/health",
                                 "/as2/**", "/internal/**").permitAll()
+                        .requestMatchers("/api/platform/**").hasAuthority("PLATFORM_ADMIN")
                         .requestMatchers("/api/agent/**").hasAnyAuthority("ROLE_member", "ROLE_admin", "ROLE_owner")
                         .requestMatchers(HttpMethod.GET, "/api/document-sets/**", "/api/schemas/**",
                                 "/api/exchanges/**", "/api/trading-partners", "/api/trading-partners/agreements",
@@ -53,7 +54,13 @@ public class SecurityConfiguration {
         authorities.setAuthoritiesClaimName("organization_role");
         authorities.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(authorities);
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            var granted = new java.util.ArrayList<>(authorities.convert(jwt));
+            if ("platform_admin".equals(jwt.getClaims().get("platform_role"))) {
+                granted.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("PLATFORM_ADMIN"));
+            }
+            return granted;
+        });
         return converter;
     }
 }

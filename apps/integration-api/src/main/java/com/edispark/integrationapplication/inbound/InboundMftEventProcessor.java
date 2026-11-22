@@ -91,6 +91,10 @@ public final class InboundMftEventProcessor {
             InboundEdiBatchSplitter.InboundMessage message) {
         InboundEdiTranslator.Translation translation = translator.translate(message);
         Route route = resolve(event, partner, translation);
+        if (route.capability().mappingRevisionId().equals(com.edispark.transformations.infrastructure.TescoUkMappings.ORDER)
+                && !"EAN008".equals(translation.association())) {
+            throw new IllegalArgumentException("The Tesco UK order route requires ORDERS:D:96A:UN:EAN008.");
+        }
         byte[] canonical = mappings.executePublished(
                 route.capability().mappingRevisionId(), translation.mappingInputJson());
         return new Prepared(translation, route, canonical);

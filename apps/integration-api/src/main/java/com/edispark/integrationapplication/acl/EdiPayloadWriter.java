@@ -3,6 +3,7 @@ package com.edispark.integrationapplication.acl;
 import com.edispark.partnerships.domain.model.BusinessDocumentType;
 import com.edispark.partnerships.domain.model.EdiStandard;
 import com.edispark.partnerships.domain.model.ExchangeCapability;
+import com.edispark.transformations.infrastructure.TescoUkMappings;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +54,14 @@ public final class EdiPayloadWriter {
                 return new OrderResponseTargetContract(mapper).write(mappedJson, control, clock.instant()).getBytes(StandardCharsets.US_ASCII);
             }
             JsonNode document = mapper.readTree(mappedJson);
+            if (capability.mappingRevisionId().equals(TescoUkMappings.INVOICE)
+                    || capability.mappingRevisionId().equals(TescoUkMappings.DESPATCH)) {
+                String control = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase(Locale.ROOT);
+                String payload = capability.mappingRevisionId().equals(TescoUkMappings.INVOICE)
+                        ? TescoUkPayload.invoice(document, control, clock.instant())
+                        : TescoUkPayload.despatch(document, control, clock.instant());
+                return payload.getBytes(StandardCharsets.US_ASCII);
+            }
             validateModel(capability, document);
             String payload = capability.standard() == EdiStandard.EDIFACT
                     ? edifact(capability, document) : tradacoms(capability, document);

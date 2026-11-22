@@ -113,6 +113,61 @@ final class InboundEdiMappingInputParser {
                 .map(this::tradacomsLine).forEach(lines::add);
     }
 
+    byte[] tescoUkOrder(List<String> segments) {
+        ObjectNode root = root();
+        String bgm = required(segments, "BGM+220+");
+        String deliveryDateTime = composite(element(required(segments, "DTM+64:"), 0), 1);
+        if (deliveryDateTime.length() != 12) throw new IllegalArgumentException("Tesco delivery date/time must use format 203.");
+        java.time.LocalDateTime booked;
+        try {
+            booked = java.time.LocalDateTime.parse(deliveryDateTime,
+                    DateTimeFormatter.ofPattern("uuuuMMddHHmm").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+        } catch (java.time.DateTimeException invalid) {
+            throw new IllegalArgumentException("Tesco delivery date/time is invalid.", invalid);
+        }
+        ObjectNode document = root.withObject("/document");
+        document.put("id", element(bgm, 1));
+        document.put("issueDate", date(composite(element(required(segments, "DTM+137:"), 0), 1)));
+        document.put("currency", composite(element(required(segments, "CUX+2:"), 0), 1));
+        String contract = reference(segments, "CT", "");
+        if (!contract.isBlank()) document.put("contractReference", contract);
+        ObjectNode parties = root.withObject("/parties");
+        parties.put("buyer", partyId(segments, "BY"));
+        parties.put("supplier", partyId(segments, "SE"));
+        ObjectNode delivery = root.withObject("/delivery");
+        delivery.put("depot", composite(element(required(segments, "LOC+7+"), 1), 0));
+        delivery.put("date", booked.toLocalDate().toString());
+        delivery.put("time", booked.atZone(java.time.ZoneId.of("Europe/London"))
+                .format(DateTimeFormatter.ofPattern("HH:mm:ssXXX")));
+        for (String field : List.of("/document/id", "/document/issueDate", "/document/currency",
+                "/parties/buyer", "/parties/supplier", "/delivery/depot")) {
+            if (root.at(field).asText().isBlank()) throw new IllegalArgumentException("Missing Tesco order field " + field);
+        }
+        ArrayNode lines = root.putArray("lines");
+        for (int index = 0; index < segments.size(); index++) {
+            String lin = segments.get(index);
+            if (!lin.startsWith("LIN+")) continue;
+            var group = segments.subList(index, nextLineOrSummary(segments, index + 1));
+            String quantity = element(required(group, "QTY+21:"), 0);
+            BigDecimal ordered = decimal(composite(quantity, 1));
+            String gtin = composite(element(lin, 2), 0);
+            if (!gtin.matches("[0-9]{13,14}") || ordered.signum() <= 0 || element(lin, 0).isBlank()) {
+                throw new IllegalArgumentException("Tesco order line requires an identifier, GTIN and positive quantity.");
+            }
+            ObjectNode line = lines.addObject();
+            line.put("id", element(lin, 0));
+            line.put("gtin", gtin);
+            line.put("quantity", ordered);
+            line.put("unitCode", valueOr(composite(quantity, 2), "EA"));
+            String pia = optional(group, "PIA+1+");
+            if (!pia.isBlank()) line.put("buyerItemId", composite(element(pia, 1), 0));
+            String imd = optional(group, "IMD+F+");
+            if (!imd.isBlank()) line.put("name", composite(element(imd, 2), 3));
+        }
+        if (lines.isEmpty()) throw new IllegalArgumentException("Tesco order has no lines.");
+        return bytes(root);
+    }
+
     private byte[] edifactOrder(List<String> segments) {
         ObjectNode root = root();
         String id = element(required(segments, "BGM+"), 1);

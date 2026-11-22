@@ -1,0 +1,2329 @@
+[
+  {
+    "name": "AAH Pharmaceuticals",
+    "category": "Healthcare",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:AAH Pharmaceuticals",
+    "logoPath": "/logos/partners/aah-pharmaceuticals.webp"
+  },
+  {
+    "name": "Academy Sports + Outdoors",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Academy Sports + Outdoors",
+    "logoPath": "/logos/partners/academy-sports-outdoors.webp"
+  },
+  {
+    "name": "Ace Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Ace Logistics",
+    "logoPath": "/logos/partners/ace-logistics.webp"
+  },
+  {
+    "name": "Action",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Action",
+    "logoPath": "/logos/partners/action.webp"
+  },
+  {
+    "name": "Admiral Taverns",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Admiral Taverns",
+    "logoPath": "/logos/partners/admiral-taverns.webp"
+  },
+  {
+    "name": "AIT Home Delivery",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:AIT Home Delivery",
+    "logoPath": "/logos/partners/ait-home-delivery.webp"
+  },
+  {
+    "name": "Albert Heijn",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [
+      "Albert Heijn (AHOLD)",
+      "Albert Heijn (ETOS)"
+    ],
+    "logoName": "domain:ah.nl",
+    "logoPath": "/logos/partners/albert-heijn.webp"
+  },
+  {
+    "name": "Albertsons",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Albertsons",
+    "logoPath": "/logos/partners/albertsons.webp"
+  },
+  {
+    "name": "Aldi Australia",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Aldi Australia",
+    "logoPath": "/logos/partners/aldi-australia.webp"
+  },
+  {
+    "name": "Aldi DE",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Aldi DE",
+    "logoPath": "/logos/partners/aldi-de.webp"
+  },
+  {
+    "name": "ALDI EU",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:ALDI EU",
+    "logoPath": "/logos/partners/aldi-eu.webp"
+  },
+  {
+    "name": "Aldi Ireland",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Aldi Ireland",
+    "logoPath": "/logos/partners/aldi-ireland.webp"
+  },
+  {
+    "name": "Aldi Switzerland",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Aldi Switzerland",
+    "logoPath": "/logos/partners/aldi-switzerland.webp"
+  },
+  {
+    "name": "Aldi UK",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "A",
+    "aliases": [
+      "Aldi UK Frozen"
+    ],
+    "logoName": "domain:aldi.co.uk",
+    "logoPath": "/logos/partners/aldi-uk.webp"
+  },
+  {
+    "name": "Aldi USA",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "A",
+    "aliases": [
+      "Aldi USA SAP"
+    ],
+    "logoName": "name:Aldi USA",
+    "logoPath": "/logos/partners/aldi-usa.webp"
+  },
+  {
+    "name": "Alliance Healthcare",
+    "category": "Healthcare",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Alliance Healthcare",
+    "logoPath": "/logos/partners/alliance-healthcare.webp"
+  },
+  {
+    "name": "Amazon Vendor Central",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "domain:amazon.com",
+    "logoPath": "/logos/partners/amazon-vendor-central.webp"
+  },
+  {
+    "name": "APC Overnight",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:APC Overnight",
+    "logoPath": "/logos/partners/apc-overnight.webp"
+  },
+  {
+    "name": "Aramex",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Aramex",
+    "logoPath": "/logos/partners/aramex.webp"
+  },
+  {
+    "name": "ArrowXL",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:ArrowXL",
+    "logoPath": "/logos/partners/arrowxl.webp"
+  },
+  {
+    "name": "ASCG",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:ASCG",
+    "logoPath": "/logos/partners/ascg.webp"
+  },
+  {
+    "name": "Asda",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "A",
+    "aliases": [
+      "ASDA Click and Collect"
+    ],
+    "logoName": "domain:asda.com",
+    "logoPath": "/logos/partners/asda.webp"
+  },
+  {
+    "name": "Auchan",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "A",
+    "aliases": [],
+    "logoName": "name:Auchan",
+    "logoPath": "/logos/partners/auchan.webp"
+  },
+  {
+    "name": "B&Q Easier Programme",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:B&Q Easier Programme",
+    "logoPath": "/logos/partners/b-and-q-easier-programme.webp"
+  },
+  {
+    "name": "Bargain Booze",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Bargain Booze",
+    "logoPath": "/logos/partners/bargain-booze.webp"
+  },
+  {
+    "name": "Bed Bath & Beyond",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Bed Bath & Beyond",
+    "logoPath": "/logos/partners/bed-bath-and-beyond.webp"
+  },
+  {
+    "name": "Best Buy",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Best Buy",
+    "logoPath": "/logos/partners/best-buy.webp"
+  },
+  {
+    "name": "Bestway",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Bestway",
+    "logoPath": "/logos/partners/bestway.webp"
+  },
+  {
+    "name": "Bibby Distribution",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Bibby Distribution",
+    "logoPath": "/logos/partners/bibby-distribution.webp"
+  },
+  {
+    "name": "Bidvest",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Bidvest",
+    "logoPath": "/logos/partners/bidvest.webp"
+  },
+  {
+    "name": "Biedronka",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Biedronka",
+    "logoPath": "/logos/partners/biedronka.webp"
+  },
+  {
+    "name": "BJS Home Delivery",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:BJS Home Delivery",
+    "logoPath": "/logos/partners/bjs-home-delivery.webp"
+  },
+  {
+    "name": "BMW",
+    "category": "Other",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:BMW",
+    "logoPath": "/logos/partners/bmw.webp"
+  },
+  {
+    "name": "Bolloré Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Bolloré Logistics",
+    "logoPath": "/logos/partners/bollore-logistics.webp"
+  },
+  {
+    "name": "Booker",
+    "category": "Wholesale",
+    "region": "UK & Ireland",
+    "letter": "B",
+    "aliases": [
+      "Booker Trade",
+      "Booker Direct"
+    ],
+    "logoName": "name:Booker",
+    "logoPath": "/logos/partners/booker.webp"
+  },
+  {
+    "name": "Booths",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Booths",
+    "logoPath": "/logos/partners/booths.webp"
+  },
+  {
+    "name": "Boots",
+    "category": "Healthcare",
+    "region": "UK & Ireland",
+    "letter": "B",
+    "aliases": [
+      "Boots Ambient"
+    ],
+    "logoName": "domain:boots.com",
+    "logoPath": "/logos/partners/boots.webp"
+  },
+  {
+    "name": "Boughey Distribution",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "domain:boughey.co.uk",
+    "logoPath": "/logos/partners/boughey-distribution.webp"
+  },
+  {
+    "name": "Brakes",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Brakes",
+    "logoPath": "/logos/partners/brakes.webp"
+  },
+  {
+    "name": "Budgens",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Budgens",
+    "logoPath": "/logos/partners/budgens.webp"
+  },
+  {
+    "name": "Burlington",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "B",
+    "aliases": [],
+    "logoName": "name:Burlington",
+    "logoPath": "/logos/partners/burlington.webp"
+  },
+  {
+    "name": "C.H. Robinson",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:C.H. Robinson",
+    "logoPath": "/logos/partners/c-h-robinson.webp"
+  },
+  {
+    "name": "C&A",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:C&A",
+    "logoPath": "/logos/partners/c-and-a.webp"
+  },
+  {
+    "name": "Carrefour",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Carrefour",
+    "logoPath": "/logos/partners/carrefour.webp"
+  },
+  {
+    "name": "Casino Supermarché",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Casino Supermarché",
+    "logoPath": "/logos/partners/casino-supermarche.webp"
+  },
+  {
+    "name": "Castorama",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Castorama",
+    "logoPath": "/logos/partners/castorama.webp"
+  },
+  {
+    "name": "CEVA Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:CEVA Logistics",
+    "logoPath": "/logos/partners/ceva-logistics.webp"
+  },
+  {
+    "name": "Chewy",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Chewy",
+    "logoPath": "/logos/partners/chewy.webp"
+  },
+  {
+    "name": "Chronopost",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Chronopost",
+    "logoPath": "/logos/partners/chronopost.webp"
+  },
+  {
+    "name": "Chums",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Chums",
+    "logoPath": "/logos/partners/chums.webp"
+  },
+  {
+    "name": "CitySprint",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:CitySprint",
+    "logoPath": "/logos/partners/citysprint.webp"
+  },
+  {
+    "name": "Clipper Logistics (GXO)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Clipper Logistics (GXO)",
+    "logoPath": "/logos/partners/clipper-logistics-gxo.webp"
+  },
+  {
+    "name": "CML (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:CML (Culina Group)",
+    "logoPath": "/logos/partners/cml-culina-group.webp"
+  },
+  {
+    "name": "Co-Op",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "C",
+    "aliases": [
+      "Co-Op (Legacy)"
+    ],
+    "logoName": "domain:coop.co.uk",
+    "logoPath": "/logos/partners/co-op.webp"
+  },
+  {
+    "name": "Collect+",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Collect+",
+    "logoPath": "/logos/partners/collect.webp"
+  },
+  {
+    "name": "Comtrex",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Comtrex",
+    "logoPath": "/logos/partners/comtrex.webp"
+  },
+  {
+    "name": "Conforama",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Conforama",
+    "logoPath": "/logos/partners/conforama.webp"
+  },
+  {
+    "name": "Coop Italia",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Coop Italia",
+    "logoPath": "/logos/partners/coop-italia.webp"
+  },
+  {
+    "name": "Coop Norway",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Coop Norway",
+    "logoPath": "/logos/partners/coop-norway.webp"
+  },
+  {
+    "name": "Costco",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Costco",
+    "logoPath": "/logos/partners/costco.webp"
+  },
+  {
+    "name": "Costcutter",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Costcutter",
+    "logoPath": "/logos/partners/costcutter.webp"
+  },
+  {
+    "name": "Crate & Barrel",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Crate & Barrel",
+    "logoPath": "/logos/partners/crate-and-barrel.webp"
+  },
+  {
+    "name": "Culina",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Culina",
+    "logoPath": "/logos/partners/culina.webp"
+  },
+  {
+    "name": "Currys",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "C",
+    "aliases": [],
+    "logoName": "name:Currys",
+    "logoPath": "/logos/partners/currys.webp"
+  },
+  {
+    "name": "DACHSER",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:DACHSER",
+    "logoPath": "/logos/partners/dachser.webp"
+  },
+  {
+    "name": "Davies Turner",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Davies Turner",
+    "logoPath": "/logos/partners/davies-turner.webp"
+  },
+  {
+    "name": "DB Schenker",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:DB Schenker",
+    "logoPath": "/logos/partners/db-schenker.webp"
+  },
+  {
+    "name": "Debenhams",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Debenhams",
+    "logoPath": "/logos/partners/debenhams.webp"
+  },
+  {
+    "name": "Decathlon",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Decathlon",
+    "logoPath": "/logos/partners/decathlon.webp"
+  },
+  {
+    "name": "Decco",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Decco",
+    "logoPath": "/logos/partners/decco.webp"
+  },
+  {
+    "name": "DHL",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:DHL",
+    "logoPath": "/logos/partners/dhl.webp"
+  },
+  {
+    "name": "Dick’s Sporting Goods",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Dick’s Sporting Goods",
+    "logoPath": "/logos/partners/dick-s-sporting-goods.webp"
+  },
+  {
+    "name": "Dollar General",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Dollar General",
+    "logoPath": "/logos/partners/dollar-general.webp"
+  },
+  {
+    "name": "Dollar Tree",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Dollar Tree",
+    "logoPath": "/logos/partners/dollar-tree.webp"
+  },
+  {
+    "name": "Douglas",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Douglas",
+    "logoPath": "/logos/partners/douglas.webp"
+  },
+  {
+    "name": "DPD",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [
+      "DPD Group",
+      "DPD UK"
+    ],
+    "logoName": "name:DPD",
+    "logoPath": "/logos/partners/dpd.webp"
+  },
+  {
+    "name": "DSV",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:DSV",
+    "logoPath": "/logos/partners/dsv.webp"
+  },
+  {
+    "name": "Dunelm",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:Dunelm",
+    "logoPath": "/logos/partners/dunelm.webp"
+  },
+  {
+    "name": "Dunnes",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "domain:dunnesstores.com",
+    "logoPath": "/logos/partners/dunnes.webp"
+  },
+  {
+    "name": "DX Delivery",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "D",
+    "aliases": [],
+    "logoName": "name:DX Delivery",
+    "logoPath": "/logos/partners/dx-delivery.webp"
+  },
+  {
+    "name": "East Coast Warehouse",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:East Coast Warehouse",
+    "logoPath": "/logos/partners/east-coast-warehouse.webp"
+  },
+  {
+    "name": "Eddie Stobart (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Eddie Stobart (Culina Group)",
+    "logoPath": "/logos/partners/eddie-stobart-culina-group.webp"
+  },
+  {
+    "name": "EDEKA",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:EDEKA",
+    "logoPath": "/logos/partners/edeka.webp"
+  },
+  {
+    "name": "Ei Group Plc",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Ei Group Plc",
+    "logoPath": "/logos/partners/ei-group-plc.webp"
+  },
+  {
+    "name": "El Corte Ingles",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:El Corte Ingles",
+    "logoPath": "/logos/partners/el-corte-ingles.webp"
+  },
+  {
+    "name": "Eroski",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Eroski",
+    "logoPath": "/logos/partners/eroski.webp"
+  },
+  {
+    "name": "Estes Express",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Estes Express",
+    "logoPath": "/logos/partners/estes-express.webp"
+  },
+  {
+    "name": "Eurocell",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Eurocell",
+    "logoPath": "/logos/partners/eurocell.webp"
+  },
+  {
+    "name": "Euronics",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Euronics",
+    "logoPath": "/logos/partners/euronics.webp"
+  },
+  {
+    "name": "Europa Worldwide Group",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Europa Worldwide Group",
+    "logoPath": "/logos/partners/europa-worldwide-group.webp"
+  },
+  {
+    "name": "Evri",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Evri",
+    "logoPath": "/logos/partners/evri.webp"
+  },
+  {
+    "name": "Exertis Ltd",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Exertis Ltd",
+    "logoPath": "/logos/partners/exertis-ltd.webp"
+  },
+  {
+    "name": "Expeditors International",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "E",
+    "aliases": [],
+    "logoName": "name:Expeditors International",
+    "logoPath": "/logos/partners/expeditors-international.webp"
+  },
+  {
+    "name": "FedEx",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "F",
+    "aliases": [
+      "FedEx UK"
+    ],
+    "logoName": "name:FedEx",
+    "logoPath": "/logos/partners/fedex.webp"
+  },
+  {
+    "name": "FNAC",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "F",
+    "aliases": [],
+    "logoName": "name:FNAC",
+    "logoPath": "/logos/partners/fnac.webp"
+  },
+  {
+    "name": "Foodbuy",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "F",
+    "aliases": [],
+    "logoName": "name:Foodbuy",
+    "logoPath": "/logos/partners/foodbuy.webp"
+  },
+  {
+    "name": "Fortec Distribution Network",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "F",
+    "aliases": [],
+    "logoName": "name:Fortec Distribution Network",
+    "logoPath": "/logos/partners/fortec-distribution-network.webp"
+  },
+  {
+    "name": "Fowler Welch (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "F",
+    "aliases": [],
+    "logoName": "name:Fowler Welch (Culina Group)",
+    "logoPath": "/logos/partners/fowler-welch-culina-group.webp"
+  },
+  {
+    "name": "Franprix",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "F",
+    "aliases": [],
+    "logoName": "name:Franprix",
+    "logoPath": "/logos/partners/franprix.webp"
+  },
+  {
+    "name": "Freightliner",
+    "category": "Logistics",
+    "region": "North America",
+    "letter": "F",
+    "aliases": [],
+    "logoName": "name:Freightliner",
+    "logoPath": "/logos/partners/freightliner.webp"
+  },
+  {
+    "name": "Gap Inc.",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:Gap Inc.",
+    "logoPath": "/logos/partners/gap-inc.webp"
+  },
+  {
+    "name": "GB Railfreight",
+    "category": "Logistics",
+    "region": "North America",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:GB Railfreight",
+    "logoPath": "/logos/partners/gb-railfreight.webp"
+  },
+  {
+    "name": "GEODIS",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:GEODIS",
+    "logoPath": "/logos/partners/geodis.webp"
+  },
+  {
+    "name": "GLS",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:GLS",
+    "logoPath": "/logos/partners/gls.webp"
+  },
+  {
+    "name": "Google UK",
+    "category": "Other",
+    "region": "UK & Ireland",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:Google UK",
+    "logoPath": "/logos/partners/google-uk.webp"
+  },
+  {
+    "name": "Great Bear Distribution (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:Great Bear Distribution (Culina Group)",
+    "logoPath": "/logos/partners/great-bear-distribution-culina-group.webp"
+  },
+  {
+    "name": "Greencore",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:Greencore",
+    "logoPath": "/logos/partners/greencore.webp"
+  },
+  {
+    "name": "GXO Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "G",
+    "aliases": [],
+    "logoName": "name:GXO Logistics",
+    "logoPath": "/logos/partners/gxo-logistics.webp"
+  },
+  {
+    "name": "H-E-B",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:H-E-B",
+    "logoPath": "/logos/partners/h-e-b.webp"
+  },
+  {
+    "name": "Hellmann Worldwide Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:Hellmann Worldwide Logistics",
+    "logoPath": "/logos/partners/hellmann-worldwide-logistics.webp"
+  },
+  {
+    "name": "HEMA",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:HEMA",
+    "logoPath": "/logos/partners/hema.webp"
+  },
+  {
+    "name": "Hermes Europe",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:Hermes Europe",
+    "logoPath": "/logos/partners/hermes-europe.webp"
+  },
+  {
+    "name": "HMV",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:HMV",
+    "logoPath": "/logos/partners/hmv.webp"
+  },
+  {
+    "name": "Hobbycraft",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:Hobbycraft",
+    "logoPath": "/logos/partners/hobbycraft.webp"
+  },
+  {
+    "name": "Homebase",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "name:Homebase",
+    "logoPath": "/logos/partners/homebase.webp"
+  },
+  {
+    "name": "Howard Tenens Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "H",
+    "aliases": [],
+    "logoName": "domain:tenens.com",
+    "logoPath": "/logos/partners/howard-tenens-logistics.webp"
+  },
+  {
+    "name": "Iceland",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "I",
+    "aliases": [
+      "Iceland Legacy"
+    ],
+    "logoName": "name:Iceland",
+    "logoPath": "/logos/partners/iceland.webp"
+  },
+  {
+    "name": "IKEA",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "I",
+    "aliases": [],
+    "logoName": "name:IKEA",
+    "logoPath": "/logos/partners/ikea.webp"
+  },
+  {
+    "name": "InPost UK",
+    "category": "Logistics",
+    "region": "UK & Ireland",
+    "letter": "I",
+    "aliases": [],
+    "logoName": "name:InPost UK",
+    "logoPath": "/logos/partners/inpost-uk.webp"
+  },
+  {
+    "name": "Intermarché",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "I",
+    "aliases": [],
+    "logoName": "name:Intermarché",
+    "logoPath": "/logos/partners/intermarche.webp"
+  },
+  {
+    "name": "International Road Ferry (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "I",
+    "aliases": [],
+    "logoName": "name:International Road Ferry (Culina Group)",
+    "logoPath": "/logos/partners/international-road-ferry-culina-group.webp"
+  },
+  {
+    "name": "IPS (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "I",
+    "aliases": [],
+    "logoName": "name:IPS (Culina Group)",
+    "logoPath": "/logos/partners/ips-culina-group.webp"
+  },
+  {
+    "name": "J D Wetherspoon plc",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "J",
+    "aliases": [],
+    "logoName": "name:J D Wetherspoon plc",
+    "logoPath": "/logos/partners/j-d-wetherspoon-plc.webp"
+  },
+  {
+    "name": "J.B. Hunt",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "J",
+    "aliases": [],
+    "logoName": "name:J.B. Hunt",
+    "logoPath": "/logos/partners/j-b-hunt.webp"
+  },
+  {
+    "name": "JD Sports",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "J",
+    "aliases": [],
+    "logoName": "name:JD Sports",
+    "logoPath": "/logos/partners/jd-sports.webp"
+  },
+  {
+    "name": "Jewson",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "J",
+    "aliases": [],
+    "logoName": "name:Jewson",
+    "logoPath": "/logos/partners/jewson.webp"
+  },
+  {
+    "name": "John Lewis",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "J",
+    "aliases": [],
+    "logoName": "name:John Lewis",
+    "logoPath": "/logos/partners/john-lewis.webp"
+  },
+  {
+    "name": "Jumbo Supermarkets",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "J",
+    "aliases": [],
+    "logoName": "name:Jumbo Supermarkets",
+    "logoPath": "/logos/partners/jumbo-supermarkets.webp"
+  },
+  {
+    "name": "Kaufland",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "K",
+    "aliases": [],
+    "logoName": "name:Kaufland",
+    "logoPath": "/logos/partners/kaufland.webp"
+  },
+  {
+    "name": "Kintetsu World Express",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "K",
+    "aliases": [],
+    "logoName": "name:Kintetsu World Express",
+    "logoPath": "/logos/partners/kintetsu-world-express.webp"
+  },
+  {
+    "name": "Kohl’s",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "K",
+    "aliases": [],
+    "logoName": "name:Kohl’s",
+    "logoPath": "/logos/partners/kohl-s.webp"
+  },
+  {
+    "name": "Kroger",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "K",
+    "aliases": [],
+    "logoName": "name:Kroger",
+    "logoPath": "/logos/partners/kroger.webp"
+  },
+  {
+    "name": "Kuehne + Nagel",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "K",
+    "aliases": [
+      "K+N"
+    ],
+    "logoName": "name:Kuehne + Nagel",
+    "logoPath": "/logos/partners/kuehne-nagel.webp"
+  },
+  {
+    "name": "L Brands",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:L Brands",
+    "logoPath": "/logos/partners/l-brands.webp"
+  },
+  {
+    "name": "La Poste",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:La Poste",
+    "logoPath": "/logos/partners/la-poste.webp"
+  },
+  {
+    "name": "La Redoute",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:La Redoute",
+    "logoPath": "/logos/partners/la-redoute.webp"
+  },
+  {
+    "name": "Landmark Wholesale",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "domain:landmarkwholesale.co.uk",
+    "logoPath": "/logos/partners/landmark-wholesale.webp"
+  },
+  {
+    "name": "Law Distribution",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:Law Distribution",
+    "logoPath": "/logos/partners/law-distribution.webp"
+  },
+  {
+    "name": "Leroy Merlin",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:Leroy Merlin",
+    "logoPath": "/logos/partners/leroy-merlin.webp"
+  },
+  {
+    "name": "Lidl Ireland",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "L",
+    "aliases": [
+      "Lidl Ireland GmbH"
+    ],
+    "logoName": "name:Lidl Ireland",
+    "logoPath": "/logos/partners/lidl-ireland.webp"
+  },
+  {
+    "name": "Lidl Stiftung",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:Lidl Stiftung",
+    "logoPath": "/logos/partners/lidl-stiftung.webp"
+  },
+  {
+    "name": "Lidl UK",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "L",
+    "aliases": [
+      "Lidl UK Frozen"
+    ],
+    "logoName": "name:Lidl UK",
+    "logoPath": "/logos/partners/lidl-uk.webp"
+  },
+  {
+    "name": "Lloyds Pharmacy",
+    "category": "Healthcare",
+    "region": "North America",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:Lloyds Pharmacy",
+    "logoPath": "/logos/partners/lloyds-pharmacy.webp"
+  },
+  {
+    "name": "Londis",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "name:Londis",
+    "logoPath": "/logos/partners/londis.webp"
+  },
+  {
+    "name": "Lowe’s",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "L",
+    "aliases": [],
+    "logoName": "domain:lowes.com",
+    "logoPath": "/logos/partners/lowe-s.webp"
+  },
+  {
+    "name": "M&S",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:M&S",
+    "logoPath": "/logos/partners/m-and-s.webp"
+  },
+  {
+    "name": "Macy’s",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "domain:macys.com",
+    "logoPath": "/logos/partners/macy-s.webp"
+  },
+  {
+    "name": "Maersk Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Maersk Logistics",
+    "logoPath": "/logos/partners/maersk-logistics.webp"
+  },
+  {
+    "name": "Makro",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Makro",
+    "logoPath": "/logos/partners/makro.webp"
+  },
+  {
+    "name": "Manor",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Manor",
+    "logoPath": "/logos/partners/manor.webp"
+  },
+  {
+    "name": "Maritime Transport",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Maritime Transport",
+    "logoPath": "/logos/partners/maritime-transport.webp"
+  },
+  {
+    "name": "Martin McColl",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Martin McColl",
+    "logoPath": "/logos/partners/martin-mccoll.webp"
+  },
+  {
+    "name": "MediaMarkt",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:MediaMarkt",
+    "logoPath": "/logos/partners/mediamarkt.webp"
+  },
+  {
+    "name": "Meijer",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Meijer",
+    "logoPath": "/logos/partners/meijer.webp"
+  },
+  {
+    "name": "Menzies Distribution",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Menzies Distribution",
+    "logoPath": "/logos/partners/menzies-distribution.webp"
+  },
+  {
+    "name": "Metro Inc",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Metro Inc",
+    "logoPath": "/logos/partners/metro-inc.webp"
+  },
+  {
+    "name": "Migros",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Migros",
+    "logoPath": "/logos/partners/migros.webp"
+  },
+  {
+    "name": "MMi Distribution (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "domain:culina.co.uk",
+    "logoPath": "/logos/partners/mmi-distribution-culina-group.webp"
+  },
+  {
+    "name": "Morrisons",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "M",
+    "aliases": [
+      "Morrisons Cafe & Frozen",
+      "Morrisons Edifact"
+    ],
+    "logoName": "name:Morrisons",
+    "logoPath": "/logos/partners/morrisons.webp"
+  },
+  {
+    "name": "Moto",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Moto",
+    "logoPath": "/logos/partners/moto.webp"
+  },
+  {
+    "name": "MSC Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:MSC Logistics",
+    "logoPath": "/logos/partners/msc-logistics.webp"
+  },
+  {
+    "name": "Musgrave Group",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Musgrave Group",
+    "logoPath": "/logos/partners/musgrave-group.webp"
+  },
+  {
+    "name": "Musgrave NI",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "M",
+    "aliases": [
+      "Musgrave NI Ambient",
+      "Musgrave NI Cash and Carry",
+      "Musgrave NI Central Billing",
+      "Musgrave NI Chilled & Frozen",
+      "Musgrave NI Day Today"
+    ],
+    "logoName": "name:Musgrave NI",
+    "logoPath": "/logos/partners/musgrave-ni.webp"
+  },
+  {
+    "name": "Musgrave Retail Partners GB",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Musgrave Retail Partners GB",
+    "logoPath": "/logos/partners/musgrave-retail-partners-gb.webp"
+  },
+  {
+    "name": "Musgrave Retail Partners Ireland",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Musgrave Retail Partners Ireland",
+    "logoPath": "/logos/partners/musgrave-retail-partners-ireland.webp"
+  },
+  {
+    "name": "Musgrave Retail Partners NI Ltd",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Musgrave Retail Partners NI Ltd",
+    "logoPath": "/logos/partners/musgrave-retail-partners-ni-ltd.webp"
+  },
+  {
+    "name": "Musgrave ROI",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "M",
+    "aliases": [
+      "Musgrave ROI Ambient",
+      "Musgrave ROI Cash and Carry",
+      "Musgrave ROI Central Billing",
+      "Musgrave ROI Chilled & Frozen",
+      "Musgrave ROI Day Today"
+    ],
+    "logoName": "name:Musgrave ROI",
+    "logoPath": "/logos/partners/musgrave-roi.webp"
+  },
+  {
+    "name": "Musgrave Wholesale Services",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "M",
+    "aliases": [],
+    "logoName": "name:Musgrave Wholesale Services",
+    "logoPath": "/logos/partners/musgrave-wholesale-services.webp"
+  },
+  {
+    "name": "Next",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "name:Next",
+    "logoPath": "/logos/partners/next.webp"
+  },
+  {
+    "name": "NFT Distribution",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "name:NFT Distribution",
+    "logoPath": "/logos/partners/nft-distribution.webp"
+  },
+  {
+    "name": "Nine Elms",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "name:Nine Elms",
+    "logoPath": "/logos/partners/nine-elms.webp"
+  },
+  {
+    "name": "Nippon Express",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "name:Nippon Express",
+    "logoPath": "/logos/partners/nippon-express.webp"
+  },
+  {
+    "name": "Nisa",
+    "category": "Wholesale",
+    "region": "UK & Ireland",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "domain:nisalocally.co.uk",
+    "logoPath": "/logos/partners/nisa.webp"
+  },
+  {
+    "name": "NMBS",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "name:NMBS",
+    "logoPath": "/logos/partners/nmbs.webp"
+  },
+  {
+    "name": "Nordstrom",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "N",
+    "aliases": [],
+    "logoName": "name:Nordstrom",
+    "logoPath": "/logos/partners/nordstrom.webp"
+  },
+  {
+    "name": "Oakland Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "O",
+    "aliases": [],
+    "logoName": "name:Oakland Logistics",
+    "logoPath": "/logos/partners/oakland-logistics.webp"
+  },
+  {
+    "name": "Ocado",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "O",
+    "aliases": [],
+    "logoName": "name:Ocado",
+    "logoPath": "/logos/partners/ocado.webp"
+  },
+  {
+    "name": "Office Depot",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "O",
+    "aliases": [],
+    "logoName": "name:Office Depot",
+    "logoPath": "/logos/partners/office-depot.webp"
+  },
+  {
+    "name": "Old Dominion Freight Line",
+    "category": "Logistics",
+    "region": "North America",
+    "letter": "O",
+    "aliases": [],
+    "logoName": "domain:odfl.com",
+    "logoPath": "/logos/partners/old-dominion-freight-line.webp"
+  },
+  {
+    "name": "One Stop",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "O",
+    "aliases": [],
+    "logoName": "name:One Stop",
+    "logoPath": "/logos/partners/one-stop.webp"
+  },
+  {
+    "name": "OTTO Group",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "O",
+    "aliases": [],
+    "logoName": "name:OTTO Group",
+    "logoPath": "/logos/partners/otto-group.webp"
+  },
+  {
+    "name": "Palletline",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Palletline",
+    "logoPath": "/logos/partners/palletline.webp"
+  },
+  {
+    "name": "Palletways",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Palletways",
+    "logoPath": "/logos/partners/palletways.webp"
+  },
+  {
+    "name": "ParcelForce",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:ParcelForce",
+    "logoPath": "/logos/partners/parcelforce.webp"
+  },
+  {
+    "name": "Peter Green Chilled",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Peter Green Chilled",
+    "logoPath": "/logos/partners/peter-green-chilled.webp"
+  },
+  {
+    "name": "PetSmart",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:PetSmart",
+    "logoPath": "/logos/partners/petsmart.webp"
+  },
+  {
+    "name": "Pietercil",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "domain:pietercil.com",
+    "logoPath": "/logos/partners/pietercil.webp"
+  },
+  {
+    "name": "Pilot Freight",
+    "category": "Logistics",
+    "region": "North America",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Pilot Freight",
+    "logoPath": "/logos/partners/pilot-freight.webp"
+  },
+  {
+    "name": "PostNL",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:PostNL",
+    "logoPath": "/logos/partners/postnl.webp"
+  },
+  {
+    "name": "PostNord",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:PostNord",
+    "logoPath": "/logos/partners/postnord.webp"
+  },
+  {
+    "name": "Premier Foods",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Premier Foods",
+    "logoPath": "/logos/partners/premier-foods.webp"
+  },
+  {
+    "name": "Premier Stores",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Premier Stores",
+    "logoPath": "/logos/partners/premier-stores.webp"
+  },
+  {
+    "name": "Primark",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Primark",
+    "logoPath": "/logos/partners/primark.webp"
+  },
+  {
+    "name": "Publix",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Publix",
+    "logoPath": "/logos/partners/publix.webp"
+  },
+  {
+    "name": "Purolator",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "P",
+    "aliases": [],
+    "logoName": "name:Purolator",
+    "logoPath": "/logos/partners/purolator.webp"
+  },
+  {
+    "name": "Reed Boardall",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Reed Boardall",
+    "logoPath": "/logos/partners/reed-boardall.webp"
+  },
+  {
+    "name": "REI",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:REI",
+    "logoPath": "/logos/partners/rei.webp"
+  },
+  {
+    "name": "Rhenus Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Rhenus Logistics",
+    "logoPath": "/logos/partners/rhenus-logistics.webp"
+  },
+  {
+    "name": "River Island",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:River Island",
+    "logoPath": "/logos/partners/river-island.webp"
+  },
+  {
+    "name": "Robert Dyas Holdings",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Robert Dyas Holdings",
+    "logoPath": "/logos/partners/robert-dyas-holdings.webp"
+  },
+  {
+    "name": "Ross Stores",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Ross Stores",
+    "logoPath": "/logos/partners/ross-stores.webp"
+  },
+  {
+    "name": "Royal Mail",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Royal Mail",
+    "logoPath": "/logos/partners/royal-mail.webp"
+  },
+  {
+    "name": "Ryder",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Ryder",
+    "logoPath": "/logos/partners/ryder.webp"
+  },
+  {
+    "name": "Ryman",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "R",
+    "aliases": [],
+    "logoName": "name:Ryman",
+    "logoPath": "/logos/partners/ryman.webp"
+  },
+  {
+    "name": "S&W Wholesale",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:S&W Wholesale",
+    "logoPath": "/logos/partners/s-and-w-wholesale.webp"
+  },
+  {
+    "name": "Sainsburys",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "S",
+    "aliases": [
+      "Sainsburys Frozen"
+    ],
+    "logoName": "name:Sainsburys",
+    "logoPath": "/logos/partners/sainsburys.webp"
+  },
+  {
+    "name": "Saks Fifth Avenue",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Saks Fifth Avenue",
+    "logoPath": "/logos/partners/saks-fifth-avenue.webp"
+  },
+  {
+    "name": "Saturn",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Saturn",
+    "logoPath": "/logos/partners/saturn.webp"
+  },
+  {
+    "name": "Savers",
+    "category": "Healthcare",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Savers",
+    "logoPath": "/logos/partners/savers.webp"
+  },
+  {
+    "name": "Schneider Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Schneider Logistics",
+    "logoPath": "/logos/partners/schneider-logistics.webp"
+  },
+  {
+    "name": "Scotts & Co",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Scotts & Co",
+    "logoPath": "/logos/partners/scotts-and-co.webp"
+  },
+  {
+    "name": "ScrewFix",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:ScrewFix",
+    "logoPath": "/logos/partners/screwfix.webp"
+  },
+  {
+    "name": "SEKO Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:SEKO Logistics",
+    "logoPath": "/logos/partners/seko-logistics.webp"
+  },
+  {
+    "name": "Sephora US",
+    "category": "Healthcare",
+    "region": "North America",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Sephora US",
+    "logoPath": "/logos/partners/sephora-us.webp"
+  },
+  {
+    "name": "Sligro",
+    "category": "Wholesale",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Sligro",
+    "logoPath": "/logos/partners/sligro.webp"
+  },
+  {
+    "name": "Socomo",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Socomo",
+    "logoPath": "/logos/partners/socomo.webp"
+  },
+  {
+    "name": "Spar",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Spar",
+    "logoPath": "/logos/partners/spar.webp"
+  },
+  {
+    "name": "Spar International",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Spar International",
+    "logoPath": "/logos/partners/spar-international.webp"
+  },
+  {
+    "name": "Sports Direct",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Sports Direct",
+    "logoPath": "/logos/partners/sports-direct.webp"
+  },
+  {
+    "name": "Staples",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Staples",
+    "logoPath": "/logos/partners/staples.webp"
+  },
+  {
+    "name": "Starshipit",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Starshipit",
+    "logoPath": "/logos/partners/starshipit.webp"
+  },
+  {
+    "name": "Superdrug",
+    "category": "Healthcare",
+    "region": "Global",
+    "letter": "S",
+    "aliases": [],
+    "logoName": "name:Superdrug",
+    "logoPath": "/logos/partners/superdrug.webp"
+  },
+  {
+    "name": "Target",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Target",
+    "logoPath": "/logos/partners/target.webp"
+  },
+  {
+    "name": "Tesco",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "T",
+    "aliases": [
+      "Tesco Frozen"
+    ],
+    "logoName": "domain:tesco.com",
+    "logoPath": "/logos/partners/tesco.webp"
+  },
+  {
+    "name": "Tesco (IRE)",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Tesco (IRE)",
+    "logoPath": "/logos/partners/tesco-ire.webp"
+  },
+  {
+    "name": "Tesco Europe",
+    "category": "Retail",
+    "region": "Europe",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Tesco Europe",
+    "logoPath": "/logos/partners/tesco-europe.webp"
+  },
+  {
+    "name": "TG Jones Ltd",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:TG Jones Ltd",
+    "logoPath": "/logos/partners/tg-jones-ltd.webp"
+  },
+  {
+    "name": "The Home Depot",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:The Home Depot",
+    "logoPath": "/logos/partners/the-home-depot.webp"
+  },
+  {
+    "name": "The Pallet Network (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:The Pallet Network (Culina Group)",
+    "logoPath": "/logos/partners/the-pallet-network-culina-group.webp"
+  },
+  {
+    "name": "The Very Group",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:The Very Group",
+    "logoPath": "/logos/partners/the-very-group.webp"
+  },
+  {
+    "name": "TJX Companies",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:TJX Companies",
+    "logoPath": "/logos/partners/tjx-companies.webp"
+  },
+  {
+    "name": "TNT",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:TNT",
+    "logoPath": "/logos/partners/tnt.webp"
+  },
+  {
+    "name": "Toolstation",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Toolstation",
+    "logoPath": "/logos/partners/toolstation.webp"
+  },
+  {
+    "name": "Topps Tiles",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Topps Tiles",
+    "logoPath": "/logos/partners/topps-tiles.webp"
+  },
+  {
+    "name": "Toshiba UK",
+    "category": "Other",
+    "region": "UK & Ireland",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Toshiba UK",
+    "logoPath": "/logos/partners/toshiba-uk.webp"
+  },
+  {
+    "name": "Travis Perkins Trading Co",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Travis Perkins Trading Co",
+    "logoPath": "/logos/partners/travis-perkins-trading-co.webp"
+  },
+  {
+    "name": "Tuffnells",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Tuffnells",
+    "logoPath": "/logos/partners/tuffnells.webp"
+  },
+  {
+    "name": "Turners (Soham)",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "T",
+    "aliases": [],
+    "logoName": "name:Turners (Soham)",
+    "logoPath": "/logos/partners/turners-soham.webp"
+  },
+  {
+    "name": "UK Mail (DHL Parcel UK)",
+    "category": "Logistics",
+    "region": "UK & Ireland",
+    "letter": "U",
+    "aliases": [],
+    "logoName": "name:UK Mail (DHL Parcel UK)",
+    "logoPath": "/logos/partners/uk-mail-dhl-parcel-uk.webp"
+  },
+  {
+    "name": "Ultra Beauty",
+    "category": "Healthcare",
+    "region": "Global",
+    "letter": "U",
+    "aliases": [],
+    "logoName": "name:Ultra Beauty",
+    "logoPath": "/logos/partners/ultra-beauty.webp"
+  },
+  {
+    "name": "Unipart Logistics",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "U",
+    "aliases": [],
+    "logoName": "name:Unipart Logistics",
+    "logoPath": "/logos/partners/unipart-logistics.webp"
+  },
+  {
+    "name": "UPS",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "U",
+    "aliases": [
+      "UPS UK"
+    ],
+    "logoName": "name:UPS",
+    "logoPath": "/logos/partners/ups.webp"
+  },
+  {
+    "name": "Waitrose",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "domain:waitrose.com",
+    "logoPath": "/logos/partners/waitrose.webp"
+  },
+  {
+    "name": "Walmart",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Walmart",
+    "logoPath": "/logos/partners/walmart.webp"
+  },
+  {
+    "name": "Warrens (Culina Group)",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Warrens (Culina Group)",
+    "logoPath": "/logos/partners/warrens-culina-group.webp"
+  },
+  {
+    "name": "Waterstones",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Waterstones",
+    "logoPath": "/logos/partners/waterstones.webp"
+  },
+  {
+    "name": "Wayfair",
+    "category": "Retail",
+    "region": "North America",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Wayfair",
+    "logoPath": "/logos/partners/wayfair.webp"
+  },
+  {
+    "name": "WH Smith Travel",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:WH Smith Travel",
+    "logoPath": "/logos/partners/wh-smith-travel.webp"
+  },
+  {
+    "name": "Whistl",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Whistl",
+    "logoPath": "/logos/partners/whistl.webp"
+  },
+  {
+    "name": "Wickes",
+    "category": "Retail",
+    "region": "UK & Ireland",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Wickes",
+    "logoPath": "/logos/partners/wickes.webp"
+  },
+  {
+    "name": "Wilkinson",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Wilkinson",
+    "logoPath": "/logos/partners/wilkinson.webp"
+  },
+  {
+    "name": "Wincanton",
+    "category": "Logistics",
+    "region": "Global",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Wincanton",
+    "logoPath": "/logos/partners/wincanton.webp"
+  },
+  {
+    "name": "Wyevale Garden Centres",
+    "category": "Retail",
+    "region": "Global",
+    "letter": "W",
+    "aliases": [],
+    "logoName": "name:Wyevale Garden Centres",
+    "logoPath": "/logos/partners/wyevale-garden-centres.webp"
+  }
+]

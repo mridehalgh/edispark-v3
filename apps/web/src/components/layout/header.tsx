@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2, FileText, Files, Handshake, LayoutDashboard, Link2, Menu, Sparkles } from "lucide-react"
+import { Building2, FileText, Files, Handshake, LayoutDashboard, Link2, Menu, Shield, Sparkles } from "lucide-react"
 import { NavLink } from "react-router-dom"
 
 import styles from "@/app/overview/dispatch.module.css"
@@ -24,10 +24,11 @@ const networkLinks = [
   { label: "AI", href: "/ai", icon: Sparkles },
 ]
 
-function NavigationLinks({ admin, mobile = false }: { admin: boolean; mobile?: boolean }) {
-  const groups = admin
+function NavigationLinks({ admin, platform, hasWorkspace, mobile = false }: { admin: boolean; platform: boolean; hasWorkspace: boolean; mobile?: boolean }) {
+  const groups: { label?: string; links: typeof workLinks }[] = admin
     ? [{ label: "Work", links: workLinks }, { label: "Network", links: networkLinks }]
-    : [{ label: undefined, links: workLinks.slice(0, 2) }]
+    : hasWorkspace ? [{ label: undefined, links: workLinks.slice(0, 2) }] : []
+  if (platform) groups.push({ label: "Platform", links: [{ label: "Managed partners", href: "/platform", icon: Shield }] })
   return (
     <nav aria-label="Primary navigation" className="space-y-6">
       {groups.map((group, index) => <div key={group.label ?? index}>
@@ -70,7 +71,7 @@ export default function Header() {
     <>
       <aside className={cn("fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r lg:flex", styles.shellRail)}>
         <div className="flex h-16 items-center border-b px-5"><Brand /></div>
-        <div className="flex-1 px-3 py-5"><NavigationLinks admin={admin} /></div>
+        <div className="flex-1 px-3 py-5"><NavigationLinks admin={admin} platform={access?.platformRole === "platform_admin"} hasWorkspace={!!access?.organizationRole} /></div>
         <div className="border-t px-3 py-3">
           {admin ? <NavLink to="/organisation/people" className={({ isActive }) => cn("mb-2 flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground", isActive && "bg-accent text-primary")}><Building2 className="h-4 w-4" />Organisation</NavLink> : null}
         </div>
@@ -88,7 +89,7 @@ export default function Header() {
               <SheetHeader className="border-b px-5 py-4 text-left"><SheetTitle><Brand /></SheetTitle></SheetHeader>
               <div className="border-b px-3 py-3"><OrgSwitcher /></div>
               <div className="px-3 py-5">
-                <NavigationLinks admin={admin} mobile />
+                <NavigationLinks admin={admin} platform={access?.platformRole === "platform_admin"} hasWorkspace={!!access?.organizationRole} mobile />
                 {admin ? <div className="mt-6 border-t pt-4"><SheetClose asChild><NavLink to="/organisation/people" className={({ isActive }) => cn("flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground", isActive && "bg-accent text-primary")}><Building2 className="h-4 w-4" />Organisation</NavLink></SheetClose></div> : null}
               </div>
             </SheetContent>

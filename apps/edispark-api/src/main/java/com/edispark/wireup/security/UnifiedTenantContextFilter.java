@@ -15,7 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 final class UnifiedTenantContextFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/");
+        String path = request.getRequestURI();
+        return !path.startsWith("/api/") || path.startsWith("/api/platform/");
     }
 
     @Override

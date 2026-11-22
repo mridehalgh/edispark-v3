@@ -12,7 +12,7 @@ import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @RestControllerAdvice(basePackages = {"com.edispark.transformations.api", "com.edispark.partnerships.api",
-        "com.edispark.exchange.api", "com.edispark.integrationapplication"})
+        "com.edispark.exchange.api", "com.edispark.integrationapplication", "com.edispark.wireup.managed"})
 @org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
 public class IntegrationExceptionHandler {
     @ExceptionHandler(com.edispark.transformations.application.RetainedSourceChanged.class)

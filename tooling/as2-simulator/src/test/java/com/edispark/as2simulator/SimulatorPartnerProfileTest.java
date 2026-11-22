@@ -6,9 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
 class SimulatorPartnerProfileTest {
-    @Test void mapsBothLogicalReceiverProfilesToTheConfiguredPrivateKeyAlias() throws Exception {
+    @Test void mapsLogicalReceiverProfilesToTheConfiguredPrivateKeyAlias() throws Exception {
         var factory = new SimulatorPartnershipFactory("SIMULATOR", "SIMULATOR_TRADACOMS", "simulator", "EDISPARK");
-        for (String id : java.util.List.of("SIMULATOR", "SIMULATOR_TRADACOMS")) {
+        for (String id : java.util.List.of("SIMULATOR", "SIMULATOR_TRADACOMS", "SIMULATOR_TESCO")) {
             var partnership = new com.helger.phase2.partner.Partnership(id);
             partnership.setSenderAS2ID("EDISPARK"); partnership.setReceiverAS2ID(id);
             factory.onBeforeAddPartnership(partnership);
@@ -32,12 +32,13 @@ class SimulatorPartnerProfileTest {
     void selectsTheAs2IdentityThatMatchesTheSeededEdiPartner() {
         assertThat(controller.senderFor("EDIFACT")).isEqualTo("SIMULATOR");
         assertThat(controller.senderFor("tradacoms")).isEqualTo("SIMULATOR_TRADACOMS");
+        assertThat(controller.senderFor("tesco")).isEqualTo("SIMULATOR_TESCO");
     }
 
     @Test
     void rejectsUnknownProfilesWithTheAllowedCorrection() {
         assertThatThrownBy(() -> controller.senderFor("x12"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Unknown simulator profile. Choose EDIFACT or TRADACOMS.");
+                .hasMessage("Unknown simulator profile. Choose EDIFACT, TRADACOMS or TESCO.");
     }
 }

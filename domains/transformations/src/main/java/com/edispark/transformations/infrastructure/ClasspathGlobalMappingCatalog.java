@@ -93,6 +93,7 @@ public final class ClasspathGlobalMappingCatalog implements GlobalMappingCatalog
         published.add(OrderResponseCoreMapping.create(sample("UBL Order Response 2.1 JSON",
                 resource("ubl-order-response-core-v2.json"), null, "EDIFACT D96A core demo model",
                 resource("order-response-core-v2-model.json"), resource("edifact-ordrsp-core-v2.edi"))));
+        published.addAll(TescoUkMappings.revisions());
         mappings = List.copyOf(published);
     }
 

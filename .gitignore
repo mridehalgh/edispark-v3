@@ -171,3 +171,4 @@ stats.json
 .ci-tools/
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+vendor/partners/migs/

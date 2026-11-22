@@ -5,6 +5,10 @@ import java.util.UUID;
 public interface QualificationAcl {
     boolean publishedMappingMatches(UUID mappingRevisionId, UUID sourceSchemaId, UUID targetSchemaId);
     boolean activeAs2ConnectionExists(UUID connectionId);
+    default java.util.List<String> managedQualificationFailures(
+            com.edispark.partnerships.domain.model.TradingAgreement agreement) {
+        return java.util.List.of();
+    }
     default RuleEvidence targetRuleEvidence(UUID mappingRevisionId) {
         return new RuleEvidence(false, "", java.util.List.of("Target qualification is unavailable for Order Response."));
     }

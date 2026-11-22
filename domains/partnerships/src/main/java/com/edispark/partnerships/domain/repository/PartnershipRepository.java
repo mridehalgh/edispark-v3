@@ -8,6 +8,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface PartnershipRepository extends PartnershipCreation {
+    default TradingPartner insertPartnerDraft(TradingPartner draft) {
+        return findPartner(draft.id()).orElseGet(() -> savePartner(draft));
+    }
+    default TradingAgreement insertAgreementDraft(TradingAgreement draft) {
+        return findAgreement(draft.id()).orElseGet(() -> saveAgreement(draft));
+    }
     TradingPartner savePartner(TradingPartner partner);
     Optional<TradingPartner> findPartner(UUID id);
     List<TradingPartner> listPartners();

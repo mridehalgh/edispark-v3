@@ -57,6 +57,18 @@ class DocumentWorkflowAuthorizationTest {
         mvc.perform(post("/api/exchanges/readiness").header("Authorization", "Bearer no-tenant")).andExpect(status().isUnauthorized());
     }
 
+    @Test void platformCatalogueAuthorizationIsIndependentFromOrganisationRoles() throws Exception {
+        String platform = "/api/platform/managed-partners";
+        mvc.perform(post(platform).header("Authorization", "Bearer platform")).andExpect(status().isOk());
+        for (String role : new String[]{"owner", "admin", "member"}) {
+            mvc.perform(post(platform).header("Authorization", "Bearer " + role)).andExpect(status().isForbidden());
+        }
+        mvc.perform(post(platform)).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/managed-partners").header("Authorization", "Bearer platform")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/managed-partners").header("Authorization", "Bearer member")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/managed-partners").header("Authorization", "Bearer owner")).andExpect(status().isOk());
+    }
+
     @Configuration(proxyBeanMethods = false)
     @EnableWebSecurity
     @EnableWebMvc
@@ -67,6 +79,7 @@ class DocumentWorkflowAuthorizationTest {
                 var jwt = Jwt.withTokenValue(token).header("alg", "test").subject("test-actor")
                         .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(60))
                         .claim("organization_role", token.equals("no-tenant") ? "member" : token);
+                if (token.equals("platform")) return jwt.claim("platform_role", "platform_admin").build();
                 if (!token.equals("no-tenant")) jwt.claim("tenant_id", "2OnHVzeAJKwm0ThFLcy1HfLHGPm");
                 return jwt.build();
             };

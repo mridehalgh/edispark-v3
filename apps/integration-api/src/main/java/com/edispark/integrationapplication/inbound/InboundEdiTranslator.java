@@ -74,10 +74,12 @@ public final class InboundEdiTranslator {
         String reference = element(required(segments, "BGM+"), 1);
         String issueDate = segments.stream().filter(item -> item.startsWith("DTM+137:"))
                 .map(item -> composite(element(item, 0), 1)).findFirst().map(this::date).orElse("");
-        String buyer = party(segments, "BY");
-        String supplier = party(segments, "SU");
+        String association = identity.length > 4 ? identity[4] : "";
+        byte[] mappingInputJson = type == BusinessDocumentType.ORDER && "D96A".equals(release) && "EAN008".equals(association)
+                && segments.stream().anyMatch(segment -> segment.startsWith("NAD+SE+"))
+                ? mappingInput.tescoUkOrder(segments) : mappingInput.edifact(segments, type);
         return translation(EdiStandard.EDIFACT, release, messageType, type, reference, issueDate,
-                mappingInput.edifact(segments, type), message);
+                mappingInputJson, message, association);
     }
 
     private Translation tradacoms(InboundEdiBatchSplitter.InboundMessage message) {
@@ -109,15 +111,15 @@ public final class InboundEdiTranslator {
         String sender = element(stx, 1);
         String receiver = element(stx, 2);
         return translation(EdiStandard.TRADACOMS, identity[1], messageType, type, reference, issueDate,
-                mappingInput.tradacoms(segments, type), message);
+                mappingInput.tradacoms(segments, type), message, "");
     }
 
     private Translation translation(EdiStandard standard, String release, String messageType,
             BusinessDocumentType type, String reference, String issueDate, byte[] mappingInputJson,
-            InboundEdiBatchSplitter.InboundMessage message) {
+            InboundEdiBatchSplitter.InboundMessage message, String association) {
         if (reference.isBlank()) throw new IllegalArgumentException("EDI business document reference is required");
         return new Translation(standard, release, messageType, type, mappingInputJson, message.rawMessage(),
-                message.ordinal(), message.messageCount(), message.sourceReference());
+                message.ordinal(), message.messageCount(), message.sourceReference(), association);
     }
     private String party(List<String> segments, String qualifier) {
         return segments.stream().filter(item -> item.startsWith("NAD+" + qualifier + "+"))
@@ -169,5 +171,5 @@ public final class InboundEdiTranslator {
 
     public record Translation(EdiStandard standard, String release, String messageType,
             BusinessDocumentType documentType, byte[] mappingInputJson, byte[] rawMessage,
-            int messageOrdinal, int messageCount, String sourceMessageReference) { }
+            int messageOrdinal, int messageCount, String sourceMessageReference, String association) { }
 }

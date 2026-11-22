@@ -19,6 +19,11 @@ public interface MftRepository extends MftCreation {
 
     record EvidencePage<T>(List<T> items, UUID next) { }
 
+    default boolean as2IdentityPairInUse(String localAs2Id, String remoteAs2Id, UUID except) {
+        return listPartners().stream().anyMatch(partner -> !partner.id().equals(except)
+                && partner.localAs2Id().equals(localAs2Id) && partner.remoteAs2Id().equals(remoteAs2Id));
+    }
+
     PartnerProfile savePartner(PartnerProfile partner);
     PartnerProfile updatePartner(PartnerProfile partner);
     List<PartnerProfile> listPartners();

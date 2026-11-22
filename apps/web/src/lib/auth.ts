@@ -13,7 +13,7 @@ import { dirname } from "node:path"
 
 import { sendTransactionalEmail } from "@/lib/email"
 import { createKmsJwtSigner, getRemoteJwtSigningConfig } from "@/lib/jwt-signing"
-import { isOrganizationRole, type AccessContext, type PlatformRole } from "@/lib/access"
+import { isOrganizationRole, type AccessContext, type OrganizationRole, type PlatformRole } from "@/lib/access"
 import { createAuthPool, createDsqlAccessStore } from "@/lib/auth-dsql"
 
 const productionRuntime = process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build"
@@ -171,24 +171,18 @@ async function defineJwtPayload({
   user: Record<string, unknown>
   session: Record<string, unknown>
 }) {
-  const organizationId = session.activeOrganizationId
-  if (typeof organizationId !== "string" || !organizationId) {
-    throw new Error("An active organization is required to issue a JWT")
-  }
-
   const userId = typeof user.id === "string" ? user.id : undefined
   if (!userId) throw new Error("A user identifier is required to issue a JWT")
-
-  const membership = dsqlAccess ? await dsqlAccess.membership(organizationId, userId) : database.prepare(
-    "SELECT role FROM member WHERE organizationId = ? AND userId = ?",
-  ).get(organizationId, userId) as { role: string } | undefined
-  if (!membership || !isOrganizationRole(membership.role)) {
+  const platformRole = await findPlatformRole(userId)
+  const organizationId = session.activeOrganizationId
+  const membership = typeof organizationId === "string" && organizationId
+    ? dsqlAccess ? await dsqlAccess.membership(organizationId, userId) : database.prepare(
+      "SELECT role FROM member WHERE organizationId = ? AND userId = ?",
+    ).get(organizationId, userId) as { role: string } | undefined : undefined
+  if (typeof organizationId !== "string" || !membership || !isOrganizationRole(membership.role)) {
+    if (platformRole) return { sub: userId, platform_role: platformRole }
     throw new Error("Active organization membership is required to issue a JWT")
   }
-
-  const platformPrincipal = dsqlAccess ? await dsqlAccess.platformPrincipal(userId) : database.prepare(
-    "SELECT role FROM platform_principal WHERE user_id = ?",
-  ).get(userId) as { role: PlatformRole } | undefined
 
   const tenantId = dsqlAccess ? await dsqlAccess.resolveTenantId(organizationId, createTenantId(1)) : resolveTenantId(organizationId)
   const commercial = membership.role !== "member" && await hasMcpAccess({
@@ -203,7 +197,7 @@ async function defineJwtPayload({
       "edi:evidence", "edi:preview", "mft:evidence",
       ...(commercial ? ["edi:commercial"] : []),
     ],
-    ...(platformPrincipal ? { platform_role: platformPrincipal.role } : {}),
+    ...(platformRole ? { platform_role: platformRole } : {}),
   }
 }
 
@@ -407,6 +401,16 @@ async function prepareLocalAuth() {
     process.env.LOCAL_MEMBER_USER_NAME ?? "Operations User",
   )
 
+  if (process.env.LOCAL_PLATFORM_USER_EMAIL && process.env.LOCAL_PLATFORM_USER_PASSWORD) {
+    const platformAdmin = await ensureLocalUser(
+      process.env.LOCAL_PLATFORM_USER_EMAIL,
+      process.env.LOCAL_PLATFORM_USER_PASSWORD,
+      "Local Platform Administrator",
+    )
+    database.prepare("INSERT OR IGNORE INTO platform_principal (user_id, role, created_at) VALUES (?, ?, ?)")
+      .run(platformAdmin.id, "platform_admin", new Date().toISOString())
+  }
+
   const createdAt = new Date().toISOString()
   database.prepare(`
     INSERT OR IGNORE INTO organization (id, name, slug, createdAt)
@@ -490,7 +494,19 @@ export function activateLocalTestWorkspace(email = process.env.LOCAL_TEST_USER_E
   `).run(LOCAL_TEST_ORGANIZATION_ID, user.id)
 }
 
-export async function getRequestAccess(headers: Headers, { includeMcpSetup = false } = {}): Promise<AccessContext | null> {
+async function findPlatformRole(userId: string): Promise<PlatformRole | undefined> {
+  const principal = dsqlAccess ? await dsqlAccess.platformPrincipal(userId) : database.prepare(
+    "SELECT role FROM platform_principal WHERE user_id = ?",
+  ).get(userId) as { role: PlatformRole } | undefined
+  return principal?.role
+}
+
+export async function getRequestPlatformRole(headers: Headers): Promise<PlatformRole | undefined> {
+  const session = await auth.api.getSession({ headers })
+  return session?.user.id ? findPlatformRole(session.user.id) : undefined
+}
+
+export async function getRequestAccess(headers: Headers, { includeMcpSetup = false } = {}): Promise<(AccessContext & { organizationRole: OrganizationRole }) | null> {
   const result = await auth.api.getSession({ headers })
   const session = result?.session as { activeOrganizationId?: string } | undefined
   const user = result?.user as { id?: string } | undefined
@@ -501,16 +517,12 @@ export async function getRequestAccess(headers: Headers, { includeMcpSetup = fal
   ).get(session.activeOrganizationId, user.id) as { role: string } | undefined
   if (!membership || !isOrganizationRole(membership.role)) return null
 
-  const platformPrincipal = dsqlAccess ? await dsqlAccess.platformPrincipal(user.id) : database.prepare(
-    "SELECT role FROM platform_principal WHERE user_id = ?",
-  ).get(user.id) as { role: PlatformRole } | undefined
-
   const endpoint = includeMcpSetup && (membership.role === "admin" || membership.role === "owner")
     && await mcpTenant(session.activeOrganizationId, user.id) ? publicMcpEndpoint() : undefined
 
   return {
     organizationRole: membership.role,
-    platformRole: platformPrincipal?.role,
+    platformRole: await findPlatformRole(user.id),
     ...(endpoint ? { mcpSetup: { endpoint } } : {}),
   }
 }

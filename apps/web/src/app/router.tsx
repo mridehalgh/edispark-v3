@@ -1,5 +1,7 @@
 'use client';
 
+import { ManagedPartnersPage } from "@/app/platform/managed-partners"
+
 import React from 'react';
 import {Navigate, Outlet, RouterProvider, createBrowserRouter, useParams, useRouteError} from "react-router-dom";
 import Header from "@/components/layout/header";
@@ -61,14 +63,10 @@ function LegacyFileRedirect() {
   return <Navigate to={id ? `/files/${id}` : "/files"} replace />
 }
 
-function PlatformBoundary() {
-  return <LayoutBody className="mx-auto w-full max-w-[96rem] py-8"><h1 className="text-2xl font-semibold tracking-tight">Platform</h1></LayoutBody>
-}
-
 function HomeRedirect() {
   const { access, loading } = useAccess()
   if (loading) return <LayoutBody className="py-8"><div className="h-8 w-40 animate-pulse bg-muted" /></LayoutBody>
-  return <Navigate to={access ? "/overview" : "/workspace"} replace />
+  return <Navigate to={access?.organizationRole ? "/overview" : access?.platformRole ? "/platform" : "/workspace"} replace />
 }
 
 function RouterError() {
@@ -168,7 +166,7 @@ function ReactRouterComponent() {
           },
           {
             element: <RequirePlatformAdmin />,
-            children: [{ path: "/platform", element: <PlatformBoundary /> }],
+            children: [{ path: "/platform", element: <ManagedPartnersPage /> }],
           },
         ]
       },

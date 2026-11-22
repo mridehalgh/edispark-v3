@@ -1,5 +1,9 @@
 package com.edispark.wireup.modules;
 
+import com.edispark.wireup.managed.ManagedSetup;
+import com.edispark.partnerships.domain.model.TradingAgreement;
+import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
 import com.edispark.mft.application.MftService;
 import com.edispark.mft.domain.model.PartnerStatus;
 import com.edispark.partnerships.application.QualificationAcl;
@@ -12,10 +16,12 @@ import org.springframework.stereotype.Component;
 final class InProcessQualificationAcl implements QualificationAcl {
     private final MappingService mappings;
     private final MftService mft;
+    private final ObjectProvider<ManagedSetup> managed;
 
-    InProcessQualificationAcl(MappingService mappings, MftService mft) {
+    InProcessQualificationAcl(MappingService mappings, MftService mft, ObjectProvider<ManagedSetup> managed) {
         this.mappings = mappings;
         this.mft = mft;
+        this.managed = managed;
     }
 
     @Override
@@ -63,6 +69,11 @@ final class InProcessQualificationAcl implements QualificationAcl {
                 return InProcessQualificationAcl.this.targetRuleEvidence(id);
             }
         };
+    }
+
+    @Override public List<String> managedQualificationFailures(TradingAgreement agreement) {
+        var setup = managed.getIfAvailable();
+        return setup == null ? List.of() : setup.qualificationFailures(agreement);
     }
 
     @Override public RuleEvidence targetRuleEvidence(UUID id) {

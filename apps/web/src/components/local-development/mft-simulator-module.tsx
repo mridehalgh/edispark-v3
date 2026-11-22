@@ -35,13 +35,13 @@ export function MftSimulatorModule() {
 
   useEffect(() => { void refresh() }, [refresh])
 
-  async function simulate(direction: LocalSimulationDirection) {
+  async function simulate(direction: LocalSimulationDirection, profile?: "TESCO") {
     setBusy(direction); setError(undefined); setNotice(undefined)
     try {
       const response = await fetch("/api/mft/local-simulator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ direction }),
+        body: JSON.stringify({ direction, profile }),
       })
       const body = await response.json().catch(() => undefined)
       if (!response.ok) throw new Error(body?.error?.message ?? "The simulation could not be started.")
@@ -83,6 +83,11 @@ export function MftSimulatorModule() {
           <span className="text-left"><span className="block text-sm">Send invoice</span><span className="block text-[11px] font-normal text-muted-foreground">MFT → simulator</span></span>
         </Button>
       </div>
+
+      <Button variant="outline" className="mt-2 w-full justify-start gap-2" disabled={Boolean(busy)} onClick={() => void simulate("INBOUND", "TESCO")}>
+        <ArrowDownToLine className="h-4 w-4 text-primary" aria-hidden="true" />
+        Receive Tesco UK order
+      </Button>
 
       {error && <p role="alert" className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
       {notice && <p role="status" className="mt-3 rounded-md bg-success/20 px-3 py-2 text-xs text-success-foreground">{notice}</p>}

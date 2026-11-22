@@ -1,9 +1,11 @@
-import { getRequestAccess } from "@/lib/auth"
+import { getRequestAccess, getRequestPlatformRole } from "@/lib/auth"
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
-  const access = await getRequestAccess(request.headers, { includeMcpSetup: true })
+  const workspace = await getRequestAccess(request.headers, { includeMcpSetup: true })
+  const platformRole = workspace ? undefined : await getRequestPlatformRole(request.headers)
+  const access = workspace ?? (platformRole ? { platformRole } : undefined)
   if (!access) {
     return Response.json(
       { error: { code: "UNAUTHENTICATED", message: "Sign in to continue." } },

@@ -25,3 +25,7 @@ Partner and agreement families have stable identities while every editable chang
 | References | Transformations | Published mapping and schema IDs |
 | References | MFT | Active AS2 connection ID |
 | Publishes to | Exchange | Immutable activated agreement snapshot |
+
+## Managed partner templates
+
+System administrators publish versioned partner and AS2 policy templates through the platform catalogue. An organisation administrator applies one revision to create tenant-owned partner, transport and agreement drafts. The setup pins the catalogue revision and references only certificates in that organisation. Managed live agreements retain retailer acceptance evidence for the agreement revision and its current AS2 configuration before activation.

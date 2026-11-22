@@ -66,6 +66,25 @@ class MappingRuntimeTest {
     }
 
     @Test
+    void repeatsNestedPackagesWithinTheirOwnOrderLines() throws Exception {
+        var mapping = MappingRevision.draft("tenant", "Packages by line", UUID.randomUUID(), UUID.randomUUID(), List.of(
+                new MappingNode(UUID.randomUUID(), MappingOperation.COPY, List.of("/items/*/id"), "/lines/*/id", null, null),
+                new MappingNode(UUID.randomUUID(), MappingOperation.OPTIONAL_COPY, List.of("/items/*/packages/*/code"),
+                        "/lines/*/handlingUnits/*/id", null, null)), Instant.now());
+        byte[] input = """
+                {"items":[{"id":"1","packages":[{"code":"BOX1"},{"code":"BOX2"}]},
+                {"id":"2"},{"id":"3","packages":[{"code":"BOX3"}]}]}
+                """.getBytes(StandardCharsets.UTF_8);
+
+        var result = new MappingRuntime(mapper).executeDetailed(mapping, input);
+        assertThat(mapper.readTree(result.output())).isEqualTo(mapper.readTree("""
+                {"lines":[{"id":"1","handlingUnits":[{"id":"BOX1"},{"id":"BOX2"}]},
+                {"id":"2"},{"id":"3","handlingUnits":[{"id":"BOX3"}]}]}
+                """));
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test
     void intentionalOmissionsRequireAReasonAndRemainInEvidence() throws Exception {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> new MappingNode(UUID.randomUUID(), MappingOperation.OMIT,
                 List.of("/note"), "/reviewed", "", null)).hasMessageContaining("business reason");

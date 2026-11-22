@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -43,6 +44,23 @@ public final class EdiPayloadWriter {
     }
 
     public byte[] write(ExchangeCapability capability, byte[] mappedJson) {
+        return write(capability, mappedJson, warning -> { throw new IllegalArgumentException(warning); });
+    }
+
+    public MappingPreview previewMapping(ExchangeCapability capability, byte[] mappedJson) {
+        if (bq(capability)) return new MappingPreview(preview(capability, mappedJson), List.of());
+        var unsupported = new java.util.LinkedHashSet<String>();
+        byte[] output = write(capability, mappedJson, unsupported::add);
+        return new MappingPreview(output, List.copyOf(unsupported));
+    }
+
+    public record MappingPreview(byte[] output, List<String> warnings) { }
+
+    private String unsupportedField(String path) {
+        return "The target encoder cannot represent mapped field " + path + ". Map it to a supported field or review an explicit omission.";
+    }
+
+    private byte[] write(ExchangeCapability capability, byte[] mappedJson, Consumer<String> warning) {
         try {
             if (capability.documentType() == BusinessDocumentType.ORDER_RESPONSE) {
                 if (bq(capability)) throw new IllegalArgumentException("B&Q ACK validation requires its partner contract and reserved sequential transmission controls.");
@@ -62,7 +80,8 @@ public final class EdiPayloadWriter {
                         : TescoUkPayload.despatch(document, control, clock.instant());
                 return payload.getBytes(StandardCharsets.US_ASCII);
             }
-            validateModel(capability, document);
+            validateModel(capability, document, warning);
+            verifySupportedFields(document, "", capability, path -> warning.accept(unsupportedField(path)));
             String payload = capability.standard() == EdiStandard.EDIFACT
                     ? edifact(capability, document) : tradacoms(capability, document);
             return payload.getBytes(StandardCharsets.US_ASCII);
@@ -322,7 +341,7 @@ public final class EdiPayloadWriter {
         return ascii.replace("?", "??").replace("+", "?+").replace(":", "?:").replace("'", "?'");
     }
 
-    private void validateModel(ExchangeCapability capability, JsonNode model) {
+    private void validateModel(ExchangeCapability capability, JsonNode model, Consumer<String> warning) {
         String expectedMessage = switch (capability.documentType()) {
             case ORDER -> "ORDERS"; case ORDER_RESPONSE -> "ORDRSP"; case DESPATCH_ADVICE -> "DESADV";
             case INVOICE -> "INVOIC"; case REMITTANCE_ADVICE -> "REMADV"; case RECEIPT_ADVICE -> "RECADV";
@@ -341,7 +360,7 @@ public final class EdiPayloadWriter {
         for (JsonNode line : model.path("lines")) {
             if (capability.standard() == EdiStandard.TRADACOMS && line.has("name") && line.has("description")
                     && !text(line, "/name", "").equals(text(line, "/description", ""))) {
-                throw new IllegalArgumentException("This target cannot carry separate item names and descriptions. Review an explicit mapping decision.");
+                warning.accept("This target cannot carry separate item names and descriptions. Review an explicit mapping decision.");
             }
             if (text(line, "/id", "").isBlank()) throw new IllegalArgumentException("Every target line needs an identifier.");
             if (capability.documentType() != BusinessDocumentType.REMITTANCE_ADVICE
@@ -349,7 +368,6 @@ public final class EdiPayloadWriter {
                 throw new IllegalArgumentException("Every target line needs a quantity and unit.");
             }
         }
-        verifySupportedFields(model, "", capability);
     }
 
     private long segmentCount(String value) {
@@ -362,9 +380,9 @@ public final class EdiPayloadWriter {
     }
 
     /** A successful JSON mapping must not hide fields that this target encoder never emits. */
-    private void verifySupportedFields(JsonNode node, String path, ExchangeCapability capability) {
-        if (node.isObject()) { node.fields().forEachRemaining(entry -> verifySupportedFields(entry.getValue(), path + "/" + entry.getKey(), capability)); return; }
-        if (node.isArray()) { for (JsonNode child : node) verifySupportedFields(child, path + "/*", capability); return; }
+    private void verifySupportedFields(JsonNode node, String path, ExchangeCapability capability, Consumer<String> unsupportedField) {
+        if (node.isObject()) { node.fields().forEachRemaining(entry -> verifySupportedFields(entry.getValue(), path + "/" + entry.getKey(), capability, unsupportedField)); return; }
+        if (node.isArray()) { for (JsonNode child : node) verifySupportedFields(child, path + "/*", capability, unsupportedField); return; }
         if (node.isNull() || node.asText().isBlank()) return;
         var common = java.util.Set.of("/document/id", "/document/issueDate", "/document/currency", "/document/orderReference",
                 "/parties/sender", "/parties/receiver", "/lines/*/id", "/lines/*/quantity", "/lines/*/unitCode",
@@ -387,7 +405,6 @@ public final class EdiPayloadWriter {
                 || path.startsWith("/delivery/") && !order
                 || path.startsWith("/lines/*/tax") && !invoice
                 || path.equals("/document/totalPaymentAmount") && capability.documentType() != BusinessDocumentType.REMITTANCE_ADVICE;
-        if (unused || !common.contains(path) && !extra.contains(path)) throw new IllegalArgumentException(
-                "The target encoder cannot represent mapped field " + path + ". Map it to a supported field or review an explicit omission.");
+        if (unused || !common.contains(path) && !extra.contains(path)) unsupportedField.accept(path);
     }
 }

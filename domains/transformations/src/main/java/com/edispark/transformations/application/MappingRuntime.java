@@ -91,9 +91,18 @@ public final class MappingRuntime {
     private void apply(JsonNode source, ObjectNode target, MappingNode node, List<String> consumed,
             Map<String, ReferenceTableRevision> tables) {
         if (node.operation() == MappingOperation.OMIT) { consumed.addAll(node.sourcePointers()); return; }
-        String repeated = node.sourcePointers().stream().filter(pointer -> pointer.contains("/*/")).findFirst().orElse(null);
+        int depth = node.sourcePointers().stream().mapToInt(this::loopDepth).max().orElse(0);
+        if (depth != loopDepth(node.targetPointer())) {
+            throw new IllegalArgumentException("Each repeated destination collection needs an aligned source collection.");
+        }
+        expand(source, target, node, consumed, tables, new int[]{10_000});
+    }
+
+    private void expand(JsonNode source, ObjectNode target, MappingNode node, List<String> consumed,
+            Map<String, ReferenceTableRevision> tables, int[] remaining) {
+        String repeated = node.sourcePointers().stream().filter(pointer -> loopDepth(pointer) > 0)
+                .max(java.util.Comparator.comparingInt(this::loopDepth)).orElse(null);
         if (repeated == null) {
-            if (node.targetPointer().contains("/*/")) throw new IllegalArgumentException("A repeated target requires an aligned source collection");
             if (optional(node) && node.sourcePointers().stream().allMatch(pointer -> source.at(pointer).isMissingNode() || source.at(pointer).isNull())) return;
             write(target, node.targetPointer(), value(source, node, tables));
             if (node.operation() != MappingOperation.CONSTANT) {
@@ -102,22 +111,29 @@ public final class MappingRuntime {
             }
             return;
         }
-        if (repeated.indexOf("/*/") != repeated.lastIndexOf("/*/") || !node.targetPointer().contains("/*/")) {
-            throw new IllegalArgumentException("Repeated mapping requires one aligned source and target collection");
-        }
-        JsonNode collection = source.at(repeated.substring(0, repeated.indexOf("/*/")));
+        int wildcard = repeated.indexOf("/*/");
+        JsonNode collection = source.at(repeated.substring(0, wildcard < 0 ? repeated.length() - 2 : wildcard));
         if (!collection.isArray()) {
             if (optional(node)) return;
             throw new IllegalArgumentException("The mapping's repeated source collection is missing");
         }
-        if (collection.size() > 10000) throw new IllegalArgumentException("Repeated mapping exceeds 10000 items");
+        remaining[0] -= collection.size();
+        if (remaining[0] < 0) throw new IllegalArgumentException("Repeated mapping exceeds 10000 items");
         for (int index = 0; index < collection.size(); index++) {
-            String replacement = "/" + index + "/";
+            int position = index;
             MappingNode expanded = new MappingNode(node.id(), node.operation(), node.sourcePointers().stream()
-                    .map(pointer -> pointer.replace("/*/", replacement)).toList(), node.targetPointer().replace("/*/", replacement),
+                    .map(pointer -> replaceLoopIndex(pointer, position)).toList(), replaceLoopIndex(node.targetPointer(), index),
                     node.constant(), node.separator(), node.codeMap(), node.codeList(), node.sourceSyntax(), node.targetSyntax(), node.tableLookup());
-            apply(source, target, expanded, consumed, tables);
+            expand(source, target, expanded, consumed, tables, remaining);
         }
+    }
+
+    private int loopDepth(String pointer) {
+        return (int) java.util.Arrays.stream(pointer.split("/")).filter("*"::equals).count();
+    }
+
+    private String replaceLoopIndex(String pointer, int index) {
+        return pointer.replaceFirst("/\\*(?=/|$)", "/" + index);
     }
 
     private boolean optional(MappingNode node) { return node.operation() == MappingOperation.OPTIONAL_COPY || node.operation() == MappingOperation.OPTIONAL_CODE_LOOKUP; }

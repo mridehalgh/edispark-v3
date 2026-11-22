@@ -67,6 +67,13 @@ public final class MappingService {
     }
     public MappingRevision get(UUID id) { return promote(require(id)); }
     public MappingRevision getPersisted(UUID id) { return require(id); }
+    public com.edispark.transformations.domain.MappingSample bundledSample(MappingRevision mapping) {
+        if (mapping.sample() != null) return mapping.sample();
+        return globalCatalog.list().stream()
+                .filter(candidate -> candidate.sample() != null && candidate.sourceSchemaId().equals(mapping.sourceSchemaId())
+                        && candidate.targetSchemaId().equals(mapping.targetSchemaId()))
+                .map(MappingRevision::sample).findFirst().orElse(null);
+    }
     public com.edispark.transformations.domain.MappingRevisionComparison comparePersisted(UUID baselineId, UUID candidateId) {
         return com.edispark.transformations.domain.MappingRevisionComparison.between(getPersisted(baselineId), getPersisted(candidateId));
     }

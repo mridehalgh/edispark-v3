@@ -1,25 +1,32 @@
 import type { MappingNode } from '@edispark/integration-client'
 
+export function loopDepth(pointer?: string) {
+  return pointer?.split('/').filter((part) => part === '*').length ?? 0
+}
+
 export function previewMapping(input: unknown, nodes: MappingNode[]): unknown {
   const output: Record<string, unknown> = {}
-  function apply(node: MappingNode) {
+  function apply(node: MappingNode, remaining: { items: number }) {
     if (!node.targetPointer || node.operation === 'OMIT') return
-    const repeated = node.sourcePointers?.find((pointer) => pointer.includes('/*/'))
+    const repeated = node.sourcePointers?.reduce<string | undefined>((deepest, pointer) =>
+      loopDepth(pointer) > loopDepth(deepest) ? pointer : deepest, undefined)
+    if (loopDepth(repeated) !== loopDepth(node.targetPointer)) return
     if (repeated) {
-      const collection = readPointer(input, repeated.slice(0, repeated.indexOf('/*/')))
+      const collection = readPointer(input, repeated.slice(0, repeated.search(/\/\*(?=\/|$)/)))
       if (!Array.isArray(collection)) return
-      if (collection.length > 10000) throw new Error('Repeated mapping exceeds 10000 items')
-      collection.forEach((_, index) => apply({ ...node,
-        sourcePointers: node.sourcePointers?.map((path) => path.replace('/*/', `/${index}/`)),
-        targetPointer: node.targetPointer!.replace('/*/', `/${index}/`),
-      }))
+      remaining.items -= collection.length
+      if (remaining.items < 0) throw new Error('Repeated mapping exceeds 10000 items')
+      collection.forEach((_, index) => {
+        const expand = (pointer: string) => pointer.replace(/\/\*(?=\/|$)/, `/${index}`)
+        apply({ ...node, sourcePointers: node.sourcePointers?.map(expand), targetPointer: expand(node.targetPointer!) }, remaining)
+      })
       return
     }
     const sources = (node.sourcePointers ?? []).map((pointer) => readPointer(input, pointer))
     const value = evaluate(node, sources)
     if (value !== undefined) writePointer(output, node.targetPointer, value)
   }
-  nodes.forEach(apply)
+  nodes.forEach((node) => apply(node, { items: 10_000 }))
   return output
 }
 

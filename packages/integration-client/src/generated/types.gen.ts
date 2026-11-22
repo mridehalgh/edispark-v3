@@ -333,6 +333,24 @@ export type CreateMappingRequest = {
     nodes: Array<MappingNode>;
 };
 
+export type MappingValidationRequest = {
+    side: 'SOURCE' | 'TARGET';
+    content: string;
+};
+
+export type Finding = {
+    severity?: string;
+    code?: string;
+    location?: string;
+    message?: string;
+};
+
+export type MappingValidationReport = {
+    scope?: string;
+    valid?: boolean;
+    findings?: Array<Finding>;
+};
+
 export type MappingFixtureRequest = {
     name: string;
     input: string;
@@ -371,6 +389,15 @@ export type Result = {
 export type PublishMappingRequest = {
     fixtures: Array<MappingFixtureRequest>;
     effectiveAt?: string;
+};
+
+export type FilePreviewRequest = {
+    content: string;
+};
+
+export type FilePreview = {
+    content?: string;
+    warnings?: Array<string>;
 };
 
 export type Request = {
@@ -514,6 +541,13 @@ export type Usage = {
 export type MappingOption = {
     name?: string;
     capability?: Capability;
+};
+
+export type Example = {
+    sourceDocument?: string;
+    sourceRaw?: string;
+    targetDocument?: string;
+    targetRaw?: string;
 };
 
 export type BusinessCode = {
@@ -1217,6 +1251,24 @@ export type CreateMappingResponses = {
 
 export type CreateMappingResponse = CreateMappingResponses[keyof CreateMappingResponses];
 
+export type ValidateMappingDocumentData = {
+    body: MappingValidationRequest;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}/validation';
+};
+
+export type ValidateMappingDocumentResponses = {
+    /**
+     * OK
+     */
+    200: MappingValidationReport;
+};
+
+export type ValidateMappingDocumentResponse = ValidateMappingDocumentResponses[keyof ValidateMappingDocumentResponses];
+
 export type TestMappingData = {
     body: MappingFixtureRequest;
     path: {
@@ -1288,6 +1340,42 @@ export type PublishMappingResponses = {
 };
 
 export type PublishMappingResponse = PublishMappingResponses[keyof PublishMappingResponses];
+
+export type GetMappingExampleFilesData = {
+    body?: never;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}/file-preview';
+};
+
+export type GetMappingExampleFilesResponses = {
+    /**
+     * OK
+     */
+    200: Example;
+};
+
+export type GetMappingExampleFilesResponse = GetMappingExampleFilesResponses[keyof GetMappingExampleFilesResponses];
+
+export type PreviewMappingFileData = {
+    body: FilePreviewRequest;
+    path: {
+        mappingId: string;
+    };
+    query?: never;
+    url: '/api/mappings/{mappingId}/file-preview';
+};
+
+export type PreviewMappingFileResponses = {
+    /**
+     * OK
+     */
+    200: FilePreview;
+};
+
+export type PreviewMappingFileResponse = PreviewMappingFileResponses[keyof PreviewMappingFileResponses];
 
 export type ArchiveMappingRevisionData = {
     body?: never;

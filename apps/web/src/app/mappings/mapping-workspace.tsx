@@ -3,6 +3,8 @@
 import type {
   MappingNode,
   MappingRevision,
+  GetMappingExampleFilesResponse,
+  PreviewMappingFileResponse,
   TestResult,
   TestMappingRetainedSourceResponse,
 } from "@edispark/integration-client"
@@ -33,9 +35,13 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { previewMapping, readPointer } from "@/lib/mapping-preview"
+import { loopDepth, previewMapping, readPointer } from "@/lib/mapping-preview"
+import { fieldLabel, isPlaceholderRule, mappingDestinationFields, repeatLine, sourceScopes, templateRule } from "@/lib/mapping-fields"
 import { cn } from "@/lib/utils"
 import { bundledMappingInput, mappingTestRequest } from "@/lib/mapping-test-input"
+import { ediSegments, mappingFileDiff } from "@/lib/mapping-file-diff"
+import { DownloadMappingFile, exampleTestFiles, MappingFileUpload, takeDraftFiles, type TestFile } from "./mapping-test-files"
+import { MappingDocumentValidator } from "./mapping-document-validator"
 import styles from "./mapping-workspace.module.css"
 
 const DEFAULT_INPUT = JSON.stringify(
@@ -161,6 +167,18 @@ function decodeOutput(value?: string) {
   }
 }
 
+async function previewFile(mappingId: string, content: string, signal?: AbortSignal) {
+  const result = await readApi<PreviewMappingFileResponse>(`/api/integration/mappings/${mappingId}/file-preview`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content }), signal,
+  })
+  if (!result.content) throw new Error("The file preview returned no content.")
+  return { content: result.content, warnings: result.warnings ?? [] }
+}
+
+async function fileAsInput(mappingId: string, file: TestFile, signal?: AbortSignal) {
+  return file.kind === "json" ? file.text : formatOutput((await previewFile(mappingId, file.text, signal)).content)
+}
+
 function leafPointers(value: unknown, base = ""): string[] {
   if (value === null || typeof value !== "object") return base ? [base] : []
   return Object.entries(value).flatMap(([key, child]) =>
@@ -169,14 +187,6 @@ function leafPointers(value: unknown, base = ""): string[] {
       `${base}/${key.replaceAll("~", "~0").replaceAll("/", "~1")}`,
     ),
   )
-}
-
-function fieldLabel(pointer: string) {
-  const parts = pointer.split("/").filter((part) => part && !/^(?:[0-9]+|\*|_)$/.test(part))
-  const leaf = parts.at(-1) ?? pointer
-  const words = leaf === "id" || leaf === "ID" ? parts.slice(-2).join(" ") : leaf
-  const spaced = words.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }
 
 const operationLabels: Record<NonNullable<MappingNode["operation"]>, string> = {
@@ -192,6 +202,8 @@ const operationLabels: Record<NonNullable<MappingNode["operation"]>, string> = {
   CODE_LOOKUP: "Translate",
   LOOKUP_TABLE: "Table lookup",
 }
+
+const fieldSelectClass = "h-9 w-full min-w-0 rounded-md border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 
 function JsonPane({ value, label }: { value: string; label: string }) {
   const json = /^[{\[]/.test(value.trimStart())
@@ -288,6 +300,7 @@ export function MappingWorkspacePage() {
   const [sourceParams] = useSearchParams()
   const sourceQuery = sourceParams.toString()
   const [mapping, setMapping] = useState<MappingRevision>()
+  const [catalogue, setCatalogue] = useState<MappingRevision[]>([])
   const [nodes, setNodes] = useState<MappingNode[]>([])
   const [input, setInput] = useState("")
   const [activeNodeId, setActiveNodeId] = useState<string>()
@@ -301,6 +314,14 @@ export function MappingWorkspacePage() {
   const [sampleOpen, setSampleOpen] = useState(false)
   const [testResult, setTestResult] = useState<TestResult>()
   const [testError, setTestError] = useState<string>()
+  const [fileError, setFileError] = useState<string>()
+  const [sourceFile, setSourceFile] = useState<TestFile>()
+  const [expectedFile, setExpectedFile] = useState<TestFile>()
+  const [generatedEdi, setGeneratedEdi] = useState<{ content: string; warnings: string[] }>()
+  const [ediError, setEdiError] = useState<string>()
+  const [liveEdi, setLiveEdi] = useState<{ key: string; content?: string; warnings?: string[]; error?: string }>()
+  const [loadingFiles, setLoadingFiles] = useState(false)
+  const [compareControls, setCompareControls] = useState(false)
   const [testing, setTesting] = useState(false)
   const testRequest = useRef<AbortController | null>(null)
   const [fixtureTables, setFixtureTables] = useState<Record<string, string>>({})
@@ -314,6 +335,8 @@ export function MappingWorkspacePage() {
     setTesting(false)
     setTestResult(undefined)
     setTestError(undefined)
+    setGeneratedEdi(undefined)
+    setEdiError(undefined)
   }, [])
 
   const load = useCallback(async (signal: AbortSignal) => {
@@ -325,15 +348,39 @@ export function MappingWorkspacePage() {
     setDirty(false)
     setFixtureTables({})
     setSearch("")
+    setFileError(undefined)
+    setSourceFile(undefined)
+    setExpectedFile(undefined)
+    setLoadingFiles(false)
     try {
       const result = await readApi<MappingRevision>(
         `/api/integration/mappings/${mappingId}`,
         { signal },
       )
+      if (signal.aborted) return
       setMapping(result)
       setNodes(result.nodes ?? [])
       setActiveNodeId(result.nodes?.[0]?.id)
       setInput(availableInput(result) ?? "")
+      const files = takeDraftFiles(mappingId)
+      if (files) {
+        setTestOpen(true)
+        setSampleOpen(false)
+        setExpectedFile(files.expected)
+        if (files.source) {
+          setSourceFile(files.source)
+          setInput("")
+          setLoadingFiles(true)
+          try {
+            const parsed = await fileAsInput(mappingId, files.source, signal)
+            if (!signal.aborted) setInput(parsed)
+          } catch (error) {
+            if (!signal.aborted) setFileError(error instanceof Error ? error.message : "The input file could not be read.")
+          } finally {
+            if (!signal.aborted) setLoadingFiles(false)
+          }
+        }
+      }
       const source = new URLSearchParams(sourceQuery)
       if (source.has("sourceSet")) {
         const retained = await readApi<TestMappingRetainedSourceResponse>(
@@ -392,17 +439,65 @@ export function MappingWorkspacePage() {
     if (hasLookups) return "Select table revisions and run a test to see the output."
     return preview === undefined ? "Run a test to check this input." : JSON.stringify(preview, null, 2)
   }, [hasLookups, input, parsedInput, preview, testResult?.output])
-  const sourcePointers = useMemo(
-    () =>
-      (parsedInput === undefined ? [] : leafPointers(parsedInput)).filter(
-        (pointer) => pointer.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [parsedInput, search],
-  )
+  const inputFields = useMemo(() => parsedInput === undefined ? [] : leafPointers(parsedInput), [parsedInput])
+  const sourcePointers = inputFields.filter((pointer) => `${fieldLabel(pointer)} ${pointer}`.toLowerCase().includes(search.toLowerCase()))
   const editable = mapping?.status === "DRAFT"
+  const inbound = mapping?.compatibility?.direction === "INBOUND"
+  const outbound = mapping?.compatibility?.direction === "OUTBOUND"
+  useEffect(() => {
+    if (!editable) return
+    const controller = new AbortController()
+    void readApi<MappingRevision[]>("/api/integration/mappings", { signal: controller.signal }).then((items) => {
+      if (!controller.signal.aborted) setCatalogue(items)
+    }).catch(() => {})
+    return () => controller.abort()
+  }, [editable])
+  const templates = catalogue.filter((item) => item.scope === "GLOBAL" && item.status === "PUBLISHED"
+    && item.sourceSchemaId === mapping?.sourceSchemaId && item.targetSchemaId === mapping?.targetSchemaId)
+  const template = templates.find((item) => item.id === mapping?.derivedFromMappingId) ?? templates.find((item) => item.sample) ?? templates[0]
+  const destinations = mapping ? mappingDestinationFields(mapping, template) : []
+  const legacyPlaceholder = outbound && nodes.length === 1 && isPlaceholderRule(nodes[0]) && !!templateRule("/document/id", template)
+  const assigned = new Set(nodes.filter((node) => node.operation !== "OMIT" && !(legacyPlaceholder && isPlaceholderRule(node)))
+    .map((node) => repeatLine(node.targetPointer ?? "")))
+  const requiredRules = destinations.filter((field) => field.required && !assigned.has(field.path))
+    .flatMap((field) => templateRule(field.path, template) ?? [])
+  const liveModel = useMemo(() => outbound && preview !== undefined ? JSON.stringify(preview) : undefined, [outbound, preview])
+  const liveKey = liveModel && mappingId ? `${mappingId}:${liveModel}` : undefined
+  useEffect(() => {
+    if (!liveKey || !mappingId || !liveModel) return
+    const controller = new AbortController()
+    const wait = window.setTimeout(async () => {
+      try {
+        const result = await previewFile(mappingId, liveModel, controller.signal)
+        if (!controller.signal.aborted) setLiveEdi({ key: liveKey, ...result })
+      } catch (error) {
+        if (!controller.signal.aborted) setLiveEdi({ key: liveKey, error: error instanceof Error ? error.message : "The output could not be rendered as EDI." })
+      }
+    }, 350)
+    return () => {
+      window.clearTimeout(wait)
+      controller.abort()
+    }
+  }, [liveKey, liveModel, mappingId])
+  const currentLiveEdi = liveEdi?.key === liveKey ? liveEdi : undefined
+  const rawEdi = generatedEdi?.content ?? currentLiveEdi?.content
+  const validationInput = inbound ? (sourceFile?.kind === "edi" ? sourceFile.text : undefined) : input
+  const validationOutput = outbound ? rawEdi : testResult?.output ?? (preview === undefined ? undefined : JSON.stringify(preview))
+  const ediWarnings = generatedEdi?.warnings ?? currentLiveEdi?.warnings
+  const ediStatus = currentLiveEdi?.error ?? (hasLookups ? "Run a test with reference tables to render EDI."
+    : liveKey ? "Rendering EDI…" : "Add valid input to render EDI.")
   const example = mapping ? availableInput(mapping) : undefined
   const selectedNode = nodes.find((node) => node.id === activeNodeId)
-  const testBlocked = dirty ? "Save the draft before testing."
+  const incompleteRule = nodes.some((node) => !node.targetPointer || (node.operation !== "CONSTANT" && !node.sourcePointers?.some(Boolean)))
+  const unalignedRule = nodes.some((node) => node.operation !== "OMIT"
+    && Math.max(0, ...node.sourcePointers?.map(loopDepth) ?? []) !== loopDepth(node.targetPointer))
+  const comparison = useMemo(() => {
+    if (!rawEdi || expectedFile?.kind !== "edi") return undefined
+    return mappingFileDiff(ediSegments(expectedFile.text, !compareControls), ediSegments(rawEdi, !compareControls))
+  }, [compareControls, expectedFile, rawEdi])
+  const testPassed = !!testResult?.passed && !ediError && !generatedEdi?.warnings.length && comparison?.matches !== false
+  const testBlocked = loadingFiles ? "Preparing the input file…"
+    : dirty ? "Save the draft before testing."
     : !input.trim() ? "Add JSON input to run a test."
     : parsedInput === undefined ? "Correct the JSON input before testing."
     : !fixtureTablesReady ? "Select a revision for each reference table." : undefined
@@ -410,6 +505,37 @@ export function MappingWorkspacePage() {
   function changeInput(value: string) {
     setInput(value)
     clearTest()
+  }
+
+  async function loadSource(file: TestFile) {
+    if (!mappingId) return
+    setFileError(undefined)
+    setSourceFile(file)
+    if (file.kind === "edi") changeInput("")
+    setLoadingFiles(true)
+    try {
+      const input = await fileAsInput(mappingId, file)
+      changeInput(input)
+    } finally {
+      setLoadingFiles(false)
+    }
+  }
+
+  async function loadExampleFiles() {
+    if (!mappingId) return
+    setLoadingFiles(true)
+    setFileError(undefined)
+    try {
+      const example = await readApi<GetMappingExampleFilesResponse>(`/api/integration/mappings/${mappingId}/file-preview`)
+      const files = exampleTestFiles(example, inbound)
+      if (!files.source) throw new Error("No example input is available for these formats.")
+      await loadSource(files.source)
+      setExpectedFile(files.expected)
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : "The example files could not be loaded.")
+    } finally {
+      setLoadingFiles(false)
+    }
   }
 
   function updateNode(id: string | undefined, patch: Partial<MappingNode>) {
@@ -424,13 +550,39 @@ export function MappingWorkspacePage() {
     const node: MappingNode = {
       id: crypto.randomUUID(),
       operation: "COPY",
-      sourcePointers: ["/document/id"],
-      targetPointer: "/document/id",
+      sourcePointers: [],
+      targetPointer: "",
     }
     setNodes((current) => [...current, node])
     setActiveNodeId(node.id)
     setDirty(true)
     clearTest()
+  }
+
+  function addRequiredRules() {
+    const additions = requiredRules.map((rule) => ({ ...rule, id: crypto.randomUUID() }))
+    setNodes((current) => [...current.filter((rule) => !legacyPlaceholder || !isPlaceholderRule(rule)), ...additions])
+    setActiveNodeId(additions[0]?.id)
+    setDirty(true)
+    clearTest()
+  }
+
+  function selectSource(node: MappingNode, pointer: string) {
+    const depth = loopDepth(node.targetPointer)
+    const scoped = depth && loopDepth(pointer) === 0 ? sourceScopes(pointer, parsedInput).find((scope) => loopDepth(scope.path) === depth)?.path : undefined
+    updateNode(node.id, { sourcePointers: [scoped ?? pointer, ...(node.sourcePointers ?? []).slice(1)] })
+    setActivePane("mapping")
+  }
+
+  function selectDestination(node: MappingNode, pointer: string) {
+    const suggested = templateRule(pointer, template)
+    if (suggested && node.operation === "COPY" && (!node.sourcePointers?.length || isPlaceholderRule(node))) {
+      updateNode(node.id, { ...suggested, id: node.id })
+      return
+    }
+    const source = node.sourcePointers?.[0]
+    const scope = source && loopDepth(pointer) ? sourceScopes(source, parsedInput).find((item) => loopDepth(item.path) === loopDepth(pointer)) : undefined
+    updateNode(node.id, { targetPointer: pointer, ...(scope ? { sourcePointers: [scope.path, ...(node.sourcePointers ?? []).slice(1)] } : {}) })
   }
   function removeNode(id?: string) {
     setNodes((current) => current.filter((node) => node.id !== id))
@@ -440,7 +592,7 @@ export function MappingWorkspacePage() {
   }
 
   async function save() {
-    if (!mappingId) return
+    if (!mappingId || incompleteRule || unalignedRule) return
     try {
       setBusy(true)
       setError(undefined)
@@ -478,11 +630,24 @@ export function MappingWorkspacePage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(mappingTestRequest(mapping, input, referenceTableRevisions)),
+          body: JSON.stringify(expectedFile ? {
+            ...mappingTestRequest(mapping, input, referenceTableRevisions),
+            expected: expectedFile.kind === "json" ? expectedFile.text : undefined,
+          } : mappingTestRequest(mapping, input, referenceTableRevisions)),
           signal: controller.signal,
         },
       )
-      if (!controller.signal.aborted) setTestResult({ ...result, output: formatOutput(result.output) })
+      if (controller.signal.aborted) return
+      const output = formatOutput(result.output)
+      setTestResult({ ...result, output })
+      if (outbound && output.trim()) {
+        try {
+          const edi = await previewFile(mappingId, output, controller.signal)
+          if (!controller.signal.aborted) setGeneratedEdi(edi)
+        } catch (error) {
+          if (!controller.signal.aborted) setEdiError(error instanceof Error ? error.message : "The output could not be rendered as EDI.")
+        }
+      }
     } catch (requestError) {
       if (!controller.signal.aborted) {
         setTestError(requestError instanceof Error ? requestError.message : "The test could not run.")
@@ -496,7 +661,7 @@ export function MappingWorkspacePage() {
   }
 
   async function publish() {
-    if (!mappingId || dirty || !testResult?.passed || !testResult.output) return
+    if (!mappingId || dirty || !testPassed || !testResult?.output) return
     try {
       setBusy(true)
       setError(undefined)
@@ -588,7 +753,7 @@ export function MappingWorkspacePage() {
             </div>}
           </div>
           {mapping && (editable ? (
-            <Button size="sm" onClick={() => void save()} disabled={busy || testing || !dirty || !nodes.length}
+            <Button size="sm" onClick={() => void save()} disabled={busy || testing || !dirty || !nodes.length || incompleteRule || unalignedRule}
               className={cn("gap-2", styles.tool)}>
               <Save className="h-4 w-4" aria-hidden="true" />Save draft
             </Button>
@@ -618,23 +783,18 @@ export function MappingWorkspacePage() {
       {editable && !testOpen && !sampleOpen && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
           <p className="max-w-xl text-xs leading-5 text-muted-foreground">
-            Map repeated lines with * in both paths. Unmapped populated fields
-            block publication; use a reviewed omission only when the partner
-            does not need the field.
+            Choose a source and destination for each rule. Line destinations repeat for every matching source line.
           </p>
+          <div className="flex flex-wrap gap-2">
+          {requiredRules.length > 0 && <Button size="sm" variant="outline" onClick={addRequiredRules}>Add required EDI fields</Button>}
           <Button
             size="sm"
             variant="outline"
             onClick={() => {
-              const repeat = (path: string) =>
-                path.replace(
-                  /\/(OrderLine|InvoiceLine|DespatchLine|ReceiptLine|RemittanceAdviceLine|lines)\/\d+\//g,
-                  "/$1/*/",
-                )
               const repeated = nodes.map((node) => ({
                 ...node,
-                sourcePointers: node.sourcePointers?.map(repeat),
-                targetPointer: repeat(node.targetPointer ?? ""),
+                sourcePointers: node.sourcePointers?.map(repeatLine),
+                targetPointer: repeatLine(node.targetPointer ?? ""),
               }))
               const unique = new Map(
                 repeated.map((node) => [
@@ -655,6 +815,7 @@ export function MappingWorkspacePage() {
           >
             Apply rules to every line
           </Button>
+          </div>
         </div>
       )}
 
@@ -711,6 +872,9 @@ export function MappingWorkspacePage() {
                 Source fields
               </h2>
             </div><span className="text-xs tabular-nums text-muted-foreground">{sourcePointers.length}</span></div>
+            {mappingId && (inbound || outbound) && <div className="mt-3">
+              <MappingDocumentValidator mappingId={mappingId} side="SOURCE" content={validationInput} label={inbound ? "Validate source EDI" : "Validate source UBL"} />
+            </div>}
             <label className="relative mt-3 block">
               <span className="sr-only">Search source fields</span>
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -733,7 +897,7 @@ export function MappingWorkspacePage() {
               return editable && activeNodeId ? (
                 <button key={pointer} type="button" aria-label={`Use source field ${pointer}`} aria-pressed={selected ?? false}
                   className={cn(className, "min-h-11 hover:bg-accent focus-visible:ring-inset")}
-                  onClick={() => updateNode(activeNodeId, { sourcePointers: [pointer] })}>{content}</button>
+                  onClick={() => selectedNode && selectSource(selectedNode, pointer)}>{content}</button>
               ) : <div key={pointer} className={className}>{content}</div>
             })}
             {!sourcePointers.length && <p className="px-4 py-6 text-sm text-muted-foreground">
@@ -774,6 +938,12 @@ export function MappingWorkspacePage() {
               const selected = activeNodeId === node.id
               const sourcePath = node.sourcePointers?.join(", ") ?? ""
               const targetPath = node.targetPointer ?? ""
+              const sourceField = node.sourcePointers?.[0] ?? ""
+              const scopes = sourceField ? sourceScopes(sourceField, parsedInput) : []
+              const targetScope = loopDepth(targetPath)
+              const invalidScope = node.operation !== "OMIT" && !!sourceField && !!targetPath
+                && Math.max(0, ...(node.sourcePointers ?? []).map(loopDepth)) !== targetScope
+              const destination = destinations.find((field) => field.path === targetPath)
               return <article key={node.id ?? index} className={cn(selected && "bg-accent/50")}>
                 <button type="button" onClick={() => setActiveNodeId(node.id)} aria-pressed={selected}
                   className="grid min-h-14 w-full min-w-0 grid-cols-[1fr_6.25rem_1fr] items-center gap-2 px-3 py-2 text-left hover:bg-accent/60 focus-visible:ring-inset sm:px-4">
@@ -788,8 +958,8 @@ export function MappingWorkspacePage() {
                     <ArrowRight className="h-3 w-3 shrink-0" aria-hidden="true" />
                   </span>
                   <span className="min-w-0" title={targetPath}>
-                    <span className="block truncate text-sm font-medium">{targetPath ? fieldLabel(targetPath) : "Set a target"}</span>
-                    <span className="block truncate font-mono text-xs text-muted-foreground">{targetPath}</span>
+                    <span className="block truncate text-sm font-medium">{destination?.label ?? (targetPath ? fieldLabel(targetPath) : "Choose a destination")}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{targetScope === 1 ? "Every item" : targetScope > 1 ? `${targetScope} nested collections` : targetPath}</span>
                   </span>
                 </button>
                 {selected && !editable && node.operation === "OMIT" && node.constant && <p className="px-4 pb-3 text-sm text-muted-foreground">{node.constant}</p>}
@@ -814,6 +984,7 @@ export function MappingWorkspacePage() {
                             .value as MappingNode["operation"],
                           tableLookup: event.target.value === "LOOKUP_TABLE"
                             ? node.tableLookup ?? { alias: "", resultColumn: "" } : undefined,
+                          ...(event.target.value === "OMIT" && !node.targetPointer ? { targetPointer: "/reviewed" } : {}),
                           ...(event.target.value === "CODE_LOOKUP" &&
                           !node.codeMap
                             ? { codeMap: {} }
@@ -837,41 +1008,49 @@ export function MappingWorkspacePage() {
                       <option value="LOOKUP_TABLE">Look up in table</option>
                     </select>
                   </label>
-                  <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                    {node.operation === "CONSTANT"
-                      ? "Fixed value"
-                      : "Source JSON pointer"}
-                    <Input
-                      disabled={!editable}
-                      value={
-                        node.operation === "CONSTANT"
-                          ? (node.constant ?? "")
-                          : (node.sourcePointers?.[0] ?? "")
-                      }
-                      onChange={(event) =>
-                        updateNode(
-                          node.id,
-                          node.operation === "CONSTANT"
-                            ? { constant: event.target.value }
-                            : { sourcePointers: [event.target.value] },
-                        )
-                      }
-                      className="h-9 font-mono text-xs text-foreground"
-                    />
-                  </label>
-                  <label className="grid gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">
-                    Target JSON pointer (use * for each line)
-                    <Input
-                      disabled={!editable}
-                      value={node.targetPointer ?? ""}
-                      onChange={(event) =>
-                        updateNode(node.id, {
-                          targetPointer: event.target.value,
-                        })
-                      }
-                      className="h-9 font-mono text-xs text-foreground"
-                    />
-                  </label>
+                  {node.operation === "CONSTANT" ? <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                    Fixed value
+                    <Input value={node.constant ?? ""} onChange={(event) => updateNode(node.id, { constant: event.target.value })} className="h-9" />
+                  </label> : <label className="grid min-w-0 gap-1 text-xs font-medium text-muted-foreground">
+                    Source field
+                    <select className={fieldSelectClass} value={sourceField} onChange={(event) => selectSource(node, event.target.value)}>
+                      <option value="" disabled>{inputFields.length ? "Choose a source field" : "Load input in Test to show fields"}</option>
+                      {sourceField && !inputFields.includes(sourceField) && <option value={sourceField}>{fieldLabel(sourceField)} · {sourceField}</option>}
+                      {inputFields.map((pointer) => <option key={pointer} value={pointer}>{fieldLabel(pointer)} · {pointer}</option>)}
+                    </select>
+                  </label>}
+                  {node.operation !== "OMIT" && <label className="grid min-w-0 gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">
+                    Destination field
+                    <select className={fieldSelectClass} value={targetPath} onChange={(event) => selectDestination(node, event.target.value)}>
+                      <option value="" disabled>{destinations.length ? "Choose a destination field" : "Enter a destination in Advanced paths"}</option>
+                      {targetPath && !destination && <option value={targetPath}>{fieldLabel(targetPath)} · {targetPath}</option>}
+                      {[{ label: "Document fields", repeated: false }, { label: "Repeating fields", repeated: true }].map(({ label, repeated }) => {
+                        const fields = destinations.filter((field) => (loopDepth(field.path) > 0) === repeated)
+                        return fields.length > 0 && <optgroup key={label} label={label}>
+                          {fields.map((field) => <option value={field.path} key={field.path}>{field.label}{field.required ? " (required)" : ""}</option>)}
+                        </optgroup>
+                      })}
+                    </select>
+                  </label>}
+                  {node.operation !== "CONSTANT" && scopes.length > 1 && <label className="grid gap-1 text-xs font-medium text-muted-foreground sm:col-span-2">
+                    Repeat for
+                    <select className={fieldSelectClass} value={sourceField} onChange={(event) => updateNode(node.id, { sourcePointers: [event.target.value, ...(node.sourcePointers ?? []).slice(1)] })}>
+                      {scopes.map((scope) => <option key={scope.path} value={scope.path}>{scope.label}</option>)}
+                    </select>
+                  </label>}
+                  {invalidScope && <p role="status" className="text-xs text-destructive sm:col-span-2">Match the number of repeating collections on both sides. Use Advanced paths to align nested collections.</p>}
+                  <details className="sm:col-span-2">
+                    <summary className="cursor-pointer py-1 text-xs font-medium text-muted-foreground">Advanced paths</summary>
+                    <div className="mt-2 grid gap-2">
+                      {node.operation !== "CONSTANT" && <label className="grid gap-1 text-xs font-medium text-muted-foreground">Source JSON pointer
+                        <Input value={sourceField} onChange={(event) => updateNode(node.id, { sourcePointers: [event.target.value, ...(node.sourcePointers ?? []).slice(1)] })} className="h-9 font-mono text-xs" />
+                      </label>}
+                      {node.operation !== "OMIT" && <label className="grid gap-1 text-xs font-medium text-muted-foreground">Destination JSON pointer
+                        <Input value={targetPath} onChange={(event) => updateNode(node.id, { targetPointer: event.target.value })} className="h-9 font-mono text-xs" />
+                      </label>}
+                      <p className="text-xs text-muted-foreground">Use one * for each repeated collection. Nested paths can repeat at multiple levels.</p>
+                    </div>
+                  </details>
                   {(node.operation === "CODE_LOOKUP" ||
                     node.operation === "OPTIONAL_CODE_LOOKUP") && (
                     <CodeMapEditor
@@ -937,7 +1116,21 @@ export function MappingWorkspacePage() {
             <h2 id="output-title" className="text-sm font-semibold">{testResult?.output ? "Test output" : "Output preview"}</h2>
             <Braces className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </div>
-          <JsonPane value={previewText} label="Generated document rule output" />
+          {mappingId && (inbound || outbound) && <div className="border-b px-3 py-2 sm:px-4">
+            <MappingDocumentValidator mappingId={mappingId} side="TARGET" content={validationOutput} label={outbound ? "Validate generated EDI" : "Validate output UBL"} />
+          </div>}
+          {outbound ? <>
+            <div className="p-3">
+              <h3 className="mb-2 text-sm font-semibold">Live EDI preview</h3>
+              {!!ediWarnings?.length && <p className="mb-2 text-xs text-muted-foreground">{ediWarnings.length} {ediWarnings.length === 1 ? "field warning" : "field warnings"}. Open Test for details.</p>}
+              {rawEdi ? <JsonPane value={ediSegments(rawEdi).join("'\n") + "'"} label="Live EDI preview" />
+                : <p role="status" className="text-xs text-muted-foreground">{ediStatus}</p>}
+            </div>
+            <details className="border-t">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-medium">Mapped JSON</summary>
+              <JsonPane value={previewText} label="Generated document rule output" />
+            </details>
+          </> : <JsonPane value={previewText} label="Generated document rule output" />}
         </aside>
         </div>
       </section>}
@@ -996,30 +1189,52 @@ export function MappingWorkspacePage() {
               <h2 className="text-base font-semibold">Test mapping</h2>
               {testResult && <span role="status" className={cn(
                 "inline-flex items-center gap-1.5 text-sm font-medium",
-                testResult.passed ? "text-success-foreground" : "text-destructive",
+                testPassed ? "text-success-foreground" : "text-destructive",
               )}>
-                {testResult.passed ? <Check className="h-4 w-4" aria-hidden="true" /> : <CircleAlert className="h-4 w-4" aria-hidden="true" />}
-                {testResult.passed ? "Passed" : "Needs attention"}
+                {testPassed ? <Check className="h-4 w-4" aria-hidden="true" /> : <CircleAlert className="h-4 w-4" aria-hidden="true" />}
+                {testing ? "Checking…" : testPassed ? "Passed" : "Needs attention"}
               </span>}
             </div>
             <div className="flex flex-wrap gap-2">
-              {example && <Button variant="outline" size="sm" type="button" disabled={testing || busy || input === example}
-                onClick={() => changeInput(example)} className={styles.tool}>
-                Load sample
-              </Button>}
+              {(inbound || outbound || mapping.sample) ? <Button variant="outline" size="sm" type="button" disabled={testing || busy || loadingFiles}
+                onClick={() => void loadExampleFiles()} className={styles.tool}>Load example files</Button>
+                : example && <Button variant="outline" size="sm" type="button" disabled={testing || busy || input === example}
+                  onClick={() => changeInput(example)} className={styles.tool}>Load sample</Button>}
               <Button size="sm" type="button" onClick={() => void test()} disabled={busy || testing || !!testBlocked}
                 className={cn("gap-2", styles.tool)}>
                 <Beaker className="h-4 w-4" aria-hidden="true" />{testing ? "Running test…" : "Run test"}
               </Button>
             </div>
           </div>
+          <div className="grid gap-3 border-b px-4 py-3 sm:grid-cols-2">
+            <div className="grid min-w-0 content-start gap-2">
+              <MappingFileUpload label={inbound ? "Upload EDI or JSON input" : "Upload JSON input"} allowEdi={inbound} allowJson disabled={busy || testing || loadingFiles} onLoad={loadSource} />
+              {sourceFile && <div className="flex flex-wrap items-center gap-x-2">
+                <span className="break-all text-xs text-muted-foreground">{sourceFile.name}</span>
+                <DownloadMappingFile file={sourceFile} label="Download input" />
+              </div>}
+              {mappingId && (inbound || outbound) && <MappingDocumentValidator mappingId={mappingId} side="SOURCE" content={validationInput} label={inbound ? "Validate source EDI" : "Validate source UBL"} />}
+            </div>
+            <div className="grid min-w-0 content-start gap-2">
+              <MappingFileUpload label={outbound ? "Upload expected EDI" : "Upload expected JSON"} allowEdi={outbound} allowJson={!outbound}
+                disabled={busy || testing || loadingFiles} onLoad={(file) => { setExpectedFile(file); clearTest() }} />
+              {expectedFile && <div className="flex flex-wrap items-center gap-x-2">
+                <span className="break-all text-xs text-muted-foreground">{expectedFile.name}</span>
+                <DownloadMappingFile file={expectedFile} label="Download expected" />
+                <Button type="button" variant="ghost" size="sm" disabled={testing || loadingFiles} onClick={() => { setExpectedFile(undefined); clearTest() }}>Remove expected</Button>
+              </div>}
+              {mappingId && expectedFile && (inbound || outbound) && <MappingDocumentValidator mappingId={mappingId} side="TARGET" content={expectedFile.text} label={outbound ? "Validate expected EDI" : "Validate expected UBL"} />}
+            </div>
+          </div>
           {testBlocked && <p role="status" className="border-b bg-muted/25 px-4 py-2 text-sm text-muted-foreground">{testBlocked}</p>}
+          {fileError && <p role="alert" className="border-b bg-destructive/10 px-4 py-3 text-sm text-destructive">{fileError}</p>}
           {(testError || !!testResult?.failures?.length) && (
             <div role="alert" className="border-b bg-destructive/10 px-4 py-3 text-sm">
               {testError
                 ? <p className="break-words text-destructive">{testError}</p>
                 : <ul className="list-disc space-y-1 pl-4">{testResult?.failures?.map((failure, index) =>
                     <li key={index} className="break-words">{failure}</li>)}</ul>}
+              {editable && <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setTestOpen(false)}>Edit field rules</Button>}
             </div>
           )}
           {lookups.length > 0 && <ReferenceTableBindings lookups={lookups} bindings={fixtureTables} busy={busy || testing}
@@ -1029,7 +1244,7 @@ export function MappingWorkspacePage() {
             }} />}
           <div className="grid min-w-0 divide-y lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             <label className="grid min-w-0 content-start">
-              <span className="border-b px-4 py-3 text-sm font-medium">Input JSON</span>
+              <span className="border-b px-4 py-3 text-sm font-medium">{sourceFile?.kind === "edi" ? "Parsed EDI input" : "Input JSON"}</span>
               <textarea
                 value={input}
                 onChange={(event) => changeInput(event.target.value)}
@@ -1040,20 +1255,70 @@ export function MappingWorkspacePage() {
                 className="h-[clamp(16rem,47vh,32rem)] w-full resize-y bg-background px-4 py-3 font-mono text-xs leading-6 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               />
             </label>
-            <div className="grid min-w-0 content-start">
+            {outbound ? <section aria-label="Generated EDI" className="min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
+                <h3 className="text-sm font-semibold">{generatedEdi ? "Generated EDI" : "Live EDI preview"}</h3>
+                {rawEdi && <DownloadMappingFile file={{ name: "generated.edi", text: rawEdi, kind: "edi" }} label="Download generated EDI" />}
+              </div>
+              {mappingId && <div className="border-b px-4 py-2">
+                <MappingDocumentValidator mappingId={mappingId} side="TARGET" content={validationOutput} label="Validate generated EDI" />
+              </div>}
+              {ediError && <p role="alert" className="px-4 pb-3 text-sm text-destructive">{ediError}</p>}
+              {!!ediWarnings?.length && <details className="mx-4 my-3 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm">
+                <summary className="cursor-pointer font-medium">{ediWarnings.length} {ediWarnings.length === 1 ? "field warning" : "field warnings"}</summary>
+                <ul className="mt-2 list-disc space-y-1 break-words pl-4 text-muted-foreground">{ediWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+              </details>}
+              {rawEdi ? <JsonPane value={ediSegments(rawEdi).join("'\n") + "'"} label="Generated EDI file" />
+                : !ediError && <p role="status" className="px-4 py-3 text-sm text-muted-foreground">{ediStatus}</p>}
+              <details className="border-t">
+                <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Mapped JSON</summary>
+                <JsonPane value={previewText} label="Mapped JSON output" />
+              </details>
+            </section> : <div className="grid min-w-0 content-start">
               <h3 className="border-b px-4 py-3 text-sm font-medium">{testResult?.output ? "Test output" : "Output preview"}</h3>
+              {mappingId && inbound && <div className="border-b px-4 py-2">
+                <MappingDocumentValidator mappingId={mappingId} side="TARGET" content={validationOutput} label="Validate output UBL" />
+              </div>}
               <JsonPane
                 value={previewText}
                 label={testResult?.output ? "Document rule test output" : "Document rule output preview"}
               />
-            </div>
+            </div>}
           </div>
+          {sourceFile?.kind === "edi" && <details className="border-t">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Raw EDI input</summary>
+            <JsonPane value={sourceFile.text} label="Raw EDI input file" />
+          </details>}
+          {expectedFile?.kind === "json" && <details className="border-t">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Expected JSON output</summary>
+            <JsonPane value={formatOutput(expectedFile.text)} label="Expected JSON output file" />
+          </details>}
+          {expectedFile?.kind === "edi" && <section aria-label="EDI comparison" className="border-t">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <h3 className="text-sm font-semibold">Segment comparison</h3>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <input type="checkbox" checked={compareControls} onChange={(event) => setCompareControls(event.target.checked)} className="size-4 accent-primary" />
+                Compare envelope timestamps and control references
+              </label>
+            </div>
+            {comparison ? <div className="px-4 pb-4">
+              <p role="status" className="mb-2 text-sm font-medium">{comparison.matches ? "Generated EDI matches the expected file." : "Generated EDI differs from the expected file."}</p>
+              {comparison.lines && comparison.lines.length > 0 ? <>
+                <p className="mb-2 text-xs text-muted-foreground">− Expected only · + Generated only</p>
+                <pre aria-label="EDI segment differences" tabIndex={0} className="max-h-80 overflow-auto rounded-md border bg-muted/25 py-2 font-mono text-xs leading-6">
+                  {comparison.lines.map((line, index) => <code key={index} className={cn("block min-w-max px-3", line.kind === "missing" && "bg-destructive/10 text-destructive", line.kind === "added" && "bg-success/25 text-success-foreground")}>
+                    {line.kind === "missing" ? "− " : line.kind === "added" ? "+ " : "  "}{line.text}
+                  </code>)}
+                </pre>
+              </> : !comparison.matches && <p className="text-sm text-muted-foreground">Download both files to inspect this large comparison.</p>}
+            </div> : <p className="px-4 pb-3 text-sm text-muted-foreground">Generate EDI to compare it with {expectedFile.name}.</p>}
+          </section>}
           {editable && <footer className="flex flex-wrap items-end justify-end gap-3 border-t px-4 py-3">
             <label className="grid gap-1 text-sm font-medium">
               Publish at (optional)
               <Input type="datetime-local" value={effectiveAt} onChange={(event) => setEffectiveAt(event.target.value)} />
             </label>
-            <Button onClick={() => void publish()} disabled={busy || testing || dirty || !testResult?.passed}
+            <Button onClick={() => void publish()} disabled={busy || testing || dirty || !testPassed}
               className={cn("gap-2", styles.tool)}>
               <Send className="h-4 w-4" aria-hidden="true" />
               {effectiveAt ? "Schedule publication" : "Publish revision"}

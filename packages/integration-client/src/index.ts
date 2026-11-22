@@ -1,3 +1,5 @@
 export * from './generated'
+export { zFilePreviewRequest } from './generated/zod.gen'
+export { zMappingValidationRequest } from './generated/zod.gen'
 export { createIntegrationClient, IntegrationClientError } from './factory'
 export type { IntegrationClientConfig } from './factory'

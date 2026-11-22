@@ -27,6 +27,15 @@ describe('mapping preview', () => {
     })
   })
 
+  it('keeps repeated packages within their own line in the live preview', () => {
+    const input = { lines: [{ id: 1, boxes: ['A', 'B'] }, { id: 2 }, { id: 3, boxes: ['C'] }] }
+
+    expect(previewMapping(input, [
+      { operation: 'COPY', sourcePointers: ['/lines/*/id'], targetPointer: '/items/*/id' },
+      { operation: 'OPTIONAL_COPY', sourcePointers: ['/lines/*/boxes/*'], targetPointer: '/items/*/packages/*/code' },
+    ])).toEqual({ items: [{ id: 1, packages: [{ code: 'A' }, { code: 'B' }] }, { id: 2 }, { id: 3, packages: [{ code: 'C' }] }] })
+  })
+
   it('reads array positions from JSON pointers', () => {
     expect(readPointer({ lines: [{ sku: 'SKU-1' }] }, '/lines/0/sku')).toBe('SKU-1')
   })

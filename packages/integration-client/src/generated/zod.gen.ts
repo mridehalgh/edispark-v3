@@ -483,6 +483,24 @@ export const zCreateMappingRequest = z.object({
     nodes: z.array(zMappingNode).min(1)
 });
 
+export const zMappingValidationRequest = z.object({
+    side: z.enum(['SOURCE', 'TARGET']),
+    content: z.string().min(0).max(1048576)
+});
+
+export const zFinding = z.object({
+    severity: z.string().optional(),
+    code: z.string().optional(),
+    location: z.string().optional(),
+    message: z.string().optional()
+});
+
+export const zMappingValidationReport = z.object({
+    scope: z.string().optional(),
+    valid: z.boolean().optional(),
+    findings: z.array(zFinding).optional()
+});
+
 export const zMappingFixtureRequest = z.object({
     name: z.string().min(1),
     input: z.string().min(1),
@@ -519,6 +537,15 @@ export const zResult = z.object({
 export const zPublishMappingRequest = z.object({
     fixtures: z.array(zMappingFixtureRequest).min(1),
     effectiveAt: z.iso.datetime().optional()
+});
+
+export const zFilePreviewRequest = z.object({
+    content: z.string().min(0).max(1048576)
+});
+
+export const zFilePreview = z.object({
+    content: z.string().optional(),
+    warnings: z.array(z.string()).optional()
 });
 
 export const zRequest = z.object({
@@ -682,6 +709,13 @@ export const zUsage = z.object({
 export const zMappingOption = z.object({
     name: z.string().optional(),
     capability: zCapability.optional()
+});
+
+export const zExample = z.object({
+    sourceDocument: z.string().optional(),
+    sourceRaw: z.string().optional(),
+    targetDocument: z.string().optional(),
+    targetRaw: z.string().optional()
 });
 
 export const zBusinessCode = z.object({
@@ -1092,6 +1126,17 @@ export const zCreateMappingBody = zCreateMappingRequest;
  */
 export const zCreateMappingResponse = zMappingRevision;
 
+export const zValidateMappingDocumentBody = zMappingValidationRequest;
+
+export const zValidateMappingDocumentPath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zValidateMappingDocumentResponse = zMappingValidationReport;
+
 export const zTestMappingBody = zMappingFixtureRequest;
 
 export const zTestMappingPath = z.object({
@@ -1133,6 +1178,26 @@ export const zPublishMappingPath = z.object({
  * OK
  */
 export const zPublishMappingResponse = zMappingRevision;
+
+export const zGetMappingExampleFilesPath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zGetMappingExampleFilesResponse = zExample;
+
+export const zPreviewMappingFileBody = zFilePreviewRequest;
+
+export const zPreviewMappingFilePath = z.object({
+    mappingId: z.uuid()
+});
+
+/**
+ * OK
+ */
+export const zPreviewMappingFileResponse = zFilePreview;
 
 export const zArchiveMappingRevisionPath = z.object({
     mappingId: z.uuid()

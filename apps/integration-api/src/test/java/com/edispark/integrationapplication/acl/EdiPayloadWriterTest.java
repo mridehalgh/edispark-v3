@@ -116,6 +116,13 @@ class EdiPayloadWriterTest {
                 .hasMessageContaining("without data loss");
     }
 
+    @Test void mappingPreviewShowsTheFileAndFlagsUnrepresentedFields() {
+        var preview = writer.previewMapping(capability(EdiStandard.TRADACOMS, "9", "ORDERS"), json());
+
+        assertThat(new String(preview.output(), StandardCharsets.US_ASCII)).contains("ORD=PO-1001++GBP'").endsWith("END=2'");
+        assertThat(preview.warnings()).anyMatch(warning -> warning.contains("/lines/*/lineExtension"));
+    }
+
     @Test void tradacomsMessageControlCountIncludesEveryLineAndEscapes() throws Exception {
         var json = new ObjectMapper(); var tree = json.readTree(targetJson(BusinessDocumentType.ORDER));
         var lines = (com.fasterxml.jackson.databind.node.ArrayNode) tree.path("lines");
